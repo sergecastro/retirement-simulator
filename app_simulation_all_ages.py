@@ -476,5 +476,5 @@ else:
             st.write(optimization)
         except Exception as e:
             st.error(f"Error generating optimization: {e}")
-
     st.pyplot(fig)
+
