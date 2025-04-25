@@ -71,6 +71,7 @@ st.header("⚙️ Simulation Settings")
 # OpenAI API Key from Environment Variable
 st.header("🤖 OpenAI Financial Assessment")
 openai_api_key = os.getenv("OPENAI_API_KEY")
+st.write(f"Debug: OPENAI_API_KEY = {openai_api_key}")  # Add this line
 if not openai_api_key:
     st.warning("OpenAI API key not found. Please contact the app owner to enable this feature.")
     use_openai = False
