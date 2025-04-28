@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import json
-import os  # Only import os once
+import os
 import matplotlib.pyplot as plt
 from openai import OpenAI
 
@@ -39,64 +39,142 @@ if st.button("Clear Saved Data and Session State"):
 st.header("🧹 Preferences")
 input_style = st.radio("Input Style:", ["Detailed Breakdown", "Gross Totals"], index=0 if inputs.get("input_style", "Detailed Breakdown") == "Detailed Breakdown" else 1)
 
-# Age
-st.header("👤 Age")
+# Primary User Age
+st.header("👤 Primary User Information")
 age_group = st.selectbox("Age Group:", ["25-55", "55-70", "70+"], index=0 if inputs.get("age_group", "25-55") == "25-55" else (1 if inputs.get("age_group") == "55-70" else 2))
 default_age = inputs.get("age", 40 if age_group == "25-55" else 60 if age_group == "55-70" else 76)
 age = st.number_input("Starting Age:", min_value=25, max_value=110, value=default_age)
 
-# Validate age against age group
-if age_group == "25-55" and (age < 25 or age > 55):
-    st.error("Starting Age must be between 25 and 55 for the 25-55 age group.")
-    st.stop()
-elif age_group == "55-70" and (age < 55 or age > 70):
-    st.error("Starting Age must be between 55 and 70 for the 55-70 age group.")
-    st.stop()
-elif age_group == "70+" and age < 70:
-    st.error("Starting Age must be 70 or higher for the 70+ age group.")
-    st.stop()
+# Partner Information
+st.header("👥 Partner Information")
+partner_name = st.text_input("Partner's Name:", value=inputs.get("partner_name", ""))
+partner_age = st.number_input("Partner's Age:", min_value=25, max_value=110, value=inputs.get("partner_age", age))
+partner_ira_balance = st.number_input("Partner's IRA Balance:", value=inputs.get("partner_ira_balance", 0.0))
+partner_four01k_403b_balance = st.number_input("Partner's 401k/403b Balance:", value=inputs.get("partner_four01k_403b_balance", 0.0))
+partner_taxable_investment_accounts = st.number_input("Partner's Taxable Investment Accounts:", value=inputs.get("partner_taxable_investment_accounts", 0.0))
+partner_other_assets = st.number_input("Partner's Other Assets (Savings, Vehicles, Collectibles):", value=inputs.get("partner_other_assets", 0.0))
+partner_liabilities = st.number_input("Partner's Liabilities (Mortgage, Loans, Credit Card Debt):", value=inputs.get("partner_liabilities", 0.0))
 
 # Income & Expenses (Monthly)
 st.header("💵 Income & Expenses (Monthly)")
-# ... (rest of the Income & Expenses section remains unchanged)
+if input_style == "Detailed Breakdown":
+    st.subheader("Income")
+    salary_wages = st.number_input("Salary/Wages:", value=inputs.get("salary_wages", 0.0))
+    self_employment_income = st.number_input("Self-Employment Income:", value=inputs.get("self_employment_income", 0.0))
+    rental_income = st.number_input("Rental Income:", value=inputs.get("rental_income", 0.0))
+    investment_income = st.number_input("Investment Income:", value=inputs.get("investment_income", 0.0))
+    social_security_income = st.number_input("Social Security Income:", value=inputs.get("social_security_income", 0.0))
+    pension_income = st.number_input("Pension Income:", value=inputs.get("pension_income", 0.0))
+    other_income = st.number_input("Other Income:", value=inputs.get("other_income", 0.0))
 
-# Assets & Liabilities
-st.header("💰 Assets & Liabilities")
-# ... (rest of the Assets & Liabilities section remains unchanged)
+    total_income = salary_wages + self_employment_income + rental_income + investment_income + social_security_income + pension_income + other_income
+    st.write(f"Total Income (Monthly): ${total_income:,.2f}")
+
+    st.subheader("Expenses")
+    housing_expenses = st.number_input("Housing Expenses (Rent, Mortgage, Maintenance, Excluding Insurance):", value=inputs.get("housing_expenses", 0.0))
+    utilities_expenses = st.number_input("Utilities Expenses (Electricity, Gas, Water, Telephone):", value=inputs.get("utilities_expenses", 0.0))
+    groceries_expenses = st.number_input("Groceries Expenses:", value=inputs.get("groceries_expenses", 0.0))
+    transportation_expenses = st.number_input("Transportation Expenses (Car Gas, Insurance, Maintenance):", value=inputs.get("transportation_expenses", 0.0))
+    healthcare_expenses = st.number_input("Healthcare Expenses (Medical Bills, Prescriptions):", value=inputs.get("healthcare_expenses", 0.0))
+    insurance_expenses = st.number_input("Insurance Expenses (Health, Life Insurance):", value=inputs.get("insurance_expenses", 0.0))
+    real_estate_insurance_expenses = st.number_input("Real Estate Insurance Expenses (Homeowners, Renters Insurance):", value=inputs.get("real_estate_insurance_expenses", 0.0))
+    property_tax_expenses = st.number_input("Property Tax Expenses:", value=inputs.get("property_tax_expenses", 0.0))
+    entertainment_expenses = st.number_input("Entertainment Expenses (Movies, Concerts, Subscriptions):", value=inputs.get("entertainment_expenses", 0.0))
+    restaurant_expenses = st.number_input("Restaurant Expenses:", value=inputs.get("restaurant_expenses", 0.0))
+    travel_expenses = st.number_input("Travel Expenses (Vacations, Flights, Hotels):", value=inputs.get("travel_expenses", 0.0))
+    education_expenses = st.number_input("Education Expenses (Tuition, Books, Courses):", value=inputs.get("education_expenses", 0.0))
+    childcare_expenses = st.number_input("Childcare Expenses:", value=inputs.get("childcare_expenses", 0.0))
+    clothing_expenses = st.number_input("Clothing Expenses:", value=inputs.get("clothing_expenses", 0.0))
+    charitable_donations = st.number_input("Charitable Donations:", value=inputs.get("charitable_donations", 0.0))
+    miscellaneous_expenses = st.number_input("Miscellaneous Expenses (Unexpected Costs, Gifts):", value=inputs.get("miscellaneous_expenses", 0.0))
+    other_expenses = st.number_input("Other Expenses:", value=inputs.get("other_expenses", 0.0))
+
+    total_expenses = (housing_expenses + utilities_expenses + groceries_expenses + transportation_expenses +
+                      healthcare_expenses + insurance_expenses + real_estate_insurance_expenses + property_tax_expenses +
+                      entertainment_expenses + restaurant_expenses + travel_expenses + education_expenses +
+                      childcare_expenses + clothing_expenses + charitable_donations + miscellaneous_expenses + other_expenses)
+    st.write(f"Total Expenses (Monthly): ${total_expenses:,.2f}")
+else:
+    total_income = st.number_input("Total Income (Monthly):", value=inputs.get("total_income", 0.0))
+    st.write(f"Total Income (Monthly): ${total_income:,.2f}")
+    total_expenses = st.number_input("Total Expenses (Monthly):", value=inputs.get("total_expenses", 0.0))
+    st.write(f"Total Expenses (Monthly): ${total_expenses:,.2f}")
+
+# Assets & Liabilities (Primary User)
+st.header("💰 Assets & Liabilities (Primary User)")
+st.subheader("Assets")
+primary_residence_value = st.number_input("Primary Residence Value:", value=inputs.get("primary_residence_value", 0.0))
+secondary_residence_value = st.number_input("Secondary Residence Value:", value=inputs.get("secondary_residence_value", 0.0))
+ira_balance = st.number_input("IRA Balance (Shared):", value=inputs.get("ira_balance", 0.0))
+four01k_403b_balance = st.number_input("401k/403b Balance (Shared):", value=inputs.get("four01k_403b_balance", 0.0))
+taxable_investment_accounts = st.number_input("Taxable Investment Accounts:", value=inputs.get("taxable_investment_accounts", 0.0))
+pension_fund_value = st.number_input("Pension Fund Value (Savings from Employer Pension Plans, Shared):", value=inputs.get("pension_fund_value", 0.0))
+life_insurance_cash_value = st.number_input("Life Insurance Cash Value:", value=inputs.get("life_insurance_cash_value", 0.0))
+high_yield_savings_account = st.number_input("High-Yield Savings Account:", value=inputs.get("high_yield_savings_account", 0.0))
+hsa_balance = st.number_input("HSA Balance (Health Savings Account):", value=inputs.get("hsa_balance", 0.0))
+five29_plan_balance = st.number_input("529 Plan Balance (Education Savings):", value=inputs.get("five29_plan_balance", 0.0))
+vehicles_value = st.number_input("Vehicles Value:", value=inputs.get("vehicles_value", 0.0))
+jewelry_collectibles_value = st.number_input("Jewelry/Collectibles Value:", value=inputs.get("jewelry_collectibles_value", 0.0))
+business_ownership_value = st.number_input("Business Ownership Value:", value=inputs.get("business_ownership_value", 0.0))
+cryptocurrency_holdings = st.number_input("Cryptocurrency Holdings:", value=inputs.get("cryptocurrency_holdings", 0.0))
+other_assets = st.number_input("Other Assets (Savings, Other Investments):", value=inputs.get("other_assets", 0.0))
+
+st.subheader("Liabilities")
+primary_residence_mortgage = st.number_input("Primary Residence Mortgage:", value=inputs.get("primary_residence_mortgage", 0.0))
+secondary_residence_mortgage = st.number_input("Secondary Residence Mortgage:", value=inputs.get("secondary_residence_mortgage", 0.0))
+auto_loans = st.number_input("Auto Loans:", value=inputs.get("auto_loans", 0.0))
+student_loans = st.number_input("Student Loans:", value=inputs.get("student_loans", 0.0))
+credit_card_debt = st.number_input("Credit Card Debt:", value=inputs.get("credit_card_debt", 0.0))
+personal_loans = st.number_input("Personal Loans:", value=inputs.get("personal_loans", 0.0))
+business_loans = st.number_input("Business Loans:", value=inputs.get("business_loans", 0.0))
+other_liabilities = st.number_input("Other Liabilities (Other Debts):", value=inputs.get("other_liabilities", 0.0))
 
 # Simulation Settings
 st.header("⚙️ Simulation Settings")
-# ... (rest of the Simulation Settings section remains unchanged)
+tax_rate = st.number_input("Tax Rate (%):", value=inputs.get("tax_rate", 25.0))
+inflation_rate = st.number_input("Inflation Rate (%):", value=inputs.get("inflation_rate", 2.5))
+investment_return_rate = st.number_input("Investment Return Rate (%):", value=inputs.get("investment_return_rate", 5.0))
+simulation_years = st.number_input("Simulation Years:", value=inputs.get("simulation_years", 35))
 
-# OpenAI API Key from Environment Variable
+# OpenAI API Key Input
 st.header("🤖 OpenAI Financial Assessment")
-openai_api_key = os.getenv("OPENAI_API_KEY")
-st.write(f"Debug: OPENAI_API_KEY = {openai_api_key}")  # Add this line
+# Retrieve API key from secrets
+openai_api_key = st.secrets.get("OPENAI_API_KEY", "")
 if not openai_api_key:
-    st.warning("OpenAI API key not found. Please contact the app owner to enable this feature.")
-    use_openai = False
-else:
-    use_openai = st.checkbox("Enable OpenAI Assessment", value=True)
+    st.error("OpenAI API Key not found in secrets. Please configure it in Streamlit Community Cloud.")
+    st.stop()
+use_openai = st.checkbox("Enable OpenAI Assessment", value=False)
 
 # Monte Carlo Settings
 st.header("🎲 Monte Carlo Simulation")
 run_monte_carlo = st.checkbox("Run Monte Carlo Simulation", value=False)
 num_iterations = 1000  # Number of Monte Carlo iterations
 
-# Save scenario button
-st.header("💾 Save Scenario")
-save_option = st.radio("Save Option:", ["Create New Scenario", "Update Existing Scenario"], index=0)
-if save_option == "Create New Scenario":
-    new_scenario_name = st.text_input("Save as Scenario (enter name):", "")
-else:
-    new_scenario_name = st.selectbox("Select Scenario to Update:", list(saved_scenarios.keys()))
+# RMD Divisors (for both primary user and partner)
+rmd_divisors = {
+    73: 26.5, 74: 25.6, 75: 24.7, 76: 23.8, 77: 22.9, 78: 22.0, 79: 21.1,
+    80: 20.2, 81: 19.4, 82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2,
+    87: 14.4, 88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5, 92: 10.8, 93: 10.1,
+    94: 9.5, 95: 8.9, 96: 8.4, 97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4
+}
 
+# Save Scenario
+st.header("💾 Save Scenario")
+new_scenario_name = st.text_input("Scenario Name:", value=scenario_name if scenario_name != "New Scenario" else "")
 if st.button("Save Scenario") and new_scenario_name:
-    saved_inputs = {
-        "age": age,
+    inputs = {
+        "input_style": input_style,
         "age_group": age_group,
-        "income_monthly": total_income_monthly,
-        "expenses_monthly": total_expenses_monthly,
+        "age": age,
+        "partner_name": partner_name,
+        "partner_age": partner_age,
+        "partner_ira_balance": partner_ira_balance,
+        "partner_four01k_403b_balance": partner_four01k_403b_balance,
+        "partner_taxable_investment_accounts": partner_taxable_investment_accounts,
+        "partner_other_assets": partner_other_assets,
+        "partner_liabilities": partner_liabilities,
+        "total_income": total_income,
+        "total_expenses": total_expenses,
         "primary_residence_value": primary_residence_value,
         "secondary_residence_value": secondary_residence_value,
         "ira_balance": ira_balance,
@@ -120,526 +198,404 @@ if st.button("Save Scenario") and new_scenario_name:
         "personal_loans": personal_loans,
         "business_loans": business_loans,
         "other_liabilities": other_liabilities,
-        "salary_income": salary_income,
-        "self_employment_income": self_employment_income,
-        "rental_income": rental_income,
-        "investment_income": investment_income,
-        "pension_income": pension_income,
-        "social_security": social_security,
-        "annuity_income": annuity_income,
-        "part_time_income": part_time_income,
-        "passive_income": passive_income,
-        "government_assistance": government_assistance,
-        "alimony_child_support_received": alimony_child_support_received,
-        "family_support_gifts": family_support_gifts,
-        "inheritance_gains": inheritance_gains,
-        "scholarships_grants": scholarships_grants,
-        "other_income": other_income,
-        "housing_costs": housing_costs,
-        "utilities": utilities,
-        "groceries_food": groceries_food,
-        "dining_out": dining_out,
-        "transportation": transportation,
-        "healthcare_costs": healthcare_costs,
-        "insurance_premiums": insurance_premiums,
-        "education_expenses": education_expenses,
-        "childcare_dependent_care": childcare_dependent_care,
-        "entertainment_leisure": entertainment_leisure,
-        "clothing_personal_care": clothing_personal_care,
-        "charitable_donations": charitable_donations,
-        "student_loan_payments": student_loan_payments,
-        "alimony_child_support_paid": alimony_child_support_paid,
-        "travel_vacation": travel_vacation,
-        "hobbies_special_interests": hobbies_special_interests,
-        "pet_care": pet_care,
-        "home_maintenance": home_maintenance,
-        "professional_services": professional_services,
-        "fitness_wellness": fitness_wellness,
-        "gifts_celebrations": gifts_celebrations,
-        "savings_contributions": savings_contributions,
-        "miscellaneous_expenses": miscellaneous_expenses,
-        "input_style": input_style,
-        "income_tax_rate": income_tax_rate,
-        "rmd_tax_rate": rmd_tax_rate,
+        "tax_rate": tax_rate,
         "inflation_rate": inflation_rate,
-        "growth_rate": growth_rate,
-        "home_appreciation": home_appreciation,
-        "ss_cola": ss_cola,
-        "rent_growth": rent_growth,
-        "sim_years": sim_years
+        "investment_return_rate": investment_return_rate,
+        "simulation_years": simulation_years
     }
-    saved_scenarios[new_scenario_name] = saved_inputs
+    if input_style == "Detailed Breakdown":
+        inputs.update({
+            "salary_wages": salary_wages,
+            "self_employment_income": self_employment_income,
+            "rental_income": rental_income,
+            "investment_income": investment_income,
+            "social_security_income": social_security_income,
+            "pension_income": pension_income,
+            "other_income": other_income,
+            "housing_expenses": housing_expenses,
+            "utilities_expenses": utilities_expenses,
+            "groceries_expenses": groceries_expenses,
+            "transportation_expenses": transportation_expenses,
+            "healthcare_expenses": healthcare_expenses,
+            "insurance_expenses": insurance_expenses,
+            "real_estate_insurance_expenses": real_estate_insurance_expenses,
+            "property_tax_expenses": property_tax_expenses,
+            "entertainment_expenses": entertainment_expenses,
+            "restaurant_expenses": restaurant_expenses,
+            "travel_expenses": travel_expenses,
+            "education_expenses": education_expenses,
+            "childcare_expenses": childcare_expenses,
+            "clothing_expenses": clothing_expenses,
+            "charitable_donations": charitable_donations,
+            "miscellaneous_expenses": miscellaneous_expenses,
+            "other_expenses": other_expenses
+        })
+    saved_scenarios[new_scenario_name] = inputs
     with open(scenario_file, "w") as f:
         json.dump(saved_scenarios, f)
     st.success(f"Scenario '{new_scenario_name}' saved successfully!")
     st.rerun()
 
-# RMD Divisors
-rmd_divisors = {
-    73: 26.5, 74: 25.6, 75: 24.7, 76: 23.8, 77: 22.9, 78: 22.0, 79: 21.1,
-    80: 20.2, 81: 19.4, 82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2,
-    87: 14.4, 88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5, 92: 10.8, 93: 10.1,
-    94: 9.5, 95: 8.9, 96: 8.4, 97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4
-}
-
 # Simulation Logic
 st.header("📊 Simulation Results")
 if st.button("Run Simulation"):
-    # Initialize variables
-    financial_assets = (
-        ira_balance + four01k_403b_balance + taxable_investment_accounts +
-        high_yield_savings_account + hsa_balance + five29_plan_balance +
-        life_insurance_cash_value + cryptocurrency_holdings
-    )
-    other_assets_total = vehicles_value + jewelry_collectibles_value + business_ownership_value + other_assets
-    primary_home_value = primary_residence_value
-    secondary_home_value = secondary_residence_value
-    total_liabilities = (
-        primary_residence_mortgage + secondary_residence_mortgage + auto_loans +
-        student_loans + credit_card_debt + personal_loans + business_loans + other_liabilities
-    )
-
-    # Monte Carlo Simulation
-    if run_monte_carlo:
-        st.subheader("Monte Carlo Simulation Results")
-        all_results = []
-        for iteration in range(num_iterations):
-            results = []
-            current_financial_assets = financial_assets
-            current_other_assets = other_assets_total
-            current_primary_home_value = primary_home_value
-            current_secondary_home_value = secondary_home_value
-            current_total_liabilities = total_liabilities
-
-            current_rental_income = rental_income if input_style == "Detailed Breakdown" else 0.0
-            current_social_security = social_security if input_style == "Detailed Breakdown" else 0.0
-            current_salary_income = salary_income if input_style == "Detailed Breakdown" else 0.0
-            current_self_employment_income = self_employment_income if input_style == "Detailed Breakdown" else 0.0
-            current_investment_income = investment_income if input_style == "Detailed Breakdown" else 0.0
-            current_pension_income = pension_income if input_style == "Detailed Breakdown" else 0.0
-            current_annuity_income = annuity_income if input_style == "Detailed Breakdown" else 0.0
-            current_part_time_income = part_time_income if input_style == "Detailed Breakdown" else 0.0
-            current_passive_income = passive_income if input_style == "Detailed Breakdown" else 0.0
-            current_government_assistance = government_assistance if input_style == "Detailed Breakdown" else 0.0
-            current_alimony_child_support_received = alimony_child_support_received if input_style == "Detailed Breakdown" else 0.0
-            current_family_support_gifts = family_support_gifts if input_style == "Detailed Breakdown" else 0.0
-            current_inheritance_gains = inheritance_gains if input_style == "Detailed Breakdown" else 0.0
-            current_scholarships_grants = scholarships_grants if input_style == "Detailed Breakdown" else 0.0
-            current_other_income = other_income if input_style == "Detailed Breakdown" else 0.0
-
-            current_housing_costs = housing_costs if input_style == "Detailed Breakdown" else 0.0
-            current_utilities = utilities if input_style == "Detailed Breakdown" else 0.0
-            current_groceries_food = groceries_food if input_style == "Detailed Breakdown" else 0.0
-            current_dining_out = dining_out if input_style == "Detailed Breakdown" else 0.0
-            current_transportation = transportation if input_style == "Detailed Breakdown" else 0.0
-            current_healthcare_costs = healthcare_costs if input_style == "Detailed Breakdown" else 0.0
-            current_insurance_premiums = insurance_premiums if input_style == "Detailed Breakdown" else 0.0
-            current_education_expenses = education_expenses if input_style == "Detailed Breakdown" else 0.0
-            current_childcare_dependent_care = childcare_dependent_care if input_style == "Detailed Breakdown" else 0.0
-            current_entertainment_leisure = entertainment_leisure if input_style == "Detailed Breakdown" else 0.0
-            current_clothing_personal_care = clothing_personal_care if input_style == "Detailed Breakdown" else 0.0
-            current_charitable_donations = charitable_donations if input_style == "Detailed Breakdown" else 0.0
-            current_student_loan_payments = student_loan_payments if input_style == "Detailed Breakdown" else 0.0
-            current_alimony_child_support_paid = alimony_child_support_paid if input_style == "Detailed Breakdown" else 0.0
-            current_travel_vacation = travel_vacation if input_style == "Detailed Breakdown" else 0.0
-            current_hobbies_special_interests = hobbies_special_interests if input_style == "Detailed Breakdown" else 0.0
-            current_pet_care = pet_care if input_style == "Detailed Breakdown" else 0.0
-            current_home_maintenance = home_maintenance if input_style == "Detailed Breakdown" else 0.0
-            current_professional_services = professional_services if input_style == "Detailed Breakdown" else 0.0
-            current_fitness_wellness = fitness_wellness if input_style == "Detailed Breakdown" else 0.0
-            current_gifts_celebrations = gifts_celebrations if input_style == "Detailed Breakdown" else 0.0
-            current_savings_contributions = savings_contributions if input_style == "Detailed Breakdown" else 0.0
-            current_miscellaneous_expenses = miscellaneous_expenses if input_style == "Detailed Breakdown" else 0.0
-
-            # Generate random rates for this iteration
-            sim_growth_rates = np.random.normal(growth_rate, 0.02, sim_years)
-            sim_inflation_rates = np.random.normal(inflation_rate, 0.005, sim_years)
-            sim_home_appreciations = np.random.normal(home_appreciation, 0.01, sim_years)
-
-            for year_idx, year in enumerate(range(2025, 2025 + sim_years)):
-                current_age = age + (year - 2025)
-                # Income
-                if input_style == "Detailed Breakdown":
-                    current_rental_income *= (1 + rent_growth)
-                    current_social_security *= (1 + ss_cola)
-                    current_salary_income *= (1 + sim_inflation_rates[year_idx])
-                    current_self_employment_income *= (1 + sim_inflation_rates[year_idx])
-                    current_investment_income *= (1 + sim_inflation_rates[year_idx])
-                    current_pension_income *= (1 + sim_inflation_rates[year_idx])
-                    current_annuity_income *= (1 + sim_inflation_rates[year_idx])
-                    current_part_time_income *= (1 + sim_inflation_rates[year_idx])
-                    current_passive_income *= (1 + sim_inflation_rates[year_idx])
-                    current_government_assistance *= (1 + sim_inflation_rates[year_idx])
-                    current_alimony_child_support_received *= (1 + sim_inflation_rates[year_idx])
-                    current_family_support_gifts *= (1 + sim_inflation_rates[year_idx])
-                    current_inheritance_gains *= (1 + sim_inflation_rates[year_idx])
-                    current_scholarships_grants *= (1 + sim_inflation_rates[year_idx])
-                    current_other_income *= (1 + sim_inflation_rates[year_idx])
-
-                    total_income_monthly = (
-                        current_salary_income + current_self_employment_income + current_rental_income +
-                        current_investment_income + current_pension_income + current_social_security +
-                        current_annuity_income + current_part_time_income + current_passive_income +
-                        current_government_assistance + current_alimony_child_support_received +
-                        current_family_support_gifts + current_inheritance_gains + current_scholarships_grants +
-                        current_other_income
-                    )
-                    total_income = total_income_monthly * 12
-                else:
-                    total_income *= (1 + sim_inflation_rates[year_idx])
-
-                net_total_income = total_income * (1 - income_tax_rate)
-
-                # Expenses
-                if input_style == "Detailed Breakdown":
-                    current_housing_costs *= (1 + sim_inflation_rates[year_idx])
-                    current_utilities *= (1 + sim_inflation_rates[year_idx])
-                    current_groceries_food *= (1 + sim_inflation_rates[year_idx])
-                    current_dining_out *= (1 + sim_inflation_rates[year_idx])
-                    current_transportation *= (1 + sim_inflation_rates[year_idx])
-                    current_healthcare_costs *= (1 + sim_inflation_rates[year_idx])
-                    current_insurance_premiums *= (1 + sim_inflation_rates[year_idx])
-                    current_education_expenses *= (1 + sim_inflation_rates[year_idx])
-                    current_childcare_dependent_care *= (1 + sim_inflation_rates[year_idx])
-                    current_entertainment_leisure *= (1 + sim_inflation_rates[year_idx])
-                    current_clothing_personal_care *= (1 + sim_inflation_rates[year_idx])
-                    current_charitable_donations *= (1 + sim_inflation_rates[year_idx])
-                    current_student_loan_payments *= (1 + sim_inflation_rates[year_idx])
-                    current_alimony_child_support_paid *= (1 + sim_inflation_rates[year_idx])
-                    current_travel_vacation *= (1 + sim_inflation_rates[year_idx])
-                    current_hobbies_special_interests *= (1 + sim_inflation_rates[year_idx])
-                    current_pet_care *= (1 + sim_inflation_rates[year_idx])
-                    current_home_maintenance *= (1 + sim_inflation_rates[year_idx])
-                    current_professional_services *= (1 + sim_inflation_rates[year_idx])
-                    current_fitness_wellness *= (1 + sim_inflation_rates[year_idx])
-                    current_gifts_celebrations *= (1 + sim_inflation_rates[year_idx])
-                    current_savings_contributions *= (1 + sim_inflation_rates[year_idx])
-                    current_miscellaneous_expenses *= (1 + sim_inflation_rates[year_idx])
-
-                    total_expenses_monthly = (
-                        current_housing_costs + current_utilities + current_groceries_food + current_dining_out +
-                        current_transportation + current_healthcare_costs + current_insurance_premiums +
-                        current_education_expenses + current_childcare_dependent_care + current_entertainment_leisure +
-                        current_clothing_personal_care + current_charitable_donations + current_student_loan_payments +
-                        current_alimony_child_support_paid + current_travel_vacation + current_hobbies_special_interests +
-                        current_pet_care + current_home_maintenance + current_professional_services +
-                        current_fitness_wellness + current_gifts_celebrations + current_savings_contributions +
-                        current_miscellaneous_expenses
-                    )
-                    total_expenses = total_expenses_monthly * 12
-                else:
-                    total_expenses *= (1 + sim_inflation_rates[year_idx])
-
-                net_draw = total_expenses - net_total_income
-
-                # RMD
-                rmd = 0.0
-                if current_age in rmd_divisors:
-                    rmd = current_financial_assets / rmd_divisors[current_age]
-                net_rmd = rmd * (1 - rmd_tax_rate)
-                cash_from_savings = max(0, net_draw - net_rmd)
-                if cash_from_savings > 0:
-                    rmd_used = rmd
-                    net_rmd_used = net_rmd
-                else:
-                    rmd_used = net_draw / (1 - rmd_tax_rate)
-                    net_rmd_used = net_draw
-                    cash_from_savings = 0.0
-
-                # Financial Assets
-                financial_assets_open = current_financial_assets
-                financial_assets_growth = financial_assets_open * sim_growth_rates[year_idx]
-                financial_assets_before_draw = financial_assets_open + financial_assets_growth
-                current_financial_assets = financial_assets_before_draw - cash_from_savings - rmd_used
-
-                # Real Estate
-                current_primary_home_value *= (1 + sim_home_appreciations[year_idx])
-                current_secondary_home_value *= (1 + sim_home_appreciations[year_idx])
-
-                # Net Worth
-                total_assets = (
-                    current_financial_assets + current_primary_home_value + current_secondary_home_value +
-                    current_other_assets + pension_fund_value
-                )
-                net_worth = total_assets - current_total_liabilities
-
-                results.append({
-                    "Year": year,
-                    "Age": current_age,
-                    "Total Income": round(total_income, 2),
-                    "Net Total Income": round(net_total_income, 2),
-                    "Total Expenses": round(total_expenses, 2),
-                    "Net Draw": round(net_draw, 2),
-                    "RMD Used": round(rmd_used, 2),
-                    "Net RMD Used": round(net_rmd_used, 2),
-                    "Cash from Savings": round(cash_from_savings, 2),
-                    "Financial Assets Open": round(financial_assets_open, 2),
-                    "Financial Assets Growth": round(financial_assets_growth, 2),
-                    "Financial Assets Before Draw": round(financial_assets_before_draw, 2),
-                    "Financial Assets End": round(current_financial_assets, 2),
-                    "Primary Home Value": round(current_primary_home_value, 2),
-                    "Secondary Home Value": round(current_secondary_home_value, 2),
-                    "Total Assets": round(total_assets, 2),
-                    "Total Liabilities": round(current_total_liabilities, 2),
-                    "Net Worth": round(net_worth, 2)
-                })
-            all_results.append(pd.DataFrame(results))
-
-        # Aggregate Monte Carlo Results
-        years = list(range(2025, 2025 + sim_years))
-        net_worths = np.zeros((num_iterations, sim_years))
-        financial_assets_ends = np.zeros((num_iterations, sim_years))
-
-        for i, df in enumerate(all_results):
-            net_worths[i, :] = df["Net Worth"].values
-            financial_assets_ends[i, :] = df["Financial Assets End"].values
-
-        # Calculate statistics
-        median_net_worth = np.median(net_worths, axis=0)
-        percentile_10_net_worth = np.percentile(net_worths, 10, axis=0)
-        percentile_90_net_worth = np.percentile(net_worths, 90, axis=0)
-        prob_bankruptcy = np.mean(financial_assets_ends < 0, axis=0) * 100
-
-        # Display Monte Carlo Results
-        monte_carlo_df = pd.DataFrame({
-            "Year": years,
-            "Median Net Worth": median_net_worth,
-            "10th Percentile Net Worth": percentile_10_net_worth,
-            "90th Percentile Net Worth": percentile_90_net_worth,
-            "Probability of Bankruptcy (%)": prob_bankruptcy
-        })
-        st.write("Monte Carlo Summary (1,000 Iterations)")
-        st.dataframe(monte_carlo_df)
-
-        # Plot Net Worth Range
-        fig, ax = plt.subplots()
-        ax.plot(years, median_net_worth, label="Median Net Worth", color="blue")
-        ax.fill_between(years, percentile_10_net_worth, percentile_90_net_worth, color="blue", alpha=0.2, label="10th-90th Percentile")
-        ax.set_xlabel("Year")
-        ax.set_ylabel("Net Worth ($)")
-        ax.set_title("Monte Carlo Net Worth Projection")
-        ax.legend()
-        ax.grid(True)
-        st.pyplot(fig)
-
-        # Use the median scenario for OpenAI assessment
-        median_idx = np.argmin(np.abs(net_worths[:, -1] - median_net_worth[-1]))
-        df = all_results[median_idx]
+    # Validate age before running the simulation
+    if age_group == "25-55" and (age < 25 or age > 55):
+        st.error("Starting Age must be between 25 and 55 for the 25-55 age group.")
+    elif age_group == "55-70" and (age < 55 or age > 70):
+        st.error("Starting Age must be between 55 and 70 for the 55-70 age group.")
+    elif age_group == "70+" and age < 70:
+        st.error("Starting Age must be 70 or higher for the 70+ age group.")
     else:
-        # Single Deterministic Simulation
-        results = []
-        current_financial_assets = financial_assets
-        current_other_assets = other_assets_total
-        current_primary_home_value = primary_home_value
-        current_secondary_home_value = secondary_home_value
-        current_total_liabilities = total_liabilities
+        # Initialize variables for primary user
+        financial_assets = (
+            ira_balance + four01k_403b_balance + taxable_investment_accounts +
+            high_yield_savings_account + hsa_balance + five29_plan_balance +
+            life_insurance_cash_value + cryptocurrency_holdings + pension_fund_value  # Include pension as savings
+        )
+        other_assets_total = vehicles_value + jewelry_collectibles_value + business_ownership_value + other_assets
+        primary_home_value = primary_residence_value
+        secondary_home_value = secondary_residence_value
+        total_liabilities = (
+            primary_residence_mortgage + secondary_residence_mortgage + auto_loans +
+            student_loans + credit_card_debt + personal_loans + business_loans + other_liabilities
+        )
 
-        current_rental_income = rental_income if input_style == "Detailed Breakdown" else 0.0
-        current_social_security = social_security if input_style == "Detailed Breakdown" else 0.0
-        current_salary_income = salary_income if input_style == "Detailed Breakdown" else 0.0
-        current_self_employment_income = self_employment_income if input_style == "Detailed Breakdown" else 0.0
-        current_investment_income = investment_income if input_style == "Detailed Breakdown" else 0.0
-        current_pension_income = pension_income if input_style == "Detailed Breakdown" else 0.0
-        current_annuity_income = annuity_income if input_style == "Detailed Breakdown" else 0.0
-        current_part_time_income = part_time_income if input_style == "Detailed Breakdown" else 0.0
-        current_passive_income = passive_income if input_style == "Detailed Breakdown" else 0.0
-        current_government_assistance = government_assistance if input_style == "Detailed Breakdown" else 0.0
-        current_alimony_child_support_received = alimony_child_support_received if input_style == "Detailed Breakdown" else 0.0
-        current_family_support_gifts = family_support_gifts if input_style == "Detailed Breakdown" else 0.0
-        current_inheritance_gains = inheritance_gains if input_style == "Detailed Breakdown" else 0.0
-        current_scholarships_grants = scholarships_grants if input_style == "Detailed Breakdown" else 0.0
-        current_other_income = other_income if input_style == "Detailed Breakdown" else 0.0
+        # Initialize variables for partner
+        partner_financial_assets = (
+            partner_ira_balance + partner_four01k_403b_balance + partner_taxable_investment_accounts
+        )
+        partner_other_assets_total = partner_other_assets
+        partner_total_liabilities = partner_liabilities
 
-        current_housing_costs = housing_costs if input_style == "Detailed Breakdown" else 0.0
-        current_utilities = utilities if input_style == "Detailed Breakdown" else 0.0
-        current_groceries_food = groceries_food if input_style == "Detailed Breakdown" else 0.0
-        current_dining_out = dining_out if input_style == "Detailed Breakdown" else 0.0
-        current_transportation = transportation if input_style == "Detailed Breakdown" else 0.0
-        current_healthcare_costs = healthcare_costs if input_style == "Detailed Breakdown" else 0.0
-        current_insurance_premiums = insurance_premiums if input_style == "Detailed Breakdown" else 0.0
-        current_education_expenses = education_expenses if input_style == "Detailed Breakdown" else 0.0
-        current_childcare_dependent_care = childcare_dependent_care if input_style == "Detailed Breakdown" else 0.0
-        current_entertainment_leisure = entertainment_leisure if input_style == "Detailed Breakdown" else 0.0
-        current_clothing_personal_care = clothing_personal_care if input_style == "Detailed Breakdown" else 0.0
-        current_charitable_donations = charitable_donations if input_style == "Detailed Breakdown" else 0.0
-        current_student_loan_payments = student_loan_payments if input_style == "Detailed Breakdown" else 0.0
-        current_alimony_child_support_paid = alimony_child_support_paid if input_style == "Detailed Breakdown" else 0.0
-        current_travel_vacation = travel_vacation if input_style == "Detailed Breakdown" else 0.0
-        current_hobbies_special_interests = hobbies_special_interests if input_style == "Detailed Breakdown" else 0.0
-        current_pet_care = pet_care if input_style == "Detailed Breakdown" else 0.0
-        current_home_maintenance = home_maintenance if input_style == "Detailed Breakdown" else 0.0
-        current_professional_services = professional_services if input_style == "Detailed Breakdown" else 0.0
-        current_fitness_wellness = fitness_wellness if input_style == "Detailed Breakdown" else 0.0
-        current_gifts_celebrations = gifts_celebrations if input_style == "Detailed Breakdown" else 0.0
-        current_savings_contributions = savings_contributions if input_style == "Detailed Breakdown" else 0.0
-        current_miscellaneous_expenses = miscellaneous_expenses if input_style == "Detailed Breakdown" else 0.0
+        # Combined financials
+        combined_financial_assets = financial_assets + partner_financial_assets
+        combined_other_assets_total = other_assets_total + partner_other_assets_total
+        combined_total_liabilities = total_liabilities + partner_total_liabilities
 
-        for year in range(2025, 2025 + sim_years):
-            current_age = age + (year - 2025)
-            # Income
-            if input_style == "Detailed Breakdown":
-                current_rental_income *= (1 + rent_growth)
-                current_social_security *= (1 + ss_cola)
-                current_salary_income *= (1 + inflation_rate)
-                current_self_employment_income *= (1 + inflation_rate)
-                current_investment_income *= (1 + inflation_rate)
-                current_pension_income *= (1 + inflation_rate)
-                current_annuity_income *= (1 + inflation_rate)
-                current_part_time_income *= (1 + inflation_rate)
-                current_passive_income *= (1 + inflation_rate)
-                current_government_assistance *= (1 + inflation_rate)
-                current_alimony_child_support_received *= (1 + inflation_rate)
-                current_family_support_gifts *= (1 + inflation_rate)
-                current_inheritance_gains *= (1 + inflation_rate)
-                current_scholarships_grants *= (1 + inflation_rate)
-                current_other_income *= (1 + inflation_rate)
+        # Split shared retirement accounts for RMD purposes (50/50)
+        total_ira = ira_balance + partner_ira_balance
+        total_401k = four01k_403b_balance + partner_four01k_403b_balance
+        primary_ira_for_rmd = total_ira / 2
+        partner_ira_for_rmd = total_ira / 2
+        primary_401k_for_rmd = total_401k / 2
+        partner_401k_for_rmd = total_401k / 2
 
-                total_income_monthly = (
-                    current_salary_income + current_self_employment_income + current_rental_income +
-                    current_investment_income + current_pension_income + current_social_security +
-                    current_annuity_income + current_part_time_income + current_passive_income +
-                    current_government_assistance + current_alimony_child_support_received +
-                    current_family_support_gifts + current_inheritance_gains + current_scholarships_grants +
-                    current_other_income
-                )
-                total_income = total_income_monthly * 12
-            else:
-                total_income *= (1 + inflation_rate)
+        # Deterministic Simulation
+        years = list(range(2025, 2025 + simulation_years))
+        ages = list(range(int(age), int(age + simulation_years)))
+        total_incomes = []
+        total_expenses_list = []
+        net_draws = []
+        rmd_pers1 = []
+        rmd_pers2 = []
+        total_rmd_before_tax = []
+        net_rmd_used_list = []
+        cash_used_from_savings_list = []
+        savings_open = []
+        savings_growth = []
+        savings_before_draw = []
+        savings_end = []
+        primary_home_values = []
+        secondary_home_values = []
+        total_assets_list = []
+        total_liabilities_list = []
+        net_worth_list = []
 
-            net_total_income = total_income * (1 - income_tax_rate)
+        current_savings = combined_financial_assets
+        current_primary_home = primary_home_value
+        current_secondary_home = secondary_home_value
+        current_liabilities = combined_total_liabilities
+        annual_income = total_income * 12
+        annual_expenses = total_expenses * 12
+        initial_annual_expenses = annual_expenses  # Store initial expenses for OpenAI assessment
 
-            # Expenses
-            if input_style == "Detailed Breakdown":
-                current_housing_costs *= (1 + inflation_rate)
-                current_utilities *= (1 + inflation_rate)
-                current_groceries_food *= (1 + inflation_rate)
-                current_dining_out *= (1 + inflation_rate)
-                current_transportation *= (1 + inflation_rate)
-                current_healthcare_costs *= (1 + inflation_rate)
-                current_insurance_premiums *= (1 + inflation_rate)
-                current_education_expenses *= (1 + inflation_rate)
-                current_childcare_dependent_care *= (1 + inflation_rate)
-                current_entertainment_leisure *= (1 + inflation_rate)
-                current_clothing_personal_care *= (1 + inflation_rate)
-                current_charitable_donations *= (1 + inflation_rate)
-                current_student_loan_payments *= (1 + inflation_rate)
-                current_alimony_child_support_paid *= (1 + inflation_rate)
-                current_travel_vacation *= (1 + inflation_rate)
-                current_hobbies_special_interests *= (1 + inflation_rate)
-                current_pet_care *= (1 + inflation_rate)
-                current_home_maintenance *= (1 + inflation_rate)
-                current_professional_services *= (1 + inflation_rate)
-                current_fitness_wellness *= (1 + inflation_rate)
-                current_gifts_celebrations *= (1 + inflation_rate)
-                current_savings_contributions *= (1 + inflation_rate)
-                current_miscellaneous_expenses *= (1 + inflation_rate)
+        # RMD calculations
+        rmd_primary = 0.0
+        rmd_partner = 0.0
+        for year in range(int(simulation_years)):
+            current_age = age + (year)
+            current_partner_age = partner_age + (year)
 
-                total_expenses_monthly = (
-                    current_housing_costs + current_utilities + current_groceries_food + current_dining_out +
-                    current_transportation + current_healthcare_costs + current_insurance_premiums +
-                    current_education_expenses + current_childcare_dependent_care + current_entertainment_leisure +
-                    current_clothing_personal_care + current_charitable_donations + current_student_loan_payments +
-                    current_alimony_child_support_paid + current_travel_vacation + current_hobbies_special_interests +
-                    current_pet_care + current_home_maintenance + current_professional_services +
-                    current_fitness_wellness + current_gifts_celebrations + current_savings_contributions +
-                    current_miscellaneous_expenses
-                )
-                total_expenses = total_expenses_monthly * 12
-            else:
-                total_expenses *= (1 + inflation_rate)
+            # Adjust for inflation
+            annual_expenses *= (1 + inflation_rate / 100)
+            # Income after tax
+            annual_net_income = annual_income * (1 - tax_rate / 100)
+            # Net draw or contribution
+            net_draw = annual_expenses - annual_net_income
 
-            net_draw = total_expenses - net_total_income
+            # RMD for primary user
+            rmd_primary_ira = 0.0
+            rmd_primary_401k = 0.0
+            if current_age >= 73:
+                divisor = rmd_divisors.get(current_age, rmd_divisors[100])  # Use last divisor for ages > 100
+                rmd_primary_ira = primary_ira_for_rmd / divisor
+                rmd_primary_401k = primary_401k_for_rmd / divisor
+            rmd_primary = rmd_primary_ira + rmd_primary_401k
+            net_rmd_primary = rmd_primary * (1 - tax_rate / 100)
 
-            # RMD
-            rmd = 0.0
-            if current_age in rmd_divisors:
-                rmd = current_financial_assets / rmd_divisors[current_age]
-            net_rmd = rmd * (1 - rmd_tax_rate)
-            cash_from_savings = max(0, net_draw - net_rmd)
-            if cash_from_savings > 0:
-                rmd_used = rmd
-                net_rmd_used = net_rmd
-            else:
-                rmd_used = net_draw / (1 - rmd_tax_rate)
-                net_rmd_used = net_draw
-                cash_from_savings = 0.0
+            # RMD for partner
+            rmd_partner_ira = 0.0
+            rmd_partner_401k = 0.0
+            if current_partner_age >= 73:
+                divisor = rmd_divisors.get(current_partner_age, rmd_divisors[100])  # Use last divisor for ages > 100
+                rmd_partner_ira = partner_ira_for_rmd / divisor
+                rmd_partner_401k = partner_401k_for_rmd / divisor
+            rmd_partner = rmd_partner_ira + rmd_partner_401k
+            net_rmd_partner = rmd_partner * (1 - tax_rate / 100)
 
-            # Financial Assets
-            financial_assets_open = current_financial_assets
-            financial_assets_growth = financial_assets_open * growth_rate
-            financial_assets_before_draw = financial_assets_open + financial_assets_growth
-            current_financial_assets = financial_assets_before_draw - cash_from_savings - rmd_used
+            # Total RMD before and after tax
+            total_rmd_before = rmd_primary + rmd_partner
+            total_net_rmd = net_rmd_primary + net_rmd_partner
+            cash_used_from_savings = max(0, net_draw - total_net_rmd)
 
-            # Real Estate
-            current_primary_home_value *= (1 + home_appreciation)
-            current_secondary_home_value *= (1 + home_appreciation)
+            # Apply RMD withdrawals (proportionally from shared accounts)
+            if current_age >= 73:
+                primary_ira_for_rmd -= rmd_primary_ira
+                primary_401k_for_rmd -= rmd_primary_401k
+            if current_partner_age >= 73:
+                partner_ira_for_rmd -= rmd_partner_ira
+                partner_401k_for_rmd -= rmd_partner_401k
 
-            # Net Worth
-            total_assets = (
-                current_financial_assets + current_primary_home_value + current_secondary_home_value +
-                current_other_assets + pension_fund_value
+            # Savings calculations
+            savings_open_value = current_savings
+            savings_growth_value = current_savings * (investment_return_rate / 100)
+            savings_before_draw_value = current_savings + savings_growth_value
+            current_savings = savings_before_draw_value - cash_used_from_savings
+
+            # Recalculate savings after RMD
+            current_savings = (
+                (primary_ira_for_rmd + partner_ira_for_rmd) +  # Remaining shared IRA
+                (primary_401k_for_rmd + partner_401k_for_rmd) +  # Remaining shared 401k
+                taxable_investment_accounts +
+                high_yield_savings_account + hsa_balance + five29_plan_balance +
+                life_insurance_cash_value + cryptocurrency_holdings + pension_fund_value +
+                partner_taxable_investment_accounts
             )
-            net_worth = total_assets - current_total_liabilities
 
-            results.append({
-                "Year": year,
-                "Age": current_age,
-                "Total Income": round(total_income, 2),
-                "Net Total Income": round(net_total_income, 2),
-                "Total Expenses": round(total_expenses, 2),
-                "Net Draw": round(net_draw, 2),
-                "RMD Used": round(rmd_used, 2),
-                "Net RMD Used": round(net_rmd_used, 2),
-                "Cash from Savings": round(cash_from_savings, 2),
-                "Financial Assets Open": round(financial_assets_open, 2),
-                "Financial Assets Growth": round(financial_assets_growth, 2),
-                "Financial Assets Before Draw": round(financial_assets_before_draw, 2),
-                "Financial Assets End": round(current_financial_assets, 2),
-                "Primary Home Value": round(current_primary_home_value, 2),
-                "Secondary Home Value": round(current_secondary_home_value, 2),
-                "Total Assets": round(total_assets, 2),
-                "Total Liabilities": round(current_total_liabilities, 2),
-                "Net Worth": round(net_worth, 2)
-            })
-        df = pd.DataFrame(results)
-        st.write("Year-by-Year Data (Deterministic)")
+            # Home value growth (assumed 3% annual growth)
+            current_primary_home *= 1.03
+            current_secondary_home *= 1.03
+            # Liabilities (assumed linear reduction for simplicity)
+            current_liabilities = max(0, current_liabilities - (combined_total_liabilities / simulation_years))
+            # Total assets and net worth
+            total_assets = current_savings + current_primary_home + current_secondary_home + combined_other_assets_total
+            current_net_worth = total_assets - current_liabilities
+
+            # Append data for CSV
+            total_incomes.append(round(annual_income, 2))
+            total_expenses_list.append(round(annual_expenses, 2))
+            net_draws.append(round(net_draw, 2))
+            rmd_pers1.append(round(rmd_primary, 2))
+            rmd_pers2.append(round(rmd_partner, 2))
+            total_rmd_before_tax.append(round(total_rmd_before, 2))
+            net_rmd_used_list.append(round(total_net_rmd, 2))
+            cash_used_from_savings_list.append(round(cash_used_from_savings, 2))
+            savings_open.append(round(savings_open_value, 2))
+            savings_growth.append(round(savings_growth_value, 2))
+            savings_before_draw.append(round(savings_before_draw_value, 2))
+            savings_end.append(round(current_savings, 2))
+            primary_home_values.append(round(current_primary_home, 2))
+            secondary_home_values.append(round(current_secondary_home, 2))
+            total_assets_list.append(round(total_assets, 2))
+            total_liabilities_list.append(round(current_liabilities, 2))
+            net_worth_list.append(round(current_net_worth, 2))
+
+        # Create DataFrame with all columns
+        df = pd.DataFrame({
+            "Year": years,
+            "Age": ages,
+            "Total Income": total_incomes,
+            "Total Expenses": total_expenses_list,
+            "Net Draw": net_draws,
+            "RMD (Pers1)": rmd_pers1,
+            "RMD (Pers2)": rmd_pers2,
+            "Total RMD Before Tax": total_rmd_before_tax,
+            "Net Total RMD Used": net_rmd_used_list,
+            "Cash Used from Savings": cash_used_from_savings_list,
+            "Savings Open": savings_open,
+            "Savings Growth": savings_growth,
+            "Savings Before Draw": savings_before_draw,
+            "Savings End": savings_end,
+            "Primary Home Value": primary_home_values,
+            "Secondary Home Value": secondary_home_values,
+            "Total Assets": total_assets_list,
+            "Total Liabilities": total_liabilities_list,
+            "Net Worth": net_worth_list
+        })
+
+        # Display Results
+        st.subheader("Simulation Results")
         st.dataframe(df)
 
-    # Download CSV
-    csv = df.to_csv(index=False)
-    st.download_button(
-        label="Download CSV",
-        data=csv,
-        file_name="simulation_all_ages.csv",
-        mime="text/csv"
-    )
+        # Graph 1: Savings and Net Worth
+        st.subheader("Savings and Net Worth Over Time")
+        st.line_chart(df.set_index("Age")[["Savings End", "Net Worth"]])
 
-    # OpenAI Assessment
-    if use_openai and openai_api_key:
-        try:
+        # Graph 2: Income vs. Expenses
+        st.subheader("Income vs. Expenses Over Time")
+        st.line_chart(df.set_index("Age")[["Total Income", "Total Expenses"]])
+
+        if run_monte_carlo:
+            st.subheader("Monte Carlo Simulation Results (Total Savings)")
+            monte_carlo_savings = []
+            for _ in range(num_iterations):
+                mc_savings = combined_financial_assets
+                mc_ira_balance = primary_ira_for_rmd
+                mc_partner_ira_balance = partner_ira_for_rmd
+                mc_401k_balance = primary_401k_for_rmd
+                mc_partner_401k_balance = partner_401k_for_rmd
+                mc_annual_expenses = total_expenses * 12  # Reset for each iteration
+                mc_savings_history = []
+                for year in range(int(simulation_years)):
+                    current_age = age + year
+                    current_partner_age = partner_age + year
+
+                    # Introduce variability in returns and inflation
+                    mc_investment_return = np.random.normal(investment_return_rate, 5) / 100  # Further increased variability
+                    mc_inflation = np.random.normal(inflation_rate, 2) / 100  # Further increased variability
+                    mc_annual_expenses *= (1 + mc_inflation)
+                    annual_net_income_mc = annual_income * (1 - tax_rate / 100)
+                    net_draw_mc = mc_annual_expenses - annual_net_income_mc
+
+                    # RMD for Monte Carlo
+                    mc_rmd_primary = 0.0
+                    mc_rmd_partner = 0.0
+                    if current_age >= 73:
+                        divisor = rmd_divisors.get(current_age, rmd_divisors[100])
+                        mc_rmd_primary_ira = mc_ira_balance / divisor
+                        mc_rmd_primary_401k = mc_401k_balance / divisor
+                        mc_rmd_primary = mc_rmd_primary_ira + mc_rmd_primary_401k
+                        mc_ira_balance -= mc_rmd_primary_ira
+                        mc_401k_balance -= mc_rmd_primary_401k
+                    if current_partner_age >= 73:
+                        divisor = rmd_divisors.get(current_partner_age, rmd_divisors[100])
+                        mc_rmd_partner_ira = mc_partner_ira_balance / divisor
+                        mc_rmd_partner_401k = mc_partner_401k_balance / divisor
+                        mc_rmd_partner = mc_rmd_partner_ira + mc_rmd_partner_401k
+                        mc_partner_ira_balance -= mc_rmd_partner_ira
+                        mc_partner_401k_balance -= mc_rmd_partner_401k
+                    mc_net_rmd = (mc_rmd_primary + mc_rmd_partner) * (1 - tax_rate / 100)
+                    mc_cash_used_from_savings = max(0, net_draw_mc - mc_net_rmd)
+
+                    mc_savings *= (1 + mc_investment_return)
+                    mc_savings -= mc_cash_used_from_savings
+
+                    # Recalculate savings for Monte Carlo (only Savings End)
+                    mc_savings = (
+                        mc_ira_balance + mc_401k_balance +
+                        taxable_investment_accounts +
+                        high_yield_savings_account + hsa_balance + five29_plan_balance +
+                        life_insurance_cash_value + cryptocurrency_holdings + pension_fund_value +
+                        mc_partner_ira_balance + mc_partner_401k_balance +
+                        partner_taxable_investment_accounts
+                    )
+
+                    mc_savings_history.append(mc_savings)
+                monte_carlo_savings.append(mc_savings_history)
+
+            # Monte Carlo DataFrame for savings
+            monte_carlo_savings_df = pd.DataFrame(monte_carlo_savings).T
+            monte_carlo_savings_df.index = years
+
+            # Calculate ranges for savings
+            savings_min = monte_carlo_savings_df.min(axis=1)
+            savings_max = monte_carlo_savings_df.max(axis=1)
+            savings_median = monte_carlo_savings_df.median(axis=1)
+
+            # Display numerical ranges with proper formatting
+            st.markdown(f'<div style="font-family: monospace;">Monte Carlo Savings Range (Year {years[0]}): Min ${savings_min.iloc[0]:,.2f}, Max ${savings_max.iloc[0]:,.2f}, Median ${savings_median.iloc[0]:,.2f}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="font-family: monospace;">Monte Carlo Savings Range (Year {years[-1]}): Min ${savings_min.iloc[-1]:,.2f}, Max ${savings_max.iloc[-1]:,.2f}, Median ${savings_median.iloc[-1]:,.2f}</div>', unsafe_allow_html=True)
+
+            # Create DataFrame for plotting ranges
+            monte_carlo_range_df = pd.DataFrame({
+                "Savings Min": savings_min,
+                "Savings Median": savings_median,
+                "Savings Max": savings_max
+            }, index=years)
+
+            # Plot with shaded ranges
+            fig, ax = plt.subplots()
+            ax.fill_between(years, monte_carlo_range_df["Savings Min"], monte_carlo_range_df["Savings Max"], alpha=0.3, color="blue", label="Savings Range")
+            ax.plot(years, monte_carlo_range_df["Savings Median"], color="blue", label="Savings Median")
+            ax.set_xlabel("Year")
+            ax.set_ylabel("Savings End ($)")
+            ax.legend()
+            st.pyplot(fig)
+
+        # OpenAI Financial Assessment (Moved inside the simulation block)
+        if use_openai:
             client = OpenAI(api_key=openai_api_key)
-            df_str = df.to_string()
-            prompt = (
-                "You are a financial advisor. Below is a retirement simulation for a person starting at age " + str(age) +
-                ". The simulation includes year-by-year data on income, expenses, savings, home value, and net worth.\n\n" +
-                df_str + "\n\n" +
-                "Please provide a detailed financial assessment. Include:\n" +
-                "- Whether their savings will last through the simulation period.\n" +
-                "- Key risks or concerns (e.g., high expenses, low income).\n" +
-                "- Recommendations to improve their financial outlook (e.g., reduce expenses, increase income, adjust investments).\n" +
-                "- Any other insights or advice."
-            )
+            financial_summary = f"""
+            User Profile:
+            - Primary User Age: {age}
+            - Partner's Age: {partner_age}
+            - Annual Income: ${annual_income:,.2f}
+            - Annual Expenses: ${initial_annual_expenses:,.2f}
+
+            Initial Financial Position:
+            - Initial Savings (Combined): ${combined_financial_assets:,.2f}
+              - Shared IRA: ${total_ira:,.2f}
+              - Shared 401k/403b: ${total_401k:,.2f}
+              - Pension Fund: ${pension_fund_value:,.2f}
+            - Total Assets (Initial): ${total_assets_list[0]:,.2f}
+              - Primary Home Value: ${primary_home_values[0]:,.2f}
+              - Secondary Home Value: ${secondary_home_values[0]:,.2f}
+              - Other Assets (Primary + Partner): ${combined_other_assets_total:,.2f}
+            - Total Liabilities (Initial): ${total_liabilities_list[0]:,.2f}
+              - Primary User Liabilities: ${total_liabilities - partner_total_liabilities:,.2f}
+              - Partner Liabilities: ${partner_total_liabilities:,.2f}
+
+            Simulation Results (After {simulation_years} Years):
+            - Final Savings: ${df['Savings End'].iloc[-1]:,.2f}
+            - Final Net Worth: ${df['Net Worth'].iloc[-1]:,.2f}
+            - Final Total Assets: ${df['Total Assets'].iloc[-1]:,.2f}
+            - Final Total Liabilities: ${df['Total Liabilities'].iloc[-1]:,.2f}
+            - RMD (Pers1, First Year): ${df['RMD (Pers1)'].iloc[0]:,.2f}
+            - RMD (Pers2, First Year): ${df['RMD (Pers2)'].iloc[0]:,.2f}
+
+            Trends Over Simulation Period:
+            - Income vs. Expenses: Annual net draw started at ${df['Net Draw'].iloc[0]:,.2f} and ended at ${df['Net Draw'].iloc[-1]:,.2f}.
+            - Savings Trend: Savings changed from ${df['Savings End'].iloc[0]:,.2f} to ${df['Savings End'].iloc[-1]:,.2f}.
+            - Net Worth Trend: Net worth changed from ${df['Net Worth'].iloc[0]:,.2f} to ${df['Net Worth'].iloc[-1]:,.2f}.
+            """
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a financial advisor."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=1000
+                    {"role": "system", "content": "You are a financial advisor with expertise in retirement planning. Provide a detailed and insightful assessment of the user's financial situation, considering their income, expenses, savings, assets, liabilities, and simulation trends. Highlight potential risks, opportunities, and recommendations for improving their retirement outlook."},
+                    {"role": "user", "content": financial_summary}
+                ]
             )
-            assessment = response.choices[0].message.content
             st.subheader("OpenAI Financial Assessment")
-            st.write(assessment)
-        except Exception as e:
-            st.error(f"Error with OpenAI API: {str(e)}")
-            st.write("Please check your API key or ensure you have access to the OpenAI API.")
+            st.markdown(
+                f'<div style="font-family: monospace; white-space: pre-wrap;">{response.choices[0].message.content}</div>',
+                unsafe_allow_html=True
+            )
+            st.write("")
+            st.subheader("Ask a Question About Your Financial Future or Calculations")
+            st.write("You can ask questions about the future or calculation methods here:")
+            # Create a form for question submission
+            with st.form(key="question_form"):
+                user_question = st.text_area("Enter your question (e.g., 'What happens if I reduce my expenses by 20%?' or 'How are RMDs calculated?'):", height=100, key="user_question_form")
+                submit_button = st.form_submit_button(label="Submit Question")
+            # Placeholder for the AI response
+            response_placeholder = st.empty()
+            if submit_button and user_question:
+                question_response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a financial advisor with expertise in retirement planning. Answer the user's question about their financial simulation or future outlook based on the provided data."},
+                        {"role": "user", "content": f"Context:\n{financial_summary}\n\nQuestion:\n{user_question}"}
+                    ]
+                )
+                response_placeholder.subheader("Response to Your Question")
+                response_placeholder.markdown(
+                    f'<div style="font-family: monospace; white-space: pre-wrap;">{question_response.choices[0].message.content}</div>',
+                    unsafe_allow_html=True
+                )
+
+        # Download Results
+        csv = df.to_csv(index=False)
+        st.download_button("Download Results as CSV", csv, "retirement_simulation.csv", "text/csv")
+else:
+    st.write("Click 'Run Simulation' to see results.")
