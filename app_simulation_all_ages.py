@@ -10,118 +10,92 @@ import calendar
 from datetime import datetime
 from openai import OpenAI
 
-# Title
+# Initialize session state at the start
+if "simulation_results" not in st.session_state:
+    st.session_state.simulation_results = None
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "trusted" not in st.session_state:
+    st.session_state.trusted = False
+
+# Title (hidden after authentication)
 st.title("Retirement Simulation App")
-
-# Password Protection
-st.header("🔒 Password Required")
-password = st.text_input("Enter the password to access the app:", type="password")
-if password not in ["abcd123", "uhiRR2938foq"]:
-    st.error("Incorrect password. Please try again or contact the app owner for access.")
-    st.stop()
-
-# Embedded saved_scenarios.json data for trusted users (corrected values)
-TRUSTED_PASSWORD = "uhiRR2938foq"
-EMBEDDED_SCENARIOS = {
-    "70+ Scenario": {
-        "input_style": "Detailed Breakdown",
-        "age_group": "70+",
-        "age": 76,
-        "partner_name": "Judith",
-        "partner_exists": True,
-        "partner_age": 74,
-        "partner_ira_balance": 0.0,
-        "partner_four01k_403b_balance": 0.0,
-        "partner_taxable_investment_accounts": 0.0,
-        "partner_other_assets": 0.0,
-        "partner_liabilities": 0.0,
-        "salary_wages": 0.0,
-        "self_employment_income": 0.0,
-        "rental_income": 2000.0,
-        "investment_income": 0.0,
-        "social_security_income": 3600.0,
-        "pension_income": 6000.0,
-        "other_income": 0.0,
-        "total_income": 11600.0,
-        "housing_expenses": 700.0,
-        "utilities_expenses": 1000.0,
-        "groceries_expenses": 2000.0,
-        "transportation_expenses": 1500.0,
-        "healthcare_expenses": 150.0,
-        "insurance_expenses": 700.0,
-        "real_estate_insurance_expenses": 1300.0,
-        "property_tax_expenses": 1850.0,
-        "entertainment_expenses": 50.0,
-        "restaurant_expenses": 500.0,
-        "travel_expenses": 300.0,
-        "education_expenses": 0.0,
-        "childcare_expenses": 0.0,
-        "clothing_expenses": 100.0,
-        "charitable_donations": 0.0,
-        "miscellaneous_expenses": 0.0,
-        "other_expenses": 1000.0,
-        "total_expenses": 11150.0,
-        "primary_residence_value": 2700000.0,
-        "secondary_residence_value": 1700000.0,
-        "ira_balance": 400000.0,
-        "four01k_403b_balance": 0.0,
-        "taxable_investment_accounts": 0.0,
-        "pension_fund_value": 1400000.0,
-        "life_insurance_cash_value": 0.0,
-        "high_yield_savings_account": 0.0,
-        "hsa_balance": 0.0,
-        "five29_plan_balance": 0.0,
-        "vehicles_value": 0.0,
-        "jewelry_collectibles_value": 0.0,
-        "business_ownership_value": 0.0,
-        "cryptocurrency_holdings": 0.0,
-        "other_assets": 0.0,
-        "primary_residence_mortgage": 0.0,
-        "secondary_residence_mortgage": 0.0,
-        "auto_loans": 0.0,
-        "student_loans": 0.0,
-        "credit_card_debt": 0.0,
-        "personal_loans": 0.0,
-        "business_loans": 0.0,
-        "other_liabilities": 0.0,
-        "tax_rate": 25.0,
-        "inflation_rate": 2.5,
-        "investment_return_rate": 5.0,
-        "simulation_years": 14
-    }
-}
+if not st.session_state.authenticated:
+    st.header("🔒 Password Required")
+    password = st.text_input("Enter the password to access the app:", type="password", key="password_input")
+    if password not in ["abcd123", "uhiRR2938foq"]:
+        st.error("Incorrect password. Please try again or contact the app owner for access.")
+        st.stop()
+    st.session_state.authenticated = True
+    if password == "uhiRR2938foq":
+        st.session_state.trusted = True
+        st.success("Trusted access granted. 70+ Scenario loaded.")
+    else:
+        st.session_state.trusted = False
+        st.success("General access granted. Build your own scenarios.")
+    st.rerun()
 
 # Scenario Management
 st.header("🗂️ Scenario Management")
-scenario_file = "saved_scenarios.json"
+scenario_file_general = "saved_scenarios_general.json"
+scenario_file_trusted = "saved_scenarios_trusted.json"
 
 # Load scenarios based on password
-if password == TRUSTED_PASSWORD:
-    saved_scenarios = EMBEDDED_SCENARIOS
-    if not os.path.exists(scenario_file):
-        with open(scenario_file, "w") as f:
+if st.session_state.trusted:
+    if os.path.exists(scenario_file_trusted):
+        with open(scenario_file_trusted, "r") as f:
+            saved_scenarios = json.load(f)
+    else:
+        EMBEDDED_SCENARIOS = {
+            "70+ Scenario": {
+                "input_style": "Detailed Breakdown", "age_group": "70+", "age": 76, "partner_name": "Judith",
+                "partner_exists": True, "partner_age": 74, "partner_ira_balance": 0.0, "partner_four01k_403b_balance": 0.0,
+                "partner_taxable_investment_accounts": 0.0, "partner_other_assets": 0.0, "partner_liabilities": 0.0,
+                "salary_wages": 0.0, "self_employment_income": 0.0, "rental_income": 2000.0, "investment_income": 0.0,
+                "social_security_income": 3600.0, "pension_income": 6000.0, "other_income": 0.0, "total_income": 11600.0,
+                "housing_expenses": 700.0, "utilities_expenses": 1000.0, "groceries_expenses": 2000.0,
+                "transportation_expenses": 1500.0, "healthcare_expenses": 150.0, "insurance_expenses": 700.0,
+                "real_estate_insurance_expenses": 1300.0, "property_tax_expenses": 1850.0, "entertainment_expenses": 50.0,
+                "restaurant_expenses": 500.0, "travel_expenses": 300.0, "education_expenses": 0.0,
+                "childcare_expenses": 0.0, "clothing_expenses": 100.0, "charitable_donations": 0.0,
+                "miscellaneous_expenses": 0.0, "other_expenses": 1000.0, "total_expenses": 11150.0,
+                "primary_residence_value": 2700000.0, "secondary_residence_value": 1700000.0, "ira_balance": 400000.0,
+                "four01k_403b_balance": 0.0, "taxable_investment_accounts": 0.0, "pension_fund_value": 1400000.0,
+                "life_insurance_cash_value": 0.0, "high_yield_savings_account": 0.0, "hsa_balance": 0.0,
+                "five29_plan_balance": 0.0, "vehicles_value": 0.0, "jewelry_collectibles_value": 0.0,
+                "business_ownership_value": 0.0, "cryptocurrency_holdings": 0.0, "other_assets": 0.0,
+                "primary_residence_mortgage": 0.0, "secondary_residence_mortgage": 0.0, "auto_loans": 0.0,
+                "student_loans": 0.0, "credit_card_debt": 0.0, "personal_loans": 0.0, "business_loans": 0.0,
+                "other_liabilities": 0.0, "tax_rate": 25.0, "inflation_rate": 2.5, "investment_return_rate": 5.0,
+                "simulation_years": 14
+            }
+        }
+        saved_scenarios = EMBEDDED_SCENARIOS
+        with open(scenario_file_trusted, "w") as f:
             json.dump(saved_scenarios, f)
 else:
-    # For general users, start with an empty scenarios file if it doesn't exist
-    if os.path.exists(scenario_file):
-        with open(scenario_file, "r") as f:
+    if os.path.exists(scenario_file_general):
+        with open(scenario_file_general, "r") as f:
             saved_scenarios = json.load(f)
     else:
         saved_scenarios = {}
+        with open(scenario_file_general, "w") as f:
+            json.dump(saved_scenarios, f)
 
-# Scenario selector
 scenario_name = st.selectbox("Select Scenario:", ["New Scenario"] + list(saved_scenarios.keys()))
 if scenario_name != "New Scenario":
     inputs = saved_scenarios[scenario_name]
 else:
     inputs = {}
 
-# Clear saved data and session state (only for general users)
-if password != TRUSTED_PASSWORD:
+if not st.session_state.trusted:
     if st.button("Clear Saved Data and Session State"):
-        if os.path.exists(scenario_file):
-            os.remove(scenario_file)
+        if os.path.exists(scenario_file_general):
+            os.remove(scenario_file_general)
         st.session_state.clear()
+        st.session_state.simulation_results = None  # Reinitialize
+        st.session_state.authenticated = True
+        st.session_state.trusted = False
         st.success("All saved data and session state cleared!")
         st.rerun()
 else:
@@ -130,12 +104,6 @@ else:
 # Preferences
 st.header("🧹 Preferences")
 input_style = st.radio("Input Style:", ["Detailed Breakdown", "Gross Totals"], index=0 if inputs.get("input_style", "Detailed Breakdown") == "Detailed Breakdown" else 1)
-
-# ───────── Sidebar visual controls ──────────
-st.sidebar.header("🖼️ Visual Lab")
-show_sankey   = st.sidebar.checkbox("Cash-Flow Sankey",          value=True)
-show_goals    = st.sidebar.checkbox("Goal-Funding Gauges",       value=True)
-show_calendar = st.sidebar.checkbox("Monthly Cash-Flow Heatmap", value=False)
 
 # Primary User Age
 st.header("👤 Primary User Information")
@@ -146,7 +114,7 @@ age = st.number_input("Starting Age:", min_value=25, max_value=110, value=defaul
 # Partner Information
 st.header("👥 Partner Information")
 partner_name = st.text_input("Partner's Name:", value=inputs.get("partner_name", ""))
-partner_exists = bool(partner_name.strip())  # Check if a partner name is entered
+partner_exists = bool(partner_name.strip())
 partner_age = 0
 partner_ira_balance = 0.0
 partner_four01k_403b_balance = 0.0
@@ -247,39 +215,12 @@ total_liabilities = (primary_residence_mortgage + secondary_residence_mortgage +
                      student_loans + credit_card_debt + personal_loans + business_loans + other_liabilities)
 st.write(f"**Total Liabilities:** ${total_liabilities:,.2f}")
 
-# Goals Input (Updated with Guidance)
-st.subheader("🎯 Goals (optional)")
-st.markdown("""
-**How to Use the Goals Table:**
-- **Goal**: Name your goal (e.g., "Annual Travel", "Buy Vacation Home").
-- **Target $**: The amount needed for the goal (e.g., 10000 for $10,000). Enter a number without the $ symbol.
-- **Target Year Range**: The years during which the goal applies (e.g., "2026-2030" or "2026" for a single year).
-- **Recurring?**: How often the goal repeats:
-  - "Yearly": Repeats every year within the Target Year Range.
-  - "Every 2 Years": Repeats every 2 years within the range.
-  - "Every 3 Years": Repeats every 3 years within the range.
-  - "No": Occurs only once in the first year of the range.
-- **Category**: How the goal affects your finances:
-  - "Expense": Increases your annual expenses (e.g., travel, education).
-  - "Investment": Deducts from cash flow but adds to savings (e.g., buying property).
-
-**Example:**
-- Goal: "Annual Travel", Target $: 5000, Target Year Range: 2026-2030, Recurring?: "Yearly", Category: "Expense"
-  - This adds $5,000 to expenses each year from 2026 to 2030.
-- Goal: "Buy Car", Target $: 30000, Target Year Range: 2028, Recurring?: "No", Category: "Expense"
-  - This adds $30,000 to expenses in 2028 only.
-""")
-goal_df = st.data_editor(
-    pd.DataFrame(columns=["Goal", "Target $", "Target Year Range", "Recurring?", "Category"]),
-    num_rows="dynamic", use_container_width=True
-)
-
 # Simulation Settings
 st.header("⚙️ Simulation Settings")
-tax_rate = st.number_input("Tax Rate (%):", value=inputs.get("tax_rate", 25.0))
-inflation_rate = st.number_input("Inflation Rate (%):", value=inputs.get("inflation_rate", 2.5))
-investment_return_rate = st.number_input("Investment Return Rate (%):", value=inputs.get("investment_return_rate", 5.0))
-simulation_years = st.number_input("Simulation Years:", value=inputs.get("simulation_years", 35))
+tax_rate = st.number_input("Tax Rate (%):", value=inputs.get("tax_rate", 25.0), key="tax_rate_input")
+inflation_rate = st.number_input("Inflation Rate (%):", value=inputs.get("inflation_rate", 2.5), key="inflation_rate_input")
+investment_return_rate = st.number_input("Investment Return Rate (%):", value=inputs.get("investment_return_rate", 5.0), key="investment_return_rate_input")
+simulation_years = st.number_input("Simulation Years:", value=inputs.get("simulation_years", 35), key="simulation_years_input")
 
 # Monte Carlo Settings
 st.header("🎲 Monte Carlo Simulation")
@@ -401,6 +342,23 @@ st.header("📊 Simulation Results")
 if "simulation_results" not in st.session_state:
     st.session_state.simulation_results = None
 
+# Goals Input (Moved before simulation logic to define goal_df)
+st.header("🎯 AI LOGIC - Goals Settings")
+st.markdown("""
+<span style='font-size: 0.8em;'>**How to Use the Goals Table:**
+- **Goal**: Name (e.g., "Annual Travel", "Buy Vacation Home").
+- **Target $**: Amount (e.g., 10000 for $10,000).
+- **Target Year Range**: Years (e.g., "2026-2030" or "2026").
+- **Recurring?**: "Yearly", "Every 2 Years", "Every 3 Years", or "No".
+- **Category**: "Expense" or "Investment".
+**Examples:** "Annual Travel", 5000, "2026-2030", "Yearly", "Expense"; "Buy Car", 30000, "2028", "No", "Expense".</span>
+""", unsafe_allow_html=True)
+goal_df = st.data_editor(
+    pd.DataFrame(columns=["Goal", "Target $", "Target Year Range", "Recurring?", "Category"]),
+    num_rows="dynamic", use_container_width=True
+)
+
+# Moved "Run Simulation" button to ensure it’s always visible
 if st.button("Run Simulation"):
     age = int(age)
     sim_years = int(simulation_years)
@@ -471,9 +429,12 @@ if st.button("Run Simulation"):
         total_assets_list = []
         total_liabilities_list = []
         net_worth_list = []
+        ira_values = []
+        ira_growths = []
         goal_costs = {}  # Track cumulative cost of each goal
 
         current_savings = combined_financial_assets
+        current_ira = total_ira
         current_primary_home = primary_home_value
         current_secondary_home = secondary_home_value
         current_liabilities = combined_total_liabilities
@@ -550,6 +511,12 @@ if st.button("Run Simulation"):
             annual_net_income = annual_income * (1 - tax / 100)
             net_draw = annual_expenses - annual_net_income
 
+            # IRA and growth
+            ira_value = current_ira
+            ira_growth = ira_value * (ret / 100)
+            current_ira = ira_value + ira_growth
+
+            # RMD calculation
             rmd_primary_ira = 0.0
             rmd_primary_401k = 0.0
             if current_age >= 73:
@@ -592,9 +559,10 @@ if st.button("Run Simulation"):
                 life_insurance_cash_value + cryptocurrency_holdings + pension_fund_value +
                 (partner_taxable_investment_accounts if partner_exists else 0.0)
             )
+            current_ira = (primary_ira_for_rmd + partner_ira_for_rmd)
 
-            current_primary_home *= 1.03
-            current_secondary_home *= 1.03
+            current_primary_home *= (1 + infl / 100)
+            current_secondary_home *= (1 + infl / 100)
             current_liabilities = max(0, current_liabilities - (combined_total_liabilities / sim_years))
             total_assets = current_savings + current_primary_home + current_secondary_home + combined_other_assets_total
             current_net_worth = total_assets - current_liabilities
@@ -616,27 +584,31 @@ if st.button("Run Simulation"):
             total_assets_list.append(round(total_assets, 2))
             total_liabilities_list.append(round(current_liabilities, 2))
             net_worth_list.append(round(current_net_worth, 2))
+            ira_values.append(round(current_ira, 2))
+            ira_growths.append(round(ira_growth, 2))
 
         df = pd.DataFrame({
             "Year": years,
             "Age": ages,
+            "IRA Value": ira_values,
+            "IRA Growth": ira_growths,
+            "RMD (Serge)": rmd_pers1,
+            "RMD (Judith)": rmd_pers2,
+            "Total RMD": total_rmd_before_tax,
+            "Net RMD": net_rmd_used_list,
+            "Cash Used": cash_used_from_savings_list,
+            "Savings Open": savings_open,
+            "Savings Growth": savings_growth,
+            "Savings Before": savings_before_draw,
+            "Savings End": savings_end,
+            "Primary Home": primary_home_values,
+            "Secondary Home": secondary_home_values,
+            "Total Assets": total_assets_list,
+            "Total Liabilities": total_liabilities_list,
+            "Net Worth": net_worth_list,
             "Total Income": total_incomes,
             "Total Expenses": total_expenses_list,
             "Net Draw": net_draws,
-            "RMD (Pers1)": rmd_pers1,
-            "RMD (Pers2)": rmd_pers2,
-            "Total RMD Before Tax": total_rmd_before_tax,
-            "Net Total RMD Used": net_rmd_used_list,
-            "Cash Used from Savings": cash_used_from_savings_list,
-            "Savings Open": savings_open,
-            "Savings Growth": savings_growth,
-            "Savings Before Draw": savings_before_draw,
-            "Savings End": savings_end,
-            "Primary Home Value": primary_home_values,
-            "Secondary Home Value": secondary_home_values,
-            "Total Assets": total_assets_list,
-            "Total Liabilities": total_liabilities_list,
-            "Net Worth": net_worth_list
         })
 
         st.session_state.simulation_results = {
@@ -679,8 +651,8 @@ if st.button("Run Simulation"):
             "net_worth_list": net_worth_list,
             "total_liabilities_list": total_liabilities_list,
             "goal_costs": goal_costs,
-            "total_incomes": total_incomes,  # Added to session state
-            "total_expenses_list": total_expenses_list  # Added to session state
+            "total_incomes": total_incomes,
+            "total_expenses_list": total_expenses_list
         }
 
 # Display Simulation Results if Available
@@ -735,7 +707,6 @@ if st.session_state.simulation_results:
             goal_name = row["Goal"]
             cumulative_cost = goal_costs.get(goal_name, target_amount)
             if cumulative_cost > 0:
-                # Compare final savings to the cumulative cost of the goal
                 funded = savings_end[-1] / cumulative_cost
                 goals.append((goal_name, min(funded, 1.5)))  # cap 150%
         except (ValueError, TypeError):
@@ -787,26 +758,23 @@ if st.session_state.simulation_results:
             except (ValueError, TypeError):
                 continue
 
-        # 1️⃣ Sankey
-        if show_sankey:
-            taxes = annual_income * tax / 100
-            spending = annual_expenses
-            savings = annual_income - taxes - spending
-            st.plotly_chart(make_sankey(annual_income, taxes, spending, max(savings, 0), start_year),
-                            use_container_width=True)
+        # 1️⃣ Sankey (always show, removed conditional)
+        taxes = annual_income * tax / 100
+        spending = annual_expenses
+        savings = annual_income - taxes - spending
+        st.plotly_chart(make_sankey(annual_income, taxes, spending, max(savings, 0), start_year),
+                        use_container_width=True)
 
-        # 2️⃣ Fan chart
-        if run_monte_carlo:
-            st.plotly_chart(make_fan_chart(mc_df), use_container_width=True)
+        # 2️⃣ Fan chart (always show if Monte Carlo is enabled)
+        st.plotly_chart(make_fan_chart(mc_df), use_container_width=True)
 
-        # 3️⃣ Goal gauges
-        if show_goals and goals:
+        # 3️⃣ Goal gauges (always show, removed conditional)
+        if goals:
             st.subheader("Goal-Funding Gauges")
             st.markdown("**How to Read the Gauges:** The percentage shows how well-funded your goal is based on your final savings compared to the total cost of the goal over its duration. 100% means you can meet the goal exactly; above 100% means you have extra savings.")
             gcols = st.columns(min(3, len(goals)))
             for (gname, pct), col in zip(goals, gcols):
                 col.plotly_chart(make_goal_gauge(gname, pct), use_container_width=True)
-                
                 if pct >= 1:
                     surplus = (pct - 1) * 100
                     col.success(f"**{surplus:.0f}% over-funded** – you can meet this goal and still have savings left.")
@@ -834,18 +802,21 @@ if st.session_state.simulation_results:
                 st.markdown("##### Goal Success Probabilities (Monte-Carlo)")
                 st.markdown("\n\n".join(prob_lines))
 
-        # 4️⃣ Calendar heatmap
-        if show_calendar:
-            if total_incomes and total_expenses_list:  # Ensure lists are not empty
-                monthly = [(total_incomes[0] - total_expenses_list[0]) / 12] * 12
-                st.plotly_chart(make_calendar_heatmap(start_year, monthly),
-                                use_container_width=True)
-            else:
-                st.warning("Please run the simulation first to generate the cash-flow heatmap.")
+        # 4️⃣ Calendar heatmap (always show, removed conditional)
+        if total_incomes and total_expenses_list:  # Ensure lists are not empty
+            monthly = [(total_incomes[0] - total_expenses_list[0]) / 12] * 12
+            st.plotly_chart(make_calendar_heatmap(start_year, monthly),
+                            use_container_width=True)
+        else:
+            st.warning("Please run the simulation first to generate the cash-flow heatmap.")
 
-        # AI Financial Assessment
+        # AI Financial Assessment (restored)
         bench = 185_000 if age < 65 else 164_000 if age < 75 else 83_000
-        summary = f"""## Summary\nFinal Median: ${med.iloc[-1]:,.0f}\nBenchmark: ${bench:,.0f}"""
+        # Default values for med if Monte Carlo is not run
+        med_final = savings_end[-1] if savings_end else 0  # Fallback to final savings if Monte Carlo is off
+        if run_monte_carlo and 'med' in locals():
+            med_final = med.iloc[-1]
+        summary = f"## Summary\nFinal Median: ${med_final:,.0f}\nBenchmark: ${bench:,.0f}"
         st.markdown(summary)
 
         financial_summary = f"""
