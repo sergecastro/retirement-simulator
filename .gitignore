@@ -1,4 +1,5 @@
 .streamlit/
+venv/
 # Secrets and private data
 secrets.toml
 .streamlit/secrets.toml
