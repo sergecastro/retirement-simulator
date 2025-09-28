@@ -1,0 +1,18 @@
+# Python noise
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS/editor noise
+.DS_Store
+.vscode/
+
+# Env & secrets
+.env
+.env.*
+.streamlit/secrets.toml
+
+# Local/private data files (keep out of repo)
+family_scenarios.json
+family_scenarios_backup.json
