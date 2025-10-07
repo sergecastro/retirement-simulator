@@ -1,0 +1,591 @@
+# app.py - COMPLETE FULL VERSION - Widget State Fixed - NO TRUNCATION
+import streamlit as st
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from financial_utils import get_all_inputs_as_dict, display_summary_metrics
+from pages.user_inputs import setup_sidebar
+from pages.financial_inputs import collect_financial_data
+from pages.family_inputs import collect_family_events
+from data_manager import manage_scenarios
+from simulation_core import run_simulation
+from household_events import build_child_objects, build_inheritances
+from basic_analysis import run_simple_fallback_simulation, calculate_simple_health_score
+from monte_carlo import run_simple_monte_carlo
+from scenario_tools import run_scenario_comparison
+from visualization.charts_basic import show_trajectories, show_health_dashboard
+from visualization.charts_advanced import show_monte_carlo, show_sankey
+from visualization.timeline import show_timeline, show_goal_gauges, show_download_options, show_detailed_projection_table
+from visualization.longevity_analysis import show_longevity_analysis
+from visualization.irmaa_analysis import show_irmaa_analysis
+from integration.intake_loader import intake_import_ui
+
+# Page config
+st.set_page_config(page_title="Ultimate Family Retirement Plus", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
+st.title("🏠 Ultimate Family Retirement Planning Plus v3.0")
+st.markdown("*The Most Advanced Family Lifecycle Financial Simulation & Planning Tool*")
+
+# Password protection
+st.header("🔒 Access Control")
+password = st.text_input("Enter password:", type="password")
+if password not in ["abcd123", "uhiRR2938foq"]:
+    st.error("🚫 Incorrect password.")
+    st.info("Demo: 'abcd123' | Trusted: 'uhiRR2938foq'")
+    st.stop()
+
+IS_TRUSTED_USER = (password == "uhiRR2938foq")
+st.session_state['IS_TRUSTED_USER'] = IS_TRUSTED_USER
+if IS_TRUSTED_USER:
+    st.success("✅ Trusted User Access Granted - Full features enabled")
+else:
+    st.info("📌 Demo Mode - Basic features enabled")
+
+# CRITICAL FIX: Load scenarios BEFORE creating widgets to avoid state conflicts
+age_group_for_autoload = st.session_state.get('input_age_group', '70+')
+scenario_data = manage_scenarios(IS_TRUSTED_USER, age_group_for_autoload)
+intake_import_ui(shared_dir=r"C:\Users\serge\Desktop\retirement-simulator-dev\retirement-simulator\SHARED")
+
+
+
+
+# User inputs that read from loaded session state
+def collect_user_inputs():
+    """Collect user inputs reading from loaded scenario data"""
+    st.header("👤 User Profile")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        age_group_options = ["25-55", "56-69", "70+"]
+        current_age_group = st.session_state.get('input_age_group', '70+')
+        try:
+            age_group_index = age_group_options.index(current_age_group)
+        except ValueError:
+            age_group_index = 2  # Default to 70+
+        
+        age_group = st.selectbox("Age Group:", age_group_options, index=age_group_index, key="input_age_group")
+        
+        age = st.number_input(
+            "Your Age:", 
+            min_value=18, 
+            max_value=100, 
+            value=int(st.session_state.get('input_age', 76)),
+            key="input_age"
+        )
+        
+        # CRITICAL FIX: Added key="input_partner_exists" so checkbox updates session state immediately
+        partner_exists = st.checkbox(
+            "Partner/Spouse exists?", 
+            value=st.session_state.get('input_partner_exists', True),
+            key="input_partner_exists"  # THIS IS THE KEY FIX
+        )
+    
+    with col2:
+        if partner_exists:
+            partner_name = st.text_input(
+                "Partner's Name:", 
+                value=st.session_state.get('input_partner_name', 'Judith'),
+                key="input_partner_name"
+            )
+            
+            partner_age = st.number_input(
+                "Partner's Age:", 
+                min_value=18, 
+                max_value=100, 
+                value=int(st.session_state.get('input_partner_age', 74)),
+                key="input_partner_age"
+            )
+        else:
+            partner_name = ""
+            partner_age = 35
+    
+    return {
+        'age_group': age_group,
+        'age': age,
+        'partner_exists': partner_exists,
+        'partner_name': partner_name,
+        'partner_age': partner_age
+    }
+
+# Collect user data first (needed for manage_scenarios)
+user_data = collect_user_inputs()
+
+# Show currently loaded scenario prominently
+current_scenario = st.session_state.get('current_scenario', 'New Scenario')
+if current_scenario != "New Scenario":
+    st.info(f"📋 **Currently Loaded**: {current_scenario}")
+    
+    # Show loaded data confirmation
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Age", f"{st.session_state.get('input_age', 'N/A')}")
+    with col2:
+        partner_name_display = st.session_state.get('input_partner_name', 'None')
+        st.metric("Partner", partner_name_display if partner_name_display else "None")
+    with col3:
+        st.metric("Income", f"${st.session_state.get('input_total_income', 0):,.0f}")
+    with col4:
+        st.metric("Expenses", f"${st.session_state.get('input_total_expenses', 0):,.0f}")
+
+# Sidebar features
+features = setup_sidebar(IS_TRUSTED_USER)
+
+# Financial and family inputs (these will read from loaded session state)
+financial_data = collect_financial_data()
+family_data = collect_family_events() if features.get('show_family_events', False) else None
+
+if family_data:
+    st.session_state["children_rows"] = family_data['children']
+    st.session_state["inherit_rows"] = family_data['inheritances']
+    inheritance_total = sum(inh.get('Amount', 0) for inh in family_data['inheritances'] if inh.get('Amount', 0) > 0)
+    if inheritance_total > 0:
+        st.info(f"🎯 INHERITANCE EVENTS DETECTED: Total ${inheritance_total:,} across events")
+        with st.expander("💰 Inheritance Summary"):
+            for inh in family_data['inheritances']:
+                if inh.get('Amount', 0) > 0:
+                    st.write(f"• {inh.get('Year')}: ${inh.get('Amount'):,} - {inh.get('Description', 'No description')}")
+
+# Simulation params (read from loaded session state)
+st.header("⚙️ Simulation Parameters")
+col1, col2, col3 = st.columns(3)
+with col1:
+    tax_rate = st.number_input("Tax Rate (%):", value=float(st.session_state.get('input_tax_rate', 25.0)), key="input_tax_rate")
+    inflation_rate = st.number_input("Inflation (%):", value=float(st.session_state.get('input_inflation_rate', 2.5)), key="input_inflation_rate")
+with col2:
+    return_rate = st.number_input("Return Rate (%):", value=float(st.session_state.get('input_investment_return_rate', 5.0)), key="input_investment_return_rate")
+    years = st.number_input("Years:", value=int(st.session_state.get('input_simulation_years', 14)), key="input_simulation_years")
+with col3:
+    mc_iters = st.number_input("Monte Carlo Iterations:", value=int(st.session_state.get('input_mc_iterations', 1000)), min_value=0, key="input_mc_iterations") if features.get('show_monte_carlo') else 0
+
+sim_params = {
+    'tax_rate': tax_rate,
+    'inflation_rate': inflation_rate,
+    'investment_return_rate': return_rate,
+    'simulation_years': years,
+    'mc_iterations': mc_iters
+}
+
+# FIXED: Run simulation with proper error handling and DEBUG output
+
+# Add this to app.py in the "Run Financial Simulation" button section
+# Replace the existing button handler (around line 160-220)
+
+if st.button("🎯 Run Financial Simulation", type="primary", use_container_width=True):
+    # CRITICAL FIX: Clear old Monte Carlo results from session state BEFORE running
+    if 'simulation_results' in st.session_state:
+        old_results = st.session_state['simulation_results']
+        if 'monte_carlo_results' in old_results:
+            # Remove stale Monte Carlo data
+            del old_results['monte_carlo_results']
+    
+    with st.spinner("Running simulation..."):
+        try:
+            # Debug output to verify partner data being sent
+            with st.expander("🔍 Debug: Data Being Sent to Simulation", expanded=False):
+                st.write("**Partner Information:**")
+                debug_col1, debug_col2 = st.columns(2)
+                with debug_col1:
+                    st.write(f"Partner Exists: {user_data['partner_exists']}")
+                    st.write(f"Partner Name: {user_data.get('partner_name', 'N/A')}")
+                    st.write(f"Partner Age: {user_data['partner_age']}")
+                with debug_col2:
+                    st.write(f"Partner IRA: ${financial_data.get('partner_ira_balance', 0):,.0f}")
+                    st.write(f"Partner 401k: ${financial_data.get('partner_four01k_403b_balance', 0):,.0f}")
+                    st.write(f"**Total Partner Retirement: ${financial_data.get('partner_ira_balance', 0) + financial_data.get('partner_four01k_403b_balance', 0):,.0f}**")
+                
+                st.write("**User Retirement Accounts:**")
+                st.write(f"User IRA: ${financial_data.get('ira_balance', 0):,.0f}")
+                st.write(f"User 401k: ${financial_data.get('four01k_403b_balance', 0):,.0f}")
+                
+                # NEW: Show Monte Carlo status
+                st.write("**Monte Carlo Settings:**")
+                st.write(f"Iterations: {sim_params.get('mc_iterations', 0)}")
+                if sim_params.get('mc_iterations', 0) > 0:
+                    st.success("✅ Monte Carlo will run fresh for this simulation")
+                else:
+                    st.info("ℹ️ Monte Carlo disabled - set iterations > 0 to enable longevity analysis")
+            
+            results = run_simulation(
+                age=user_data['age'], 
+                partner_exists=user_data['partner_exists'], 
+                partner_age=user_data['partner_age'],
+                total_income=financial_data['total_income'], 
+                total_expenses=financial_data['total_expenses'],
+                combined_financial_assets=financial_data['liquid_assets'], 
+                primary_residence_value=financial_data['primary_residence_value'],
+                secondary_residence_value=financial_data['secondary_residence_value'], 
+                combined_other_assets_total=financial_data.get('other_assets', 0),
+                total_liabilities_local=financial_data['total_liabilities'], 
+                partner_liabilities=financial_data.get('partner_liabilities', 0),
+                tax_rate=sim_params['tax_rate'], 
+                inflation_rate=sim_params['inflation_rate'], 
+                investment_return_rate=sim_params['investment_return_rate'],
+                simulation_years=sim_params['simulation_years'], 
+                mc_iterations=sim_params.get('mc_iterations', 0),
+                goal_costs=financial_data.get('goal_costs', {}), 
+                college_inflation_pct=family_data.get('college_inflation_pct', 4.0) if family_data else 4.0,
+                base_public_in=family_data.get('base_public_in', 20000) if family_data else 20000,
+                base_public_out=family_data.get('base_public_out', 40000) if family_data else 40000,
+                base_private=family_data.get('base_private', 60000) if family_data else 60000,
+                ira_balance=financial_data['ira_balance'], 
+                four01k_403b_balance=financial_data['four01k_403b_balance'],
+                partner_ira_balance=financial_data.get('partner_ira_balance', 0), 
+                partner_four01k_403b_balance=financial_data.get('partner_four01k_403b_balance', 0),
+                monthly_surplus=financial_data['monthly_surplus'], 
+                combined_total_liabilities=financial_data['total_liabilities']
+            )
+            
+            # Check if results were returned
+            if results is not None:
+                st.session_state['simulation_results'] = results
+                st.session_state['family_data'] = family_data
+                st.session_state['financial_data'] = financial_data
+                st.session_state['user_data'] = user_data
+                st.session_state['sim_params'] = sim_params  # Store sim params for comparison
+                st.success("✅ Simulation Complete!")
+                
+                # Show Monte Carlo status
+                if 'monte_carlo_results' in results:
+                    st.success("✅ Fresh Monte Carlo data generated - longevity analysis will be accurate")
+                else:
+                    st.info("ℹ️ Monte Carlo not run - enable in parameters for longevity analysis")
+                
+                display_summary_metrics(results, sim_params['simulation_years'])
+            else:
+                st.error("❌ Simulation returned no results")
+                
+        except Exception as e:
+            st.error(f"❌ Simulation error: {str(e)}")
+            st.write("**Debug Info:**")
+            st.write(f"• User data: {user_data}")
+            st.write(f"• Financial data keys: {list(financial_data.keys()) if financial_data else 'None'}")
+            if family_data:
+                st.write(f"• Family data keys: {list(family_data.keys())}")
+            import traceback
+            st.code(traceback.format_exc())
+
+
+
+# FIXED: Display results with proper variable scoping
+if 'simulation_results' in st.session_state:
+    results = st.session_state['simulation_results']
+    stored_family_data = st.session_state.get('family_data')
+    stored_financial_data = st.session_state.get('financial_data')
+    stored_user_data = st.session_state.get('user_data')
+    stored_sim_params = st.session_state.get('sim_params', sim_params)
+    
+    # Ensure we have valid results before proceeding
+    if results is not None:
+        st.markdown("---")
+        st.header("📊 Simulation Results & Analysis")
+        
+        # ============================================
+        # DETAILED PROJECTION TABLE
+        # ============================================
+        try:
+            show_detailed_projection_table(results)
+        except Exception as e:
+            st.error(f"Detailed table error: {str(e)}")
+        
+        st.markdown("---")
+        
+        # Financial trajectories
+        try:
+            if features.get('show_trajectories'):
+                show_trajectories(results)
+        except Exception as e:
+            st.error(f"Trajectories error: {str(e)}")
+        
+        # Monte Carlo
+        try:
+            if features.get('show_monte_carlo') and 'monte_carlo_results' in results:
+                show_monte_carlo(results)
+        except Exception as e:
+            st.error(f"Monte Carlo error: {str(e)}")
+            
+        # Longevity Analysis (NEW!)
+        try:
+            if features.get('show_monte_carlo') and 'monte_carlo_results' in results:
+                st.markdown("---")
+                show_longevity_analysis(results, stored_user_data, stored_sim_params)
+        except Exception as e:
+            st.error(f"Longevity analysis error: {str(e)}")
+        
+        # IRMAA Medicare Planning Analysis (NEW!)
+        try:
+            st.markdown("---")
+            show_irmaa_analysis(results, stored_user_data, stored_sim_params)
+        except Exception as e:
+            st.error(f"IRMAA analysis error: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
+        
+        
+        
+        
+        # Sankey diagram
+        try:
+            if features.get('show_sankey'):
+                show_sankey(results)
+        except Exception as e:
+            st.error(f"Sankey error: {str(e)}")
+        
+        # Goal gauges
+        try:
+            if features.get('show_goals'):
+                show_goal_gauges(results)
+        except Exception as e:
+            st.error(f"Goals error: {str(e)}")
+        
+        # Timeline
+        try:
+            if features.get('show_timeline'):
+                show_timeline(results, stored_user_data, stored_family_data)
+        except Exception as e:
+            st.error(f"Timeline error: {str(e)}")
+        
+        # Health dashboard
+        try:
+            if features.get('show_health_dashboard'):
+                show_health_dashboard(
+                    stored_financial_data['liquid_assets'], 
+                    stored_financial_data['total_expenses'], 
+                    stored_financial_data['total_income'], 
+                    stored_financial_data['total_liabilities'], 
+                    results
+                )
+        except Exception as e:
+            st.error(f"Health dashboard error: {str(e)}")
+        
+        # ============================================
+        # SCENARIO COMPARISON TOOL - COMPLETE VERSION
+        # ============================================
+        try:
+            if features.get('show_scenario_comparison'):
+                st.markdown("---")
+                st.subheader("📊 Scenario Comparison Tool")
+                st.info("💡 Adjust sliders and click 'Run Comparison' to see how changes affect projections")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    income_adj = st.slider("Income Adjustment (%):", -100, 100, 0, key="comp_income")
+                with col2:
+                    expense_adj = st.slider("Expense Adjustment (%):", -100, 100, 0, key="comp_expense")
+                with col3:
+                    return_adj = st.slider("Return Rate Adjustment (%):", -10, 10, 0, key="comp_return")
+                
+                if st.button("🔄 Run Comparison", key="run_comparison_btn", type="primary"):
+                    # Calculate adjusted values
+                    adj_income = stored_financial_data['total_income'] * (1 + income_adj/100)
+                    adj_expenses = stored_financial_data['total_expenses'] * (1 + expense_adj/100)
+                    adj_return = stored_sim_params['investment_return_rate'] + return_adj
+                    
+                    st.write(f"**Adjustments Applied:**")
+                    st.write(f"• Base Income: ${stored_financial_data['total_income']:,.0f} → Adjusted: ${adj_income:,.0f} ({income_adj:+.0f}%)")
+                    st.write(f"• Base Expenses: ${stored_financial_data['total_expenses']:,.0f} → Adjusted: ${adj_expenses:,.0f} ({expense_adj:+.0f}%)")
+                    st.write(f"• Base Return: {stored_sim_params['investment_return_rate']:.1f}% → Adjusted: {adj_return:.1f}% ({return_adj:+.1f}%)")
+                    
+                    with st.spinner("Running comparison scenario..."):
+                        comp_results = run_simulation(
+                            age=stored_user_data['age'],
+                            partner_exists=stored_user_data['partner_exists'],
+                            partner_age=stored_user_data['partner_age'],
+                            total_income=adj_income,
+                            total_expenses=adj_expenses,
+                            combined_financial_assets=stored_financial_data['liquid_assets'],
+                            primary_residence_value=stored_financial_data['primary_residence_value'],
+                            secondary_residence_value=stored_financial_data['secondary_residence_value'],
+                            combined_other_assets_total=stored_financial_data.get('other_assets', 0),
+                            total_liabilities_local=stored_financial_data['total_liabilities'],
+                            partner_liabilities=0,
+                            tax_rate=stored_sim_params['tax_rate'],
+                            inflation_rate=stored_sim_params['inflation_rate'],
+                            investment_return_rate=adj_return,
+                            simulation_years=stored_sim_params['simulation_years'],
+                            mc_iterations=0,
+                            goal_costs={},
+                            college_inflation_pct=4.0,
+                            base_public_in=20000, base_public_out=40000, base_private=60000,
+                            ira_balance=stored_financial_data['ira_balance'],
+                            four01k_403b_balance=stored_financial_data['four01k_403b_balance'],
+                            partner_ira_balance=stored_financial_data.get('partner_ira_balance', 0),
+                            partner_four01k_403b_balance=stored_financial_data.get('partner_four01k_403b_balance', 0),
+                            monthly_surplus=adj_income - adj_expenses,
+                            combined_total_liabilities=stored_financial_data['total_liabilities']
+                        )
+                        
+                        if comp_results:
+                            st.success("✅ Comparison complete!")
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.markdown("#### Base Scenario")
+                                st.metric("Final Savings", f"${results['final_savings']:,.0f}")
+                                st.metric("Final Net Worth", f"${results['final_net_worth']:,.0f}")
+                                st.metric("Years Solvent", f"{results['years_solvent']}")
+                            with col2:
+                                st.markdown("#### Adjusted Scenario")
+                                delta_savings = comp_results['final_savings'] - results['final_savings']
+                                delta_nw = comp_results['final_net_worth'] - results['final_net_worth']
+                                delta_years = comp_results['years_solvent'] - results['years_solvent']
+                                st.metric("Final Savings", f"${comp_results['final_savings']:,.0f}", delta=f"${delta_savings:,.0f}")
+                                st.metric("Final Net Worth", f"${comp_results['final_net_worth']:,.0f}", delta=f"${delta_nw:,.0f}")
+                                st.metric("Years Solvent", f"{comp_results['years_solvent']}", delta=f"{delta_years:+d} years")
+                            
+                            # Comparison chart
+                            import plotly.graph_objects as go
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(
+                                x=results['df']['Year'],
+                                y=results['df']['Savings_End'],
+                                mode='lines',
+                                name='Base Scenario',
+                                line=dict(color='blue', width=3)
+                            ))
+                            fig.add_trace(go.Scatter(
+                                x=comp_results['df']['Year'],
+                                y=comp_results['df']['Savings_End'],
+                                mode='lines',
+                                name='Adjusted Scenario',
+                                line=dict(color='red', width=3, dash='dash')
+                            ))
+                            fig.update_layout(
+                                title="Savings Trajectory Comparison",
+                                xaxis_title="Year",
+                                yaxis_title="Savings ($)",
+                                height=500
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+                        else:
+                            st.error("❌ Comparison failed to generate results")
+        except Exception as e:
+            st.error(f"Scenario comparison error: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
+        
+        # ============================================
+        # DUAL SCENARIO ANALYSIS - COMPLETE VERSION
+        # ============================================
+        try:
+            if features.get('show_scenario_comparison'):
+                st.markdown("---")
+                st.subheader("🔀 Dual Scenario Analysis")
+                st.info("Compare WITH vs WITHOUT major life events (inheritances, college costs)")
+                
+                if st.button("📊 Run Dual Analysis", key="run_dual_btn", type="primary"):
+                    with st.spinner("Running dual scenario analysis..."):
+                        # Save current family events
+                        saved_children = st.session_state.get('children_rows', [])
+                        saved_inherit = st.session_state.get('inherit_rows', [])
+                        
+                        # Temporarily clear for "without" scenario
+                        st.session_state['children_rows'] = []
+                        st.session_state['inherit_rows'] = []
+                        
+                        # Run without events
+                        without_results = run_simulation(
+                            age=stored_user_data['age'],
+                            partner_exists=stored_user_data['partner_exists'],
+                            partner_age=stored_user_data['partner_age'],
+                            total_income=stored_financial_data['total_income'],
+                            total_expenses=stored_financial_data['total_expenses'],
+                            combined_financial_assets=stored_financial_data['liquid_assets'],
+                            primary_residence_value=stored_financial_data['primary_residence_value'],
+                            secondary_residence_value=stored_financial_data['secondary_residence_value'],
+                            combined_other_assets_total=stored_financial_data.get('other_assets', 0),
+                            total_liabilities_local=stored_financial_data['total_liabilities'],
+                            partner_liabilities=0,
+                            tax_rate=stored_sim_params['tax_rate'],
+                            inflation_rate=stored_sim_params['inflation_rate'],
+                            investment_return_rate=stored_sim_params['investment_return_rate'],
+                            simulation_years=stored_sim_params['simulation_years'],
+                            mc_iterations=0,
+                            goal_costs={},
+                            college_inflation_pct=4.0,
+                            base_public_in=20000, base_public_out=40000, base_private=60000,
+                            ira_balance=stored_financial_data['ira_balance'],
+                            four01k_403b_balance=stored_financial_data['four01k_403b_balance'],
+                            partner_ira_balance=0,
+                            partner_four01k_403b_balance=0,
+                            monthly_surplus=stored_financial_data['monthly_surplus'],
+                            combined_total_liabilities=stored_financial_data['total_liabilities']
+                        )
+                        
+                        # Restore family events
+                        st.session_state['children_rows'] = saved_children
+                        st.session_state['inherit_rows'] = saved_inherit
+                        
+                        if without_results:
+                            st.success("✅ Dual analysis complete!")
+                            
+                            # Show comparison chart
+                            import plotly.graph_objects as go
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(
+                                x=results['df']['Year'], 
+                                y=results['df']['Savings_End'],
+                                mode='lines', 
+                                name='With Life Events', 
+                                line=dict(color='green', width=3)
+                            ))
+                            fig.add_trace(go.Scatter(
+                                x=without_results['df']['Year'], 
+                                y=without_results['df']['Savings_End'],
+                                mode='lines', 
+                                name='Without Life Events', 
+                                line=dict(color='orange', width=3, dash='dot')
+                            ))
+                            fig.update_layout(
+                                title="Impact of Major Life Events on Savings",
+                                xaxis_title="Year",
+                                yaxis_title="Savings ($)",
+                                height=500
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+                            
+                            # Show metrics
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("With Events", f"${results['final_savings']:,.0f}")
+                            with col2:
+                                st.metric("Without Events", f"${without_results['final_savings']:,.0f}")
+                            with col3:
+                                impact = results['final_savings'] - without_results['final_savings']
+                                st.metric("Net Impact", f"${impact:,.0f}", delta=f"${impact:,.0f}")
+                        else:
+                            st.error("❌ Dual analysis failed")
+        except Exception as e:
+            st.error(f"Dual scenario error: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
+        
+        # ============================================
+        # AI ADVISOR (Trusted Users Only)
+        # ============================================
+        try:
+            if IS_TRUSTED_USER and features.get('show_ai_advisor'):
+                from ai_advisor import show_ai_consultation
+                st.markdown("---")
+                show_ai_consultation(results, stored_user_data, stored_financial_data, stored_sim_params)
+        except Exception as e:
+            st.error(f"AI advisor error: {str(e)}")
+        
+        # ============================================
+        # DOWNLOAD OPTIONS
+        # ============================================
+        st.markdown("---")
+        try:
+            show_download_options(results)
+        except Exception as e:
+            st.error(f"Download options error: {str(e)}")
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #666;'>
+<p><strong>Ultimate Family Retirement Planning Plus v3.0</strong></p>
+<p>Combining the best of GROK and CLAUDE architectures</p>
+<p>Your trusted financial planning companion | 100% Private | AI-Powered</p>
+</div>
+""", unsafe_allow_html=True)
