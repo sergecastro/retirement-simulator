@@ -5,8 +5,9 @@ from datetime import date
 import streamlit as st
 from household_events import build_child_objects, build_inheritances, make_family_cashflows
 from financial_utils import safe_float, safe_int
+from visualization.irmaa_analysis import calculate_magi, get_irmaa_bracket  # Added for IRMAA
 
-def run_simulation(age, partner_exists, partner_age, total_income, total_expenses, combined_financial_assets, primary_residence_value, secondary_residence_value, combined_other_assets_total, total_liabilities_local, partner_liabilities, tax_rate, inflation_rate, investment_return_rate, simulation_years, mc_iterations, goal_costs, college_inflation_pct, base_public_in, base_public_out, base_private, ira_balance, four01k_403b_balance, partner_ira_balance, partner_four01k_403b_balance, monthly_surplus, combined_total_liabilities, roth_conversion_annual=0, itemize_deductions=True, five29_plan_balance=0.0):
+def run_simulation(age, partner_exists, partner_age, total_income, total_expenses, combined_financial_assets, primary_residence_value, secondary_residence_value, combined_other_assets_total, total_liabilities_local, partner_liabilities, tax_rate, inflation_rate, investment_return_rate, simulation_years, mc_iterations, goal_costs, college_inflation_pct, base_public_in, base_public_out, base_private, ira_balance, four01k_403b_balance, partner_ira_balance, partner_four01k_403b_balance, monthly_surplus, combined_total_liabilities, roth_conversion_annual=0, itemize_deductions=True, five29_plan_balance=0.0, tax_exempt_interest=0.0):
     
     # Initialize results dictionary at the start
     results = {
@@ -49,6 +50,8 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         four01k_403b_balance = safe_float(four01k_403b_balance)
         partner_ira_balance = safe_float(partner_ira_balance)
         partner_four01k_403b_balance = safe_float(partner_four01k_403b_balance)
+        
+        tax_exempt_interest = safe_float(tax_exempt_interest, 0.0)  # Added for MAGI
         
         # Track retirement balances for RMD calculations
         user_retirement_balance = ira_balance + four01k_403b_balance
@@ -134,6 +137,9 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         
         # Goal tracking
         goal_progress_list = []
+        
+        # IRMAA costs (Added for IRMAA)
+        irmaa_cost_list = []
         
         # RMD factors (IRS Uniform Lifetime Table)
         rmd_factors = {
@@ -238,6 +244,15 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             # Total income including RMD
             total_income_year = base_income + total_rmd
             
+            # NEW: Calculate MAGI and IRMAA costs
+            magi = calculate_magi(total_income_year, tax_exempt_interest)
+            filing_status = 'joint' if partner_exists else 'single'
+            irmaa_bracket = get_irmaa_bracket(magi, filing_status)
+            irmaa_cost = irmaa_bracket['surcharge_monthly'] * 12  # Annual Part B surcharge
+            irmaa_cost += irmaa_bracket['part_d_base'] * 12  # Annual Part D surcharge
+            if partner_exists:
+                irmaa_cost *= 2  # Double for both spouses
+            
             # =========================
             # EXPENSE CALCULATIONS - FIXED TO USE ACTUAL PARAMETERS
             # =========================
@@ -266,7 +281,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             inheritance = family_flow.get('inflow_delta', 0) * inf_factor
             college = family_flow.get('expense_delta', 0) * inf_factor
             
-            total_expenses_year = base_expenses + college
+            total_expenses_year = base_expenses + college + irmaa_cost  # Added irmaa_cost
             
             # =========================
             # NET INCOME CALCULATIONS
@@ -338,6 +353,8 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             net_worth_list.append(net_worth)
             
             goal_progress_list.append(goal_progress)
+            
+            irmaa_cost_list.append(irmaa_cost)  # Added for IRMAA
         
         # =========================
         # CREATE DATAFRAME IN LOGICAL ORDER
@@ -386,6 +403,9 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             # Special Cash Flows
             'College_Expenses': college_expenses_list,
             'Inheritance_Inflow': inheritance_inflow_list,
+            
+            # IRMAA Costs (Added for IRMAA)
+            'IRMAAnnualCost': irmaa_cost_list,
             
             # Total Expenses
             'Total_Expenses': total_expenses_list,
