@@ -48,7 +48,7 @@ st.title("🧭 Family Retirement Intake Questionnaire")
 existing = load_existing_payload()
 
 # === PROGRESS BAR ===
-pages = ['profile', 'income', 'expenses', 'assets', 'liabilities', 'family', 'review']
+pages = ['profile', 'income', 'expenses', 'assets', 'review']
 current_idx = pages.index(st.session_state.current_page)
 progress = (current_idx + 1) / len(pages)
 st.progress(progress)
@@ -426,7 +426,8 @@ elif st.session_state.current_page == 'expenses':
             data["input_other_expenses"] = float(other_expenses)
             data["input_total_expenses"] = float(total_expenses)
             save_payload(data)
-            go_to_page('assets')
+            st.success("✅ Expenses saved!")
+            st.info("Assets page coming soon. For now, use 'Export to Simulator' below.")
     
     # Temporary export button
     st.divider()
@@ -454,22 +455,17 @@ elif st.session_state.current_page == 'expenses':
         st.info("Now go to your Simulator app and click **'Load from path'** in the sidebar.")
 
 # =====================================================
-# PAGES 4-7: Import from separate module
+# PLACEHOLDER FOR FUTURE PAGES
 # =====================================================
-# =====================================================
-# PAGES 4-7: Import from separate module
-# =====================================================
-elif st.session_state.current_page in ['assets', 'liabilities', 'family', 'review']:
-    from intake_review import show_assets_page, show_liabilities_page, show_family_page, show_review_page
-    
-    if st.session_state.current_page == 'assets':
-        show_assets_page(existing, save_payload, go_to_page)
-    elif st.session_state.current_page == 'liabilities':
-        show_liabilities_page(existing, save_payload, go_to_page)
-    elif st.session_state.current_page == 'family':
-        show_family_page(existing, save_payload, go_to_page)
-    elif st.session_state.current_page == 'review':
-        show_review_page(existing, SHARED_PATH, go_to_page)
+elif st.session_state.current_page == 'assets':
+    st.header("💎 Assets & Accounts")
+    st.info("Coming in next step...")
+    if st.button("← Back to Expenses"):
+        go_to_page('expenses')
+
+elif st.session_state.current_page == 'review':
+    st.header("📋 Review & Export")
+    st.info("Coming soon...")
 
 # =====================================================
 # FOOTER
