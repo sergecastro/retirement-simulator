@@ -59,7 +59,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         
         # DEBUG OUTPUT
         print(f"\n{'='*60}")
-        print(f"DEBUG: SIMULATION PARAMETERS")
+        print(f"🔍 SIMULATION PARAMETERS")
         print(f"{'='*60}")
         print(f"Total Income (Monthly): ${base_total_income:,.2f}")
         print(f"Total Expenses (Monthly): ${base_total_expenses:,.2f}")
@@ -219,7 +219,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
                 user_retirement_balance = max(0, user_retirement_balance - user_rmd)
                 
                 if not first_user_rmd_logged:
-                    print(f"SUCCESS: USER RMD STARTED - Year {current_year}, Age {current_age}")
+                    print(f"✅ USER RMD STARTED - Year {current_year}, Age {current_age}")
                     print(f"   Balance: ${user_retirement_balance + user_rmd:,.2f}")
                     print(f"   Divisor: {rmd_divisor}")
                     print(f"   RMD Amount: ${user_rmd:,.2f}\n")
@@ -233,7 +233,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
                 partner_retirement_balance = max(0, partner_retirement_balance - partner_rmd)
                 
                 if not first_partner_rmd_logged:
-                    print(f"SUCCESS: PARTNER RMD STARTED - Year {current_year}, Age {current_partner_age}")
+                    print(f"💰 PARTNER RMD STARTED - Year {current_year}, Age {current_partner_age}")
                     print(f"   Balance: ${partner_retirement_balance + partner_rmd:,.2f}")
                     print(f"   Divisor: {rmd_divisor}")
                     print(f"   RMD Amount: ${partner_rmd:,.2f}\n")
@@ -481,7 +481,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         
         # Debug final results
         print(f"\n{'='*60}")
-        print(f"DEBUG: SIMULATION RESULTS")
+        print(f"📊 SIMULATION RESULTS")
         print(f"{'='*60}")
         print(f"Final Savings: ${final_savings:,.2f}")
         print(f"Final Net Worth: ${final_net_worth:,.2f}")

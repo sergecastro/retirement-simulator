@@ -125,7 +125,7 @@ def make_family_cashflows(children: List[Child],
             out[y] = {"expense_delta": 0.0, "inflow_delta": 0.0}
         out[y][key] += amt
         if amt > 0:
-            print(f"💰 **FAMILY EVENT APPLIED**: Year {y} - {description} - {key}: ${amt:,.2f}")
+            print(f"FAMILY EVENT APPLIED: Year {y} - {description} - {key}: ${amt:,.2f}")
 
     # Children → college cashflows
     for ch in children:
@@ -147,7 +147,7 @@ def make_family_cashflows(children: List[Child],
             bump(y, "expense_delta", max(0.0, net), f"{ch.name} college expenses")
 
     # Inheritances → inflows with ENHANCED logging
-    print(f"🎯 **INHERITANCE PROCESSING**: Found {len(inheritances)} inheritance events")
+    print(f"INHERITANCE PROCESSING: Found {len(inheritances)} inheritance events")
     for ev in inheritances:
         if start_year <= ev.year <= horizon_end:
             print(f"• Year {ev.year}: ${ev.amount:,.1f}")
