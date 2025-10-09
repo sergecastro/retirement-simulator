@@ -41,11 +41,10 @@ if IS_TRUSTED_USER:
 else:
     st.info("📌 Demo Mode - Basic features enabled")
 
-# CRITICAL FIX: Load scenarios BEFORE creating widgets to avoid state conflicts
+# CRITICAL FIX: Load scenarios AFTER intake to respect imported scenarios
 age_group_for_autoload = st.session_state.get('input_age_group', '70+')
-scenario_data = manage_scenarios(IS_TRUSTED_USER, age_group_for_autoload)
 intake_import_ui(shared_dir=r"C:\Users\serge\Desktop\retirement-simulator-dev\retirement-simulator\SHARED")
-
+scenario_data = manage_scenarios(IS_TRUSTED_USER, age_group_for_autoload)
 
 
 

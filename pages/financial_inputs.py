@@ -407,9 +407,12 @@ def collect_financial_data():
                     st.session_state['goals_list'][idx]['amount'] = goal_amount
                 
                 with col3:
+                    default_year = date.today().year + 10
+                    year_value = goal_data.get('year', default_year)
+                    year = int(year_value) if year_value is not None else default_year
                     goal_year = st.number_input(
                         "Target Year:",
-                        value=int(goal_data.get('year', date.today().year + 10)),
+                        value=year,
                         min_value=date.today().year,
                         max_value=date.today().year + 50,
                         step=1,

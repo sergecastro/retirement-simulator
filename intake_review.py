@@ -2,6 +2,59 @@
 # Pages 4-7: Assets, Liabilities, Family Events, Review & Export
 import streamlit as st
 import pandas as pd
+import json
+
+# ---------- small helpers (types + currency sanitizing) ----------
+def _to_float(x, default=0.0):
+    try:
+        if x is None or x == "":
+            return default
+        if isinstance(x, str):
+            x = x.replace("$", "").replace(",", "").strip()
+            return float(x) if x else default
+        return float(x)
+    except Exception:
+        return default
+
+def _to_int_or_none(x):
+    try:
+        if x is None or x == "":
+            return None
+        if isinstance(x, str):
+            x = x.strip()
+        return int(float(x))
+    except Exception:
+        return None
+
+def _ensure_columns(df: pd.DataFrame, columns_with_dtype):
+    """
+    Ensure DataFrame has given columns. columns_with_dtype is list of tuples: (name, dtype)
+    dtype can be 'Int64', 'float', 'str', or 'bool'.
+    """
+    if df is None or df.empty:
+        cols = {}
+        for name, dtype in columns_with_dtype:
+            if dtype == "Int64":
+                cols[name] = pd.Series(dtype="Int64")
+            elif dtype == "float":
+                cols[name] = pd.Series(dtype="float")
+            elif dtype == "bool":
+                cols[name] = pd.Series(dtype="boolean")
+            else:
+                cols[name] = pd.Series(dtype="object")
+        return pd.DataFrame(cols)
+    # add missing columns
+    for name, dtype in columns_with_dtype:
+        if name not in df.columns:
+            if dtype == "Int64":
+                df[name] = pd.Series([None] * len(df), dtype="Int64")
+            elif dtype == "float":
+                df[name] = pd.Series([None] * len(df), dtype="float")
+            elif dtype == "bool":
+                df[name] = pd.Series([None] * len(df), dtype="boolean")
+            else:
+                df[name] = ""
+    return df
 
 def show_assets_page(existing, save_payload, go_to_page):
     """Page 4: Assets & Accounts"""
@@ -274,48 +327,125 @@ def show_family_page(existing, save_payload, go_to_page):
     st.header("👨‍👩‍👧‍👦 Family Events (Optional)")
     st.caption("Add children, college plans, and expected inheritances - skip if not applicable")
     
-    # Children section
+    # ============================================
+    # CHILDREN SECTION (columns match simulator)
+    # ============================================
     st.subheader("Children & College Plans")
-    st.caption("Add rows for each child")
-    
+    st.caption("Add rows for each child. Use calendar Birth Year.")
     if 'temp_children' not in st.session_state:
-        st.session_state.temp_children = existing.get("children_rows", [])
-    
-    children_df = pd.DataFrame(st.session_state.temp_children) if st.session_state.temp_children else pd.DataFrame(columns=["name", "age", "support_end_age"])
-    
+        # Accept any legacy keys; store canonical columns
+        legacy_children = existing.get("children_list", existing.get("children_rows", [])) or []
+        st.session_state.temp_children = []
+        for r in legacy_children:
+            st.session_state.temp_children.append({
+                "Name": r.get("Name") or r.get("name", ""),
+                "Birth Year": _to_int_or_none(r.get("Birth Year") or r.get("birth_year")),
+                "College Plan": r.get("College Plan") or r.get("college_plan", "None"),
+                "Scholarship %": _to_int_or_none(r.get("Scholarship %") or r.get("scholarship_pct") or 0),
+                "Use 529 First?": bool(r.get("Use 529 First?") if "Use 529 First?" in r else r.get("use_529_first", True)),
+                "Start Age": _to_int_or_none(r.get("Start Age") or r.get("start_age") or 18),
+                "Years": _to_int_or_none(r.get("Years") or r.get("years") or 4),
+            })
+    children_df = pd.DataFrame(st.session_state.temp_children)
+    children_df = _ensure_columns(children_df, [
+        ("Name","str"),("Birth Year","Int64"),("College Plan","str"),
+        ("Scholarship %","Int64"),("Use 529 First?","bool"),
+        ("Start Age","Int64"),("Years","Int64")
+    ])
+
     edited_children = st.data_editor(
         children_df,
         num_rows="dynamic",
         use_container_width=True,
+        key="children_editor",
         column_config={
-            "name": st.column_config.TextColumn("Child Name", required=True, help="First name or nickname"),
-            "age": st.column_config.NumberColumn("Current Age", min_value=0, max_value=50, step=1, help="How old is this child now?"),
-            "support_end_age": st.column_config.NumberColumn("Support Until Age", min_value=0, max_value=30, step=1, help="Age when financial support ends (0 = no support)")
-        }
+            "Name": st.column_config.TextColumn("Child Name", required=True),
+            "Birth Year": st.column_config.NumberColumn("Birth Year", min_value=1900, max_value=2100, step=1),
+            "College Plan": st.column_config.SelectboxColumn(
+                "College Plan",
+                options=["None","Public In-State","Public Out-of-State","Private Nonprofit"]
+            ),
+            "Scholarship %": st.column_config.NumberColumn("Scholarship %", min_value=0, max_value=100, step=5),
+            "Use 529 First?": st.column_config.CheckboxColumn("Use 529 First?"),
+            "Start Age": st.column_config.NumberColumn("Start Age", min_value=0, max_value=30, step=1),
+            "Years": st.column_config.NumberColumn("Years", min_value=0, max_value=10, step=1),
+        },
     )
-    
-    # Inheritances section
+    # normalize dtypes before persisting
+    if not edited_children.empty:
+        edited_children["Birth Year"] = pd.to_numeric(edited_children["Birth Year"], errors="coerce").astype("Int64")
+        edited_children["Scholarship %"] = pd.to_numeric(edited_children["Scholarship %"], errors="coerce").astype("Int64")
+        edited_children["Start Age"] = pd.to_numeric(edited_children["Start Age"], errors="coerce").astype("Int64")
+        edited_children["Years"] = pd.to_numeric(edited_children["Years"], errors="coerce").astype("Int64")
+    st.session_state.temp_children = edited_children.to_dict("records") if not edited_children.empty else []
+
+    st.divider()
+
+    # ============================================
+    # INHERITANCES SECTION (columns match simulator)
+    # ============================================
     st.subheader("Expected Inheritances")
-    st.caption("Money you expect to receive in the future")
-    
+    st.caption("Enter calendar Year and Amount. (The simulator uses Year rather than 'Age at receipt'.)")
     if 'temp_inherit' not in st.session_state:
-        st.session_state.temp_inherit = existing.get("inherit_rows", [])
-    
-    inherit_df = pd.DataFrame(st.session_state.temp_inherit) if st.session_state.temp_inherit else pd.DataFrame(columns=["recipient", "amount", "age"])
-    
+        legacy_inherit = existing.get("inheritance_list", existing.get("inherit_rows", [])) or []
+        st.session_state.temp_inherit = []
+        for r in legacy_inherit:
+            st.session_state.temp_inherit.append({
+                "Year": _to_int_or_none(r.get("Year") or r.get("year")),
+                "Amount": _to_float(r.get("Amount") or r.get("amount") or 0.0),
+                "Taxable?": bool(r.get("Taxable?") if "Taxable?" in r else r.get("taxable", False)),
+            })
+    inherit_df = pd.DataFrame(st.session_state.temp_inherit)
+    inherit_df = _ensure_columns(inherit_df, [("Year","Int64"),("Amount","float"),("Taxable?","bool")])
+
     edited_inherit = st.data_editor(
         inherit_df,
         num_rows="dynamic",
         use_container_width=True,
+        key="inherit_editor",
         column_config={
-            "recipient": st.column_config.TextColumn("Recipient/Description", required=True, help="Who receives it or from whom"),
-            "amount": st.column_config.NumberColumn("Amount ($)", min_value=0, step=1000, format="$%.0f", help="Expected inheritance amount"),
-            "age": st.column_config.NumberColumn("Your Age When Received", min_value=0, max_value=120, step=1, help="How old will YOU be?")
-        }
+            "Year": st.column_config.NumberColumn("Year", min_value=2020, max_value=2100, step=1),
+            "Amount": st.column_config.NumberColumn("Amount ($)", min_value=0, step=1000, format="$%.0f"),
+            "Taxable?": st.column_config.CheckboxColumn("Taxable?"),
+        },
     )
-    
+    if not edited_inherit.empty:
+        edited_inherit["Year"] = pd.to_numeric(edited_inherit["Year"], errors="coerce").astype("Int64")
+        # Allow users to type $… strings; convert when present
+        edited_inherit["Amount"] = edited_inherit["Amount"].apply(_to_float)
+    st.session_state.temp_inherit = edited_inherit.to_dict("records") if not edited_inherit.empty else []
+
+    st.divider()
+
+    # ============================================
+    # FINANCIAL GOALS SECTION (persists while typing)
+    # ============================================
+    st.subheader("🎯 Financial Goals")
+    st.caption("Major financial milestones you're planning for")
+    if 'temp_goals' not in st.session_state:
+        # accept both 'goals_list' and 'goals_data'
+        st.session_state.temp_goals = existing.get("goals_list", existing.get("goals_data", [])) or []
+    goals_df = pd.DataFrame(st.session_state.temp_goals)
+    goals_df = _ensure_columns(goals_df, [("goal","str"),("amount","float"),("year","Int64")])
+
+    edited_goals = st.data_editor(
+        goals_df,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="goals_editor",
+        column_config={
+            "goal": st.column_config.TextColumn("Goal Name", required=True, help="e.g., Retirement Fund, Down Payment, World Travel"),
+            "amount": st.column_config.NumberColumn("Target Amount", min_value=0, step=1000, format="$%.0f"),
+            "year": st.column_config.NumberColumn("Target Year", min_value=2020, max_value=2075, step=1),
+        },
+    )
+    if not edited_goals.empty:
+        edited_goals["amount"] = edited_goals["amount"].apply(_to_float)
+        edited_goals["year"] = pd.to_numeric(edited_goals["year"], errors="coerce").astype("Int64")
+    st.session_state.temp_goals = edited_goals.to_dict('records') if not edited_goals.empty else []
+
     st.info("ℹ️ These fields are completely optional. Leave blank if not applicable.")
-    
+
     # Navigation
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
@@ -323,15 +453,30 @@ def show_family_page(existing, save_payload, go_to_page):
             go_to_page('liabilities')
     with col3:
         if st.button("Next: Review →", type="primary", use_container_width=True):
-            # Save family data
+            # Save family data using temp arrays (already up-to-date while typing)
             data = existing.copy()
-            data["children_rows"] = edited_children.to_dict('records') if not edited_children.empty else []
-            data["inherit_rows"] = edited_inherit.to_dict('records') if not edited_inherit.empty else []
+            data["children_list"] = st.session_state.get("temp_children", [])
+            data["inheritance_list"] = st.session_state.get("temp_inherit", [])
+            data["goals_list"] = st.session_state.get("temp_goals", [])
+
+            # Backward compatibility keys
+            data["children_rows"] = data["children_list"]
+            data["inherit_rows"] = data["inheritance_list"]
+            data["goals_data"] = data["goals_list"]
+
             save_payload(data)
             go_to_page('review')
-
-
+        
+        
 def show_review_page(existing, shared_path, go_to_page):
+    # Always reload the latest JSON so the review reflects recent edits
+    try:
+        with open(shared_path, "r", encoding="utf-8") as _f:
+            latest = json.load(_f)
+        existing = latest if isinstance(latest, dict) else existing
+    except Exception:
+        pass
+
     """Page 7: Review & Export"""
     st.header("📋 Review & Complete Your Intake")
     st.caption("Review all your information before exporting to the simulator")
@@ -423,8 +568,8 @@ def show_review_page(existing, shared_path, go_to_page):
     
     # Family Events Summary
     st.subheader("👨‍👩‍👧‍👦 Family Events")
-    children_count = len(existing.get("children_rows", []))
-    inherit_count = len(existing.get("inherit_rows", []))
+    children_count = len(existing.get("children_rows", existing.get("children_list", [])))
+    inherit_count = len(existing.get("inherit_rows", existing.get("inheritance_list", [])))
     col1, col2 = st.columns(2)
     with col1:
         st.metric("Children", children_count)

@@ -89,7 +89,7 @@ def apply_scenario_data_safe(scenario_data):
 
     # Goals
     goals = (scenario_data.get("goals_list") or 
-             scenario_data.get("goals_data") or [])
+            scenario_data.get("goals_data") or [])
     st.session_state["goals_list"] = goals
     st.session_state["goals_data"] = goals
     st.sidebar.write(f"🔍 Loaded {len(goals)} goals")  # DEBUG
@@ -108,6 +108,8 @@ def apply_scenario_data_safe(scenario_data):
     st.sidebar.success("✅ Data applied to session_state!")  # DEBUG
     return True
 
+
+
 def manage_scenarios(is_trusted_user, age_group=None):
     """FIXED: Scenario management that saves new field names"""
     
@@ -124,15 +126,8 @@ def manage_scenarios(is_trusted_user, age_group=None):
     st.sidebar.markdown("---")
     st.sidebar.header("📂 Scenario Management")
     
-    # Get current scenario
-    if 'force_scenario_name' in st.session_state:
-        current = st.session_state['force_scenario_name']
-        st.session_state['current_scenario'] = current  # Re-apply it
-    else:
-        current = st.session_state.get('current_scenario', 'New Scenario')
-    
-    # NEW: Only auto-load if no scenario is currently loaded
-    if is_trusted_user and age_group == "70+" and 'scenario_auto_loaded' not in st.session_state and current == 'New Scenario':
+    # SAFE: Auto-load for trusted users
+    if is_trusted_user and age_group == "70+" and 'scenario_auto_loaded' not in st.session_state:
         st.sidebar.write("🔍 DEBUG: Auto-load check triggered")
         st.sidebar.write(f"🔍 scenario_auto_loaded in state: {'scenario_auto_loaded' in st.session_state}")
         
@@ -143,6 +138,13 @@ def manage_scenarios(is_trusted_user, age_group=None):
             st.session_state['scenario_auto_loaded'] = True
             st.sidebar.success("✅ Auto-loaded: 70+ Retirement Scenario (Private)")
             st.sidebar.warning("⚠️ DEBUG: Just overwrote current_scenario!")
+    
+   # Show current scenario status - check for forced name first
+    if 'force_scenario_name' in st.session_state:
+        current = st.session_state['force_scenario_name']
+        st.session_state['current_scenario'] = current  # Re-apply it
+    else:
+        current = st.session_state.get('current_scenario', 'New Scenario')
     
     # If current scenario is imported (not in saved list), add it to dropdown
     if current != "New Scenario" and current not in scenario_names:
@@ -161,10 +163,12 @@ def manage_scenarios(is_trusted_user, age_group=None):
         
     selected_scenario = st.sidebar.selectbox(
         "📥 Load Scenario:", 
-        ["New Scenario"] + scenario_names,
+        ["New Scenario"] + scenario_names, 
         index=default_index,
         help="Select a saved scenario to load"
     )
+    
+    
     
     # Handle scenario change
     if selected_scenario != current:
@@ -172,20 +176,21 @@ def manage_scenarios(is_trusted_user, age_group=None):
             scenario_data = scenarios[selected_scenario]
             apply_scenario_data_safe(scenario_data)
             st.session_state['current_scenario'] = selected_scenario
-            # NEW: Clear auto-load flag only for non-imported scenarios
-            if not selected_scenario.startswith("Imported:"):
-                st.session_state.pop('scenario_auto_loaded', None)
+            st.session_state.pop('scenario_auto_loaded', None)  # Clear auto-load flag
             st.sidebar.success(f"✅ Loaded: {selected_scenario}")
             st.rerun()
         else:
-            # Clear for new scenario
-            for k in list(st.session_state.keys()):
-                if k.startswith('input_') or k in ['children_list', 'children_rows', 'inheritance_list', 'inherit_rows', 'goals_list', 'goals_data']:
-                    del st.session_state[k]
+            # Clear inputs for New Scenario
+            for key in list(st.session_state.keys()):
+                if key.startswith('input_') or key in ['children_rows', 'inherit_rows', 'goals_data', 'children_list', 'inheritance_list', 'goals_list']:
+                    del st.session_state[key]
             st.session_state['current_scenario'] = "New Scenario"
             st.session_state.pop('scenario_loaded', None)
             st.sidebar.success("✅ Started New Scenario")
             st.rerun()
+    
+    
+    
     
     
     # SAVE SCENARIO SECTION
