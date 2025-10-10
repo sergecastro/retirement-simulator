@@ -1,0 +1,138 @@
+{
+  "input_age": 77,
+  "input_partner_exists": true,
+  "input_partner_name": "Judika",
+  "input_partner_age": 73,
+  "input_salary_wages": 55555.0,
+  "input_self_employment_income": 0.0,
+  "input_rental_income": 1200.0,
+  "input_investment_income": 400.0,
+  "input_social_security_income": 2600.0,
+  "input_pension_income": 0.0,
+  "input_other_income": 2000.0,
+  "input_housing_expenses": 55555.0,
+  "input_utilities_expenses": 450.0,
+  "input_groceries_expenses": 950.0,
+  "input_transportation_expenses": 600.0,
+  "input_healthcare_expenses": 500.0,
+  "input_insurance_expenses": 150.0,
+  "input_property_tax_expenses": 900.0,
+  "input_entertainment_expenses": 120.0,
+  "input_restaurant_expenses": 200.0,
+  "input_travel_expenses": 250.0,
+  "input_education_expenses": 0.0,
+  "input_childcare_expenses": 0.0,
+  "input_clothing_expenses": 60.0,
+  "input_charitable_donations": 50.0,
+  "input_miscellaneous_expenses": 75.0,
+  "input_other_expenses": 0.0,
+  "input_primary_residence_value": 850000.0,
+  "input_ira_balance": 350000.0,
+  "input_four01k_403b_balance": 280000.0,
+  "input_partner_ira_balance": 120000.0,
+  "input_partner_four01k_403b_balance": 0.0,
+  "input_taxable_investment_accounts": 220000.0,
+  "input_high_yield_savings_account": 40000.0,
+  "input_hsa_balance": 18000.0,
+  "input_five29_plan_balance": 0.0,
+  "input_vehicles_value": 30000.0,
+  "input_jewelry_collectibles_value": 5000.0,
+  "input_business_ownership_value": 0.0,
+  "input_cryptocurrency_holdings": 0.0,
+  "input_other_assets": 0.0,
+  "children_rows": [
+    {
+      "Name": "M",
+      "Birth Year": 2000,
+      "College Plan": "None",
+      "Scholarship %": 0,
+      "Use 529 First?": true,
+      "Start Age": 18,
+      "Years": 4
+    },
+    {
+      "Name": "Z",
+      "Birth Year": 2010,
+      "College Plan": "None",
+      "Scholarship %": 0,
+      "Use 529 First?": true,
+      "Start Age": 18,
+      "Years": 4
+    },
+    {
+      "Name": "X",
+      "Birth Year": 2020,
+      "College Plan": "Private Nonprofit",
+      "Scholarship %": 0,
+      "Use 529 First?": false,
+      "Start Age": 18,
+      "Years": 4
+    }
+  ],
+  "inherit_rows": [
+    {
+      "Year": 2027,
+      "Amount": 3000000.0,
+      "Taxable?": false
+    }
+  ],
+  "schema_version": "1.0",
+  "input_total_income": 61755.0,
+  "input_total_expenses": 59860.0,
+  "input_secondary_residence_value": 0.0,
+  "input_mortgage_balance": 999999.0,
+  "input_auto_loan_balance": 0.0,
+  "input_student_loan_balance": 0.0,
+  "input_credit_card_debt": 0.0,
+  "input_other_liabilities": 0.0,
+  "children_list": [
+    {
+      "Name": "M",
+      "Birth Year": 2000,
+      "College Plan": "None",
+      "Scholarship %": 0,
+      "Use 529 First?": true,
+      "Start Age": 18,
+      "Years": 4
+    },
+    {
+      "Name": "Z",
+      "Birth Year": 2010,
+      "College Plan": "None",
+      "Scholarship %": 0,
+      "Use 529 First?": true,
+      "Start Age": 18,
+      "Years": 4
+    },
+    {
+      "Name": "X",
+      "Birth Year": 2020,
+      "College Plan": "Private Nonprofit",
+      "Scholarship %": 0,
+      "Use 529 First?": false,
+      "Start Age": 18,
+      "Years": 4
+    }
+  ],
+  "goals_list": [
+    {
+      "goal": "RETIREMENT",
+      "amount": 5555555.0,
+      "year": null
+    }
+  ],
+  "inheritance_list": [
+    {
+      "Year": 2027,
+      "Amount": 3000000.0,
+      "Taxable?": false
+    }
+  ],
+  "goals_data": [
+    {
+      "goal": "RETIREMENT",
+      "amount": 5555555.0,
+      "year": null
+    }
+  ]
+}

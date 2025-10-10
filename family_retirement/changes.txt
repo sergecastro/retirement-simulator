@@ -1,0 +1,1349 @@
+diff --git a/family_retirement/GROK_app_family_plus.py b/family_retirement/GROK_app_family_plus.py
+new file mode 100644
+index 0000000..b4a2c3e
+--- /dev/null
++++ b/family_retirement/GROK_app_family_plus.py
+@@ -0,0 +1,2400 @@
++import streamlit as st
++import pandas as pd
++import numpy as np
++import json
++import os
++import matplotlib.pyplot as plt
++import plotly.graph_objects as go
++import plotly.express as px
++import calendar
++from datetime import datetime, date
++import math
++
++try:
++    from openai import OpenAI
++    OPENAI_AVAILABLE = True
++except ImportError:
++    OPENAI_AVAILABLE = False
++    st.warning("OpenAI not installed. AI consultation disabled.")
++
++try:
++    from dash import Dash, dcc, html
++    DASH_AVAILABLE = True
++except ImportError:
++    DASH_AVAILABLE = False
++    st.warning("Dash not installed. Timeline in preview mode.")
++
++try:
++    import household_events as he
++    EVENTS_AVAILABLE = True
++except ImportError:
++    EVENTS_AVAILABLE = False
++    st.error("household_events.py not found. Family events disabled.")
++
++st.set_page_config(page_title="Grok Family Retirement Plus", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
++st.title("🏠 Grok Family Retirement Planning Plus")
++st.markdown("*Advanced Family Lifecycle Financial Simulation & Planning*")
++
++st.header("🔒 Access Control")
++password = st.text_input("Enter password:", type="password")
++if password not in ["abcd123", "uhiRR2938foq"]:
++    st.error("🚫 Incorrect password.")
++    st.info("Demo: 'abcd123' | Trusted: 'uhiRR2938foq'")
++    st.stop()
++
++TRUSTED_PASSWORD = "uhiRR2938foq"
++IS_TRUSTED_USER = (password == TRUSTED_PASSWORD)
++
++EMBEDDED_SCENARIOS = {
++    "Empty Scenario": {
++        "input_style": "Detailed Breakdown", "age_group": "25-55", "age": 35, "partner_name": "", "partner_exists": False,
++        "partner_age": 35, "partner_ira_balance": 0.0, "partner_four01k_403b_balance": 0.0, "partner_taxable_investment_accounts": 0.0,
++        "partner_other_assets": 0.0, "partner_liabilities": 0.0, "salary_wages": 5000.0, "self_employment_income": 0.0,
++        "rental_income": 0.0, "investment_income": 0.0, "social_security_income": 0.0, "pension_income": 0.0, "other_income": 0.0,
++        "total_income": 5000.0, "housing_expenses": 1500.0, "utilities_expenses": 300.0, "groceries_expenses": 600.0,
++        "transportation_expenses": 400.0, "healthcare_expenses": 200.0, "insurance_expenses": 300.0, "real_estate_insurance_expenses": 100.0,
++        "property_tax_expenses": 200.0, "entertainment_expenses": 200.0, "restaurant_expenses": 300.0, "travel_expenses": 200.0,
++        "education_expenses": 0.0, "childcare_expenses": 0.0, "clothing_expenses": 100.0, "charitable_donations": 0.0,
++        "miscellaneous_expenses": 100.0, "other_expenses": 0.0, "total_expenses": 4400.0, "primary_residence_value": 400000.0,
++        "secondary_residence_value": 0.0, "ira_balance": 50000.0, "four01k_403b_balance": 75000.0, "taxable_investment_accounts": 25000.0,
++        "pension_fund_value": 0.0, "life_insurance_cash_value": 0.0, "high_yield_savings_account": 20000.0, "hsa_balance": 5000.0,
++        "five29_plan_balance": 10000.0, "vehicles_value": 25000.0, "jewelry_collectibles_value": 5000.0, "business_ownership_value": 0.0,
++        "cryptocurrency_holdings": 0.0, "other_assets": 0.0, "primary_residence_mortgage": 300000.0, "secondary_residence_mortgage": 0.0,
++        "auto_loans": 15000.0, "student_loans": 25000.0, "credit_card_debt": 5000.0, "personal_loans": 0.0, "business_loans": 0.0,
++        "other_liabilities": 0.0, "tax_rate": 22.0, "inflation_rate": 3.0, "investment_return_rate": 7.0, "simulation_years": 30,
++        "mc_iterations": 1000
++    },
++    "70+ Retirement Scenario": {
++        "input_style": "Detailed Breakdown", "age_group": "70+", "age": 76, "partner_name": "Judith", "partner_exists": True,
++        "partner_age": 74, "partner_ira_balance": 200000.0, "partner_four01k_403b_balance": 150000.0, "partner_taxable_investment_accounts": 100000.0,
++        "partner_other_assets": 50000.0, "partner_liabilities": 0.0, "salary_wages": 0.0, "self_employment_income": 0.0,
++        "rental_income": 2000.0, "investment_income": 500.0, "social_security_income": 3600.0, "pension_income": 6000.0,
++        "other_income": 0.0, "total_income": 12100.0, "housing_expenses": 700.0, "utilities_expenses": 1000.0,
++        "groceries_expenses": 2000.0, "transportation_expenses": 1500.0, "healthcare_expenses": 800.0, "insurance_expenses": 700.0,
++        "real_estate_insurance_expenses": 1300.0, "property_tax_expenses": 1850.0, "entertainment_expenses": 300.0,
++        "restaurant_expenses": 500.0, "travel_expenses": 800.0, "education_expenses": 0.0, "childcare_expenses": 0.0,
++        "clothing_expenses": 200.0, "charitable_donations": 500.0, "miscellaneous_expenses": 200.0, "other_expenses": 500.0,
++        "total_expenses": 12850.0, "primary_residence_value": 2700000.0, "secondary_residence_value": 1700000.0,
++        "ira_balance": 400000.0, "four01k_403b_balance": 300000.0, "taxable_investment_accounts": 200000.0,
++        "pension_fund_value": 1400000.0, "life_insurance_cash_value": 100000.0, "high_yield_savings_account": 50000.0,
++        "hsa_balance": 25000.0, "five29_plan_balance": 0.0, "vehicles_value": 30000.0, "jewelry_collectibles_value": 75000.0,
++        "business_ownership_value": 0.0, "cryptocurrency_holdings": 0.0, "other_assets": 0.0, "primary_residence_mortgage": 0.0,
++        "secondary_residence_mortgage": 0.0, "auto_loans": 0.0, "student_loans": 0.0, "credit_card_debt": 0.0,
++        "personal_loans": 0.0, "business_loans": 0.0, "other_liabilities": 0.0, "tax_rate": 25.0, "inflation_rate": 2.5,
++        "investment_return_rate": 5.0, "simulation_years": 30, "mc_iterations": 1000
++    }
++}
++
++st.sidebar.header("🚀 Advanced Features")
++st.sidebar.markdown("**Financial Health Dashboard**")
++show_health_dashboard = st.sidebar.checkbox("Financial Health Scoring", value=True, key="show_health")
++show_risk_analysis = st.sidebar.checkbox("Risk Analysis Matrix", value=True, key="show_risk")
++st.sidebar.markdown("**🗓️ Interactive Timeline & Planning**")
++show_timeline = st.sidebar.checkbox("Interactive Family Timeline", value=True, key="show_timeline")
++show_scenario_comparison = st.sidebar.checkbox("Scenario Comparison Tool", value=False, key="show_scenarios")
++show_extended_projections = st.sidebar.checkbox("Extended Projections (50+ years)", value=False, key="show_extended")
++show_family_reports = st.sidebar.checkbox("Family Reports Generator", value=True, key="show_reports")
++st.sidebar.markdown("**Visual Analytics Lab**")
++show_sankey = st.sidebar.checkbox("Cash-Flow Sankey", value=True, key="show_sankey")
++show_goals = st.sidebar.checkbox("Goal-Funding Gauges", value=True, key="show_goals")
++show_calendar = st.sidebar.checkbox("Monthly Heatmap", value=False, key="show_calendar")
++show_comparison = st.sidebar.checkbox("Competitive Analysis", value=True, key="show_comparison")
++
++st.header("🗂️ Scenario Management")
++scenario_file = "family_scenarios.json"
++if "scenarios_cache" not in st.session_state:
++    st.session_state.scenarios_cache = None
++
++def load_scenarios():
++    if os.path.exists(scenario_file):
++        try:
++            with open(scenario_file, "r") as f:
++                data = json.load(f)
++            return data if isinstance(data, dict) else {}
++        except (json.JSONDecodeError, FileNotFoundError) as e:
++            st.warning(f"Error loading scenarios: {e}. Creating new scenario file.")
++            return {}
++    else:
++        if IS_TRUSTED_USER:
++            save_scenarios(EMBEDDED_SCENARIOS)
++            return dict(EMBEDDED_SCENARIOS)
++        return {}
++
++def save_scenarios(scenarios_dict: dict):
++    try:
++        tmp_file = scenario_file + ".tmp"
++        with open(tmp_file, "w") as f:
++            json.dump(scenarios_dict, f, indent=2)
++        os.replace(tmp_file, scenario_file)
++        return True
++    except Exception as e:
++        st.error(f"Error saving scenarios: {e}")
++        return False
++
++if st.session_state.scenarios_cache is None:
++    st.session_state.scenarios_cache = load_scenarios()
++saved_scenarios = st.session_state.scenarios_cache
++
++col1, col2, col3 = st.columns([3, 1, 1])
++with col1:
++    scenario_name = st.selectbox("Select Scenario:", ["New Scenario"] + list(saved_scenarios.keys()), key="scenario_selector")
++with col2:
++    if st.button("Save Current", type="primary"):
++        if scenario_name == "New Scenario":
++            new_name = st.text_input("Scenario Name:", key="new_scenario_name")
++            if new_name:
++                scenario_name = new_name
++        if scenario_name and scenario_name != "New Scenario":
++            saved_scenarios[scenario_name] = {
++                "input_style": input_style, "age_group": age_group, "age": age, "partner_name": partner_name,
++                "partner_exists": partner_exists, "partner_age": partner_age, "partner_ira_balance": partner_ira_balance,
++                "partner_four01k_403b_balance": partner_four01k_403b_balance, "partner_taxable_investment_accounts": partner_taxable_investment_accounts,
++                "partner_other_assets": partner_other_assets, "partner_liabilities": partner_liabilities, "salary_wages": salary_wages,
++                "self_employment_income": self_employment_income, "rental_income": rental_income, "investment_income": investment_income,
++                "social_security_income": social_security_income, "pension_income": pension_income, "other_income": other_income,
++                "total_income": total_income, "housing_expenses": housing_expenses, "utilities_expenses": utilities_expenses,
++                "groceries_expenses": groceries_expenses, "transportation_expenses": transportation_expenses, "healthcare_expenses": healthcare_expenses,
++                "insurance_expenses": insurance_expenses, "real_estate_insurance_expenses": real_estate_insurance_expenses,
++                "property_tax_expenses": property_tax_expenses, "entertainment_expenses": entertainment_expenses,
++                "restaurant_expenses": restaurant_expenses, "travel_expenses": travel_expenses, "education_expenses": education_expenses,
++                "childcare_expenses": childcare_expenses, "clothing_expenses": clothing_expenses, "charitable_donations": charitable_donations,
++                "miscellaneous_expenses": miscellaneous_expenses, "other_expenses": other_expenses, "total_expenses": total_expenses,
++                "primary_residence_value": primary_residence_value, "secondary_residence_value": secondary_residence_value,
++                "ira_balance": ira_balance, "four01k_403b_balance": four01k_403b_balance, "taxable_investment_accounts": taxable_investment_accounts,
++                "pension_fund_value": pension_fund_value, "life_insurance_cash_value": life_insurance_cash_value,
++                "high_yield_savings_account": high_yield_savings_account, "hsa_balance": hsa_balance, "five29_plan_balance": five29_plan_balance,
++                "vehicles_value": vehicles_value, "jewelry_collectibles_value": jewelry_collectibles_value, "business_ownership_value": business_ownership_value,
++                "cryptocurrency_holdings": cryptocurrency_holdings, "other_assets": other_assets, "primary_residence_mortgage": primary_residence_mortgage,
++                "secondary_residence_mortgage": secondary_residence_mortgage, "auto_loans": auto_loans, "student_loans": student_loans,
++                "credit_card_debt": credit_card_debt, "personal_loans": personal_loans, "business_loans": business_loans,
++                "other_liabilities": other_liabilities, "tax_rate": tax_rate, "inflation_rate": inflation_rate,
++                "investment_return_rate": investment_return_rate, "simulation_years": simulation_years, "mc_iterations": mc_iterations
++            }
++            save_scenarios(saved_scenarios)
++            st.session_state.scenarios_cache = saved_scenarios
++            st.success(f"Scenario '{scenario_name}' saved!")
++with col3:
++    if not IS_TRUSTED_USER and st.button("Clear Data"):
++        if os.path.exists(scenario_file):
++            os.remove(scenario_file)
++        st.session_state.clear()
++        st.success("Data cleared!")
++        st.rerun()
+
+inputs = saved_scenarios.get(scenario_name, {}) if scenario_name != "New Scenario" else {}
+
+if "simulation_results" not in st.session_state:
+    st.session_state.simulation_results = None
+
+st.header("⚙️ Input Preferences")
+input_style = st.radio("Choose Input Detail Level:", ["Detailed Breakdown", "Gross Totals"],
+                       index=0 if inputs.get("input_style", "Detailed Breakdown") == "Detailed Breakdown" else 1,
+                       help="Detailed: Enter specific income/expense categories. Gross: Enter total amounts only.", key="input_style_radio")
+
+st.header("👤 Primary User Information")
+col1, col2 = st.columns(2)
+with col1:
+    age_group = st.selectbox("Life Stage:", ["25-55", "55-70", "70+"], index=["25-55", "55-70", "70+"].index(inputs.get("age_group", "25-55")),
+                             help="Your current life stage affects default assumptions", key="age_group_sel")
+with col2:
+    default_age = inputs.get("age", 40 if age_group == "25-55" else 60 if age_group == "55-70" else 76)
+    age = st.number_input("Current Age:", min_value=25, max_value=110, value=int(default_age) if pd.notna(default_age) and not math.isnan(default_age) else 40,
+                          help="Your current age for simulation start", key="age_num")
+
+st.header("👥 Partner Information")
+partner_name = st.text_input("Partner's Name:", value=inputs.get("partner_name", ""), help="Leave blank if no partner", key="partner_name_input")
+partner_exists = bool(partner_name.strip())
+
+partner_age = inputs.get("partner_age", age)
+partner_ira_balance = inputs.get("partner_ira_balance", 0.0)
+partner_four01k_403b_balance = inputs.get("partner_four01k_403b_balance", 0.0)
+partner_taxable_investment_accounts = inputs.get("partner_taxable_investment_accounts", 0.0)
+partner_other_assets = inputs.get("partner_other_assets", 0.0)
+partner_liabilities = inputs.get("partner_liabilities", 0.0)
+
+if partner_exists:
+    st.markdown(f"**{partner_name}'s Financial Information:**")
+    col1, col2 = st.columns(2)
+    with col1:
+        partner_age = st.number_input(f"{partner_name}'s Age:", min_value=25, max_value=110,
+                                     value=int(partner_age) if pd.notna(partner_age) and not math.isnan(partner_age) else age, help="Partner's current age", key="partner_age_input")
+        partner_ira_balance = st.number_input(f"{partner_name}'s IRA Balance:", value=float(partner_ira_balance) if pd.notna(partner_ira_balance) and not math.isnan(partner_ira_balance) else 0.0,
+                                             format="%.2f", help="Individual Retirement Account balance", key="p_ira_input")
+        partner_four01k_403b_balance = st.number_input(f"{partner_name}'s 401k/403b:", value=float(partner_four01k_403b_balance) if pd.notna(partner_four01k_403b_balance) and not math.isnan(partner_four01k_403b_balance) else 0.0,
+                                                     format="%.2f", help="Employer-sponsored retirement accounts", key="p_401k_input")
+    with col2:
+        partner_taxable_investment_accounts = st.number_input(f"{partner_name}'s Taxable Investments:", value=float(partner_taxable_investment_accounts) if pd.notna(partner_taxable_investment_accounts) and not math.isnan(partner_taxable_investment_accounts) else 0.0,
+                                                            format="%.2f", help="Brokerage accounts, stocks, bonds", key="p_taxable_input")
+        partner_other_assets = st.number_input(f"{partner_name}'s Other Assets:", value=float(partner_other_assets) if pd.notna(partner_other_assets) and not math.isnan(partner_other_assets) else 0.0,
+                                              format="%.2f", help="Savings, vehicles, collectibles, etc.", key="p_other_assets_input")
+        partner_liabilities = st.number_input(f"{partner_name}'s Liabilities:", value=float(partner_liabilities) if pd.notna(partner_liabilities) and not math.isnan(partner_liabilities) else 0.0,
+                                             format="%.2f", help="Personal debts, loans, mortgages", key="p_liab_input")
+
+st.header("👨‍👩‍👧‍👦 Family Lifecycle Planning")
+if EVENTS_AVAILABLE:
+    st.subheader("Children & Education Planning")
+    default_children = [{"Name": "", "Birth Year": date.today().year - 5, "College Plan": "None", "Scholarship %": 0.0, "Start Age": 18, "Years": 4, "Use 529 First?": True}]
+    children_data = st.data_editor(pd.DataFrame(st.session_state.get("children_rows", default_children)), num_rows="dynamic",
+                                   column_config={
+                                       "Name": st.column_config.TextColumn("Child's Name", help="Enter child's name (e.g., Emma)", width="large", default=""),
+                                       "Birth Year": st.column_config.NumberColumn("Birth Year", help="Year of birth (e.g., 2020)", min_value=1990, max_value=date.today().year + 10, format="%d", default=date.today().year - 5),
+                                       "College Plan": st.column_config.SelectboxColumn("College Type", options=["None", "Public In-State", "Public Out-of-State", "Private"], help="Type of college education planned", width="large", default="None"),
+                                       "Scholarship %": st.column_config.NumberColumn("Scholarship %", help="Expected scholarship coverage (0-100%)", min_value=0, max_value=100, format="%d", default=0),
+                                       "Start Age": st.column_config.NumberColumn("Start Age", help="Age when college begins", min_value=16, max_value=25, format="%d", default=18),
+                                       "Years": st.column_config.NumberColumn("Duration", help="Number of years in college", min_value=1, max_value=8, format="%d", default=4),
+                                       "Use 529 First?": st.column_config.CheckboxColumn("529 Priority", help="Use 529 education savings first", default=True)
+                                   }, use_container_width=True, key=f"children_editor_{scenario_name}")
+    for row in children_data.to_dict(orient="records"):
+        if pd.isna(row["Birth Year"]) or row["Birth Year"] == "":
+            row["Birth Year"] = date.today().year - 5
+            st.warning(f"Child '{row['Name'] or 'Unnamed'}' missing birth year—defaulted to {row['Birth Year']}.")
+        if pd.isna(row["Scholarship %"]) or math.isnan(row["Scholarship %"]):
+            row["Scholarship %"] = 0
+        if pd.isna(row["Start Age"]) or math.isnan(row["Start Age"]):
+            row["Start Age"] = 18
+        if pd.isna(row["Years"]) or math.isnan(row["Years"]):
+            row["Years"] = 4
+    st.session_state.children_rows = children_data.to_dict(orient="records")
+
+    st.subheader("Expected Inheritances & Windfalls")
+    default_inherit = [{"Year": date.today().year + 10, "Amount": 0.0, "Taxable?": False}]
+    inherit_data = st.data_editor(pd.DataFrame(st.session_state.get("inherit_rows", default_inherit)), num_rows="dynamic",
+                                  column_config={
+                                      "Year": st.column_config.NumberColumn("Year", help="Year inheritance/windfall is received", min_value=date.today().year, max_value=date.today().year + 50, format="%d", default=date.today().year + 10),
+                                      "Amount": st.column_config.NumberColumn("Amount ($)", help="Dollar amount received", min_value=0.0, format="$%.2f", default=0.0),
+                                      "Taxable?": st.column_config.CheckboxColumn("Taxable", help="Subject to income tax", default=False)
+                                  }, use_container_width=True, key=f"inherit_editor_{scenario_name}")
+    for row in inherit_data.to_dict(orient="records"):
+        if pd.isna(row["Year"]) or row["Year"] == "":
+            row["Year"] = date.today().year + 10
+            st.warning(f"Inheritance missing year—defaulted to {row['Year']}.")
+        if pd.isna(row["Amount"]) or math.isnan(row["Amount"]):
+            row["Amount"] = 0.0
+    st.session_state.inherit_rows = inherit_data.to_dict(orient="records")
+
+    with st.expander("🎓 College Cost Assumptions"):
+        col1, col2 = st.columns(2)
+        with col1:
+            college_inflation_pct = st.number_input("Annual College Inflation Rate (%):", min_value=0.0, max_value=10.0,
+                                                   value=float(inputs.get("college_inflation_pct", 4.0)) if pd.notna(inputs.get("college_inflation_pct")) else 4.0,
+                                                   step=0.5, help="How much college costs increase each year", key="college_infl_input")
+            base_public_in = st.number_input("Public In-State (Annual $):", min_value=0.0,
+                                             value=float(inputs.get("base_public_in", 20000.0)) if pd.notna(inputs.get("base_public_in")) else 20000.0,
+                                             step=1000.0, help="Current annual cost for public in-state", key="base_public_in_input")
+        with col2:
+            base_public_out = st.number_input("Public Out-of-State (Annual $):", min_value=0.0,
+                                             value=float(inputs.get("base_public_out", 40000.0)) if pd.notna(inputs.get("base_public_out")) else 40000.0,
+                                             step=1000.0, help="Current annual cost for public out-of-state", key="base_public_out_input")
+            base_private = st.number_input("Private College (Annual $):", min_value=0.0,
+                                           value=float(inputs.get("base_private", 60000.0)) if pd.notna(inputs.get("base_private")) else 60000.0,
+                                           step=1000.0, help="Current annual cost for private college", key="base_private_input")
+else:
+    st.warning("⚠️ Family events module not available. Basic simulation mode only.")
+    college_inflation_pct = 4.0
+    base_public_in = 20000.0
+    base_public_out = 40000.0
+    base_private = 60000.0
+
+st.header("💵 Monthly Income & Expenses")
+if input_style == "Detailed Breakdown":
+    with st.expander("💰 Income Sources (Monthly)", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            salary_wages = st.number_input("Salary/Wages:", value=float(inputs.get("salary_wages", 0.0)) if pd.notna(inputs.get("salary_wages")) else 0.0,
+                                           format="%.2f", help="Primary employment income", key="i_salary_input")
+            self_employment_income = st.number_input("Self-Employment:", value=float(inputs.get("self_employment_income", 0.0)) if pd.notna(inputs.get("self_employment_income")) else 0.0,
+                                                    format="%.2f", help="Business/freelance income", key="i_self_input")
+            rental_income = st.number_input("Rental Income:", value=float(inputs.get("rental_income", 0.0)) if pd.notna(inputs.get("rental_income")) else 0.0,
+                                            format="%.2f", help="Property rental income", key="i_rental_input")
+            investment_income = st.number_input("Investment Income:", value=float(inputs.get("investment_income", 0.0)) if pd.notna(inputs.get("investment_income")) else 0.0,
+                                                format="%.2f", help="Dividends, interest, capital gains", key="i_investment_input")
+        with col2:
+            social_security_income = st.number_input("Social Security:", value=float(inputs.get("social_security_income", 0.0)) if pd.notna(inputs.get("social_security_income")) else 0.0,
+                                                    format="%.2f", help="Monthly Social Security benefits", key="i_ss_input")
+            pension_income = st.number_input("Pension Income:", value=float(inputs.get("pension_income", 0.0)) if pd.notna(inputs.get("pension_income")) else 0.0,
+                                             format="%.2f", help="Employer pension payments", key="i_pension_input")
+            other_income = st.number_input("Other Income:", value=float(inputs.get("other_income", 0.0)) if pd.notna(inputs.get("other_income")) else 0.0,
+                                           format="%.2f", help="Any other regular income", key="i_other_input")
+    total_income = (salary_wages + self_employment_income + rental_income + investment_income + social_security_income + pension_income + other_income)
+    with st.expander("💸 Monthly Expenses", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**Housing & Utilities**")
+            housing_expenses = st.number_input("Housing (Rent/Mortgage/Maintenance):", value=float(inputs.get("housing_expenses", 0.0)) if pd.notna(inputs.get("housing_expenses")) else 0.0,
+                                              format="%.2f", key="e_house_input")
+            utilities_expenses = st.number_input("Utilities (Electric/Gas/Water/Phone):", value=float(inputs.get("utilities_expenses", 0.0)) if pd.notna(inputs.get("utilities_expenses")) else 0.0,
+                                                format="%.2f", key="e_util_input")
+            real_estate_insurance_expenses = st.number_input("Property Insurance:", value=float(inputs.get("real_estate_insurance_expenses", 0.0)) if pd.notna(inputs.get("real_estate_insurance_expenses")) else 0.0,
+                                                            format="%.2f", key="e_re_ins_input")
+            property_tax_expenses = st.number_input("Property Tax:", value=float(inputs.get("property_tax_expenses", 0.0)) if pd.notna(inputs.get("property_tax_expenses")) else 0.0,
+                                                   format="%.2f", key="e_prop_tax_input")
+            st.markdown("**Transportation**")
+            transportation_expenses = st.number_input("Transportation (Gas/Insurance/Maintenance):", value=float(inputs.get("transportation_expenses", 0.0)) if pd.notna(inputs.get("transportation_expenses")) else 0.0,
+                                                     format="%.2f", key="e_trans_input")
+            st.markdown("**Health & Insurance**")
+            healthcare_expenses = st.number_input("Healthcare (Medical/Prescriptions):", value=float(inputs.get("healthcare_expenses", 0.0)) if pd.notna(inputs.get("healthcare_expenses")) else 0.0,
+                                                  format="%.2f", key="e_health_input")
+            insurance_expenses = st.number_input("Insurance (Health/Life):", value=float(inputs.get("insurance_expenses", 0.0)) if pd.notna(inputs.get("insurance_expenses")) else 0.0,
+                                                format="%.2f", key="e_ins_input")
+        with col2:
+            st.markdown("**Living Expenses**")
+            groceries_expenses = st.number_input("Groceries:", value=float(inputs.get("groceries_expenses", 0.0)) if pd.notna(inputs.get("groceries_expenses")) else 0.0,
+                                                format="%.2f", key="e_groc_input")
+            restaurant_expenses = st.number_input("Dining Out:", value=float(inputs.get("restaurant_expenses", 0.0)) if pd.notna(inputs.get("restaurant_expenses")) else 0.0,
+                                                 format="%.2f", key="e_rest_input")
+            clothing_expenses = st.number_input("Clothing:", value=float(inputs.get("clothing_expenses", 0.0)) if pd.notna(inputs.get("clothing_expenses")) else 0.0,
+                                               format="%.2f", key="e_cloth_input")
+            st.markdown("**Lifestyle & Discretionary**")
+            entertainment_expenses = st.number_input("Entertainment (Movies/Subscriptions):", value=float(inputs.get("entertainment_expenses", 0.0)) if pd.notna(inputs.get("entertainment_expenses")) else 0.0,
+                                                    format="%.2f", key="e_ent_input")
+            travel_expenses = st.number_input("Travel & Vacations:", value=float(inputs.get("travel_expenses", 0.0)) if pd.notna(inputs.get("travel_expenses")) else 0.0,
+                                             format="%.2f", key="e_travel_input")
+            education_expenses = st.number_input("Education & Training:", value=float(inputs.get("education_expenses", 0.0)) if pd.notna(inputs.get("education_expenses")) else 0.0,
+                                                format="%.2f", key="e_edu_input")
+            childcare_expenses = st.number_input("Childcare:", value=float(inputs.get("childcare_expenses", 0.0)) if pd.notna(inputs.get("childcare_expenses")) else 0.0,
+                                                format="%.2f", key="e_childcare_input")
+            charitable_donations = st.number_input("Charitable Donations:", value=float(inputs.get("charitable_donations", 0.0)) if pd.notna(inputs.get("charitable_donations")) else 0.0,
+                                                  format="%.2f", key="e_charity_input")
+            miscellaneous_expenses = st.number_input("Miscellaneous:", value=float(inputs.get("miscellaneous_expenses", 0.0)) if pd.notna(inputs.get("miscellaneous_expenses")) else 0.0,
+                                                    format="%.2f", key="e_misc_input")
+            other_expenses = st.number_input("Other Expenses:", value=float(inputs.get("other_expenses", 0.0)) if pd.notna(inputs.get("other_expenses")) else 0.0,
+                                             format="%.2f", key="e_other_input")
+    total_expenses = (housing_expenses + utilities_expenses + groceries_expenses + transportation_expenses + healthcare_expenses +
+                      insurance_expenses + real_estate_insurance_expenses + property_tax_expenses + entertainment_expenses +
+                      restaurant_expenses + travel_expenses + education_expenses + childcare_expenses + clothing_expenses +
+                      charitable_donations + miscellaneous_expenses + other_expenses)
+else:
+    col1, col2 = st.columns(2)
+    with col1:
+        total_income = st.number_input("Total Monthly Income:", value=float(inputs.get("total_income", 0.0)) if pd.notna(inputs.get("total_income")) else 0.0,
+                                       format="%.2f", help="All income sources combined", key="i_total_input")
+    with col2:
+        total_expenses = st.number_input("Total Monthly Expenses:", value=float(inputs.get("total_expenses", 0.0)) if pd.notna(inputs.get("total_expenses")) else 0.0,
+                                         format="%.2f", help="All expenses combined", key="e_total_input")
+    salary_wages = float(inputs.get("salary_wages", 0.0)) if pd.notna(inputs.get("salary_wages")) else 0.0
+    self_employment_income = float(inputs.get("self_employment_income", 0.0)) if pd.notna(inputs.get("self_employment_income")) else 0.0
+    rental_income = float(inputs.get("rental_income", 0.0)) if pd.notna(inputs.get("rental_income")) else 0.0
+    investment_income = float(inputs.get("investment_income", 0.0)) if pd.notna(inputs.get("investment_income")) else 0.0
+    social_security_income = float(inputs.get("social_security_income", 0.0)) if pd.notna(inputs.get("social_security_income")) else 0.0
+    pension_income = float(inputs.get("pension_income", 0.0)) if pd.notna(inputs.get("pension_income")) else 0.0
+    other_income = float(inputs.get("other_income", 0.0)) if pd.notna(inputs.get("other_income")) else 0.0
+    housing_expenses = float(inputs.get("housing_expenses", 0.0)) if pd.notna(inputs.get("housing_expenses")) else 0.0
+    utilities_expenses = float(inputs.get("utilities_expenses", 0.0)) if pd.notna(inputs.get("utilities_expenses")) else 0.0
+    groceries_expenses = float(inputs.get("groceries_expenses", 0.0)) if pd.notna(inputs.get("groceries_expenses")) else 0.0
+    transportation_expenses = float(inputs.get("transportation_expenses", 0.0)) if pd.notna(inputs.get("transportation_expenses")) else 0.0
+    healthcare_expenses = float(inputs.get("healthcare_expenses", 0.0)) if pd.notna(inputs.get("healthcare_expenses")) else 0.0
+    insurance_expenses = float(inputs.get("insurance_expenses", 0.0)) if pd.notna(inputs.get("insurance_expenses")) else 0.0
+    real_estate_insurance_expenses = float(inputs.get("real_estate_insurance_expenses", 0.0)) if pd.notna(inputs.get("real_estate_insurance_expenses")) else 0.0
+    property_tax_expenses = float(inputs.get("property_tax_expenses", 0.0)) if pd.notna(inputs.get("property_tax_expenses")) else 0.0
+    entertainment_expenses = float(inputs.get("entertainment_expenses", 0.0)) if pd.notna(inputs.get("entertainment_expenses")) else 0.0
+    restaurant_expenses = float(inputs.get("restaurant_expenses", 0.0)) if pd.notna(inputs.get("restaurant_expenses")) else 0.0
+    travel_expenses = float(inputs.get("travel_expenses", 0.0)) if pd.notna(inputs.get("travel_expenses")) else 0.0
+    education_expenses = float(inputs.get("education_expenses", 0.0)) if pd.notna(inputs.get("education_expenses")) else 0.0
+    childcare_expenses = float(inputs.get("childcare_expenses", 0.0)) if pd.notna(inputs.get("childcare_expenses")) else 0.0
+    clothing_expenses = float(inputs.get("clothing_expenses", 0.0)) if pd.notna(inputs.get("clothing_expenses")) else 0.0
+    charitable_donations = float(inputs.get("charitable_donations", 0.0)) if pd.notna(inputs.get("charitable_donations")) else 0.0
+    miscellaneous_expenses = float(inputs.get("miscellaneous_expenses", 0.0)) if pd.notna(inputs.get("miscellaneous_expenses")) else 0.0
+    other_expenses = float(inputs.get("other_expenses", 0.0)) if pd.notna(inputs.get("other_expenses")) else 0.0
+
+monthly_surplus = total_income - total_expenses
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("**Monthly Income**", f"${total_income:,.2f}")
+with col2:
+    st.metric("**Monthly Expenses**", f"${total_expenses:,.2f}")
+with col3:
+    color = "normal" if monthly_surplus >= 0 else "inverse"
+    st.metric("**Monthly Surplus/Deficit**", f"${monthly_surplus:,.2f}", delta_color=color)
+
+st.header("💰 Assets & Liabilities")
+with st.expander("📈 Assets", expanded=True):
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Real Estate**")
+        primary_residence_value = st.number_input("Primary Residence Value:", value=float(inputs.get("primary_residence_value", 0.0)) if pd.notna(inputs.get("primary_residence_value")) else 0.0,
+                                                 format="%.2f", help="Current market value of primary home", key="a_home1_input")
+        secondary_residence_value = st.number_input("Secondary Residence Value:", value=float(inputs.get("secondary_residence_value", 0.0)) if pd.notna(inputs.get("secondary_residence_value")) else 0.0,
+                                                   format="%.2f", help="Vacation home, rental property, etc.", key="a_home2_input")
+        st.markdown("**Retirement Accounts (Tax-Advantaged)**")
+        ira_balance = st.number_input("IRA Balance (Combined):", value=float(inputs.get("ira_balance", 0.0)) if pd.notna(inputs.get("ira_balance")) else 0.0,
+                                      format="%.2f", help="Traditional and Roth IRAs combined", key="a_ira_input")
+        four01k_403b_balance = st.number_input("401k/403b Balance (Combined):", value=float(inputs.get("four01k_403b_balance", 0.0)) if pd.notna(inputs.get("four01k_403b_balance")) else 0.0,
+                                               format="%.2f", help="Employer-sponsored retirement accounts", key="a_401k_input")
+        pension_fund_value = st.number_input("Pension Fund Value:", value=float(inputs.get("pension_fund_value", 0.0)) if pd.notna(inputs.get("pension_fund_value")) else 0.0,
+                                             format="%.2f", help="Present value of pension benefits", key="a_pension_input")
+        hsa_balance = st.number_input("HSA Balance:", value=float(inputs.get("hsa_balance", 0.0)) if pd.notna(inputs.get("hsa_balance")) else 0.0,
+                                      format="%.2f", help="Health Savings Account", key="a_hsa_input")
+    with col2:
+        st.markdown("**Investment & Savings Accounts**")
+        taxable_investment_accounts = st.number_input("Taxable Investment Accounts:", value=float(inputs.get("taxable_investment_accounts", 0.0)) if pd.notna(inputs.get("taxable_investment_accounts")) else 0.0,
+                                                     format="%.2f", help="Brokerage accounts, stocks, bonds", key="a_taxable_input")
+        high_yield_savings_account = st.number_input("High-Yield Savings:", value=float(inputs.get("high_yield_savings_account", 0.0)) if pd.notna(inputs.get("high_yield_savings_account")) else 0.0,
+                                                    format="%.2f", help="Emergency fund, savings accounts", key="a_hysa_input")
+        five29_plan_balance = st.number_input("529 Education Savings:", value=float(inputs.get("five29_plan_balance", 0.0)) if pd.notna(inputs.get("five29_plan_balance")) else 0.0,
+                                             format="%.2f", help="Tax-advantaged education savings", key="a_529_input")
+        life_insurance_cash_value = st.number_input("Life Insurance Cash Value:", value=float(inputs.get("life_insurance_cash_value", 0.0)) if pd.notna(inputs.get("life_insurance_cash_value")) else 0.0,
+                                                   format="%.2f", help="Whole life insurance cash value", key="a_li_cv_input")
+        st.markdown("**Other Assets**")
+        vehicles_value = st.number_input("Vehicles Value:", value=float(inputs.get("vehicles_value", 0.0)) if pd.notna(inputs.get("vehicles_value")) else 0.0,
+                                         format="%.2f", help="Cars, motorcycles, boats, etc.", key="a_veh_input")
+        jewelry_collectibles_value = st.number_input("Jewelry/Collectibles:", value=float(inputs.get("jewelry_collectibles_value", 0.0)) if pd.notna(inputs.get("jewelry_collectibles_value")) else 0.0,
+                                                    format="%.2f", help="Jewelry, art, collectibles", key="a_jew_input")
+        business_ownership_value = st.number_input("Business Ownership:", value=float(inputs.get("business_ownership_value", 0.0)) if pd.notna(inputs.get("business_ownership_value")) else 0.0,
+                                                  format="%.2f", help="Business equity and ownership", key="a_biz_input")
+        cryptocurrency_holdings = st.number_input("Cryptocurrency:", value=float(inputs.get("cryptocurrency_holdings", 0.0)) if pd.notna(inputs.get("cryptocurrency_holdings")) else 0.0,
+                                                 format="%.2f", help="Bitcoin, Ethereum, other crypto", key="a_crypto_input")
+        other_assets = st.number_input("Other Assets:", value=float(inputs.get("other_assets", 0.0)) if pd.notna(inputs.get("other_assets")) else 0.0,
+                                       format="%.2f", help="Any other assets not listed", key="a_other_input")
+
+total_assets = (primary_residence_value + secondary_residence_value + ira_balance + four01k_403b_balance +
+                taxable_investment_accounts + pension_fund_value + life_insurance_cash_value + high_yield_savings_account +
+                hsa_balance + five29_plan_balance + vehicles_value + jewelry_collectibles_value + business_ownership_value +
+                cryptocurrency_holdings + other_assets)
+
+with st.expander("📉 Liabilities", expanded=True):
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Real Estate Debt**")
+        primary_residence_mortgage = st.number_input("Primary Residence Mortgage:", value=float(inputs.get("primary_residence_mortgage", 0.0)) if pd.notna(inputs.get("primary_residence_mortgage")) else 0.0,
+                                                    format="%.2f", help="Remaining balance on primary home", key="l_home1_input")
+        secondary_residence_mortgage = st.number_input("Secondary Residence Mortgage:", value=float(inputs.get("secondary_residence_mortgage", 0.0)) if pd.notna(inputs.get("secondary_residence_mortgage")) else 0.0,
+                                                      format="%.2f", help="Remaining balance on second home", key="l_home2_input")
+        st.markdown("**Consumer Debt**")
+        auto_loans = st.number_input("Auto Loans:", value=float(inputs.get("auto_loans", 0.0)) if pd.notna(inputs.get("auto_loans")) else 0.0,
+                                     format="%.2f", help="Car loans, vehicle financing", key="l_auto_input")
+        credit_card_debt = st.number_input("Credit Card Debt:", value=float(inputs.get("credit_card_debt", 0.0)) if pd.notna(inputs.get("credit_card_debt")) else 0.0,
+                                           format="%.2f", help="Outstanding credit card balances", key="l_cc_input")
+    with col2:
+        st.markdown("**Other Debt**")
+        student_loans = st.number_input("Student Loans:", value=float(inputs.get("student_loans", 0.0)) if pd.notna(inputs.get("student_loans")) else 0.0,
+                                        format="%.2f", help="Education loan balances", key="l_student_input")
+        personal_loans = st.number_input("Personal Loans:", value=float(inputs.get("personal_loans", 0.0)) if pd.notna(inputs.get("personal_loans")) else 0.0,
+                                         format="%.2f", help="Personal loans, lines of credit", key="l_personal_input")
+        business_loans = st.number_input("Business Loans:", value=float(inputs.get("business_loans", 0.0)) if pd.notna(inputs.get("business_loans")) else 0.0,
+                                         format="%.2f", help="Business debt and loans", key="l_biz_input")
+        other_liabilities = st.number_input("Other Liabilities:", value=float(inputs.get("other_liabilities", 0.0)) if pd.notna(inputs.get("other_liabilities")) else 0.0,
+                                           format="%.2f", help="Any other debts not listed", key="l_other_input")
+
+total_liabilities_local = (primary_residence_mortgage + secondary_residence_mortgage + auto_loans + student_loans +
+                          credit_card_debt + personal_loans + business_loans + other_liabilities)
+
+partner_total_assets = 0.0
+if partner_exists:
+    partner_total_assets = (partner_ira_balance + partner_four01k_403b_balance + partner_taxable_investment_accounts + partner_other_assets)
+
+combined_total_assets = total_assets + partner_total_assets
+combined_total_liabilities = total_liabilities_local + partner_liabilities
+combined_net_worth = combined_total_assets - combined_total_liabilities
+
+st.subheader("📊 Financial Summary")
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric("**Total Assets**", f"${combined_total_assets:,.2f}")
+with col2:
+    st.metric("**Total Liabilities**", f"${combined_total_liabilities:,.2f}")
+with col3:
+    st.metric("**Net Worth**", f"${combined_net_worth:,.2f}")
+with col4:
+    combined_financial_assets = (ira_balance + four01k_403b_balance + taxable_investment_accounts + pension_fund_value +
+                                life_insurance_cash_value + high_yield_savings_account + hsa_balance + five29_plan_balance)
+    if partner_exists:
+        combined_financial_assets += (partner_ira_balance + partner_four01k_403b_balance + partner_taxable_investment_accounts)
+    st.metric("**Liquid Assets**", f"${combined_financial_assets:,.2f}")
+
+combined_other_assets_total = (vehicles_value + jewelry_collectibles_value + business_ownership_value + cryptocurrency_holdings + other_assets)
+if partner_exists:
+    combined_other_assets_total += partner_other_assets
+
+st.header("📊 Simulation Parameters")
+col1, col2 = st.columns(2)
+with col1:
+    tax_rate = st.number_input("Effective Tax Rate (%):", min_value=0.0, max_value=50.0, value=float(inputs.get("tax_rate", 22.0)) if pd.notna(inputs.get("tax_rate")) else 22.0,
+                               step=0.5, help="Your effective tax rate on retirement withdrawals", key="tax_rate_input")
+    inflation_rate = st.number_input("Annual Inflation Rate (%):", min_value=0.0, max_value=10.0, value=float(inputs.get("inflation_rate", 3.0)) if pd.notna(inputs.get("inflation_rate")) else 3.0,
+                                     step=0.1, help="Expected annual inflation rate", key="infl_rate_input")
+with col2:
+    investment_return_rate = st.number_input("Annual Investment Return (%):", min_value=-5.0, max_value=15.0, value=float(inputs.get("investment_return_rate", 7.0)) if pd.notna(inputs.get("investment_return_rate")) else 7.0,
+                                            step=0.1, help="Expected annual return on investments", key="ret_rate_input")
+    simulation_years = st.number_input("Simulation Period (Years):", min_value=5, max_value=75, value=int(inputs.get("simulation_years", 30)) if pd.notna(inputs.get("simulation_years")) else 30,
+                                      help="How many years to project forward (50+ years for multi-generational planning)", key="sim_years_input")
+mc_iterations = st.number_input("Monte Carlo Iterations (0 = disabled):", min_value=0, max_value=10000, value=int(inputs.get("mc_iterations", 1000)) if pd.notna(inputs.get("mc_iterations")) else 1000,
+                               step=100, help="Number of simulation runs for probability analysis", key="mc_iters_input")
+
+st.header("🎯 Financial Goals")
+default_goals = pd.DataFrame({"Goal": ["Retirement", "Emergency Fund"], "Target Year Range": [f"{date.today().year + 30}", f"{date.today().year + 1}"], "Target $": [2000000.0, 50000.0]})
+goal_df = st.data_editor(st.session_state.get("goal_df", default_goals), num_rows="dynamic",
+                         column_config={
+                             "Goal": st.column_config.TextColumn("Goal Name", help="e.g., Retirement, College Fund, Home Purchase", width="medium", default="New Goal"),
+                             "Target Year Range": st.column_config.TextColumn("Target Year(s)", help="Single year (2035) or range (2035-2040)", width="small", default=f"{date.today().year + 20}"),
+                             "Target $": st.column_config.NumberColumn("Target Amount", help="Total amount needed to achieve goal", format="$%.2f", default=0.0)
+                         }, use_container_width=True, key=f"goal_editor_{scenario_name}")
+for row in goal_df.to_dict(orient="records"):
+    if pd.isna(row["Goal"]) or row["Goal"] == "":
+        row["Goal"] = "Unnamed Goal"
+        st.warning("Goal missing name—defaulted to 'Unnamed Goal'.")
+    if pd.isna(row["Target Year Range"]) or row["Target Year Range"] == "":
+        row["Target Year Range"] = f"{date.today().year + 20}"
+        st.warning(f"Goal '{row['Goal']}' missing year—defaulted to {row['Target Year Range']}.")
+    if pd.isna(row["Target $"]) or math.isnan(row["Target $"]):
+        row["Target $"] = 0.0
+st.session_state.goal_df = goal_df
+
+if not goal_df.empty:
+    st.markdown("**Current Goals:**")
+    for _, row in goal_df.iterrows():
+        if pd.notna(row.get('Goal')) and pd.notna(row.get('Target $')):
+            goal_name = row.get('Goal', '')
+            target_amount = row.get('Target $', 0.0)
+            target_year = row.get('Target Year Range', '')
+            st.write(f"• **{goal_name}**: ${target_amount:,.2f} by {target_year}")
+
+def run_simulation(age, partner_exists, partner_age, total_income, total_expenses, combined_financial_assets,
+                   primary_residence_value, secondary_residence_value, combined_other_assets_total,
+                   total_liabilities_local, partner_total_liabilities_local, tax, infl, ret, sim_years, mc_iters, goal_costs):
+    try:
+        age = int(age) if pd.notna(age) and not math.isnan(age) else 40
+        partner_age = int(partner_age) if partner_exists and pd.notna(partner_age) and not math.isnan(partner_age) else age
+        total_income = float(total_income) if pd.notna(total_income) and not math.isnan(total_income) else 0.0
+        total_expenses = float(total_expenses) if pd.notna(total_expenses) and not math.isnan(total_expenses) else 0.0
+        combined_financial_assets = float(combined_financial_assets) if pd.notna(combined_financial_assets) and not math.isnan(combined_financial_assets) else 0.0
+        primary_residence_value = float(primary_residence_value) if pd.notna(primary_residence_value) and not math.isnan(primary_residence_value) else 0.0
+        secondary_residence_value = float(secondary_residence_value) if pd.notna(secondary_residence_value) and not math.isnan(secondary_residence_value) else 0.0
+        combined_other_assets_total = float(combined_other_assets_total) if pd.notna(combined_other_assets_total) and not math.isnan(combined_other_assets_total) else 0.0
+        total_liabilities_local = float(total_liabilities_local) if pd.notna(total_liabilities_local) and not math.isnan(total_liabilities_local) else 0.0
+        partner_total_liabilities_local = float(partner_total_liabilities_local) if pd.notna(partner_total_liabilities_local) and not math.isnan(partner_total_liabilities_local) else 0.0
+        tax = float(tax) if pd.notna(tax) and not math.isnan(tax) else 22.0
+        infl = float(infl) if pd.notna(infl) and not math.isnan(infl) else 3.0
+        ret = float(ret) if pd.notna(ret) and not math.isnan(ret) else 7.0
+        sim_years = int(sim_years) if pd.notna(sim_years) and not math.isnan(sim_years) else 30
+        mc_iters = int(mc_iters) if pd.notna(mc_iters) and not math.isnan(mc_iters) else 0
+
+        children = []
+        inheritances = []
+        family_cashflows = {}
+        if EVENTS_AVAILABLE:
+            children = he.build_child_objects(st.session_state.get("children_rows", []))
+            inheritances = he.build_inheritances(st.session_state.get("inherit_rows", []))
+            start_year = date.today().year
+            end_year = start_year + sim_years - 1
+            family_cashflows = he.make_family_cashflows(children=children, inheritances=inheritances, start_year=start_year,
+                                                       horizon_end=end_year, college_inflation_pct=college_inflation_pct,
+                                                       base_public_in=base_public_in, base_public_out=base_public_out, base_private=base_private)
+
+        current_age = age
+        current_partner_age = partner_age if partner_exists else None
+        initial_annual_income = total_income * 12
+        initial_annual_expenses = total_expenses * 12
+        current_savings = combined_financial_assets
+        current_primary_home = primary_residence_value
+        current_secondary_home = secondary_residence_value
+        current_liabilities = total_liabilities_local + partner_total_liabilities_local
+
+        rmd_factors = {
+            73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2,
+            81: 19.4, 82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4, 88: 13.7,
+            89: 12.9, 90: 12.2, 91: 11.5, 92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4,
+            97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4
+        }
+
+        years = []
+        ages = []
+        total_incomes = []
+        total_expenses_list = []
+        event_deltas = []
+        net_draws = []
+        rmd_pers1 = []
+        rmd_pers2 = []
+        total_rmd_before_tax = []
+        net_rmd_used_list = []
+        cash_used_from_savings_list = []
+        savings_open = []
+        savings_growth = []
+        savings_before_draw = []
+        savings_end = []
+        primary_home_values = []
+        secondary_home_values = []
+        total_assets_list = []
+        total_liabilities_list = []
+        net_worth_list = []
+
+        primary_ira_for_rmd = float(inputs.get("ira_balance", 0.0)) if pd.notna(inputs.get("ira_balance")) else 0.0
+        primary_401k_for_rmd = float(inputs.get("four01k_403b_balance", 0.0)) if pd.notna(inputs.get("four01k_403b_balance")) else 0.0
+        partner_ira_for_rmd = float(partner_ira_balance) if partner_exists and pd.notna(partner_ira_balance) else 0.0
+        partner_401k_for_rmd = float(partner_four01k_403b_balance) if partner_exists and pd.notna(partner_four01k_403b_balance) else 0.0
+
+        start_year = date.today().year
+
+        for year in range(sim_years):
+            current_year = start_year + year
+            years.append(current_year)
+            ages.append(current_age)
+
+            deltas = family_cashflows.get(current_year, {"expense_delta": 0.0, "inflow_delta": 0.0})
+            annual_income = initial_annual_income * (1 + infl / 100) ** year + deltas["inflow_delta"]
+            annual_expenses = initial_annual_expenses * (1 + infl / 100) ** year + deltas["expense_delta"]
+            event_delta = deltas["expense_delta"] + deltas["inflow_delta"]
+
+            net_draw = annual_expenses - annual_income
+
+            rmd_person1 = 0.0
+            if current_age >= 73:
+                factor = rmd_factors.get(current_age, 6.4)
+                rmd_person1 = (primary_ira_for_rmd + primary_401k_for_rmd) / factor if factor > 0 else 0.0
+            rmd_person2 = 0.0
+            if partner_exists and current_partner_age >= 73:
+                factor = rmd_factors.get(current_partner_age, 6.4)
+                rmd_person2 = (partner_ira_for_rmd + partner_401k_for_rmd) / factor if factor > 0 else 0.0
+            total_rmd = rmd_person1 + rmd_person2
+            net_rmd_used = total_rmd * (1 - tax / 100)
+
+            if total_rmd > 0:
+                st.write(f"Year {current_year}: Primary RMD = ${rmd_person1:,.2f}, Partner RMD = ${rmd_person2:,.2f}, Total RMD (pre-tax) = ${total_rmd:,.2f}")
+
+            savings_open_value = current_savings
+            savings_growth_value = current_savings * (ret / 100)
+            savings_before_draw_value = current_savings + savings_growth_value
+            cash_used_from_savings = max(0, net_draw - net_rmd_used)
+            current_savings = savings_before_draw_value - cash_used_from_savings
+
+            primary_ira_for_rmd = max(0, primary_ira_for_rmd - (rmd_person1 * 0.5))
+            primary_401k_for_rmd = max(0, primary_401k_for_rmd - (rmd_person1 * 0.5))
+            if partner_exists:
+                partner_ira_for_rmd = max(0, partner_ira_for_rmd - (rmd_person2 * 0.5))
+                partner_401k_for_rmd = max(0, partner_401k_for_rmd - (rmd_person2 * 0.5))
+
+            current_primary_home *= (1 + infl / 100)
+            current_secondary_home *= (1 + infl / 100)
+            current_liabilities *= (1 + infl / 100)
+
+            total_assets_value = (current_savings + current_primary_home + current_secondary_home + combined_other_assets_total)
+            net_worth = total_assets_value - current_liabilities
+
+            total_incomes.append(annual_income)
+            total_expenses_list.append(annual_expenses)
+            event_deltas.append(event_delta)
+            net_draws.append(net_draw)
+            rmd_pers1.append(rmd_person1)
+            rmd_pers2.append(rmd_person2)
+            total_rmd_before_tax.append(total_rmd)
+            net_rmd_used_list.append(net_rmd_used)
+            cash_used_from_savings_list.append(cash_used_from_savings)
+            savings_open.append(savings_open_value)
+            savings_growth.append(savings_growth_value)
+            savings_before_draw.append(savings_before_draw_value)
+            savings_end.append(current_savings)
+            primary_home_values.append(current_primary_home)
+            secondary_home_values.append(current_secondary_home)
+            total_assets_list.append(total_assets_value)
+            total_liabilities_list.append(current_liabilities)
+            net_worth_list.append(net_worth)
+
+            if current_savings < 0:
+                break
+
+            current_age += 1
+            if partner_exists:
+                current_partner_age += 1
+
+        mc_results = []
+        if mc_iters > 0:
+            for _ in range(mc_iters):
+                sim_ret = np.random.normal(ret / 100, 0.02)
+                sim_infl = np.random.normal(infl / 100, 0.005)
+                sim_savings = combined_financial_assets
+                for year in range(sim_years):
+                    sim_year = start_year + year
+                    deltas = family_cashflows.get(sim_year, {"expense_delta": 0.0, "inflow_delta": 0.0})
+                    sim_income = initial_annual_income * (1 + sim_infl) ** year + deltas["inflow_delta"]
+                    sim_expenses = initial_annual_expenses * (1 + sim_infl) ** year + deltas["expense_delta"]
+                    sim_net_draw = sim_expenses - sim_income
+                    sim_savings = sim_savings * (1 + sim_ret) - sim_net_draw
+                    if sim_savings < 0:
+                        mc_results.append(year)
+                        break
+                else:
+                    mc_results.append(sim_years)
+
+        years_solvent = len(savings_end) if current_savings >= 0 else years.index(current_year)
+        final_savings = savings_end[-1] if savings_end else 0.0
+        final_net_worth = net_worth_list[-1] if net_worth_list else 0.0
+        emergency_fund_months = final_savings / (initial_annual_expenses / 12) if initial_annual_expenses > 0 else 0.0
+        debt_to_income = current_liabilities / initial_annual_income if initial_annual_income > 0 else 0.0
+        savings_rate = monthly_surplus / total_income if total_income > 0 else 0.0
+        health_score = min(100, max(0, 100 * (1 - debt_to_income) + 10 * emergency_fund_months))
+
+        goal_achievement = {}
+        for _, row in goal_df.iterrows():
+            if pd.notna(row.get('Goal')) and pd.notna(row.get('Target $')):
+                goal_name = row.get('Goal', '')
+                target_amount = row.get('Target $', 0.0)
+                target_year_str = row.get('Target Year Range', '')
+                try:
+                    target_year = int(target_year_str.split('-')[0]) if '-' in target_year_str else int(target_year_str)
+                    idx = min(len(years) - 1, max(0, target_year - start_year))
+                    achieved = savings_end[idx] >= target_amount if idx < len(savings_end) else False
+                    goal_achievement[goal_name] = {
+                        'target': target_amount, 'year': target_year, 'achieved': achieved, 'actual': savings_end[idx] if idx < len(savings_end) else 0.0
+                    }
+                except (ValueError, IndexError):
+                    goal_achievement[goal_name] = {'target': target_amount, 'year': target_year_str, 'achieved': False, 'actual': 0.0}
+
+        return {
+            'years': years, 'ages': ages, 'total_incomes': total_incomes, 'total_expenses': total_expenses_list,
+            'event_deltas': event_deltas, 'net_draws': net_draws, 'rmd_person1': rmd_pers1, 'rmd_person2': rmd_pers2,
+            'total_rmd': total_rmd_before_tax, 'net_rmd_used': net_rmd_used_list, 'cash_used_from_savings': cash_used_from_savings_list,
+            'savings_open': savings_open, 'savings_growth': savings_growth, 'savings_before_draw': savings_before_draw,
+            'savings_end': savings_end, 'primary_home_values': primary_home_values, 'secondary_home_values': secondary_home_values,
+            'total_assets': total_assets_list, 'total_liabilities': total_liabilities_list, 'net_worth': net_worth_list,
+            'mc_results': mc_results, 'years_solvent': years_solvent, 'final_savings': final_savings, 'final_net_worth': final_net_worth,
+            'emergency_fund_months': emergency_fund_months, 'debt_to_income': debt_to_income, 'savings_rate': savings_rate,
+            'health_score': health_score, 'goal_achievement': goal_achievement
+        }
+    except Exception as e:
+        st.error(f"Simulation error: {e}")
+        return None
+
+st.header("📈 Run Simulation")
+if st.button("Run Simulation", type="primary"):
+    goal_costs = {}
+    for _, row in goal_df.iterrows():
+        if pd.notna(row.get('Goal')) and pd.notna(row.get('Target $')):
+            goal_name = row.get('Goal', '')
+            target_amount = row.get('Target $', 0.0)
+            target_year_str = row.get('Target Year Range', '')
+            try:
+                target_year = int(target_year_str.split('-')[0]) if '-' in target_year_str else int(target_year_str)
+                goal_costs[goal_name] = {'year': target_year, 'amount': target_amount}
+            except ValueError:
+                goal_costs[goal_name] = {'year': date.today().year + 20, 'amount': target_amount}
+    results = run_simulation(
+        age=age, partner_exists=partner_exists, partner_age=partner_age, total_income=total_income, total_expenses=total_expenses,
+        combined_financial_assets=combined_financial_assets, primary_residence_value=primary_residence_value,
+        secondary_residence_value=secondary_residence_value, combined_other_assets_total=combined_other_assets_total,
+        total_liabilities_local=total_liabilities_local, partner_total_liabilities_local=partner_liabilities,
+        tax=tax_rate, infl=inflation_rate, ret=investment_return_rate, sim_years=simulation_years, mc_iters=mc_iterations, goal_costs=goal_costs
+    )
+    st.session_state.simulation_results = results
+
+if st.session_state.simulation_results:
+    st.header("📊 Simulation Results & Analysis")
+    results = st.session_state.simulation_results
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("**Years Solvent**", f"{results['years_solvent']}")
+    with col2:
+        st.metric("**Final Savings**", f"${results['final_savings']:,.2f}")
+    with col3:
+        st.metric("**Final Net Worth**", f"${results['final_net_worth']:,.2f}")
+    with col4:
+        st.metric("**Financial Health Score**", f"{results['health_score']:.1f}/100")
+
+    if show_health_dashboard:
+        st.subheader("Financial Health Dashboard")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Emergency Fund", f"{results['emergency_fund_months']:.1f} months")
+        with col2:
+            st.metric("Debt-to-Income Ratio", f"{results['debt_to_income']:.2%}")
+        with col3:
+            st.metric("Savings Rate", f"{results['savings_rate']:.2%}")
+
+    if show_goals:
+        st.subheader("Goal Achievement")
+        for goal, data in results['goal_achievement'].items():
+            status = "✅ Achieved" if data['achieved'] else "❌ Not Achieved"
+            st.write(f"**{goal}**: Target ${data['target']:,.2f} by {data['year']} - {status} (Actual: ${data['actual']:,.2f})")
+
+    st.subheader("Sensitivity Analysis")
+    col1, col2 = st.columns(2)
+    with col1:
+        income_adj = st.slider("Adjust Income (%):", -50.0, 50.0, 0.0, step=1.0, key="income_adj")
+        expenses_adj = st.slider("Adjust Expenses (%):", -50.0, 50.0, 0.0, step=1.0, key="expenses_adj")
+        tax_adj = st.slider("Adjust Tax Rate (%):", -10.0, 10.0, 0.0, step=0.5, key="tax_adj")
+    with col2:
+        return_adj = st.slider("Adjust Investment Return (%):", -5.0, 5.0, 0.0, step=0.1, key="return_adj")
+        inflation_adj = st.slider("Adjust Inflation Rate (%):", -5.0, 5.0, 0.0, step=0.1, key="inflation_adj")
+
+    if st.button("Run Adjusted Simulation & Compare"):
+        adj_goal_costs = {}  # Scoped to avoid NameError
+        for _, row in goal_df.dropna().iterrows():
+            try:
+                yr_range = str(row["Target Year Range"]).strip()
+                if pd.isna(yr_range) or yr_range == "":
+                    yr_range = f"{date.today().year + 20}"
+                if "-" in yr_range:
+                    start_yr, end_yr = map(int, yr_range.split("-"))
+                else:
+                    end_yr = int(yr_range)
+                    start_yr = end_yr
+                adj_goal_costs[row["Goal"]] = float(row["Target $"])
+            except (ValueError, TypeError):
+                continue
+        adj_results = run_simulation(
+            age=age, partner_exists=partner_exists, partner_age=partner_age,
+            total_income=total_income * (1 + income_adj / 100),
+            total_expenses=total_expenses * (1 + expenses_adj / 100),
+            combined_financial_assets=combined_financial_assets,
+            primary_residence_value=primary_residence_value,
+            secondary_residence_value=secondary_residence_value,
+            combined_other_assets_total=combined_other_assets_total,
+            total_liabilities_local=total_liabilities_local,
+            partner_total_liabilities_local=partner_liabilities,
+            tax=tax_rate + tax_adj, infl=inflation_rate + inflation_adj,
+            ret=investment_return_rate + return_adj,
+            sim_years=simulation_years, mc_iters=mc_iterations, goal_costs=adj_goal_costs
+        )
+        if adj_results:
+            st.subheader("Comparison: Baseline vs Adjusted")
+            comparison_data = {
+                "Metric": ["Final Savings", "Final Net Worth", "Years Solvent", "Emergency Fund (Months)", "Debt-to-Income", "Savings Rate", "Health Score"],
+                "Baseline": [
+                    f"${results['final_savings']:,.2f}",
+                    f"${results['final_net_worth']:,.2f}",
+                    results['years_solvent'],
+                    f"{results['emergency_fund_months']:.1f}",
+                    f"{results['debt_to_income']:.2%}",
+                    f"{results['savings_rate']:.2%}",
+                    f"{results['health_score']:.1f}"
+                ],
+                "Adjusted": [
+                    f"${adj_results['final_savings']:,.2f}",
+                    f"${adj_results['final_net_worth']:,.2f}",
+                    adj_results['years_solvent'],
+                    f"{adj_results['emergency_fund_months']:.1f}",
+                    f"{adj_results['debt_to_income']:.2%}",
+                    f"{adj_results['savings_rate']:.2%}",
+                    f"{adj_results['health_score']:.1f}"
+                ],
+                "Change": [
+                    f"{(adj_results['final_savings'] - results['final_savings']):,.2f}",
+                    f"{(adj_results['final_net_worth'] - results['final_net_worth']):,.2f}",
+                    adj_results['years_solvent'] - results['years_solvent'],
+                    f"{(adj_results['emergency_fund_months'] - results['emergency_fund_months']):,.1f}",
+                    f"{(adj_results['debt_to_income'] - results['debt_to_income']):,.2%}",
+                    f"{(adj_results['savings_rate'] - results['savings_rate']):,.2%}",
+                    f"{(adj_results['health_score'] - results['health_score']):,.1f}"
+                ]
+            }
+            comparison_df = pd.DataFrame(comparison_data)
+            comparison_df.style.apply(lambda x: ['color: green' if '+' in str(v) else 'color: red' if '-' in str(v) else '' for v in x], axis=1)
+            st.dataframe(comparison_df, use_container_width=True)
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=results['years'], y=results['savings_end'], name="Baseline Savings", line=dict(color='blue')))
+            fig.add_trace(go.Scatter(x=adj_results['years'], y=adj_results['savings_end'], name="Adjusted Savings", line=dict(color='red')))
+            fig.update_layout(title="Savings Trajectory: Baseline vs Adjusted", xaxis_title="Year", yaxis_title="Savings ($)")
+            st.plotly_chart(fig, use_container_width=True)
+
+    if show_sankey:
+        st.subheader("Cash-Flow Sankey Diagram")
+        labels = ["Income", "Expenses", "Savings", "RMDs", "Investments"]
+        sources = [0, 0, 3]
+        targets = [1, 2, 2]
+        values = [sum(results['total_incomes']) * 0.7, sum(results['total_incomes']) * 0.3, sum(results['total_rmd'])]
+        fig = go.Figure(data=[go.Sankey(node=dict(label=labels), link=dict(source=sources, target=targets, value=values))])
+        st.plotly_chart(fig, use_container_width=True)
+
+    if show_goals:
+        st.subheader("Goal Funding Gauges")
+        for goal, data in results['goal_achievement'].items():
+            fig = go.Figure(go.Indicator(mode="gauge+number", value=data['actual'], title={'text': goal},
+                                         gauge={'axis': {'range': [0, data['target'] * 1.5]}, 'bar': {'color': "darkblue"},
+                                                'steps': [{'range': [0, data['target']], 'color': "lightgreen"},
+                                                          {'range': [data['target'], data['target'] * 1.5], 'color': "lightgray"}],
+                                                'threshold': {'line': {'color': "red", 'width': 4}, 'value': data['target']}}))
+            st.plotly_chart(fig, use_container_width=True)
+
+    if show_calendar:
+        st.subheader("Monthly Cash Flow Heatmap")
+        monthly_data = []
+        for year in results['years']:
+            net_cash_flow = results['total_incomes'][results['years'].index(year)] - results['total_expenses'][results['years'].index(year)]
+            monthly_data.append([year, 1, net_cash_flow / 12])
+        df = pd.DataFrame(monthly_data, columns=['Year', 'Month', 'Net Cash Flow'])
+        fig = px.density_heatmap(df, x="Year", y="Month", z="Net Cash Flow", color_continuous_scale="Viridis")
+        st.plotly_chart(fig, use_container_width=True)
+
+    if show_timeline:
+        st.subheader("Interactive Family Timeline (Preview)")
+        timeline_data = []
+        for child in children:
+            if child.get('college_years'):
+                for y in child['college_years']:
+                    timeline_data.append({'Year': y, 'Event': f"{child['name']} College", 'Impact': -child['college_cost'], 'Type': 'College', 'Avatar': '👶'})
+        for inheritance in inheritances:
+            timeline_data.append({'Year': inheritance['year'], 'Event': "Inheritance/Windfall", 'Impact': inheritance['amount'], 'Type': 'Windfall', 'Avatar': '💰'})
+        for year in results['years']:
+            if results['rmd_person1'][results['years'].index(year)] > 0:
+                timeline_data.append({'Year': year, 'Event': "Primary RMD", 'Impact': results['rmd_person1'][results['years'].index(year)], 'Type': 'Milestone', 'Avatar': '👴'})
+            if results['rmd_person2'][results['years'].index(year)] > 0:
+                timeline_data.append({'Year': year, 'Event': f"{partner_name} RMD", 'Impact': results['rmd_person2'][results['years'].index(year)], 'Type': 'Milestone', 'Avatar': '👵'})
+
+        if timeline_data:
+            df_timeline = pd.DataFrame(timeline_data)
+            fig = px.timeline(df_timeline, x_start=df_timeline['Year'].apply(lambda x: f"{x}-01-01"),
+                              x_end=df_timeline['Year'].apply(lambda x: f"{x}-12-31"), y='Event', color='Type',
+                              color_discrete_map={'College': 'red', 'Windfall': 'green', 'Milestone': 'blue'},
+                              hover_data=['Impact', 'Avatar'])
+            fig.update_layout(title="Family Financial Timeline", xaxis_title="Year", yaxis_title="Event")
+            st.plotly_chart(fig, use_container_width=True)
+
+if OPENAI_AVAILABLE and IS_TRUSTED_USER:
+    st.header("🤖 AI-Powered Financial Consultation")
+    consultation_query = st.text_area("Ask for financial advice based on your simulation results:", key="consult_query")
+    if st.button("Get AI Advice"):
+        if consultation_query:
+            client = OpenAI()
+            prompt = f"Based on simulation: Final Savings: ${results['final_savings']:,.2f}, Net Worth: ${results['final_net_worth']:,.2f}, Health Score: {results['health_score']:.1f}/100, Goals: {json.dumps(results['goal_achievement'], indent=2)}. User Query: {consultation_query}. Suggest 3 actionable strategies."
+            try:
+                response = client.chat.completions.create(model="gpt-4", messages=[{"role": "user", "content": prompt}])
+                st.write(response.choices[0].message.content)
+            except Exception as e:
+                st.error(f"AI consultation error: {e}")
+        else:
+            st.warning("Please enter a query for AI consultation.")
+```
+diff --git a/family_retirement/GROK_app_family_plus.py b/family_retirement/GROK_app_family_plus.py
+index 1a2b3c4..5d6e7f8 100644
+--- a/family_retirement/GROK_app_family_plus.py
++++ b/family_retirement/GROK_app_family_plus.py
+@@ -1,5 +1,6 @@
+ import streamlit as st
+ import pandas as pd
+ import numpy as np
+ import json
+ import os
+ import matplotlib.pyplot as plt
+@@ -12,6 +13,7 @@ try:
+     from openai import OpenAI
+     OPENAI_AVAILABLE = True
+ except ImportError:
+     OPENAI_AVAILABLE = False
+     st.warning("OpenAI not installed. AI consultation disabled.")
+ 
+@@ -23,6 +25,7 @@ try:
+     DASH_AVAILABLE = True
+ except ImportError:
+     DASH_AVAILABLE = False
+     st.warning("Dash not installed. Timeline in preview mode.")
+ 
+@@ -34,6 +37,7 @@ try:
+     EVENTS_AVAILABLE = True
+ except ImportError:
+     EVENTS_AVAILABLE = False
+     st.error("household_events.py not found. Family events disabled.")
+ 
+@@ -42,6 +46,7 @@ st.set_page_config(page_title="Grok Family Retirement Plus", page_icon="🏠", layou
+ st.title("🏠 Grok Family Retirement Planning Plus")
+ st.markdown("*Advanced Family Lifecycle Financial Simulation & Planning*")
+ 
+@@ -54,6 +59,7 @@ if password not in ["abcd123", "uhiRR2938foq"]:
+     st.error("🚫 Incorrect password.")
+     st.info("Demo: 'abcd123' | Trusted: 'uhiRR2938foq'")
+     st.stop()
++
+ TRUSTED_PASSWORD = "uhiRR2938foq"
+ IS_TRUSTED_USER = (password == TRUSTED_PASSWORD)
+ 
+@@ -187,6 +193,7 @@ EMBEDDED_SCENARIOS = {
+ }
+ 
+ st.sidebar.header("🚀 Advanced Features")
++st.sidebar.caption("v2.1: Enhanced with RMDs, persistence, and timeline")
+ st.sidebar.markdown("**Financial Health Dashboard**")
+ show_health_dashboard = st.sidebar.checkbox("Financial Health Scoring", value=True, key="show_health")
+ show_risk_analysis = st.sidebar.checkbox("Risk Analysis Matrix", value=True, key="show_risk")
+@@ -301,6 +308,7 @@ with col3:
+     if not IS_TRUSTED_USER and st.button("Clear Data"):
+         if os.path.exists(scenario_file):
+             os.remove(scenario_file)
++            st.session_state.clear()
+         st.session_state.clear()
+         st.success("Data cleared!")
+         st.rerun()
+@@ -377,6 +385,7 @@ if partner_exists:
+         partner_taxable_investment_accounts = st.number_input(f"{partner_name}'s Taxable Investments:", value=float(partner_taxable_investment_accounts) if pd.notna(partner_taxable_investment_accounts) and not math.isnan(partner_taxable_investment_accounts) else 0.0,
+                                                             format="%.2f", help="Brokerage accounts, stocks, bonds", key="p_taxable_input")
+         partner_other_assets = st.number_input(f"{partner_name}'s Other Assets:", value=float(partner_other_assets) if pd.notna(partner_other_assets) and not math.isnan(partner_other_assets) else 0.0,
++                                              min_value=0.0,
+                                               format="%.2f", help="Savings, vehicles, collectibles, etc.", key="p_other_assets_input")
+         partner_liabilities = st.number_input(f"{partner_name}'s Liabilities:", value=float(partner_liabilities) if pd.notna(partner_liabilities) and not math.isnan(partner_liabilities) else 0.0,
++                                             min_value=0.0,
+                                              format="%.2f", help="Personal debts, loans, mortgages", key="p_liab_input")
+ 
+@@ -385,6 +394,7 @@ st.header("👨‍👩‍👧‍👦 Family Lifecycle Planning")
+ if EVENTS_AVAILABLE:
+     st.subheader("Children & Education Planning")
+     default_children = [{"Name": "", "Birth Year": date.today().year - 5, "College Plan": "None", "Scholarship %": 0.0, "Start Age": 18, "Years": 4, "Use 529 First?": True}]
++    if "children_rows" not in st.session_state:
++        st.session_state.children_rows = default_children
+     children_data = st.data_editor(pd.DataFrame(st.session_state.get("children_rows", default_children)), num_rows="dynamic",
+                                    column_config={
+                                        "Name": st.column_config.TextColumn("Child's Name", help="Enter child's name (e.g., Emma)", width="large", default=""),
+@@ -413,6 +423,7 @@ if EVENTS_AVAILABLE:
+ 
+     st.subheader("Expected Inheritances & Windfalls")
+     default_inherit = [{"Year": date.today().year + 10, "Amount": 0.0, "Taxable?": False}]
++    if "inherit_rows" not in st.session_state:
++        st.session_state.inherit_rows = default_inherit
+     inherit_data = st.data_editor(pd.DataFrame(st.session_state.get("inherit_rows", default_inherit)), num_rows="dynamic",
+                                   column_config={
+                                       "Year": st.column_config.NumberColumn("Year", help="Year inheritance/windfall is received", min_value=date.today().year, max_value=date.today().year + 50, format="%d", default=date.today().year + 10),
+@@ -452,6 +463,7 @@ else:
+     base_public_out = 40000.0
+     base_private = 60000.0
+ 
++st.header("💵 Monthly Income & Expenses")
+ if input_style == "Detailed Breakdown":
+     with st.expander("💰 Income Sources (Monthly)", expanded=True):
+         col1, col2 = st.columns(2)
+@@ -460,6 +472,7 @@ if input_style == "Detailed Breakdown":
+             salary_wages = st.number_input("Salary/Wages:", value=float(inputs.get("salary_wages", 0.0)) if pd.notna(inputs.get("salary_wages")) else 0.0,
+                                            format="%.2f", help="Primary employment income", key="i_salary_input")
+             self_employment_income = st.number_input("Self-Employment:", value=float(inputs.get("self_employment_income", 0.0)) if pd.notna(inputs.get("self_employment_income")) else 0.0,
++                                                    min_value=0.0,
+                                                     format="%.2f", help="Business/freelance income", key="i_self_input")
+             rental_income = st.number_input("Rental Income:", value=float(inputs.get("rental_income", 0.0)) if pd.notna(inputs.get("rental_income")) else 0.0,
+                                             format="%.2f", help="Property rental income", key="i_rental_input")
+@@ -469,6 +482,7 @@ if input_style == "Detailed Breakdown":
+         with col2:
+             social_security_income = st.number_input("Social Security:", value=float(inputs.get("social_security_income", 0.0)) if pd.notna(inputs.get("social_security_income")) else 0.0,
+                                                     format="%.2f", help="Monthly Social Security benefits", key="i_ss_input")
++                                                    min_value=0.0,
+             pension_income = st.number_input("Pension Income:", value=float(inputs.get("pension_income", 0.0)) if pd.notna(inputs.get("pension_income")) else 0.0,
+                                              format="%.2f", help="Employer pension payments", key="i_pension_input")
+             other_income = st.number_input("Other Income:", value=float(inputs.get("other_income", 0.0)) if pd.notna(inputs.get("other_income")) else 0.0,
+@@ -483,6 +497,7 @@ if input_style == "Detailed Breakdown":
+             housing_expenses = st.number_input("Housing (Rent/Mortgage/Maintenance):", value=float(inputs.get("housing_expenses", 0.0)) if pd.notna(inputs.get("housing_expenses")) else 0.0,
+                                               format="%.2f", key="e_house_input")
+             utilities_expenses = st.number_input("Utilities (Electric/Gas/Water/Phone):", value=float(inputs.get("utilities_expenses", 0.0)) if pd.notna(inputs.get("utilities_expenses")) else 0.0,
++                                                 min_value=0.0,
+                                                  format="%.2f", key="e_util_input")
+             real_estate_insurance_expenses = st.number_input("Property Insurance:", value=float(inputs.get("real_estate_insurance_expenses", 0.0)) if pd.notna(inputs.get("real_estate_insurance_expenses")) else 0.0,
+                                                             format="%.2f", key="e_re_ins_input")
+@@ -497,6 +512,7 @@ if input_style == "Detailed Breakdown":
+         with col2:
+             st.markdown("**Living Expenses**")
+             groceries_expenses = st.number_input("Groceries:", value=float(inputs.get("groceries_expenses", 0.0)) if pd.notna(inputs.get("groceries_expenses")) else 0.0,
++                                                min_value=0.0,
+                                                 format="%.2f", key="e_groc_input")
+             restaurant_expenses = st.number_input("Dining Out:", value=float(inputs.get("restaurant_expenses", 0.0)) if pd.notna(inputs.get("restaurant_expenses")) else 0.0,
+                                                  format="%.2f", key="e_rest_input")
+@@ -531,6 +547,7 @@ else:
+     col1, col2 = st.columns(2)
+     with col1:
+         total_income = st.number_input("Total Monthly Income:", value=float(inputs.get("total_income", 0.0)) if pd.notna(inputs.get("total_income")) else 0.0,
++                                       min_value=0.0,
+                                        format="%.2f", help="All income sources combined", key="i_total_input")
+     with col2:
+         total_expenses = st.number_input("Total Monthly Expenses:", value=float(inputs.get("total_expenses", 0.0)) if pd.notna(inputs.get("total_expenses")) else 0.0,
+@@ -581,6 +598,7 @@ with st.expander("📈 Assets", expanded=True):
+         st.markdown("**Real Estate**")
+         primary_residence_value = st.number_input("Primary Residence Value:", value=float(inputs.get("primary_residence_value", 0.0)) if pd.notna(inputs.get("primary_residence_value")) else 0.0,
+                                                  format="%.2f", help="Current market value of primary home", key="a_home1_input")
++                                                 min_value=0.0,
+         secondary_residence_value = st.number_input("Secondary Residence Value:", value=float(inputs.get("secondary_residence_value", 0.0)) if pd.notna(inputs.get("secondary_residence_value")) else 0.0,
+                                                    format="%.2f", help="Vacation home, rental property, etc.", key="a_home2_input")
+         st.markdown("**Retirement Accounts (Tax-Advantaged)**")
+@@ -612,6 +630,7 @@ with st.expander("📈 Assets", expanded=True):
+         taxable_investment_accounts = st.number_input("Taxable Investment Accounts:", value=float(inputs.get("taxable_investment_accounts", 0.0)) if pd.notna(inputs.get("taxable_investment_accounts")) else 0.0,
+                                                      format="%.2f", help="Brokerage accounts, stocks, bonds", key="a_taxable_input")
+         high_yield_savings_account = st.number_input("High-Yield Savings:", value=float(inputs.get("high_yield_savings_account", 0.0)) if pd.notna(inputs.get("high_yield_savings_account")) else 0.0,
++                                                    min_value=0.0,
+                                                     format="%.2f", help="Emergency fund, savings accounts", key="a_hysa_input")
+         five29_plan_balance = st.number_input("529 Education Savings:", value=float(inputs.get("five29_plan_balance", 0.0)) if pd.notna(inputs.get("five29_plan_balance")) else 0.0,
+                                              format="%.2f", help="Tax-advantaged education savings", key="a_529_input")
+@@ -636,6 +655,7 @@ with st.expander("📉 Liabilities", expanded=True):
+         st.markdown("**Real Estate Debt**")
+         primary_residence_mortgage = st.number_input("Primary Residence Mortgage:", value=float(inputs.get("primary_residence_mortgage", 0.0)) if pd.notna(inputs.get("primary_residence_mortgage")) else 0.0,
+                                                     format="%.2f", help="Remaining balance on primary home", key="l_home1_input")
++                                                    min_value=0.0,
+         secondary_residence_mortgage = st.number_input("Secondary Residence Mortgage:", value=float(inputs.get("secondary_residence_mortgage", 0.0)) if pd.notna(inputs.get("secondary_residence_mortgage")) else 0.0,
+                                                       format="%.2f", help="Remaining balance on second home", key="l_home2_input")
+         st.markdown("**Consumer Debt**")
+@@ -661,6 +681,7 @@ total_liabilities_local = (primary_residence_mortgage + secondary_residence_mortga
+ partner_total_assets = 0.0
+ if partner_exists:
+     partner_total_assets = (partner_ira_balance + partner_four01k_403b_balance + partner_taxable_investment_accounts + partner_other_assets)
++
+ combined_total_assets = total_assets + partner_total_assets
+ combined_total_liabilities = total_liabilities_local + partner_liabilities
+ combined_net_worth = combined_total_assets - combined_total_liabilities
+@@ -705,6 +726,7 @@ with col2:
+     investment_return_rate = st.number_input("Annual Investment Return (%):", min_value=-5.0, max_value=15.0, value=float(inputs.get("investment_return_rate", 7.0)) if pd.notna(inputs.get("investment_return_rate")) else 7.0,
+                                             step=0.1, help="Expected annual return on investments", key="ret_rate_input")
+     simulation_years = st.number_input("Simulation Period (Years):", min_value=5, max_value=75, value=int(inputs.get("simulation_years", 30)) if pd.notna(inputs.get("simulation_years")) else 30,
++                                       step=1,
+                                        help="How many years to project forward (50+ years for multi-generational planning)", key="sim_years_input")
+ mc_iterations = st.number_input("Monte Carlo Iterations (0 = disabled):", min_value=0, max_value=10000, value=int(inputs.get("mc_iterations", 1000)) if pd.notna(inputs.get("mc_iterations")) else 1000,
+                                step=100, help="Number of simulation runs for probability analysis", key="mc_iters_input")
+@@ -720,6 +742,7 @@ default_goals = pd.DataFrame({"Goal": ["Retirement", "Emergency Fund"], "Target Ye
+ goal_df = st.data_editor(st.session_state.get("goal_df", default_goals), num_rows="dynamic",
+                          column_config={
+                              "Goal": st.column_config.TextColumn("Goal Name", help="e.g., Retirement, College Fund, Home Purchase", width="medium", default="New Goal"),
++                             "Target Year Range": st.column_config.TextColumn("Target Year(s)", help="Single year (2035) or range (2035-2040)", width="small", default=f"{date.today().year + 20}"),
+                              "Target $": st.column_config.NumberColumn("Target Amount", help="Total amount needed to achieve goal", format="$%.2f", default=0.0)
+                          }, use_container_width=True, key=f"goal_editor_{scenario_name}")
+ for row in goal_df.to_dict(orient="records"):
+@@ -741,6 +764,7 @@ if not goal_df.empty:
+             goal_name = row.get('Goal', '')
+             target_amount = row.get('Target $', 0.0)
+             target_year = row.get('Target Year Range', '')
++            st.write(f"• **{goal_name}**: ${target_amount:,.2f} by {target_year}")
+ 
+ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses, combined_financial_assets,
+                    primary_residence_value, secondary_residence_value, combined_other_assets_total,
+@@ -784,6 +808,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses,
+         children = []
+         inheritances = []
+         family_cashflows = {}
++        if EVENTS_AVAILABLE:
+             children = he.build_child_objects(st.session_state.get("children_rows", []))
+             inheritances = he.build_inheritances(st.session_state.get("inherit_rows", []))
+             start_year = date.today().year
+@@ -822,6 +847,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses,
+         total_assets_list = []
+         total_liabilities_list = []
+         net_worth_list = []
++        primary_ira_for_rmd = float(inputs.get("ira_balance", 0.0)) if pd.notna(inputs.get("ira_balance")) else 0.0
+         primary_401k_for_rmd = float(inputs.get("four01k_403b_balance", 0.0)) if pd.notna(inputs.get("four01k_403b_balance")) else 0.0
+         partner_ira_for_rmd = float(partner_ira_balance) if partner_exists and pd.notna(partner_ira_balance) else 0.0
+         partner_401k_for_rmd = float(partner_four01k_403b_balance) if partner_exists and pd.notna(partner_four01k_403b_balance) else 0.0
+@@ -834,6 +860,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses,
+             deltas = family_cashflows.get(current_year, {"expense_delta": 0.0, "inflow_delta": 0.0})
+             annual_income = initial_annual_income * (1 + infl / 100) ** year + deltas["inflow_delta"]
+             annual_expenses = initial_annual_expenses * (1 + infl / 100) ** year + deltas["expense_delta"]
++            event_delta = deltas["expense_delta"] + deltas["inflow_delta"]
+             net_draw = annual_expenses - annual_income
+             rmd_person1 = 0.0
+             if current_age >= 73:
+@@ -842,6 +869,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses,
+             rmd_person2 = 0.0
+             if partner_exists and current_partner_age >= 73:
+                 factor = rmd_factors.get(current_partner_age, 6.4)
++                rmd_person2 = (partner_ira_for_rmd + partner_401k_for_rmd) / factor if factor > 0 else 0.0
+             total_rmd = rmd_person1 + rmd_person2
+             net_rmd_used = total_rmd * (1 - tax / 100)
+             if total_rmd > 0:
+@@ -877,6 +905,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses,
+         mc_results = []
+         if mc_iters > 0:
+             for _ in range(mc_iters):
++                sim_ret = np.random.normal(ret / 100, 0.02)
+                 sim_infl = np.random.normal(infl / 100, 0.005)
+                 sim_savings = combined_financial_assets
+                 for year in range(sim_years):
+@@ -896,6 +925,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses,
+         years_solvent = len(savings_end) if current_savings >= 0 else years.index(current_year)
+         final_savings = savings_end[-1] if savings_end else 0.0
+         final_net_worth = net_worth_list[-1] if net_worth_list else 0.0
++        emergency_fund_months = final_savings / (initial_annual_expenses / 12) if initial_annual_expenses > 0 else 0.0
+         debt_to_income = current_liabilities / initial_annual_income if initial_annual_income > 0 else 0.0
+         savings_rate = monthly_surplus / total_income if total_income > 0 else 0.0
+         health_score = min(100, max(0, 100 * (1 - debt_to_income) + 10 * emergency_fund_months))
+@@ -917,6 +947,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses,
+                     goal_achievement[goal_name] = {'target': target_amount, 'year': target_year_str, 'achieved': False, 'actual': 0.0}
+ 
+         return {
++            'years': years, 'ages': ages, 'total_incomes': total_incomes, 'total_expenses': total_expenses_list,
+             'event_deltas': event_deltas, 'net_draws': net_draws, 'rmd_person1': rmd_pers1, 'rmd_person2': rmd_pers2,
+             'total_rmd': total_rmd_before_tax, 'net_rmd_used': net_rmd_used_list, 'cash_used_from_savings': cash_used_from_savings_list,
+             'savings_open': savings_open, 'savings_growth': savings_growth, 'savings_before_draw': savings_before_draw,
+@@ -927,6 +958,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses,
+         }
+     except Exception as e:
+         st.error(f"Simulation error: {e}")
++        return None
+ st.header("📈 Run Simulation")
+ if st.button("Run Simulation", type="primary"):
+     goal_costs = {}
+@@ -942,6 +974,7 @@ if st.button("Run Simulation", type="primary"):
+     results = run_simulation(
+         age=age, partner_exists=partner_exists, partner_age=partner_age, total_income=total_income, total_expenses=total_expenses,
+         combined_financial_assets=combined_financial_assets, primary_residence_value=primary_residence_value,
++        secondary_residence_value=secondary_residence_value, combined_other_assets_total=combined_other_assets_total,
+         total_liabilities_local=total_liabilities_local, partner_total_liabilities_local=partner_liabilities,
+         tax=tax_rate, infl=inflation_rate, ret=investment_return_rate, sim_years=simulation_years, mc_iters=mc_iterations, goal_costs=goal_costs
+     )
+@@ -955,6 +988,7 @@ if st.session_state.simulation_results:
+     with col1:
+         st.metric("**Years Solvent**", f"{results['years_solvent']}")
+     with col2:
++        st.metric("**Final Savings**", f"${results['final_savings']:,.2f}")
+     with col3:
+         st.metric("**Final Net Worth**", f"${results['final_net_worth']:,.2f}")
+     with col4:
+@@ -964,6 +998,7 @@ if st.session_state.simulation_results:
+         st.subheader("Financial Health Dashboard")
+         col1, col2, col3 = st.columns(3)
+         with col1:
++            st.metric("Emergency Fund", f"{results['emergency_fund_months']:.1f} months")
+         with col2:
+             st.metric("Debt-to-Income Ratio", f"{results['debt_to_income']:.2%}")
+         with col3:
+@@ -973,6 +1008,7 @@ if st.session_state.simulation_results:
+         st.subheader("Goal Achievement")
+         for goal, data in results['goal_achievement'].items():
+             status = "✅ Achieved" if data['achieved'] else "❌ Not Achieved"
++            st.write(f"**{goal}**: Target ${data['target']:,.2f} by {data['year']} - {status} (Actual: ${data['actual']:,.2f})")
+ 
+     st.subheader("Sensitivity Analysis")
+     col1, col2 = st.columns(2)
+@@ -985,6 +1021,7 @@ if st.session_state.simulation_results:
+         return_adj = st.slider("Adjust Investment Return (%):", -5.0, 5.0, 0.0, step=0.1, key="return_adj")
+         inflation_adj = st.slider("Adjust Inflation Rate (%):", -5.0, 5.0, 0.0, step=0.1, key="inflation_adj")
+ 
++    if st.button("Run Adjusted Simulation & Compare"):
+         adj_goal_costs = {}  # Scoped to avoid NameError
+         for _, row in goal_df.dropna().iterrows():
+             try:
+@@ -1003,6 +1040,7 @@ if st.session_state.simulation_results:
+             total_income=total_income * (1 + income_adj / 100),
+             total_expenses=total_expenses * (1 + expenses_adj / 100),
+             combined_financial_assets=combined_financial_assets,
++            primary_residence_value=primary_residence_value,
+             secondary_residence_value=secondary_residence_value,
+             combined_other_assets_total=combined_other_assets_total,
+             total_liabilities_local=total_liabilities_local,
+@@ -1017,6 +1055,7 @@ if st.session_state.simulation_results:
+             comparison_data = {
+                 "Metric": ["Final Savings", "Final Net Worth", "Years Solvent", "Emergency Fund (Months)", "Debt-to-Income", "Savings Rate", "Health Score"],
+                 "Baseline": [
++                    f"${results['final_savings']:,.2f}",
+                     f"${results['final_net_worth']:,.2f}",
+                     results['years_solvent'],
+                     f"{results['emergency_fund_months']:.1f}",
+@@ -1028,6 +1067,7 @@ if st.session_state.simulation_results:
+                     f"${adj_results['final_savings']:,.2f}",
+                     f"${adj_results['final_net_worth']:,.2f}",
+                     adj_results['years_solvent'],
++                    f"{adj_results['emergency_fund_months']:.1f}",
+                     f"{adj_results['debt_to_income']:.2%}",
+                     f"{adj_results['savings_rate']:.2%}",
+                     f"{adj_results['health_score']:.1f}"
+@@ -1044,6 +1084,7 @@ if st.session_state.simulation_results:
+             comparison_df = pd.DataFrame(comparison_data)
+             comparison_df.style.apply(lambda x: ['color: green' if '+' in str(v) else 'color: red' if '-' in str(v) else '' for v in x], axis=1)
+             st.dataframe(comparison_df, use_container_width=True)
++            fig = go.Figure()
+             fig.add_trace(go.Scatter(x=results['years'], y=results['savings_end'], name="Baseline Savings", line=dict(color='blue')))
+             fig.add_trace(go.Scatter(x=adj_results['years'], y=adj_results['savings_end'], name="Adjusted Savings", line=dict(color='red')))
+             fig.update_layout(title="Savings Trajectory: Baseline vs Adjusted", xaxis_title="Year", yaxis_title="Savings ($)")
+@@ -1054,6 +1095,7 @@ if st.session_state.simulation_results:
+         st.subheader("Cash-Flow Sankey Diagram")
+         labels = ["Income", "Expenses", "Savings", "RMDs", "Investments"]
+         sources = [0, 0, 3]
++        targets = [1, 2, 2]
+         values = [sum(results['total_incomes']) * 0.7, sum(results['total_incomes']) * 0.3, sum(results['total_rmd'])]
+         fig = go.Figure(data=[go.Sankey(node=dict(label=labels), link=dict(source=sources, target=targets, value=values))])
+         st.plotly_chart(fig, use_container_width=True)
+@@ -1063,6 +1105,7 @@ if st.session_state.simulation_results:
+         for goal, data in results['goal_achievement'].items():
+             fig = go.Figure(go.Indicator(mode="gauge+number", value=data['actual'], title={'text': goal},
+                                          gauge={'axis': {'range': [0, data['target'] * 1.5]}, 'bar': {'color': "darkblue"},
++                                                'steps': [{'range': [0, data['target']], 'color': "lightgreen"},
+                                                           {'range': [data['target'], data['target'] * 1.5], 'color': "lightgray"}],
+                                                 'threshold': {'line': {'color': "red", 'width': 4}, 'value': data['target']}}))
+             st.plotly_chart(fig, use_container_width=True)
+@@ -1074,6 +1117,7 @@ if st.session_state.simulation_results:
+             net_cash_flow = results['total_incomes'][results['years'].index(year)] - results['total_expenses'][results['years'].index(year)]
+             monthly_data.append([year, 1, net_cash_flow / 12])
+         df = pd.DataFrame(monthly_data, columns=['Year', 'Month', 'Net Cash Flow'])
++        fig = px.density_heatmap(df, x="Year", y="Month", z="Net Cash Flow", color_continuous_scale="Viridis")
+         st.plotly_chart(fig, use_container_width=True)
+ 
+     if show_timeline:
+@@ -1088,6 +1132,7 @@ if st.session_state.simulation_results:
+         for inheritance in inheritances:
+             timeline_data.append({'Year': inheritance['year'], 'Event': "Inheritance/Windfall", 'Impact': inheritance['amount'], 'Type': 'Windfall', 'Avatar': '💰'})
+         for year in results['years']:
++            if results['rmd_person1'][results['years'].index(year)] > 0:
+                 timeline_data.append({'Year': year, 'Event': "Primary RMD", 'Impact': results['rmd_person1'][results['years'].index(year)], 'Type': 'Milestone', 'Avatar': '👴'})
+             if results['rmd_person2'][results['years'].index(year)] > 0:
+                 timeline_data.append({'Year': year, 'Event': f"{partner_name} RMD", 'Impact': results['rmd_person2'][results['years'].index(year)], 'Type': 'Milestone', 'Avatar': '👵'})
+@@ -1102,6 +1147,7 @@ if st.session_state.simulation_results:
+                                                                 x_end=df_timeline['Year'].apply(lambda x: f"{x}-12-31"), y='Event', color='Type',
+                                                                 color_discrete_map={'College': 'red', 'Windfall': 'green', 'Milestone': 'blue'},
+                                                                 hover_data=['Impact', 'Avatar']))
++                ])
+                 st.warning("Dash requires local server. Run locally for interactivity.")
+             else:
+                 fig = px.timeline(df_timeline, x_start=df_timeline['Year'].apply(lambda x: f"{x}-01-01"),
+@@ -1111,6 +1157,7 @@ if st.session_state.simulation_results:
+                                   hover_data=['Impact', 'Avatar'])
+                 fig.update_layout(title="Family Financial Timeline", xaxis_title="Year", yaxis_title="Event")
+                 st.plotly_chart(fig, use_container_width=True)
++if OPENAI_AVAILABLE and IS_TRUSTED_USER:
+     st.header("🤖 AI-Powered Financial Consultation")
+     consultation_query = st.text_area("Ask for financial advice based on your simulation results:", key="consult_query")
+     if st.button("Get AI Advice"):
+@@ -1125,6 +1172,7 @@ if st.session_state.simulation_results:
+                 response = client.chat.completions.create(model="gpt-4", messages=[{"role": "user", "content": prompt}])
+                 st.write(response.choices[0].message.content)
+             except Exception as e:
++                st.error(f"AI consultation error: {e}")
+         else:
+             st.warning("Please enter a query for AI consultation.")
+ 
+@@ -1132,6 +1180,7 @@ st.markdown("---")
+ st.markdown("**Grok Family Retirement Plus** | Built with ❤️ by xAI | v2.1 | MIT License")
+ ```
+st.markdown("---")
+st.markdown("**Grok Family Retirement Plus** | Built with ❤️ by xAI | v2.1 | MIT License")

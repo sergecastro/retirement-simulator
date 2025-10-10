@@ -1,0 +1,119 @@
+--git a/family_retirement/GROK_app_family_plus.py b/family_retirement/GROK_app_family_plus.py
+index 8f9c4d9..d3a5e6b 100644
+--- a/family_retirement/GROK_app_family_plus.py
++++ b/family_retirement/GROK_app_family_plus.py
+@@ -1,4 +1,5 @@
+ import streamlit as st
++import math
+ import pandas as pd
+ import numpy as np
+ import json
+@@ -430,7 +431,11 @@ if EVENTS_AVAILABLE:
+             step=0.5, help="How much college costs increase each year",
+             key="college_infl_input"
+         )
++        if pd.isna(college_inflation_pct) or math.isnan(college_inflation_pct):
++            college_inflation_pct = 4.0
+         base_public_in = st.number_input(
++            "Public In-State (Annual $):",
++            min_value=0.0,
+             value=float(inputs.get("base_public_in", 20000.0)) if pd.notna(inputs.get("base_public_in")) else 20000.0,
+             step=1000.0, help="Current annual cost for public in-state",
+             key="base_public_in_input"
+@@ -440,12 +445,18 @@ if EVENTS_AVAILABLE:
+             min_value=0.0,
+             value=float(inputs.get("base_public_out", 40000.0)) if pd.notna(inputs.get("base_public_out")) else 40000.0,
+             step=1000.0, help="Current annual cost for public out-of-state",
+-            key="base_public_out_input"
++            key="base_public_out_input"
+         )
+         base_private = st.number_input(
+             "Private College (Annual $):",
+             min_value=0.0,
+             value=float(inputs.get("base_private", 60000.0)) if pd.notna(inputs.get("base_private")) else 60000.0,
+             step=1000.0, help="Current annual cost for private college",
+             key="base_private_input"
+-        )
++        )
++    else:
++        college_inflation_pct = 4.0
++        base_public_in = 20000.0
++        base_public_out = 40000.0
++        base_private = 60000.0
+ 
+ st.header("💵 Monthly Income & Expenses")
+ if input_style == "Detailed Breakdown":
+@@ -721,6 +732,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses,
+         rmd_person2 = 0.0
+         if partner_exists and current_partner_age >= 73 and (partner_ira_for_rmd + partner_401k_for_rmd) > 0:
+             factor = rmd_factors.get(current_partner_age, 6.4)
++            rmd_person2 = (partner_ira_for_rmd + partner_401k_for_rmd) / factor
+         total_rmd = rmd_person1 + rmd_person2
+         net_rmd_used = total_rmd * (1 - tax / 100)
+@@ -728,6 +740,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expenses,
+             st.write(f"DEBUG: Year {current_year}: Primary RMD = ${rmd_person1:,.2f}, Partner RMD = ${rmd_person2:,.2f}, Total RMD (pre-tax) = ${total_rmd:,.2f}")
+ 
+         # Adjust savings
+@@ -821,6 +834,7 @@ if st.session_state.simulation_results:
+         for goal, data in results['goal_achievement'].items():
+             fig = go.Figure(go.Indicator(
+                 mode="gauge+number",
++                value=data['actual'],
+                 title={'text': goal},
+                 gauge={
+                     'axis': {'range': [0, data['target'] * 1.5]},
+@@ -840,6 +854,7 @@ if st.session_state.simulation_results:
+             monthly_data = []
+             for year in results['years']:
+                 net_cash_flow = results['total_incomes'][results['years'].index(year)] - results['total_expenses'][results['years'].index(year)]
++                monthly_data.append([year, 1, net_cash_flow / 12])
+             df = pd.DataFrame(monthly_data, columns=['Year', 'Month', 'Net Cash Flow'])
+             fig = px.density_heatmap(df, x="Year", y="Month", z="Net Cash Flow", color_continuous_scale="Viridis")
+             st.plotly_chart(fig, use_container_width=True)
+@@ -848,6 +863,7 @@ if st.session_state.simulation_results:
+         st.subheader("Interactive Family Timeline (Preview)")
+         timeline_data = []
+         for child in children:
++            if child.get('college_years'):
+                 for y in child['college_years']:
+                     timeline_data.append({
+                         'Year': y,
+@@ -860,6 +876,7 @@ if st.session_state.simulation_results:
+                 timeline_data.append({'Year': year, 'Event': "Primary RMD", 'Impact': results['rmd_person1'][results['years'].index(year)], 'Type': 'Milestone', 'Avatar': '👴'})
+             if results['rmd_person2'][results['years'].index(year)] > 0:
+                 timeline_data.append({'Year': year, 'Event': f"{partner_name} RMD", 'Impact': results['rmd_person2'][results['years'].index(year)], 'Type': 'Milestone', 'Avatar': '👵'})
++
+         if timeline_data:
+             df_timeline = pd.DataFrame(timeline_data)
+             if DASH_AVAILABLE:
+@@ -873,6 +890,7 @@ if st.session_state.simulation_results:
+                     )
+                 ])
+                 st.warning("Dash integration requires local server. Run locally for full interactivity.")
++            else:
+                 fig = px.timeline(df_timeline, x_start=df_timeline['Year'].apply(lambda x: f"{x}-01-01"),
+                                   x_end=df_timeline['Year'].apply(lambda x: f"{x}-12-31"), y='Event', color='Type',
+                                   color_discrete_map={'College': 'red', 'Windfall': 'green', 'Milestone': 'blue'},
+@@ -882,6 +900,7 @@ if st.session_state.simulation_results:
+                 st.plotly_chart(fig, use_container_width=True)
+ 
+ if OPENAI_AVAILABLE and IS_TRUSTED_USER:
++    st.header("🤖 AI-Powered Financial Consultation")
+     consultation_query = st.text_area("Ask for financial advice based on your simulation results:", key="consult_query")
+     if st.button("Get AI Advice"):
+         if consultation_query:
+@@ -890,6 +909,7 @@ if OPENAI_AVAILABLE and IS_TRUSTED_USER:
+             - Final Savings: ${results['final_savings']:,.2f}
+             - Final Net Worth: ${results['final_net_worth']:,.2f}
+             - Years Solvent: {results['years_solvent']}
++            - Health Score: {results['health_score']:.1f}/100
+             - Goals: {json.dumps(results['goal_achievement'], indent=2)}
+             User Query: {consultation_query}
+             Provide concise, actionable financial advice.
+@@ -902,6 +922,7 @@ if OPENAI_AVAILABLE and IS_TRUSTED_USER:
+                 st.error(f"AI consultation error: {e}")
+         else:
+             st.warning("Please enter a query for AI consultation.")
++
+ st.markdown("---")
+ st.markdown("**Grok Family Retirement Plus** | Built with ❤️ by xAI | v2.1 | MIT License")

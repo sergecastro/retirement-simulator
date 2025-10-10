@@ -1,6 +1,9 @@
 .streamlit/
 venv/
-# Secrets and private data
-secrets.toml
-.streamlit/secrets.toml
-venv/ 
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.ipynb_checkpoints/venv/ 
+family_retirement_no_OCR
