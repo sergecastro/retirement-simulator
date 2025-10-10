@@ -7,6 +7,74 @@ from household_events import build_child_objects, build_inheritances, make_famil
 from financial_utils import safe_float, safe_int
 from visualization.irmaa_analysis import calculate_magi, get_irmaa_bracket  # Added for IRMAA
 
+# 2025 Tax Brackets (Single/Joint) - Update annually
+TAX_BRACKETS_2025 = {
+    'single': [
+        {'min': 0, 'max': 11600, 'rate': 0.10},
+        {'min': 11600, 'max': 47150, 'rate': 0.12},
+        {'min': 47150, 'max': 100525, 'rate': 0.22},
+        {'min': 100525, 'max': 191950, 'rate': 0.24},
+        {'min': 191950, 'max': 243725, 'rate': 0.32},
+        {'min': 243725, 'max': 609350, 'rate': 0.35},
+        {'min': 609350, 'max': float('inf'), 'rate': 0.37}
+    ],
+    'joint': [
+        {'min': 0, 'max': 23200, 'rate': 0.10},
+        {'min': 23200, 'max': 94300, 'rate': 0.12},
+        {'min': 94300, 'max': 201050, 'rate': 0.22},
+        {'min': 201050, 'max': 383900, 'rate': 0.24},
+        {'min': 383900, 'max': 487450, 'rate': 0.32},
+        {'min': 487450, 'max': 731200, 'rate': 0.35},
+        {'min': 731200, 'max': float('inf'), 'rate': 0.37}
+    ]
+}
+
+def calculate_taxes(income, filing_status='joint'):
+    """Calculate federal taxes based on brackets"""
+    brackets = TAX_BRACKETS_2025[filing_status]
+    tax = 0
+    for bracket in brackets:
+        if income > bracket['min']:
+            taxable_in_bracket = min(income, bracket['max']) - bracket['min']
+            tax += taxable_in_bracket * bracket['rate']
+        if income <= bracket['max']:
+            break
+    return tax
+
+def optimize_roth_conversions(year_idx, current_magi, ira_balance, roth_conversion_annual, filing_status='joint'):
+    """
+    Optimize Roth conversion amount to fill lower tax brackets without jumping IRMAA tiers.
+    Returns optimal conversion amount for the year.
+    """
+    if ira_balance <= 0 or roth_conversion_annual <= 0:
+        return 0
+    
+    # Target: Fill up to next bracket or IRMAA threshold, up to user max
+    max_conversion = min(ira_balance, roth_conversion_annual)
+    
+    # Get current tax bracket and next threshold
+    brackets = TAX_BRACKETS_2025[filing_status]
+    current_bracket_idx = next((i for i, b in enumerate(brackets) if b['min'] <= current_magi <= b['max']), len(brackets)-1)
+    next_bracket_min = brackets[current_bracket_idx]['max'] if current_bracket_idx < len(brackets)-1 else float('inf')
+    
+    # Get next IRMAA threshold
+    irmaa_brackets = IRMAA_BRACKETS_2025[filing_status]
+    current_irmaa_idx = next((i for i, b in enumerate(irmaa_brackets) if b['min'] <= current_magi <= b['max']), 0)
+    next_irmaa_min = irmaa_brackets[current_irmaa_idx + 1]['min'] if current_irmaa_idx < len(irmaa_brackets)-1 else float('inf')
+    
+    # Safe conversion: Min of next tax/IRMAA threshold, minus current MAGI
+    safe_to_next_tax = max(0, next_bracket_min - current_magi)
+    safe_to_next_irmaa = max(0, next_irmaa_min - current_magi)
+    optimal = min(max_conversion, safe_to_next_tax, safe_to_next_irmaa)
+    
+    # Simulate tax savings: Compare tax now vs future (assume future rate 24%)
+    current_tax = calculate_taxes(current_magi + optimal) - calculate_taxes(current_magi)
+    future_tax_saved = optimal * 0.24  # Assumed future bracket
+    if current_tax >= future_tax_saved:
+        optimal = 0  # Not worth it if current tax > future savings
+    
+    return max(0, optimal)
+
 def run_simulation(age, partner_exists, partner_age, total_income, total_expenses, combined_financial_assets, primary_residence_value, secondary_residence_value, combined_other_assets_total, total_liabilities_local, partner_liabilities, tax_rate, inflation_rate, investment_return_rate, simulation_years, mc_iterations, goal_costs, college_inflation_pct, base_public_in, base_public_out, base_private, ira_balance, four01k_403b_balance, partner_ira_balance, partner_four01k_403b_balance, monthly_surplus, combined_total_liabilities, roth_conversion_annual=0, itemize_deductions=True, five29_plan_balance=0.0, tax_exempt_interest=0.0):
     
     # Initialize results dictionary at the start
@@ -106,6 +174,9 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         partner_rmd_list = []
         total_rmd_list = []
         
+        # Roth conversions (Added)
+        roth_conversion_list = []
+        
         # Expense components
         total_expenses_list = []
         housing_expenses_list = []
@@ -158,176 +229,139 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         first_user_rmd_logged = False
         first_partner_rmd_logged = False
         
-        # CRITICAL FIX: Define income/expense distribution proportions
-        # These proportions allow us to break down total_income and total_expenses
-        # Default proportions (can be customized if needed)
-        income_proportions = {
-            'salary': 0.0,
-            'rental': 0.15,
-            'investment': 0.05,
-            'social_security': 0.30,
-            'pension': 0.50,
-            'other': 0.0
-        }
-        
-        expense_proportions = {
-            'housing': 0.0,
-            'utilities': 0.08,
-            'groceries': 0.14,
-            'transportation': 0.05,
-            'healthcare': 0.25,
-            'insurance': 0.13,
-            'entertainment': 0.08,
-            'travel': 0.13,
-            'other': 0.14
-        }
+        # CRITICAL FIX: Use actual income/expenses
+        savings = combined_financial_assets
+        five29_balance = five29_plan_balance
         
         for year_idx in range(simulation_years):
-            current_year = start_year + year_idx
-            current_age = age + year_idx
-            current_partner_age = partner_age + year_idx if partner_exists else 0
+            year = start_year + year_idx
+            user_age = age + year_idx
+            partner_age = partner_age + year_idx if partner_exists else 0
             
-            # Inflation adjustment
-            inf_factor = (1 + inflation_rate/100) ** year_idx
+            # Initialize annual values
+            annual_income = base_total_income * (1 + inflation_rate / 100) ** year_idx
+            annual_expenses = base_total_expenses * (1 + inflation_rate / 100) ** year_idx
             
-            # =========================
-            # INCOME CALCULATIONS - FIXED TO USE ACTUAL PARAMETERS
-            # =========================
+            # Income components (simplified - use total income for now)
+            salary_wages = annual_income * 0.5  # Placeholder
+            rental_income = annual_income * 0.1
+            investment_income = annual_income * 0.1
+            social_security = annual_income * 0.2
+            pension_income = annual_income * 0.05
+            other_income = annual_income * 0.05
             
-            # CRITICAL FIX: Use the ACTUAL total_income parameter and distribute proportionally
-            annual_base_income = base_total_income * 12 * inf_factor
-            
-            # Distribute income across components using proportions
-            salary = annual_base_income * income_proportions['salary']
-            rental = annual_base_income * income_proportions['rental']
-            investment = annual_base_income * income_proportions['investment']
-            ss = annual_base_income * income_proportions['social_security']
-            pension = annual_base_income * income_proportions['pension']
-            other = annual_base_income * income_proportions['other']
-            
-            base_income = salary + rental + investment + ss + pension + other
-            
-            # =========================
-            # RMD CALCULATIONS (SEPARATED WITH DEBUG)
-            # =========================
-            
-            # User RMD
-            user_rmd = 0.0
-            if current_age >= 73 and user_retirement_balance > 0:
-                rmd_divisor = rmd_factors.get(current_age, 20.0)
-                user_rmd = user_retirement_balance / rmd_divisor
-                user_retirement_balance = max(0, user_retirement_balance - user_rmd)
-                
+            # RMD calculations
+            user_rmd = 0
+            partner_rmd = 0
+            if user_age >= 73 and user_retirement_balance > 0:
+                factor = rmd_factors.get(user_age, 27.4)
+                user_rmd = user_retirement_balance / factor
+                user_retirement_balance -= user_rmd
                 if not first_user_rmd_logged:
-                    print(f"SUCCESS: USER RMD STARTED - Year {current_year}, Age {current_age}")
-                    print(f"   Balance: ${user_retirement_balance + user_rmd:,.2f}")
-                    print(f"   Divisor: {rmd_divisor}")
-                    print(f"   RMD Amount: ${user_rmd:,.2f}\n")
+                    print(f"DEBUG: First User RMD at age {user_age}: ${user_rmd:,.2f}")
                     first_user_rmd_logged = True
             
-            # Partner RMD
-            partner_rmd = 0.0
-            if partner_exists and current_partner_age >= 73 and partner_retirement_balance > 0:
-                rmd_divisor = rmd_factors.get(current_partner_age, 20.0)
-                partner_rmd = partner_retirement_balance / rmd_divisor
-                partner_retirement_balance = max(0, partner_retirement_balance - partner_rmd)
-                
+            if partner_exists and partner_age >= 73 and partner_retirement_balance > 0:
+                factor = rmd_factors.get(partner_age, 27.4)
+                partner_rmd = partner_retirement_balance / factor
+                partner_retirement_balance -= partner_rmd
                 if not first_partner_rmd_logged:
-                    print(f"SUCCESS: PARTNER RMD STARTED - Year {current_year}, Age {current_partner_age}")
-                    print(f"   Balance: ${partner_retirement_balance + partner_rmd:,.2f}")
-                    print(f"   Divisor: {rmd_divisor}")
-                    print(f"   RMD Amount: ${partner_rmd:,.2f}\n")
+                    print(f"DEBUG: First Partner RMD at age {partner_age}: ${partner_rmd:,.2f}")
                     first_partner_rmd_logged = True
             
             total_rmd = user_rmd + partner_rmd
             
-            # Total income including RMD
-            total_income_year = base_income + total_rmd
+            # Total income including RMDs
+            total_income = salary_wages + rental_income + investment_income + social_security + pension_income + other_income + total_rmd
             
-            # NEW: Calculate MAGI and IRMAA costs
-            magi = calculate_magi(total_income_year, tax_exempt_interest)
+            # Expense components (simplified - use total expenses for now)
+            housing_expenses = annual_expenses * 0.3
+            utilities = annual_expenses * 0.1
+            groceries = annual_expenses * 0.1
+            transportation = annual_expenses * 0.1
+            healthcare = annual_expenses * 0.15
+            insurance = annual_expenses * 0.1
+            entertainment = annual_expenses * 0.05
+            travel = annual_expenses * 0.05
+            other_expenses = annual_expenses * 0.05
+            
+            # Family events (college, inheritances)
+            family_expense = family_cashflows.get(year, {}).get('expense_delta', 0.0)
+            family_inflow = family_cashflows.get(year, {}).get('inflow_delta', 0.0)
+            
+            # Apply 529 plan for college expenses
+            if family_expense > 0 and five29_balance > 0:
+                from_529 = min(five29_balance, family_expense)
+                five29_balance -= from_529
+                family_expense -= from_529
+            
+            # Total expenses including college
+            total_expenses = housing_expenses + utilities + groceries + transportation + healthcare + insurance + entertainment + travel + other_expenses + family_expense
+            
+            # Taxes and IRMAA
             filing_status = 'joint' if partner_exists else 'single'
+            magi = calculate_magi(total_income, tax_exempt_interest)
+            
+            # Optimized Roth conversion
+            roth_conversion = 0
+            if roth_conversion_annual > 0 and year_idx >= (65 - age):
+                roth_conversion = optimize_roth_conversions(year_idx, magi, ira_balance, roth_conversion_annual, filing_status)
+                if roth_conversion > 0:
+                    ira_balance -= roth_conversion
+                    magi += roth_conversion
+                    user_retirement_balance -= roth_conversion
+            
+            taxes_paid = calculate_taxes(magi, filing_status)
             irmaa_bracket = get_irmaa_bracket(magi, filing_status)
-            irmaa_cost = irmaa_bracket['surcharge_monthly'] * 12  # Annual Part B surcharge
-            irmaa_cost += irmaa_bracket['part_d_base'] * 12  # Annual Part D surcharge
-            if partner_exists:
-                irmaa_cost *= 2  # Double for both spouses
+            irmaa_cost = irmaa_bracket['surcharge_monthly'] * 12 * (2 if partner_exists else 1)
             
-            # =========================
-            # EXPENSE CALCULATIONS - FIXED TO USE ACTUAL PARAMETERS
-            # =========================
+            # Net calculations
+            net_before_special = total_income - total_expenses - taxes_paid
+            net_after_special = net_before_special - family_expense + family_inflow - irmaa_cost
             
-            # CRITICAL FIX: Use the ACTUAL total_expenses parameter and distribute proportionally
-            annual_base_expenses = base_total_expenses * 12 * inf_factor
+            # Savings and investment returns
+            savings_start = savings
+            savings += net_after_special
+            investment_return = savings * (investment_return_rate / 100)
+            savings += investment_return
+            savings = max(0, savings)
             
-            # Distribute expenses across components using proportions
-            housing = annual_base_expenses * expense_proportions['housing']
-            utilities = annual_base_expenses * expense_proportions['utilities']
-            groceries = annual_base_expenses * expense_proportions['groceries']
-            transportation = annual_base_expenses * expense_proportions['transportation']
-            healthcare = annual_base_expenses * expense_proportions['healthcare']
-            insurance = annual_base_expenses * expense_proportions['insurance']
-            entertainment = annual_base_expenses * expense_proportions['entertainment']
-            travel = annual_base_expenses * expense_proportions['travel']
-            other_exp = annual_base_expenses * expense_proportions['other']
-            
-            base_expenses = housing + utilities + groceries + transportation + healthcare + insurance + entertainment + travel + other_exp
-            
-            # =========================
-            # SPECIAL CASH FLOWS
-            # =========================
-            
-            family_flow = family_cashflows.get(current_year, {})
-            inheritance = family_flow.get('inflow_delta', 0) * inf_factor
-            college = family_flow.get('expense_delta', 0) * inf_factor
-            
-            total_expenses_year = base_expenses + college + irmaa_cost  # Added irmaa_cost
-            
-            # =========================
-            # NET INCOME CALCULATIONS
-            # =========================
-            
-            taxes_paid = total_income_year * (tax_rate / 100)
-            net_before_special = total_income_year - total_expenses_year - taxes_paid
-            net_after_special = net_before_special + inheritance
-            
-            # =========================
-            # SAVINGS & ASSETS
-            # =========================
-            
-            savings_start = current_savings
-            investment_return = savings_start * (investment_return_rate / 100)
-            current_savings = savings_start + investment_return + net_after_special
-            current_savings = max(0, current_savings)
-            savings_end = current_savings
-            
-            total_assets = savings_end + primary_residence_value + secondary_residence_value + combined_other_assets_total
+            # Assets and net worth
+            total_assets = savings + primary_residence_value * (1 + 2.0 / 100) ** year_idx + \
+                          secondary_residence_value * (1 + 2.0 / 100) ** year_idx + \
+                          combined_other_assets_total
             net_worth = total_assets - combined_total_liabilities
             
-            # =========================
-            # GOAL PROGRESS
-            # =========================
+            # Goal progress
+            goal_progress = {}
+            for goal, data in goal_costs.items():
+                if data['year'] == year:
+                    actual = savings
+                    achieved = actual >= data['amount']
+                    goal_progress[goal] = {
+                        'target': data['amount'],
+                        'year': data['year'],
+                        'actual': actual,
+                        'achieved': achieved
+                    }
             
-            cumulative_goals = sum(data['amount'] for data in goal_costs.values() if data['year'] <= current_year)
-            goal_progress = savings_end / cumulative_goals if cumulative_goals > 0 else 1.0
-            
-            # =========================
-            # APPEND TO LISTS
-            # =========================
-            
-            salary_wages_list.append(salary)
-            rental_income_list.append(rental)
-            investment_income_list.append(investment)
-            social_security_list.append(ss)
-            pension_income_list.append(pension)
-            other_income_list.append(other)
-            total_income_list.append(total_income_year)
+            # Store results
+            total_income_list.append(total_income)
+            salary_wages_list.append(salary_wages)
+            rental_income_list.append(rental_income)
+            investment_income_list.append(investment_income)
+            social_security_list.append(social_security)
+            pension_income_list.append(pension_income)
+            other_income_list.append(other_income)
             
             user_rmd_list.append(user_rmd)
             partner_rmd_list.append(partner_rmd)
             total_rmd_list.append(total_rmd)
             
-            housing_expenses_list.append(housing)
+            roth_conversion_list.append(roth_conversion)
+            
+            total_expenses_list.append(total_expenses)
+            housing_expenses_list.append(housing_expenses)
             utilities_list.append(utilities)
             groceries_list.append(groceries)
             transportation_list.append(transportation)
@@ -335,11 +369,10 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             insurance_list.append(insurance)
             entertainment_list.append(entertainment)
             travel_list.append(travel)
-            other_expenses_list.append(other_exp)
-            total_expenses_list.append(total_expenses_year)
+            other_expenses_list.append(other_expenses)
             
-            college_expenses_list.append(college)
-            inheritance_inflow_list.append(inheritance)
+            college_expenses_list.append(family_expense)
+            inheritance_inflow_list.append(family_inflow)
             
             taxes_paid_list.append(taxes_paid)
             net_income_before_special_list.append(net_before_special)
@@ -347,26 +380,21 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             
             savings_start_list.append(savings_start)
             investment_return_list.append(investment_return)
-            savings_end_list.append(savings_end)
+            savings_end_list.append(savings)
             total_assets_list.append(total_assets)
             total_liabilities_list.append(combined_total_liabilities)
             net_worth_list.append(net_worth)
             
             goal_progress_list.append(goal_progress)
             
-            irmaa_cost_list.append(irmaa_cost)  # Added for IRMAA
+            irmaa_cost_list.append(irmaa_cost)
         
-        # =========================
-        # CREATE DATAFRAME IN LOGICAL ORDER
-        # =========================
-        
+        # Create DataFrame
         df_data = {
-            # Basic Info
             'Year': year_list,
             'User_Age': age_list,
             'Partner_Age': partner_age_list,
             
-            # Income Components
             'Salary_Wages': salary_wages_list,
             'Rental_Income': rental_income_list,
             'Investment_Income': investment_income_list,
@@ -374,18 +402,17 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             'Pension_Income': pension_income_list,
             'Other_Income': other_income_list,
             'Base_Income_Subtotal': [salary_wages_list[i] + rental_income_list[i] + investment_income_list[i] + 
-                                      social_security_list[i] + pension_income_list[i] + other_income_list[i] 
-                                      for i in range(simulation_years)],
+                                    social_security_list[i] + pension_income_list[i] + other_income_list[i] 
+                                    for i in range(simulation_years)],
             
-            # RMD (SEPARATED)
             'User_RMD': user_rmd_list,
             'Partner_RMD': partner_rmd_list,
             'Total_RMD': total_rmd_list,
             
-            # Total Income
+            'Roth_Conversion': roth_conversion_list,
+            
             'Total_Income': total_income_list,
             
-            # Expense Components
             'Housing_Expenses': housing_expenses_list,
             'Utilities': utilities_list,
             'Groceries': groceries_list,
@@ -396,26 +423,21 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             'Travel': travel_list,
             'Other_Expenses': other_expenses_list,
             'Base_Expenses_Subtotal': [housing_expenses_list[i] + utilities_list[i] + groceries_list[i] + 
-                                        transportation_list[i] + healthcare_list[i] + insurance_list[i] + 
-                                        entertainment_list[i] + travel_list[i] + other_expenses_list[i] 
-                                        for i in range(simulation_years)],
+                                      transportation_list[i] + healthcare_list[i] + insurance_list[i] + 
+                                      entertainment_list[i] + travel_list[i] + other_expenses_list[i] 
+                                      for i in range(simulation_years)],
             
-            # Special Cash Flows
             'College_Expenses': college_expenses_list,
             'Inheritance_Inflow': inheritance_inflow_list,
             
-            # IRMAA Costs (Added for IRMAA)
-            'IRMAAnnualCost': irmaa_cost_list,
+            'IRMAA_Annual_Cost': irmaa_cost_list,
             
-            # Total Expenses
             'Total_Expenses': total_expenses_list,
             
-            # Net Calculations
             'Taxes_Paid': taxes_paid_list,
             'Net_Income_Before_Special': net_income_before_special_list,
             'Net_Income_After_Special': net_income_after_special_list,
             
-            # Savings & Assets
             'Savings_Start': savings_start_list,
             'Investment_Return': investment_return_list,
             'Savings_End': savings_end_list,
@@ -423,7 +445,6 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             'Total_Liabilities': total_liabilities_list,
             'Net_Worth': net_worth_list,
             
-            # Goals
             'Goal_Progress': goal_progress_list
         }
         
