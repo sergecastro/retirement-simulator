@@ -13,17 +13,11 @@ def inject_explain_visual_system():
     Inject the complete Explain Visual system into the Streamlit app.
     """
     
-    # Load API key
-    load_dotenv()
-    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    # No need to pass API key to frontend anymore - backend handles it!
     
-    # Create the HTML/JavaScript as a regular string (not f-string to avoid brace issues)
-    html_part1 = """
+    # Create the HTML/JavaScript as a regular string
+    html_code = """
     <script>
-    window.__ANTHROPIC_KEY__ = '"""
-    
-    html_part2 = """';
-    
     function initExplainVisual() {
         if (window.parent.__EXPLAIN_VISUAL_LOADED__) return;
         window.parent.__EXPLAIN_VISUAL_LOADED__ = true;
@@ -237,36 +231,30 @@ Format your response with clear sections using markdown headers (##) for readabi
             showLoading();
             
             try {
-                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                // FIXED: Call our Python backend instead of Anthropic directly (fixes CORS!)
+                const response = await fetch('http://localhost:8502/explain', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'anthropic-version': '2023-06-01',
-                        'x-api-key': window.__ANTHROPIC_KEY__
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: 'claude-sonnet-4-20250514',
-                        max_tokens: 1500,
-                        messages: [{
-                            role: 'user',
-                            content: buildPrompt(chartData)
-                        }]
+                        prompt: buildPrompt(chartData)
                     })
                 });
                 
                 if (!response.ok) {
-                    throw new Error('API request failed: ' + response.status);
+                    throw new Error('Backend request failed: ' + response.status);
                 }
                 
                 const result = await response.json();
-                const explanation = result.content[0].text;
+                const explanation = result.explanation;
                 
                 const html = markdownToHTML(explanation);
                 
                 showExplanation(html);
             } catch (error) {
                 console.error('[ExplainVisual] Error:', error);
-                showExplanation('<h2>Error</h2><p>Could not get explanation: ' + error.message + '</p><p>Please check your API key and internet connection.</p>');
+                showExplanation('<h2>Error</h2><p>Could not get explanation: ' + error.message + '</p><p>Make sure the explanation API server is running on port 8502.</p>');
             }
         }
         
@@ -313,24 +301,31 @@ Format your response with clear sections using markdown headers (##) for readabi
         
         window.parent.addEventListener('resize', placeButtons);
         
-        // Watch for DOM changes in parent
-        // Watch for DOM changes - but IGNORE our own button additions!
+        // FIXED: MutationObserver - ignore changes to OUR OWN buttons!
         const observer = new MutationObserver((mutations) => {
             let shouldUpdate = false;
+            
             for (let mutation of mutations) {
+                // Check added nodes
                 for (let node of mutation.addedNodes) {
+                    // Only trigger update if it's NOT our button
                     if (node.nodeType === 1 && !node.classList.contains('ev-btn')) {
                         shouldUpdate = true;
                         break;
+                    }
+                }
+                if (shouldUpdate) break;
             }
-        }
-        if (shouldUpdate) break;
-    }
-    if (shouldUpdate) {
-        setTimeout(placeButtons, 500);
-    }
-});
-observer.observe(window.parent.document.body, { childList: true, subtree: true });
+            
+            if (shouldUpdate) {
+                setTimeout(placeButtons, 500);
+            }
+        });
+        
+        observer.observe(window.parent.document.body, { 
+            childList: true, 
+            subtree: true 
+        });
     }
     
     if (document.readyState === 'loading') {
@@ -341,8 +336,5 @@ observer.observe(window.parent.document.body, { childList: true, subtree: true }
     </script>
     """
     
-    # Combine parts
-    full_html = html_part1 + api_key + html_part2
-    
     # Inject into Streamlit
-    st.components.v1.html(full_html, height=0)
+    st.components.v1.html(html_code, height=0)
