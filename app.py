@@ -24,6 +24,56 @@ from streamlit_explain_api import inject_explain_visual_system
 
 # Page config
 st.set_page_config(page_title="Ultimate Family Retirement Plus", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
+
+# AUTO-START FLASK SERVER FOR EXPLANATIONS (Must come AFTER set_page_config)
+import subprocess
+import socket
+import time
+
+def is_port_in_use(port):
+    """Check if a port is already in use"""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+def start_flask_server():
+    """Start Flask server in background if not already running"""
+    FLASK_PORT = 8502
+    
+    if is_port_in_use(FLASK_PORT):
+        print(f"[Auto-Start] Flask API server already running on port {FLASK_PORT}")
+        return None
+    
+    try:
+        print(f"[Auto-Start] Starting Flask API server on port {FLASK_PORT}...")
+        # Start Flask in background
+        flask_process = subprocess.Popen(
+            ['python', 'explain_api_server.py'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            creationflags=subprocess.CREATE_NEW_CONSOLE if os.name == 'nt' else 0
+        )
+        
+        # Wait up to 5 seconds for Flask to start
+        for i in range(10):
+            time.sleep(0.5)
+            if is_port_in_use(FLASK_PORT):
+                print(f"[Auto-Start] ✅ Flask API server started successfully!")
+                return flask_process
+        
+        print(f"[Auto-Start] ⚠️ Flask server starting slowly... may take a few more seconds")
+        return flask_process
+        
+    except Exception as e:
+        print(f"[Auto-Start] ❌ Could not auto-start Flask: {e}")
+        print(f"[Auto-Start] 💡 Please manually run: python explain_api_server.py")
+        return None
+
+# Start Flask automatically when Streamlit starts (AFTER set_page_config)
+if 'flask_started' not in st.session_state:
+    flask_proc = start_flask_server()
+    st.session_state['flask_started'] = True
+    st.session_state['flask_process'] = flask_proc
+
 st.title("🏠 Ultimate Family Retirement Planning Plus v3.0")
 st.markdown("*The Most Advanced Family Lifecycle Financial Simulation & Planning Tool*")
 

@@ -289,10 +289,32 @@ Format your response with clear sections using markdown headers (##) for readabi
             });
             
             console.log('[ExplainVisual] Placed', charts.length, 'buttons');
+            
+            return charts.length; // Return count for polling
         }
         
-        // Initial placement
-        setTimeout(placeButtons, 1000);
+        // FIXED: Active polling instead of relying on MutationObserver
+        let pollAttempts = 0;
+        const maxPollAttempts = 100; // 100 attempts × 300ms = 30 seconds max
+        
+        function pollForCharts() {
+            pollAttempts++;
+            const chartsFound = placeButtons();
+            
+            if (chartsFound > 0) {
+                console.log('[ExplainVisual] ✅ Charts detected! Buttons placed after', pollAttempts * 300, 'ms');
+                return; // Stop polling once charts are found
+            }
+            
+            if (pollAttempts < maxPollAttempts) {
+                setTimeout(pollForCharts, 300); // Check again in 300ms
+            } else {
+                console.log('[ExplainVisual] ⚠️ No charts found after 30 seconds');
+            }
+        }
+        
+        // Start polling immediately
+        pollForCharts();
         
         // Re-place on scroll (in parent window)
         window.parent.addEventListener('scroll', () => {
@@ -301,14 +323,12 @@ Format your response with clear sections using markdown headers (##) for readabi
         
         window.parent.addEventListener('resize', placeButtons);
         
-        // FIXED: MutationObserver - ignore changes to OUR OWN buttons!
+        // Keep MutationObserver for dynamic updates (new charts appearing later)
         const observer = new MutationObserver((mutations) => {
             let shouldUpdate = false;
             
             for (let mutation of mutations) {
-                // Check added nodes
                 for (let node of mutation.addedNodes) {
-                    // Only trigger update if it's NOT our button
                     if (node.nodeType === 1 && !node.classList.contains('ev-btn')) {
                         shouldUpdate = true;
                         break;
