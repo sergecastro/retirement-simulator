@@ -1,0 +1,348 @@
+"""
+Streamlit Explain API - Bridge between frontend and Claude backend
+Handles communication between JavaScript buttons and Python explanation handler
+"""
+
+import streamlit as st
+import os
+from dotenv import load_dotenv
+
+
+def inject_explain_visual_system():
+    """
+    Inject the complete Explain Visual system into the Streamlit app.
+    """
+    
+    # Load API key
+    load_dotenv()
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    
+    # Create the HTML/JavaScript as a regular string (not f-string to avoid brace issues)
+    html_part1 = """
+    <script>
+    window.__ANTHROPIC_KEY__ = '"""
+    
+    html_part2 = """';
+    
+    function initExplainVisual() {
+        if (window.parent.__EXPLAIN_VISUAL_LOADED__) return;
+        window.parent.__EXPLAIN_VISUAL_LOADED__ = true;
+        
+        console.log('[ExplainVisual] Initializing...');
+        
+        // CRITICAL: Add styles to PARENT document, not iframe
+        const style = window.parent.document.createElement('style');
+        style.textContent = `
+            .ev-btn {
+                position: fixed;
+                z-index: 999999;
+                padding: 20px 30px;
+                border-radius: 999px;
+                border: 5px solid black;
+                background: red;
+                color: white;
+                font-weight: 700;
+                font-size: 40px;
+                cursor: pointer;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+                transition: all 0.2s;
+            }
+            .ev-btn:hover {
+                background: darkred;
+                transform: scale(1.1);
+            }
+            .ev-modal-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 999998;
+                display: none;
+                align-items: center;
+                justify-content: center;
+            }
+            .ev-modal {
+                width: min(900px, 90vw);
+                max-height: 85vh;
+                overflow: auto;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                padding: 24px;
+                position: relative;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                line-height: 1.6;
+            }
+            .ev-modal h2 {
+                margin-top: 0;
+                color: #1f2937;
+                border-bottom: 2px solid #e5e7eb;
+                padding-bottom: 8px;
+            }
+            .ev-modal ul {
+                line-height: 1.8;
+                margin: 12px 0;
+            }
+            .ev-modal strong {
+                color: #1f2937;
+            }
+            .ev-close {
+                position: absolute;
+                top: 12px;
+                right: 16px;
+                font-size: 28px;
+                cursor: pointer;
+                color: #666;
+                line-height: 1;
+            }
+            .ev-close:hover {
+                color: #000;
+            }
+            .ev-loading {
+                text-align: center;
+                padding: 60px 40px;
+                color: #666;
+                font-size: 18px;
+            }
+        `;
+        window.parent.document.head.appendChild(style);
+        
+        // Create modal in PARENT document
+        const backdrop = window.parent.document.createElement('div');
+        backdrop.className = 'ev-modal-backdrop';
+        backdrop.innerHTML = `
+            <div class="ev-modal">
+                <div class="ev-close">&times;</div>
+                <div id="ev-modal-content"></div>
+            </div>
+        `;
+        window.parent.document.body.appendChild(backdrop);
+        
+        backdrop.querySelector('.ev-close').onclick = () => backdrop.style.display = 'none';
+        backdrop.onclick = (e) => {
+            if (e.target === backdrop) backdrop.style.display = 'none';
+        };
+        
+        function showLoading() {
+            backdrop.style.display = 'flex';
+            window.parent.document.getElementById('ev-modal-content').innerHTML = 
+                '<div class="ev-loading">🧠 Claude is analyzing this chart...<br><br>This takes 2-3 seconds...</div>';
+        }
+        
+        function showExplanation(html) {
+            window.parent.document.getElementById('ev-modal-content').innerHTML = html;
+            backdrop.style.display = 'flex';
+        }
+        
+        function markdownToHTML(text) {
+            let html = text;
+            
+            html = html.split('\\n').map(line => {
+                if (line.startsWith('## ')) {
+                    return '<h2>' + line.substring(3) + '</h2>';
+                }
+                return line;
+            }).join('\\n');
+            
+            const boldParts = html.split('**');
+            html = '';
+            for (let i = 0; i < boldParts.length; i++) {
+                if (i % 2 === 1) {
+                    html += '<strong>' + boldParts[i] + '</strong>';
+                } else {
+                    html += boldParts[i];
+                }
+            }
+            
+            const lines = html.split('\\n');
+            let inList = false;
+            let result = '';
+            
+            for (let line of lines) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('•')) {
+                    if (!inList) {
+                        result += '<ul>\\n';
+                        inList = true;
+                    }
+                    result += '<li>' + trimmed.substring(1).trim() + '</li>\\n';
+                } else {
+                    if (inList) {
+                        result += '</ul>\\n';
+                        inList = false;
+                    }
+                    result += line + '\\n';
+                }
+            }
+            if (inList) result += '</ul>\\n';
+            
+            result = result.split('\\n\\n').map(para => {
+                if (!para.trim().startsWith('<')) {
+                    return '<p>' + para.trim() + '</p>';
+                }
+                return para;
+            }).join('\\n');
+            
+            return result;
+        }
+        
+        function extractChartData(container) {
+            const data = {
+                chart_type: 'unknown',
+                title: 'Chart',
+                data: {}
+            };
+            
+            let titleEl = container.closest('div[data-testid="stVerticalBlock"]');
+            if (titleEl) {
+                const header = titleEl.querySelector('h1, h2, h3, [data-testid="stMarkdownContainer"] p strong, [data-testid="stMarkdownContainer"] p');
+                if (header) data.title = header.textContent.trim();
+            }
+            
+            if (container.classList.contains('svg-container')) {
+                data.chart_type = 'plotly';
+                data.data = {
+                    chart_detected: true,
+                    type: 'visualization'
+                };
+            } else if (container.querySelector('[data-testid="stDataFrame"]')) {
+                data.chart_type = 'table';
+                data.data = { type: 'dataframe' };
+            }
+            
+            return data;
+        }
+        
+        function buildPrompt(chartData) {
+            return `You are helping explain a retirement planning visualization to a user.
+
+**Chart Title:** ${chartData.title}
+
+**Chart Type:** ${chartData.chart_type}
+
+**Chart Data:** ${JSON.stringify(chartData.data, null, 2)}
+
+Please provide a clear, friendly explanation that:
+
+1. **What it shows:** Explain what this specific visualization displays (2-3 sentences)
+2. **Key insights:** Identify the most important numbers or patterns in THIS data (3-4 bullet points)
+3. **What it means:** Explain what these results mean for the user's retirement planning (2-3 sentences)
+4. **Example interpretation:** Give one concrete example of how to read/interpret this chart using the actual data shown
+
+Keep your tone warm and educational. Use plain English (avoid jargon). Focus on the SPECIFIC data provided, not generic explanations.
+
+Format your response with clear sections using markdown headers (##) for readability.`;
+        }
+        
+        async function getExplanation(chartData) {
+            showLoading();
+            
+            try {
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'anthropic-version': '2023-06-01',
+                        'x-api-key': window.__ANTHROPIC_KEY__
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 1500,
+                        messages: [{
+                            role: 'user',
+                            content: buildPrompt(chartData)
+                        }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('API request failed: ' + response.status);
+                }
+                
+                const result = await response.json();
+                const explanation = result.content[0].text;
+                
+                const html = markdownToHTML(explanation);
+                
+                showExplanation(html);
+            } catch (error) {
+                console.error('[ExplainVisual] Error:', error);
+                showExplanation('<h2>Error</h2><p>Could not get explanation: ' + error.message + '</p><p>Please check your API key and internet connection.</p>');
+            }
+        }
+        
+        function placeButtons() {
+            // Remove old buttons from PARENT document
+            window.parent.document.querySelectorAll('.ev-btn').forEach(btn => btn.remove());
+            
+            // Find charts in PARENT document
+            const charts = window.parent.document.querySelectorAll('.svg-container, [data-testid="stDataFrame"]');
+            
+            charts.forEach(chart => {
+                const rect = chart.getBoundingClientRect();
+                
+                // Skip tiny charts
+                if (rect.width < 200 || rect.height < 150) return;
+                
+                // Create button
+                const btn = window.parent.document.createElement('button');
+                btn.className = 'ev-btn';
+                btn.textContent = '?';
+                
+                // Use FIXED positioning with viewport coordinates
+                btn.style.top = (rect.top + 10) + 'px';
+                btn.style.left = (rect.right - 100) + 'px';
+                
+                btn.onclick = () => {
+                    const data = extractChartData(chart);
+                    getExplanation(data);
+                };
+                
+                window.parent.document.body.appendChild(btn);
+            });
+            
+            console.log('[ExplainVisual] Placed', charts.length, 'buttons');
+        }
+        
+        // Initial placement
+        setTimeout(placeButtons, 1000);
+        
+        // Re-place on scroll (in parent window)
+        window.parent.addEventListener('scroll', () => {
+            placeButtons();
+        });
+        
+        window.parent.addEventListener('resize', placeButtons);
+        
+        // Watch for DOM changes in parent
+        // Watch for DOM changes - but IGNORE our own button additions!
+        const observer = new MutationObserver((mutations) => {
+            let shouldUpdate = false;
+            for (let mutation of mutations) {
+                for (let node of mutation.addedNodes) {
+                    if (node.nodeType === 1 && !node.classList.contains('ev-btn')) {
+                        shouldUpdate = true;
+                        break;
+            }
+        }
+        if (shouldUpdate) break;
+    }
+    if (shouldUpdate) {
+        setTimeout(placeButtons, 500);
+    }
+});
+observer.observe(window.parent.document.body, { childList: true, subtree: true });
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initExplainVisual);
+    } else {
+        initExplainVisual();
+    }
+    </script>
+    """
+    
+    # Combine parts
+    full_html = html_part1 + api_key + html_part2
+    
+    # Inject into Streamlit
+    st.components.v1.html(full_html, height=0)

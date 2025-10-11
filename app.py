@@ -20,6 +20,7 @@ from visualization.timeline import show_timeline, show_goal_gauges, show_downloa
 from visualization.longevity_analysis import show_longevity_analysis
 from visualization.irmaa_analysis import show_irmaa_analysis
 from integration.intake_loader import intake_import_ui
+from streamlit_explain_api import inject_explain_visual_system
 
 # Page config
 st.set_page_config(page_title="Ultimate Family Retirement Plus", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
@@ -40,6 +41,9 @@ if IS_TRUSTED_USER:
     st.success("✅ Trusted User Access Granted - Full features enabled")
 else:
     st.info("📌 Demo Mode - Basic features enabled")
+    
+    # Inject Explain Visual system (Claude-powered chart explanations)
+inject_explain_visual_system()
 
 # CRITICAL FIX: Load scenarios AFTER intake to respect imported scenarios
 age_group_for_autoload = st.session_state.get('input_age_group', '70+')
