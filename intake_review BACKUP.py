@@ -353,7 +353,6 @@ def show_family_page(existing, save_payload, go_to_page):
         ("Start Age","Int64"),("Years","Int64")
     ])
 
-    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
     edited_children = st.data_editor(
         children_df,
         num_rows="dynamic",
@@ -398,7 +397,6 @@ def show_family_page(existing, save_payload, go_to_page):
             })
     inherit_df = pd.DataFrame(st.session_state.temp_inherit)
     inherit_df = _ensure_columns(inherit_df, [("Year","Int64"),("Amount","float"),("Taxable?","bool")])
-    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
 
     edited_inherit = st.data_editor(
         inherit_df,
@@ -429,7 +427,6 @@ def show_family_page(existing, save_payload, go_to_page):
         st.session_state.temp_goals = existing.get("goals_list", existing.get("goals_data", [])) or []
     goals_df = pd.DataFrame(st.session_state.temp_goals)
     goals_df = _ensure_columns(goals_df, [("goal","str"),("amount","float"),("year","Int64")])
-    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
 
     edited_goals = st.data_editor(
         goals_df,

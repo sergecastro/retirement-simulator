@@ -52,7 +52,7 @@ def collect_family_events():
                 
                 birth_year = st.number_input(
                     "Birth Year:",
-                    value=int(child_data.get('Birth Year', date.today().year - 5)),
+                    value=int(child_data.get('Birth Year') or date.today().year - 5),
                     min_value=1900,
                     max_value=date.today().year + 20,
                     step=1,
@@ -82,7 +82,7 @@ def collect_family_events():
             with col3:
                 start_age = st.number_input(
                     "Start Age:",
-                    value=int(child_data.get('Start Age', 18)),
+                    value=int(child_data.get('Start Age') or 18),
                     min_value=15,
                     max_value=25,
                     step=1,
@@ -92,7 +92,7 @@ def collect_family_events():
                 
                 years = st.number_input(
                     "Years:",
-                    value=int(child_data.get('Years', 4)),
+                    value=int(child_data.get('Years') or 4),
                     min_value=1,
                     max_value=8,
                     step=1,

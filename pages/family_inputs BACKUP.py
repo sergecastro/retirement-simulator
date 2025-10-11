@@ -64,7 +64,7 @@ def collect_family_events():
                 college_plan = st.selectbox(
                     "College Plan:",
                     ["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"],
-                    index=["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"].index(goal_data.get('College Plan', 'None')),
+                    index=["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"].index(child_data.get('College Plan', 'None')),
                     key=f"child_college_{idx}"
                 )
                 st.session_state['children_list'][idx]['College Plan'] = college_plan
@@ -74,9 +74,8 @@ def collect_family_events():
                     value=float(child_data.get('Scholarship %', 0.0)),
                     min_value=0.0,
                     max_value=100.0,
-                    step=5.0,
-                    key=f"child_scholarship_{idx}",
-                    help="Expected scholarship percentage"
+                    step=1.0,
+                    key=f"child_scholarship_{idx}"
                 )
                 st.session_state['children_list'][idx]['Scholarship %'] = scholarship
             
@@ -84,7 +83,7 @@ def collect_family_events():
                 start_age = st.number_input(
                     "Start Age:",
                     value=int(child_data.get('Start Age', 18)),
-                    min_value=16,
+                    min_value=15,
                     max_value=25,
                     step=1,
                     key=f"child_start_{idx}"
@@ -97,43 +96,34 @@ def collect_family_events():
                     min_value=1,
                     max_value=8,
                     step=1,
-                    key=f"child_years_{idx}",
-                    help="Duration of education"
+                    key=f"child_years_{idx}"
                 )
                 st.session_state['children_list'][idx]['Years'] = years
             
             with col4:
-                st.write("")
-                st.write("")
                 use_529 = st.checkbox(
-                    "Use 529?",
-                    value=child_data.get('Use 529 First?', True),
-                    key=f"child_529_{idx}",
-                    help="Use 529 plan first"
+                    "Use 529 First?",
+                    value=bool(child_data.get('Use 529 First?', True)),
+                    key=f"child_529_{idx}"
                 )
                 st.session_state['children_list'][idx]['Use 529 First?'] = use_529
                 
-                st.write("")
-                # FIXED: Mark for deletion but don't rerun yet
-                if st.button("🗑️", key=f"delete_child_{idx}", help="Remove this child"):
+                st.write("")  # Spacer
+                if st.button("🗑️", key=f"delete_child_{idx}", help="Delete this child"):
                     children_to_remove.append(idx)
             
             st.markdown("---")
         
-        # FIXED: Remove deleted children THEN rerun
-        if children_to_remove:
-            for idx in reversed(children_to_remove):
-                st.session_state['children_list'].pop(idx)
-            st.rerun()
+        # Remove deleted children
+        for idx in reversed(children_to_remove):
+            st.session_state['children_list'].pop(idx)
+        
+        # Convert to rows format for backward compatibility
+        st.session_state['children_rows'] = st.session_state['children_list']
         
         # Show summary
-        active_children = [c for c in st.session_state['children_list'] 
-                          if c.get('Name', '').strip() and c.get('College Plan', 'None') != 'None']
-        if active_children:
-            st.success(f"{len(active_children)} child(ren) with education plans configured")
-    
-    # Convert to rows format for backward compatibility
-    st.session_state['children_rows'] = st.session_state.get('children_list', [])
+        active_children = [c for c in st.session_state['children_list'] if c.get('Name', '').strip() and c.get('College Plan', 'None') != 'None']
+        st.metric("Children with Education Plans", len(active_children))
     
     # ============================================
     # INHERITANCE SECTION - Individual Fields
@@ -154,74 +144,61 @@ def collect_family_events():
         st.rerun()
     
     if len(st.session_state['inheritance_list']) == 0:
-        st.info("Click 'Add Inheritance' to add expected inheritance events")
+        st.info("Click 'Add Inheritance' to add expected inheritances")
     else:
-        st.write(f"**{len(st.session_state['inheritance_list'])} inheritance event(s) configured**")
+        st.write(f"**{len(st.session_state['inheritance_list'])} inheritance event(s)**")
         
         inheritances_to_remove = []
         
         for idx, inh_data in enumerate(st.session_state['inheritance_list']):
-            st.markdown(f"#### Inheritance Event {idx + 1}")
-            
-            col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+            col1, col2, col3 = st.columns([2, 2, 1])
             
             with col1:
-                inh_year = st.number_input(
+                year = st.number_input(
                     "Year:",
                     value=int(inh_data.get('Year', date.today().year + 10)),
                     min_value=date.today().year,
-                    max_value=date.today().year + 100,
+                    max_value=date.today().year + 50,
                     step=1,
-                    key=f"inh_year_{idx}",
-                    help="Year of expected inheritance"
+                    key=f"inh_year_{idx}"
                 )
-                st.session_state['inheritance_list'][idx]['Year'] = inh_year
+                st.session_state['inheritance_list'][idx]['Year'] = year
             
             with col2:
-                inh_amount = st.number_input(
-                    "Amount ($):",
+                amount = st.number_input(
+                    "Amount:",
                     value=float(inh_data.get('Amount', 0.0)),
                     min_value=0.0,
-                    step=10000.0,
-                    format="%.0f",
-                    key=f"inh_amount_{idx}",
-                    help="Expected inheritance amount"
+                    step=1000.0,
+                    key=f"inh_amount_{idx}"
                 )
-                st.session_state['inheritance_list'][idx]['Amount'] = inh_amount
+                st.session_state['inheritance_list'][idx]['Amount'] = amount
             
             with col3:
-                inh_taxable = st.checkbox(
+                taxable = st.checkbox(
                     "Taxable?",
-                    value=inh_data.get('Taxable?', False),
-                    key=f"inh_taxable_{idx}",
-                    help="Is this inheritance taxable?"
+                    value=bool(inh_data.get('Taxable?', False)),
+                    key=f"inh_taxable_{idx}"
                 )
-                st.session_state['inheritance_list'][idx]['Taxable?'] = inh_taxable
-            
-            with col4:
-                st.write("")
-                st.write("")
-                # FIXED: Mark for deletion but don't rerun yet
-                if st.button("🗑️", key=f"delete_inh_{idx}", help="Remove this inheritance"):
+                st.session_state['inheritance_list'][idx]['Taxable?'] = taxable
+                
+                st.write("")  # Spacer
+                if st.button("🗑️", key=f"delete_inh_{idx}", help="Delete this inheritance"):
                     inheritances_to_remove.append(idx)
             
             st.markdown("---")
         
-        # FIXED: Remove deleted inheritances THEN rerun
-        if inheritances_to_remove:
-            for idx in reversed(inheritances_to_remove):
-                st.session_state['inheritance_list'].pop(idx)
-            st.rerun()
+        # Remove deleted inheritances
+        for idx in reversed(inheritances_to_remove):
+            st.session_state['inheritance_list'].pop(idx)
+        
+        # Convert to rows format for backward compatibility
+        st.session_state['inherit_rows'] = st.session_state['inheritance_list']
         
         # Show summary
-        active_inheritances = [i for i in st.session_state['inheritance_list'] 
-                              if i.get('Amount', 0) > 0]
-        if active_inheritances:
-            total_inheritance = sum(i.get('Amount', 0) for i in active_inheritances)
-            st.success(f"{len(active_inheritances)} inheritance event(s) totaling ${total_inheritance:,.0f}")
-    
-    # Convert to rows format for backward compatibility
-    st.session_state['inherit_rows'] = st.session_state.get('inheritance_list', [])
+        active_inheritances = [i for i in st.session_state['inheritance_list'] if i.get('Amount', 0) > 0]
+        total_inheritance = sum(i.get('Amount', 0) for i in active_inheritances)
+        st.metric("Total Expected Inheritances", f"${total_inheritance:,.0f}")
     
     # ============================================
     # COLLEGE COST PARAMETERS
