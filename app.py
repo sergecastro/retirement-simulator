@@ -224,71 +224,51 @@ sim_params = {
 # Add this to app.py in the "Run Financial Simulation" button section
 # Replace the existing button handler (around line 160-220)
 
+
+   
 if st.button("🎯 Run Financial Simulation", type="primary", use_container_width=True):
-    # CRITICAL FIX: Clear old Monte Carlo results from session state BEFORE running
-    if 'simulation_results' in st.session_state:
-        old_results = st.session_state['simulation_results']
-        if 'monte_carlo_results' in old_results:
-            # Remove stale Monte Carlo data
-            del old_results['monte_carlo_results']
-    
     with st.spinner("Running simulation..."):
         try:
-            # Debug output to verify partner data being sent
-            with st.expander("🔍 Debug: Data Being Sent to Simulation", expanded=False):
-                st.write("**Partner Information:**")
-                debug_col1, debug_col2 = st.columns(2)
-                with debug_col1:
-                    st.write(f"Partner Exists: {user_data['partner_exists']}")
-                    st.write(f"Partner Name: {user_data.get('partner_name', 'N/A')}")
-                    st.write(f"Partner Age: {user_data['partner_age']}")
-                with debug_col2:
-                    st.write(f"Partner IRA: ${financial_data.get('partner_ira_balance', 0):,.0f}")
-                    st.write(f"Partner 401k: ${financial_data.get('partner_four01k_403b_balance', 0):,.0f}")
-                    st.write(f"**Total Partner Retirement: ${financial_data.get('partner_ira_balance', 0) + financial_data.get('partner_four01k_403b_balance', 0):,.0f}**")
-                
-                st.write("**User Retirement Accounts:**")
-                st.write(f"User IRA: ${financial_data.get('ira_balance', 0):,.0f}")
-                st.write(f"User 401k: ${financial_data.get('four01k_403b_balance', 0):,.0f}")
-                
-                # NEW: Show Monte Carlo status
-                st.write("**Monte Carlo Settings:**")
-                st.write(f"Iterations: {sim_params.get('mc_iterations', 0)}")
-                if sim_params.get('mc_iterations', 0) > 0:
-                    st.success("✅ Monte Carlo will run fresh for this simulation")
-                else:
-                    st.info("ℹ️ Monte Carlo disabled - set iterations > 0 to enable longevity analysis")
-            
+            # Save current state before running
+            stored_user_data = user_data
+            stored_financial_data = financial_data
+            stored_family_data = family_data if family_data else {}
+            stored_sim_params = sim_params
+
+            # Run the simulation with collected data
             results = run_simulation(
-                age=user_data['age'], 
-                partner_exists=user_data['partner_exists'], 
-                partner_age=user_data['partner_age'],
-                total_income=financial_data['total_income'], 
-                total_expenses=financial_data['total_expenses'],
-                combined_financial_assets=financial_data['liquid_assets'], 
-                primary_residence_value=financial_data['primary_residence_value'],
-                secondary_residence_value=financial_data['secondary_residence_value'], 
-                combined_other_assets_total=financial_data.get('other_assets', 0),
-                total_liabilities_local=financial_data['total_liabilities'], 
-                partner_liabilities=financial_data.get('partner_liabilities', 0),
-                tax_rate=sim_params['tax_rate'], 
-                inflation_rate=sim_params['inflation_rate'], 
-                investment_return_rate=sim_params['investment_return_rate'],
-                simulation_years=sim_params['simulation_years'], 
-                mc_iterations=sim_params.get('mc_iterations', 0),
-                goal_costs=financial_data.get('goal_costs', {}), 
-                college_inflation_pct=family_data.get('college_inflation_pct', 4.0) if family_data else 4.0,
-                base_public_in=family_data.get('base_public_in', 20000) if family_data else 20000,
-                base_public_out=family_data.get('base_public_out', 40000) if family_data else 40000,
-                base_private=family_data.get('base_private', 60000) if family_data else 60000,
-                ira_balance=financial_data['ira_balance'], 
-                four01k_403b_balance=financial_data['four01k_403b_balance'],
-                partner_ira_balance=financial_data.get('partner_ira_balance', 0), 
-                partner_four01k_403b_balance=financial_data.get('partner_four01k_403b_balance', 0),
-                monthly_surplus=financial_data['monthly_surplus'], 
-                combined_total_liabilities=financial_data['total_liabilities']
+                age=stored_user_data['age'],
+                partner_exists=stored_user_data['partner_exists'],
+                partner_age=stored_user_data['partner_age'],
+                total_income=stored_financial_data['total_income'],
+                total_expenses=stored_financial_data['total_expenses'],
+                combined_financial_assets=stored_financial_data['liquid_assets'],
+                primary_residence_value=stored_financial_data['primary_residence_value'],
+                secondary_residence_value=stored_financial_data['secondary_residence_value'],
+                combined_other_assets_total=stored_financial_data.get('other_assets', 0),
+                total_liabilities_local=stored_financial_data['total_liabilities'],
+                partner_liabilities=stored_financial_data.get('partner_liabilities', 0),
+                tax_rate=stored_sim_params['tax_rate'],
+                inflation_rate=stored_sim_params['inflation_rate'],
+                investment_return_rate=stored_sim_params['investment_return_rate'],
+                simulation_years=stored_sim_params['simulation_years'],
+                mc_iterations=stored_sim_params['mc_iterations'],
+                goal_costs=stored_financial_data['goal_costs'],
+                college_inflation_pct=stored_family_data.get('college_inflation_pct', 4.0),
+                base_public_in=stored_family_data.get('base_public_in', 20000),
+                base_public_out=stored_family_data.get('base_public_out', 40000),
+                base_private=stored_family_data.get('base_private', 60000),
+                ira_balance=stored_financial_data['ira_balance'],
+                four01k_403b_balance=stored_financial_data['four01k_403b_balance'],
+                partner_ira_balance=stored_financial_data.get('partner_ira_balance', 0),
+                partner_four01k_403b_balance=stored_financial_data.get('partner_four01k_403b_balance', 0),
+                monthly_surplus=stored_financial_data['monthly_surplus'],
+                combined_total_liabilities=stored_financial_data['total_liabilities'],
+                custom_expenses_total=stored_financial_data.get('custom_expenses_total', 0.0)
             )
             
+                       
+
             # Check if results were returned
             if results is not None:
                 st.session_state['simulation_results'] = results
