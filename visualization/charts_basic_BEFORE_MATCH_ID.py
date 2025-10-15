@@ -1,8 +1,9 @@
-# charts_basic.py - Updated: Use st.plotly_chart + hidden div; remove plotly_chart_with_explain import
-
+# charts_basic.py - Updated for hidden div approach
 import streamlit as st
+import plotly.express as px
 import plotly.graph_objects as go
 from financial_utils import display_health_dashboard
+from streamlit_explain_api import plotly_chart_with_explain  # Import the new function
 
 def show_trajectories(results):
     st.subheader("📈 Financial Trajectories")
@@ -20,21 +21,25 @@ def show_trajectories(results):
     
     fig.update_layout(title="Financial Projections", xaxis_title="Year", yaxis_title="Amount ($)")
     
-    # Display chart with ID
-    st.plotly_chart(fig, use_container_width=True, key="financial_trajectories_chart")
-    
-    # Hidden div with JSON data (red box for debug)
-    chart_data = {
-        "title": "Financial Projections",
-        "data": df.to_dict(orient='records')  # Example data; adjust as needed
+    # Extract data summary for explanation
+    data_summary = {
+        'years': df['Year'].tolist(),
+        'savings': df['Savings_End'].tolist(),
+        'net_worth': df['Net_Worth'].tolist(),
+        'income': df['Total_Income'].tolist(),
+        'expenses': df['Total_Expenses'].tolist()
     }
-    st.markdown(f"""
-    <div id="financial_trajectories_chart-data" style="border: 1px solid red; padding: 5px; margin-top: 10px;">
-        {chart_data}
-    </div>
-    """, unsafe_allow_html=True)
+    
+    # Use the new function instead of st.plotly_chart
+    plotly_chart_with_explain(
+        fig=fig,
+        chart_id="financial_trajectories",
+        title="Financial Trajectories",
+        data_summary=data_summary
+    )
 
 def show_health_dashboard(liquid_assets, total_expenses, total_income, total_liabilities, results):
+    # Calculate args for display_health_dashboard (4 args)
     emergency_months = liquid_assets / total_expenses if total_expenses > 0 else 0
     dti = total_liabilities / total_income if total_income > 0 else 0
     savings_rate = (total_income - total_expenses) / total_income if total_income > 0 else 0

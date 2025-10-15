@@ -1,4 +1,4 @@
-# simulation_core.py - FIXED: Now uses actual total_income and total_expenses parameters
+# simulation_core.py - FIXED: Now uses actual total_income and total_expenses parameters + Custom_Expenses column
 import pandas as pd
 import numpy as np
 from datetime import date
@@ -26,6 +26,26 @@ TAX_BRACKETS_2025 = {
         {'min': 383900, 'max': 487450, 'rate': 0.32},
         {'min': 487450, 'max': 731200, 'rate': 0.35},
         {'min': 731200, 'max': float('inf'), 'rate': 0.37}
+    ]
+}
+
+# 2025 IRMAA Brackets (Single/Joint)
+IRMAA_BRACKETS_2025 = {
+    'single': [
+        {'min': 0, 'max': 103000, 'surcharge_monthly': 0},
+        {'min': 103000, 'max': 129000, 'surcharge_monthly': 14.50},
+        {'min': 129000, 'max': 161000, 'surcharge_monthly': 36.20},
+        {'min': 161000, 'max': 193000, 'surcharge_monthly': 58.00},
+        {'min': 193000, 'max': 500000, 'surcharge_monthly': 63.10},
+        {'min': 500000, 'max': float('inf'), 'surcharge_monthly': 68.30}
+    ],
+    'joint': [
+        {'min': 0, 'max': 206000, 'surcharge_monthly': 0},
+        {'min': 206000, 'max': 258000, 'surcharge_monthly': 14.50},
+        {'min': 258000, 'max': 322000, 'surcharge_monthly': 36.20},
+        {'min': 322000, 'max': 386000, 'surcharge_monthly': 58.00},
+        {'min': 386000, 'max': 750000, 'surcharge_monthly': 63.10},
+        {'min': 750000, 'max': float('inf'), 'surcharge_monthly': 68.30}
     ]
 }
 
@@ -75,7 +95,7 @@ def optimize_roth_conversions(year_idx, current_magi, ira_balance, roth_conversi
     
     return max(0, optimal)
 
-def run_simulation(age, partner_exists, partner_age, total_income, total_expenses, combined_financial_assets, primary_residence_value, secondary_residence_value, combined_other_assets_total, total_liabilities_local, partner_liabilities, tax_rate, inflation_rate, investment_return_rate, simulation_years, mc_iterations, goal_costs, college_inflation_pct, base_public_in, base_public_out, base_private, ira_balance, four01k_403b_balance, partner_ira_balance, partner_four01k_403b_balance, monthly_surplus, combined_total_liabilities, roth_conversion_annual=0, itemize_deductions=True, five29_plan_balance=0.0, tax_exempt_interest=0.0):
+def run_simulation(age, partner_exists, partner_age, total_income, total_expenses, combined_financial_assets, primary_residence_value, secondary_residence_value, combined_other_assets_total, total_liabilities_local, partner_liabilities, tax_rate, inflation_rate, investment_return_rate, simulation_years, mc_iterations, goal_costs, college_inflation_pct, base_public_in, base_public_out, base_private, ira_balance, four01k_403b_balance, partner_ira_balance, partner_four01k_403b_balance, monthly_surplus, combined_total_liabilities, roth_conversion_annual=0, itemize_deductions=True, five29_plan_balance=0.0, tax_exempt_interest=0.0, custom_expenses_total=0.0):
     
     # Initialize results dictionary at the start
     results = {
@@ -120,6 +140,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         partner_four01k_403b_balance = safe_float(partner_four01k_403b_balance)
         
         tax_exempt_interest = safe_float(tax_exempt_interest, 0.0)  # Added for MAGI
+        custom_expenses_total = safe_float(custom_expenses_total, 0.0)  # Added for custom expenses
         
         # Track retirement balances for RMD calculations
         user_retirement_balance = ira_balance + four01k_403b_balance
@@ -188,6 +209,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         entertainment_list = []
         travel_list = []
         other_expenses_list = []
+        custom_expenses_list = []
         
         # Special expenses
         college_expenses_list = []
@@ -284,6 +306,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             entertainment = annual_expenses * 0.05
             travel = annual_expenses * 0.05
             other_expenses = annual_expenses * 0.05
+            custom_expenses = custom_expenses_total * 12 * (1 + inflation_rate / 100) ** year_idx
             
             # Family events (college, inheritances)
             family_expense = family_cashflows.get(year, {}).get('expense_delta', 0.0)
@@ -296,7 +319,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
                 family_expense -= from_529
             
             # Total expenses including college
-            total_expenses = housing_expenses + utilities + groceries + transportation + healthcare + insurance + entertainment + travel + other_expenses + family_expense
+            total_expenses = housing_expenses + utilities + groceries + transportation + healthcare + insurance + entertainment + travel + other_expenses + custom_expenses + family_expense
             
             # Taxes and IRMAA
             filing_status = 'joint' if partner_exists else 'single'
@@ -370,6 +393,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             entertainment_list.append(entertainment)
             travel_list.append(travel)
             other_expenses_list.append(other_expenses)
+            custom_expenses_list.append(custom_expenses)
             
             college_expenses_list.append(family_expense)
             inheritance_inflow_list.append(family_inflow)
@@ -422,9 +446,11 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             'Entertainment': entertainment_list,
             'Travel': travel_list,
             'Other_Expenses': other_expenses_list,
+            'Custom_Expenses': custom_expenses_list,
             'Base_Expenses_Subtotal': [housing_expenses_list[i] + utilities_list[i] + groceries_list[i] + 
                                       transportation_list[i] + healthcare_list[i] + insurance_list[i] + 
-                                      entertainment_list[i] + travel_list[i] + other_expenses_list[i] 
+                                      entertainment_list[i] + travel_list[i] + other_expenses_list[i] + 
+                                      custom_expenses_list[i] 
                                       for i in range(simulation_years)],
             
             'College_Expenses': college_expenses_list,

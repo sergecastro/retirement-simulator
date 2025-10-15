@@ -1,4 +1,4 @@
-# integration/intake_loader.py - Fixed to use data_manager functions
+# integration/intake_loader.py - Fixed to use data_manager functions + CUSTOM EXPENSES
 import os
 import json
 from pathlib import Path
@@ -11,7 +11,7 @@ def intake_import_ui(shared_dir: str = ""):
     """Sidebar UI to import Intake JSON by path or upload."""
     
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📥 Import from Intake App")
+    st.sidebar.markdown("### 🔥 Import from Intake App")
     
     # PATH LOADER - Fixed to point to SHARED folder at root level
     current_dir = os.getcwd()
@@ -30,7 +30,7 @@ def intake_import_ui(shared_dir: str = ""):
     )
     
     # Button sets a flag instead of loading directly
-    if st.sidebar.button("📁 Load from Path", use_container_width=True, key="load_path_btn"):
+    if st.sidebar.button("📂 Load from Path", use_container_width=True, key="load_path_btn"):
         st.session_state.intake_path_to_load = path
         st.rerun()
     
@@ -41,7 +41,7 @@ def intake_import_ui(shared_dir: str = ""):
         
         if os.path.exists(load_path):
             try:
-                st.sidebar.info(f"🔄 Loading from: {Path(load_path).name}")
+                st.sidebar.info(f"📄 Loading from: {Path(load_path).name}")
                 
                 with open(load_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
@@ -51,6 +51,12 @@ def intake_import_ui(shared_dir: str = ""):
                     
                     # Apply the data
                     apply_scenario_data_safe(data)
+                    
+                    # CRITICAL FIX: Load custom_expenses into session state
+                    if "custom_expenses" in data:
+                        st.session_state['custom_expenses'] = data['custom_expenses']
+                    else:
+                        st.session_state['custom_expenses'] = []
                     
                     # Set scenario name
                     scenario_name = Path(load_path).stem.replace("_", " ").replace("-", " ").title()
@@ -87,6 +93,9 @@ def intake_import_ui(shared_dir: str = ""):
                     current_data["inherit_rows"] = current_data["inheritance_list"]
                     current_data["inheritance_data"] = current_data["inheritance_list"]
                     
+                    # CRITICAL FIX: Save custom_expenses
+                    current_data["custom_expenses"] = st.session_state.get("custom_expenses", [])
+                    
                     # Mortgage name variations (for compatibility)
                     if "mortgage_balance" in current_data:
                         current_data["primary_residence_mortgage"] = current_data["mortgage_balance"]
@@ -119,7 +128,7 @@ def intake_import_ui(shared_dir: str = ""):
     
     if uploaded is not None:
         try:
-            st.sidebar.info(f"🔄 Processing: {uploaded.name}")
+            st.sidebar.info(f"📄 Processing: {uploaded.name}")
             
             data = json.loads(uploaded.getvalue().decode("utf-8"))
             
@@ -128,6 +137,12 @@ def intake_import_ui(shared_dir: str = ""):
                 
                 # Apply the data
                 apply_scenario_data_safe(data)
+                
+                # CRITICAL FIX: Load custom_expenses into session state
+                if "custom_expenses" in data:
+                    st.session_state['custom_expenses'] = data['custom_expenses']
+                else:
+                    st.session_state['custom_expenses'] = []
                 
                 # Set scenario name
                 scenario_name = Path(uploaded.name).stem.replace("_", " ").replace("-", " ").title()
@@ -160,6 +175,9 @@ def intake_import_ui(shared_dir: str = ""):
                 current_data["inheritance_list"] = st.session_state.get("inheritance_list", st.session_state.get("inherit_rows", []))
                 current_data["inherit_rows"] = current_data["inheritance_list"]
                 current_data["inheritance_data"] = current_data["inheritance_list"]
+                
+                # CRITICAL FIX: Save custom_expenses
+                current_data["custom_expenses"] = st.session_state.get("custom_expenses", [])
                 
                 if "mortgage_balance" in current_data:
                     current_data["primary_residence_mortgage"] = current_data["mortgage_balance"]

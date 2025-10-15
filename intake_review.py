@@ -62,7 +62,7 @@ def show_assets_page(existing, save_payload, go_to_page):
     st.caption("Enter current balances for all your accounts and assets")
     
     # Retirement Accounts
-    st.subheader("🏦 Retirement Accounts")
+    st.subheader("🦠 Retirement Accounts")
     ira = st.number_input(
         "Your IRA Balance",
         min_value=0.0,
@@ -447,6 +447,48 @@ def show_family_page(existing, save_payload, go_to_page):
         edited_goals["year"] = pd.to_numeric(edited_goals["year"], errors="coerce").astype("Int64")
     st.session_state.temp_goals = edited_goals.to_dict('records') if not edited_goals.empty else []
 
+    st.divider()
+
+    # ============================================
+    # CUSTOM EXPENSES SECTION (NEW!)
+    # ============================================
+    st.subheader("📝 Custom Monthly Expenses")
+    st.caption("Add any special monthly expenses not covered in standard categories (e.g., Autism School Costs, Special Therapy)")
+    
+    if 'temp_custom_expenses' not in st.session_state:
+        # Load from existing JSON if available
+        st.session_state.temp_custom_expenses = existing.get("custom_expenses", [])
+    
+    custom_df = pd.DataFrame(st.session_state.temp_custom_expenses)
+    custom_df = _ensure_columns(custom_df, [("Name","str"),("Monthly Amount","float"),("Category","str")])
+    
+    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
+    
+    edited_custom = st.data_editor(
+        custom_df,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="custom_expenses_editor",
+        column_config={
+            "Name": st.column_config.TextColumn("Expense Name", required=True, help="e.g., Autism School Costs, Special Therapy"),
+            "Monthly Amount": st.column_config.NumberColumn("Monthly Amount ($)", min_value=0, step=50, format="$%.2f"),
+            "Category": st.column_config.SelectboxColumn(
+                "Category",
+                options=["Education", "Healthcare", "Special Needs", "Childcare", "Other"],
+                help="Category for organizing expenses"
+            ),
+        },
+    )
+    
+    if not edited_custom.empty:
+        edited_custom["Monthly Amount"] = edited_custom["Monthly Amount"].apply(_to_float)
+    st.session_state.temp_custom_expenses = edited_custom.to_dict("records") if not edited_custom.empty else []
+    
+    # Show total of custom expenses
+    if st.session_state.temp_custom_expenses:
+        total_custom = sum(item.get("Monthly Amount", 0) for item in st.session_state.temp_custom_expenses)
+        st.success(f"📊 Total Custom Monthly Expenses: ${total_custom:,.2f}")
+
     st.info("ℹ️ These fields are completely optional. Leave blank if not applicable.")
 
     # Navigation
@@ -461,11 +503,13 @@ def show_family_page(existing, save_payload, go_to_page):
             data["children_list"] = st.session_state.get("temp_children", [])
             data["inheritance_list"] = st.session_state.get("temp_inherit", [])
             data["goals_list"] = st.session_state.get("temp_goals", [])
+            data["custom_expenses"] = st.session_state.get("temp_custom_expenses", [])
 
             # Backward compatibility keys
             data["children_rows"] = data["children_list"]
             data["inherit_rows"] = data["inheritance_list"]
             data["goals_data"] = data["goals_list"]
+            data["custom_expenses_list"] = data["custom_expenses"]
 
             save_payload(data)
             go_to_page('review')
@@ -573,13 +617,27 @@ def show_review_page(existing, shared_path, go_to_page):
     st.subheader("👨‍👩‍👧‍👦 Family Events")
     children_count = len(existing.get("children_rows", existing.get("children_list", [])))
     inherit_count = len(existing.get("inherit_rows", existing.get("inheritance_list", [])))
-    col1, col2 = st.columns(2)
+    custom_count = len(existing.get("custom_expenses", []))
+    
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Children", children_count)
     with col2:
         st.metric("Inheritances", inherit_count)
+    with col3:
+        st.metric("Custom Expenses", custom_count)
+    
     if st.button("✏️ Edit Family Events", key="edit_family", use_container_width=True):
         go_to_page('family')
+    
+    # Show custom expenses if any
+    if custom_count > 0:
+        with st.expander("📝 Custom Monthly Expenses Details"):
+            custom_expenses = existing.get("custom_expenses", [])
+            for item in custom_expenses:
+                st.write(f"• **{item.get('Name', 'N/A')}**: ${item.get('Monthly Amount', 0):,.2f} ({item.get('Category', 'N/A')})")
+            total_custom = sum(item.get("Monthly Amount", 0) for item in custom_expenses)
+            st.success(f"**Total Custom Expenses: ${total_custom:,.2f}/month**")
     
     # Final Export Section
     st.divider()
@@ -596,7 +654,7 @@ def show_review_page(existing, shared_path, go_to_page):
             st.balloons()
             st.markdown("### 🎯 Next Steps:")
             st.markdown("1. Open your **Retirement Simulator** app")
-            st.markdown("2. In the sidebar, find **'📥 Import from Intake App'**")
+            st.markdown("2. In the sidebar, find **'🔥 Import from Intake App'**")
             st.markdown("3. Click **'Load from path'**")
             st.markdown("4. Review the populated fields")
             st.markdown("5. Click **'Run Simulation'** to see your retirement projection!")
