@@ -152,8 +152,8 @@ def aggregate_transactions_by_category(documents: List[Dict]) -> Dict:
         if not amounts:
             continue
 
-        # Calculate robust baseline (median preferred)
-        baseline, confidence = calculate_robust_baseline(amounts, method="median")
+        # Calculate robust baseline (smart mode for recurring bills, median for others)
+        baseline, confidence = calculate_robust_baseline(amounts, method="median", category=category)
 
         aggregated[category] = {
             'monthly_baseline': round(baseline, 2),
@@ -161,7 +161,8 @@ def aggregate_transactions_by_category(documents: List[Dict]) -> Dict:
             'data_points': len(amounts),
             'min': min(amounts),
             'max': max(amounts),
-            'median': median(amounts)
+            'median': median(amounts),
+            'all_amounts': sorted(amounts, reverse=True)  # For debugging/review
         }
 
     return aggregated
@@ -187,7 +188,7 @@ def aggregate_income_sources(documents: List[Dict]) -> Dict:
         if not amounts:
             continue
 
-        baseline, confidence = calculate_robust_baseline(amounts, method="median")
+        baseline, confidence = calculate_robust_baseline(amounts, method="median", category="income")
 
         aggregated[income_type] = {
             'monthly_baseline': round(baseline, 2),
@@ -457,7 +458,7 @@ def show_aggregation_summary(result: Dict):
                 st.write(f"📊 {data['data_points']} data points | Confidence: {confidence:.0%}")
 
             # Add expandable details showing individual transactions
-            with st.expander(f"🔍 View {category.title()} Details"):
+            with st.expander(f"🔍 View {category.title()} Details & Reclassify"):
                 st.caption(f"Individual transactions in this category:")
 
                 # Get all transactions for this category from raw documents
@@ -477,11 +478,64 @@ def show_aggregation_summary(result: Dict):
                 if category_transactions:
                     import pandas as pd
                     df = pd.DataFrame(category_transactions)
+
+                    # Sort by amount (highest first) to make it easier to spot issues
+                    df = df.sort_values('Amount', ascending=False)
                     st.dataframe(df, use_container_width=True, height=min(300, len(category_transactions) * 35 + 38))
 
                     # Show statistics
                     amounts = [t['Amount'] for t in category_transactions]
-                    st.write(f"**Min:** ${min(amounts):,.2f} | **Max:** ${max(amounts):,.2f} | **Median:** ${data['median']:,.2f}")
+                    st.write(f"**Baseline Used:** ${data['monthly_baseline']:,.2f} | **Min:** ${min(amounts):,.2f} | **Max:** ${max(amounts):,.2f} | **Median:** ${data['median']:,.2f}")
+
+                    # Show smart mode calculation details for recurring categories
+                    if category in ["housing", "utilities", "insurance"]:
+                        st.info(f"💡 **Smart Mode Active:** For {category}, the system identifies the most common RECURRING payment (ignoring small fees). Baseline = ${data['monthly_baseline']:,.2f}")
+
+                    # Interactive reclassification UI
+                    st.divider()
+                    st.subheader("🔧 Reclassify Transactions")
+                    st.caption("See transactions that don't belong? Manually adjust below:")
+
+                    # Store reclassification state
+                    if 'reclassifications' not in st.session_state:
+                        st.session_state.reclassifications = {}
+
+                    # Create selection UI for each transaction
+                    st.write("**Select transactions to move or remove:**")
+
+                    # Available categories for moving
+                    all_categories = ["housing", "utilities", "groceries", "dining", "transportation",
+                                    "healthcare", "insurance", "entertainment", "travel", "education",
+                                    "miscellaneous", "REMOVE (exclude from calculation)"]
+
+                    # Show top 10 transactions for manual review
+                    st.caption("Showing top transactions by amount (most likely to need review):")
+                    for idx, row in df.head(10).iterrows():
+                        col1, col2, col3, col4 = st.columns([3, 2, 3, 2])
+
+                        with col1:
+                            st.text(row['Description'][:40])
+                        with col2:
+                            st.text(f"${row['Amount']:,.2f}")
+                        with col3:
+                            trans_key = f"{category}_{idx}_{row['Amount']}"
+                            new_category = st.selectbox(
+                                f"Move to:",
+                                options=[f"Keep in {category}"] + all_categories,
+                                key=f"reclass_{trans_key}",
+                                label_visibility="collapsed"
+                            )
+                            if new_category != f"Keep in {category}":
+                                st.session_state.reclassifications[trans_key] = new_category
+                        with col4:
+                            if st.button("Apply", key=f"apply_{trans_key}"):
+                                st.success(f"✅ Moved to: {new_category}")
+
+                    if st.session_state.reclassifications:
+                        st.warning(f"⚠️ {len(st.session_state.reclassifications)} reclassifications pending. Re-run analysis to apply changes.")
+                        if st.button(f"Clear All Reclassifications for {category}", key=f"clear_{category}"):
+                            st.session_state.reclassifications = {}
+                            st.rerun()
                 else:
                     st.write("No detailed transactions available")
     else:

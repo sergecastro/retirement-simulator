@@ -573,12 +573,13 @@ def prorate_amount_by_days(amount: float, start_date: datetime, end_date: dateti
 # ROBUST BASELINE CALCULATION (GROK's Rule #2)
 # ============================================================================
 
-def calculate_robust_baseline(monthly_amounts: List[float], method: str = "median") -> Tuple[float, float]:
+def calculate_robust_baseline(monthly_amounts: List[float], method: str = "median", category: str = "miscellaneous") -> Tuple[float, float]:
     """
     Calculate a robust monthly baseline from a list of amounts.
 
     Methods:
     - "median": Median of values (preferred, resists outliers)
+    - "smart_mode": Finds most common recurring amount (best for bills/rent)
     - "emwa": Exponential Moving Weighted Average (α=0.3)
     - "winsorized_median": Median after capping outliers at 3× rolling median
 
@@ -593,6 +594,46 @@ def calculate_robust_baseline(monthly_amounts: List[float], method: str = "media
     if not amounts:
         return 0.0, 0.0
 
+    # For recurring bills (housing, utilities, insurance), use SMART MODE
+    # This finds the most common LARGE payment, not just median of all values
+    recurring_categories = ["housing", "utilities", "insurance", "subscriptions"]
+
+    if category in recurring_categories and len(amounts) >= 3:
+        # Filter out very small transactions (likely mis-categorized or fees)
+        # Keep only amounts above 10th percentile
+        sorted_amounts = sorted(amounts)
+        threshold_idx = max(0, int(len(sorted_amounts) * 0.1))  # 10th percentile
+        large_amounts = sorted_amounts[threshold_idx:]
+
+        if large_amounts:
+            # Find mode (most common value) with 10% tolerance
+            # Group similar amounts together (within 10% of each other)
+            from collections import defaultdict
+            clusters = defaultdict(list)
+
+            for amt in large_amounts:
+                # Find existing cluster within 10% range
+                found_cluster = False
+                for cluster_key in list(clusters.keys()):
+                    if abs(amt - cluster_key) / max(amt, cluster_key) < 0.10:
+                        clusters[cluster_key].append(amt)
+                        found_cluster = True
+                        break
+
+                if not found_cluster:
+                    clusters[amt] = [amt]
+
+            # Find largest cluster (most common payment amount)
+            if clusters:
+                largest_cluster_key = max(clusters.items(), key=lambda x: len(x[1]))[0]
+                largest_cluster = clusters[largest_cluster_key]
+
+                # Use mean of the largest cluster as baseline
+                baseline = sum(largest_cluster) / len(largest_cluster)
+                confidence = min(1.0, len(largest_cluster) / 3.0)  # Full confidence at 3+ same payments
+                return baseline, confidence
+
+    # Default: Use median for all other cases
     if method == "median":
         baseline = median(amounts)
         confidence = min(1.0, len(amounts) / 6.0)  # Full confidence at 6+ months
