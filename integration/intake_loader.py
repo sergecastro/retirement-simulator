@@ -7,6 +7,40 @@ from data_manager import apply_scenario_data_safe
 from data_manager import load_scenarios, save_scenarios  # NEW: For auto-save
 from datetime import datetime  # NEW: For timestamp on duplicates
 
+def sanitize_intake_data(data: dict) -> dict:
+    """
+    Sanitize imported data to prevent validation errors.
+    - Caps birth years at reasonable max (current year + 20)
+    - Validates other fields
+    """
+    max_birth_year = datetime.now().year + 20  # Match family_inputs.py validation
+    warnings = []
+
+    # Sanitize children data
+    if "children_list" in data:
+        for child in data["children_list"]:
+            if "Birth Year" in child:
+                original_year = child["Birth Year"]
+                if original_year > max_birth_year:
+                    child["Birth Year"] = max_birth_year
+                    warnings.append(f"⚠️ Child '{child.get('Name', 'Unknown')}' birth year adjusted from {original_year} to {max_birth_year}")
+
+    # Also sanitize children_rows (backward compatibility)
+    if "children_rows" in data:
+        for child in data["children_rows"]:
+            if "Birth Year" in child:
+                original_year = child["Birth Year"]
+                if original_year > max_birth_year:
+                    child["Birth Year"] = max_birth_year
+                    warnings.append(f"⚠️ Child '{child.get('Name', 'Unknown')}' birth year adjusted from {original_year} to {max_birth_year}")
+
+    # Show warnings to user
+    if warnings:
+        for warning in warnings:
+            st.sidebar.warning(warning)
+
+    return data
+
 def intake_import_ui(shared_dir: str = ""):
     """Sidebar UI to import Intake JSON by path or upload."""
     
@@ -45,10 +79,13 @@ def intake_import_ui(shared_dir: str = ""):
                 
                 with open(load_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                
+
                 if isinstance(data, dict):
                     from data_manager import apply_scenario_data_safe
-                    
+
+                    # Sanitize data to prevent validation errors
+                    data = sanitize_intake_data(data)
+
                     # Apply the data
                     apply_scenario_data_safe(data)
                     
@@ -131,10 +168,13 @@ def intake_import_ui(shared_dir: str = ""):
             st.sidebar.info(f"📄 Processing: {uploaded.name}")
             
             data = json.loads(uploaded.getvalue().decode("utf-8"))
-            
+
             if isinstance(data, dict):
                 from data_manager import apply_scenario_data_safe
-                
+
+                # Sanitize data to prevent validation errors
+                data = sanitize_intake_data(data)
+
                 # Apply the data
                 apply_scenario_data_safe(data)
                 
