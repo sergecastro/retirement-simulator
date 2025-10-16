@@ -197,26 +197,64 @@ def inject_explain_visual_system():
             if (container.classList.contains('svg-container')) {
                 data.chart_type = 'plotly';
 
-                // STEP 3: Try to access the chart registry (injected by Python)
+                // STEP 3: Try to identify which specific chart this is by looking for Streamlit key
+                let chartKey = null;
+
+                // Look up the DOM tree for elements with data-test-id that contain our chart keys
+                let parent = container;
+                while (parent && parent !== window.parent.document.body) {
+                    // Check for Streamlit's key in various attributes
+                    const testId = parent.getAttribute('data-testid');
+                    const key = parent.getAttribute('key');
+
+                    if (testId || key) {
+                        // Check if it matches our chart keys
+                        if (testId && testId.includes('financial_trajectories')) {
+                            chartKey = 'financial_trajectories';
+                            break;
+                        } else if (testId && testId.includes('monte_carlo')) {
+                            chartKey = 'monte_carlo_simulation';
+                            break;
+                        } else if (testId && testId.includes('sankey')) {
+                            chartKey = 'sankey_cash_flow';
+                            break;
+                        } else if (testId && testId.includes('irmaa_magi')) {
+                            chartKey = 'irmaa_magi_trajectory';
+                            break;
+                        } else if (testId && testId.includes('irmaa_costs')) {
+                            chartKey = 'irmaa_annual_costs';
+                            break;
+                        }
+                    }
+                    parent = parent.parentElement;
+                }
+
+                // STEP 4: Try to access the chart registry (injected by Python)
                 console.log('[ExplainVisual] Checking chart registry...');
                 console.log('[ExplainVisual] Registry exists:', !!window.parent.__CHART_DATA_REGISTRY__);
+                console.log('[ExplainVisual] Detected chart key:', chartKey);
 
                 if (window.parent.__CHART_DATA_REGISTRY__) {
                     console.log('[ExplainVisual] Registry keys:', Object.keys(window.parent.__CHART_DATA_REGISTRY__));
 
-                    // Try to match chart by title or find the first available chart
                     let matchedChart = null;
 
-                    // Look for financial_trajectories first (most common)
-                    if (window.parent.__CHART_DATA_REGISTRY__['financial_trajectories']) {
-                        matchedChart = window.parent.__CHART_DATA_REGISTRY__['financial_trajectories'];
-                        console.log('[ExplainVisual] ✅ Found financial_trajectories data');
-                    } else {
-                        // Fall back to first available chart
-                        const firstKey = Object.keys(window.parent.__CHART_DATA_REGISTRY__)[0];
-                        if (firstKey) {
-                            matchedChart = window.parent.__CHART_DATA_REGISTRY__[firstKey];
-                            console.log('[ExplainVisual] ✅ Using first available chart:', firstKey);
+                    // First, try to match by detected chart key
+                    if (chartKey && window.parent.__CHART_DATA_REGISTRY__[chartKey]) {
+                        matchedChart = window.parent.__CHART_DATA_REGISTRY__[chartKey];
+                        console.log('[ExplainVisual] ✅ Matched by key:', chartKey);
+                    }
+                    // Try to match by position (order in which charts appear)
+                    else {
+                        // Get all chart containers on the page
+                        const allCharts = Array.from(window.parent.document.querySelectorAll('.svg-container'));
+                        const chartIndex = allCharts.indexOf(container);
+                        const registryKeys = Object.keys(window.parent.__CHART_DATA_REGISTRY__);
+
+                        if (chartIndex >= 0 && chartIndex < registryKeys.length) {
+                            const keyByPosition = registryKeys[chartIndex];
+                            matchedChart = window.parent.__CHART_DATA_REGISTRY__[keyByPosition];
+                            console.log('[ExplainVisual] ✅ Matched by position:', chartIndex, '→', keyByPosition);
                         }
                     }
 
