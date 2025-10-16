@@ -483,11 +483,37 @@ def show_family_page(existing, save_payload, go_to_page):
     if not edited_custom.empty:
         edited_custom["Monthly Amount"] = edited_custom["Monthly Amount"].apply(_to_float)
     st.session_state.temp_custom_expenses = edited_custom.to_dict("records") if not edited_custom.empty else []
-    
+
     # Show total of custom expenses
     if st.session_state.temp_custom_expenses:
         total_custom = sum(item.get("Monthly Amount", 0) for item in st.session_state.temp_custom_expenses)
-        st.success(f"📊 Total Custom Monthly Expenses: ${total_custom:,.2f}")
+
+        # VALIDATION: Check for unrealistic values
+        warnings = []
+        for item in st.session_state.temp_custom_expenses:
+            amount = item.get("Monthly Amount", 0)
+            name = item.get("Name", "Unknown")
+
+            # Flag extremely high monthly amounts (likely user error)
+            if amount > 50000:  # $50k/month = $600k/year - very unusual
+                warnings.append(f"⚠️ **{name}**: ${amount:,.0f}/month seems VERY HIGH (${amount*12:,.0f}/year). Did you mean to enter this as a one-time goal instead?")
+            elif amount > 10000:  # $10k/month = $120k/year - unusual but possible
+                warnings.append(f"⚠️ **{name}**: ${amount:,.0f}/month is quite high (${amount*12:,.0f}/year). Please confirm this is correct.")
+
+        # Show warnings
+        if warnings:
+            st.error("🚨 POTENTIAL DATA ENTRY ERRORS DETECTED:")
+            for warning in warnings:
+                st.warning(warning)
+            st.info("💡 **TIP:** If this is a one-time purchase (like a house), add it to **Financial Goals** instead of custom monthly expenses!")
+
+        # Show total with appropriate styling
+        if total_custom > 50000:
+            st.error(f"🚨 Total Custom Monthly Expenses: ${total_custom:,.2f} (${total_custom*12:,.0f}/year) - THIS IS EXTREMELY HIGH!")
+        elif total_custom > 10000:
+            st.warning(f"⚠️ Total Custom Monthly Expenses: ${total_custom:,.2f} (${total_custom*12:,.0f}/year)")
+        else:
+            st.success(f"📊 Total Custom Monthly Expenses: ${total_custom:,.2f}")
 
     st.info("ℹ️ These fields are completely optional. Leave blank if not applicable.")
 

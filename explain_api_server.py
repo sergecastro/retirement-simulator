@@ -34,11 +34,11 @@ CORS(app, resources={
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 if not ANTHROPIC_API_KEY:
-    print("⚠️  WARNING: ANTHROPIC_API_KEY not found in environment!")
+    print("WARNING: ANTHROPIC_API_KEY not found in environment!")
     print("   Please ensure .env file exists with ANTHROPIC_API_KEY")
 else:
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    print("✅ Anthropic API key loaded successfully")
+    print("OK: Anthropic API key loaded successfully")
 
 
 @app.route('/explain', methods=['POST', 'OPTIONS'])
@@ -78,7 +78,7 @@ def explain():
         
         explanation = message.content[0].text
         
-        print(f"[API] ✅ Generated explanation ({len(explanation)} chars)")
+        print(f"[API] OK: Generated explanation ({len(explanation)} chars)")
         
         return jsonify({
             'explanation': explanation,
@@ -86,14 +86,14 @@ def explain():
         })
         
     except anthropic.APIError as e:
-        print(f"[API] ❌ Anthropic API Error: {e}")
+        print(f"[API] ERROR: Anthropic API Error: {e}")
         return jsonify({
             'error': f'Claude API error: {str(e)}',
             'success': False
         }), 500
-        
+
     except Exception as e:
-        print(f"[API] ❌ Unexpected Error: {e}")
+        print(f"[API] ERROR: Unexpected Error: {e}")
         return jsonify({
             'error': f'Server error: {str(e)}',
             'success': False
@@ -115,14 +115,14 @@ def health():
 
 if __name__ == '__main__':
     print("\n" + "="*60)
-    print("🚀 EXPLANATION API SERVER STARTING")
+    print("EXPLANATION API SERVER STARTING")
     print("="*60)
-    print(f"✅ Running on: http://localhost:8502")
-    print(f"✅ Health check: http://localhost:8502/health")
-    print(f"✅ Explain endpoint: http://localhost:8502/explain")
-    print(f"✅ CORS enabled for origins:")
+    print(f"Running on: http://localhost:8502")
+    print(f"Health check: http://localhost:8502/health")
+    print(f"Explain endpoint: http://localhost:8502/explain")
+    print(f"CORS enabled for origins:")
     for origin in ALLOWED_ORIGINS:
-        print(f"   • {origin}")
+        print(f"   - {origin}")
     print("="*60 + "\n")
     
     # Run server
