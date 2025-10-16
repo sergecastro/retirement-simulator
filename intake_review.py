@@ -361,7 +361,7 @@ def show_family_page(existing, save_payload, go_to_page):
         key="children_editor",
         column_config={
             "Name": st.column_config.TextColumn("Child Name", required=True),
-            "Birth Year": st.column_config.NumberColumn("Birth Year", min_value=1900, max_value=2100, step=1),
+            "Birth Year": st.column_config.NumberColumn("Birth Year", min_value=1900, max_value=2045, step=1, help="Child's birth year (1900-2045)"),
             "College Plan": st.column_config.SelectboxColumn(
                 "College Plan",
                 options=["None","Public In-State","Public Out-of-State","Private Nonprofit"]
@@ -406,7 +406,7 @@ def show_family_page(existing, save_payload, go_to_page):
         use_container_width=True,
         key="inherit_editor",
         column_config={
-            "Year": st.column_config.NumberColumn("Year", min_value=2020, max_value=2100, step=1),
+            "Year": st.column_config.NumberColumn("Year", min_value=2020, max_value=2075, step=1, help="Year of expected inheritance (2020-2075)"),
             "Amount": st.column_config.NumberColumn("Amount ($)", min_value=0, step=1000, format="$%.0f"),
             "Taxable?": st.column_config.CheckboxColumn("Taxable?"),
         },

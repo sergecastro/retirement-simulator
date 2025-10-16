@@ -3,6 +3,10 @@
 import os
 import json
 import streamlit as st
+from intake_validation import (validate_age, validate_age_gap, validate_total_income,
+                                validate_social_security, validate_income_mix,
+                                validate_total_expenses, validate_housing_ratio,
+                                validate_income_vs_expenses, show_validation_message)
 
 # === Configuration ===
 SHARED_DIR = r"C:\Users\serge\Desktop\retirement-simulator-dev\retirement-simulator\SHARED"
@@ -95,11 +99,17 @@ if st.session_state.current_page == 'profile':
     else:
         partner_age = None
     
-    # Validation hints
-    if your_age > 95:
-        st.warning("⚠️ Age over 95 is unusual. Please confirm this is correct.")
-    if mode == "Couple" and partner_age and partner_age > 95:
-        st.warning("⚠️ Partner age over 95 is unusual. Please confirm this is correct.")
+    # Intelligent validation
+    level, message = validate_age(your_age, is_partner=False)
+    show_validation_message(level, message)
+
+    if mode == "Couple" and partner_age:
+        level, message = validate_age(partner_age, is_partner=True)
+        show_validation_message(level, message)
+
+        # Validate age gap
+        level, message = validate_age_gap(your_age, partner_age)
+        show_validation_message(level, message)
     
     # Save and continue
     col1, col2 = st.columns([1, 1])
@@ -196,12 +206,21 @@ elif st.session_state.current_page == 'income':
     # Display total
     st.divider()
     st.metric("Total Monthly Income", f"${total_income:,.2f}")
-    
-    # Validation warnings
-    if total_income < 500:
-        st.warning("⚠️ Total income seems very low. Please verify your entries.")
-    elif total_income > 100000:
-        st.info("ℹ️ High income detected. Make sure all amounts are monthly (not annual).")
+
+    # Intelligent validation
+    user_age = int(existing.get("input_age", 65))
+
+    # Validate total income
+    level, message = validate_total_income(total_income, user_age)
+    show_validation_message(level, message)
+
+    # Validate Social Security
+    level, message = validate_social_security(social_security, user_age)
+    show_validation_message(level, message)
+
+    # Validate income mix
+    level, message = validate_income_mix(salary + self_employment, pension, social_security, total_income, user_age)
+    show_validation_message(level, message)
     
     # Navigation
     col1, col2, col3 = st.columns([1, 1, 1])
@@ -383,21 +402,21 @@ elif st.session_state.current_page == 'expenses':
     # Display total
     st.divider()
     st.metric("Total Monthly Expenses", f"${total_expenses:,.2f}")
-    
-    # Calculate and show surplus/deficit
+
+    # Intelligent validation
     total_income = float(existing.get("input_total_income", 0.0))
-    if total_income > 0:
-        surplus = total_income - total_expenses
-        if surplus >= 0:
-            st.success(f"✅ Monthly Surplus: ${surplus:,.2f}")
-        else:
-            st.error(f"⚠️ Monthly Deficit: ${abs(surplus):,.2f}")
-    
-    # Validation warnings
-    if total_expenses < 500:
-        st.warning("⚠️ Total expenses seem very low. Please verify your entries.")
-    elif total_expenses > 50000:
-        st.info("ℹ️ High expenses detected. Make sure all amounts are monthly (not annual).")
+
+    # Validate total expenses
+    level, message = validate_total_expenses(total_expenses)
+    show_validation_message(level, message)
+
+    # Validate housing ratio
+    level, message = validate_housing_ratio(housing, total_income)
+    show_validation_message(level, message)
+
+    # Validate income vs expenses (surplus/deficit)
+    level, message = validate_income_vs_expenses(total_income, total_expenses)
+    show_validation_message(level, message)
     
     # Navigation
     col1, col2, col3 = st.columns([1, 1, 1])
