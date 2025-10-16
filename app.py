@@ -290,9 +290,11 @@ if 'simulation_results' in st.session_state:
     
     # INJECT CHART REGISTRY AFTER CHARTS ARE CREATED
     if '__chart_registry__' in st.session_state and st.session_state['__chart_registry__']:
+        import json
+        registry_json = json.dumps(st.session_state['__chart_registry__'])
         st.components.v1.html(f"""
         <script>
-        window.parent.__CHART_DATA_REGISTRY__ = {st.session_state['__chart_registry__'].__repr__()};
+        window.parent.__CHART_DATA_REGISTRY__ = {registry_json};
         console.log('[Injected After Charts] Registry:', window.parent.__CHART_DATA_REGISTRY__);
         </script>
         """, height=0)
