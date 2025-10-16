@@ -76,7 +76,6 @@ else:
 inject_explain_visual_system()
 
 
-
 # CRITICAL FIX: Load scenarios AFTER intake to respect imported scenarios
 age_group_for_autoload = st.session_state.get('input_age_group', '70+')
 intake_import_ui(shared_dir=r"C:\Users\serge\Desktop\retirement-simulator-dev\retirement-simulator\SHARED")
@@ -285,6 +284,15 @@ if st.button("🎯 Run Financial Simulation", type="primary", use_container_widt
 # FIXED: Display results with proper variable scoping
 if 'simulation_results' in st.session_state:
     results = st.session_state['simulation_results']
+    
+    # INJECT CHART REGISTRY AFTER CHARTS ARE CREATED
+    if '__chart_registry__' in st.session_state and st.session_state['__chart_registry__']:
+        st.components.v1.html(f"""
+        <script>
+        window.parent.__CHART_DATA_REGISTRY__ = {st.session_state['__chart_registry__'].__repr__()};
+        console.log('[Injected After Charts] Registry:', window.parent.__CHART_DATA_REGISTRY__);
+        </script>
+        """, height=0)
     stored_family_data = st.session_state.get('family_data')
     stored_financial_data = st.session_state.get('financial_data')
     stored_user_data = st.session_state.get('user_data')

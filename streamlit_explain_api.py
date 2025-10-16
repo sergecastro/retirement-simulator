@@ -185,40 +185,124 @@ def inject_explain_visual_system():
                 title: 'Chart',
                 data: {}
             };
-            
+
+            // STEP 1: Extract title from nearby headers
             let titleEl = container.closest('div[data-testid="stVerticalBlock"]');
             if (titleEl) {
                 const header = titleEl.querySelector('h1, h2, h3, [data-testid="stMarkdownContainer"] p strong, [data-testid="stMarkdownContainer"] p');
                 if (header) data.title = header.textContent.trim();
             }
-            
+
+            // STEP 2: Check if this is a Plotly chart
             if (container.classList.contains('svg-container')) {
                 data.chart_type = 'plotly';
+
+                // STEP 3: Try to access the chart registry (injected by Python)
+                console.log('[ExplainVisual] Checking chart registry...');
+                console.log('[ExplainVisual] Registry exists:', !!window.parent.__CHART_DATA_REGISTRY__);
+
+                if (window.parent.__CHART_DATA_REGISTRY__) {
+                    console.log('[ExplainVisual] Registry keys:', Object.keys(window.parent.__CHART_DATA_REGISTRY__));
+
+                    // Try to match chart by title or find the first available chart
+                    let matchedChart = null;
+
+                    // Look for financial_trajectories first (most common)
+                    if (window.parent.__CHART_DATA_REGISTRY__['financial_trajectories']) {
+                        matchedChart = window.parent.__CHART_DATA_REGISTRY__['financial_trajectories'];
+                        console.log('[ExplainVisual] ✅ Found financial_trajectories data');
+                    } else {
+                        // Fall back to first available chart
+                        const firstKey = Object.keys(window.parent.__CHART_DATA_REGISTRY__)[0];
+                        if (firstKey) {
+                            matchedChart = window.parent.__CHART_DATA_REGISTRY__[firstKey];
+                            console.log('[ExplainVisual] ✅ Using first available chart:', firstKey);
+                        }
+                    }
+
+                    if (matchedChart && matchedChart.data_summary) {
+                        data.title = matchedChart.title || data.title;
+                        data.data = matchedChart.data_summary;
+                        console.log('[ExplainVisual] ✅ Extracted chart data:', data.data);
+                        return data;
+                    }
+                }
+
+                // FALLBACK: Try to extract from Plotly DOM
+                try {
+                    const plotDiv = container.querySelector('.js-plotly-plot, .plotly');
+                    if (plotDiv && plotDiv.data && plotDiv.layout) {
+                        const traces = plotDiv.data;
+                        data.data = {
+                            num_traces: traces.length,
+                            traces: traces.map(trace => ({
+                                name: trace.name,
+                                type: trace.type,
+                                x_length: trace.x ? trace.x.length : 0,
+                                y_min: trace.y ? Math.min(...trace.y) : null,
+                                y_max: trace.y ? Math.max(...trace.y) : null,
+                                y_avg: trace.y ? (trace.y.reduce((a,b) => a+b, 0) / trace.y.length) : null
+                            }))
+                        };
+                        console.log('[ExplainVisual] ✅ Extracted from Plotly DOM');
+                        return data;
+                    }
+                } catch (e) {
+                    console.warn('[ExplainVisual] DOM extraction failed:', e);
+                }
+
+                // Final fallback
                 data.data = {
                     chart_detected: true,
-                    type: 'visualization'
+                    type: 'plotly_visualization',
+                    note: 'Could not access chart data - registry not populated yet'
                 };
             } else if (container.querySelector('[data-testid="stDataFrame"]')) {
                 data.chart_type = 'table';
                 data.data = { type: 'dataframe' };
             }
-            
+
             return data;
         }
         
         function buildPrompt(chartData) {
+            // Build a more detailed prompt based on whether we have actual trace data
+            let dataDescription = '';
+
+            if (chartData.data.traces && chartData.data.traces.length > 0) {
+                // We have actual Plotly data!
+                dataDescription = `**Data Traces:**\n`;
+                chartData.data.traces.forEach((trace, idx) => {
+                    dataDescription += `\nTrace ${idx + 1}: ${trace.name || 'Unnamed'}\n`;
+                    dataDescription += `- Type: ${trace.type}\n`;
+                    dataDescription += `- Data points: ${trace.x_length}\n`;
+                    if (trace.y_min !== null && trace.y_max !== null) {
+                        dataDescription += `- Range: $${trace.y_min.toLocaleString()} to $${trace.y_max.toLocaleString()}\n`;
+                        dataDescription += `- Average: $${trace.y_avg.toLocaleString()}\n`;
+                    }
+                    if (trace.x_sample && trace.x_sample.length > 0) {
+                        dataDescription += `- First few X values: ${trace.x_sample.join(', ')}\n`;
+                    }
+                    if (trace.y_sample && trace.y_sample.length > 0) {
+                        dataDescription += `- First few Y values: ${trace.y_sample.map(v => '$' + v.toLocaleString()).join(', ')}\n`;
+                    }
+                });
+            } else {
+                dataDescription = `**Chart Data:** ${JSON.stringify(chartData.data, null, 2)}`;
+            }
+
             return `You are helping explain a retirement planning visualization to a user.
 
 **Chart Title:** ${chartData.title}
 
 **Chart Type:** ${chartData.chart_type}
 
-**Chart Data:** ${JSON.stringify(chartData.data, null, 2)}
+${dataDescription}
 
 Please provide a clear, friendly explanation that:
 
 1. **What it shows:** Explain what this specific visualization displays (2-3 sentences)
-2. **Key insights:** Identify the most important numbers or patterns in THIS data (3-4 bullet points)
+2. **Key insights:** Identify the most important numbers or patterns in THIS data (3-4 bullet points with ACTUAL numbers from the data)
 3. **What it means:** Explain what these results mean for the user's retirement planning (2-3 sentences)
 4. **Example interpretation:** Give one concrete example of how to read/interpret this chart using the actual data shown
 
@@ -229,8 +313,17 @@ Format your response with clear sections using markdown headers (##) for readabi
         
         async function getExplanation(chartData) {
             showLoading();
-            
+
             try {
+                const prompt = buildPrompt(chartData);
+                console.log('[ExplainVisual] Sending to Flask server:');
+                console.log('[ExplainVisual] Prompt length:', prompt.length, 'chars');
+                console.log('[ExplainVisual] Chart data summary:', {
+                    title: chartData.title,
+                    type: chartData.chart_type,
+                    has_traces: chartData.data.traces ? chartData.data.traces.length : 0
+                });
+
                 // FIXED: Call our Python backend instead of Anthropic directly (fixes CORS!)
                 const response = await fetch('http://localhost:8502/explain', {
                     method: 'POST',
@@ -238,7 +331,7 @@ Format your response with clear sections using markdown headers (##) for readabi
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        prompt: buildPrompt(chartData)
+                        prompt: prompt
                     })
                 });
                 
@@ -282,6 +375,7 @@ Format your response with clear sections using markdown headers (##) for readabi
                 
                 btn.onclick = () => {
                     const data = extractChartData(chart);
+                    console.log('[ExplainVisual] Button clicked - Extracted data:', JSON.stringify(data, null, 2));
                     getExplanation(data);
                 };
                 
