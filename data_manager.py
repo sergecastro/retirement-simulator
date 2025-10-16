@@ -50,9 +50,9 @@ def save_scenarios(scenarios_dict, filename="family_scenarios.json"):
 def apply_scenario_data_safe(scenario_data):
     """SAFE: Apply loaded scenario data WITH input_ prefix to match your forms"""
     
-    # DEBUG: Show what we received
-    st.sidebar.write(f"🔍 DEBUG: Received {len(scenario_data)} keys")
-    st.sidebar.write(f"🔍 Sample keys: {list(scenario_data.keys())[:5]}")
+    # DEBUG: Show what we received (commented out for clean UI)
+    # st.sidebar.write(f"🔍 DEBUG: Received {len(scenario_data)} keys")
+    # st.sidebar.write(f"🔍 Sample keys: {list(scenario_data.keys())[:5]}")
     
     # Apply all scenario fields to session state
     for key, value in scenario_data.items():
@@ -65,11 +65,11 @@ def apply_scenario_data_safe(scenario_data):
         # If key already has input_ prefix, use it directly
         if key.startswith("input_"):
             st.session_state[key] = value
-            st.sidebar.write(f"✅ Set {key} = {value}")  # DEBUG
+            # st.sidebar.write(f"✅ Set {key} = {value}")  # DEBUG
         else:
             # If key doesn't have prefix, add it
             st.session_state[f"input_{key}"] = value
-            st.sidebar.write(f"✅ Set input_{key} = {value}")  # DEBUG
+            # st.sidebar.write(f"✅ Set input_{key} = {value}")  # DEBUG
     
     # CRITICAL FIX: Handle family tables
     children = (scenario_data.get("children_list") or 
@@ -77,22 +77,22 @@ def apply_scenario_data_safe(scenario_data):
                 scenario_data.get("children_data") or [])
     st.session_state["children_list"] = children
     st.session_state["children_rows"] = children
-    st.sidebar.write(f"🔍 Loaded {len(children)} children")  # DEBUG
+    # st.sidebar.write(f"🔍 Loaded {len(children)} children")  # DEBUG
 
     # Inheritances
-    inheritances = (scenario_data.get("inheritance_list") or 
-                   scenario_data.get("inherit_rows") or 
+    inheritances = (scenario_data.get("inheritance_list") or
+                   scenario_data.get("inherit_rows") or
                    scenario_data.get("inheritance_data") or [])
     st.session_state["inheritance_list"] = inheritances
     st.session_state["inherit_rows"] = inheritances
-    st.sidebar.write(f"🔍 Loaded {len(inheritances)} inheritances")  # DEBUG
+    # st.sidebar.write(f"🔍 Loaded {len(inheritances)} inheritances")  # DEBUG
 
     # Goals
-    goals = (scenario_data.get("goals_list") or 
+    goals = (scenario_data.get("goals_list") or
              scenario_data.get("goals_data") or [])
     st.session_state["goals_list"] = goals
     st.session_state["goals_data"] = goals
-    st.sidebar.write(f"🔍 Loaded {len(goals)} goals")  # DEBUG
+    # st.sidebar.write(f"🔍 Loaded {len(goals)} goals")  # DEBUG
 
     # Mortgage name variations
     if "input_mortgage_balance" in scenario_data:
@@ -104,8 +104,8 @@ def apply_scenario_data_safe(scenario_data):
 
     # Set flag to indicate scenario was loaded
     st.session_state['scenario_loaded'] = True
-    
-    st.sidebar.success("✅ Data applied to session_state!")  # DEBUG
+
+    # st.sidebar.success("✅ Data applied to session_state!")  # DEBUG
     return True
 
 def manage_scenarios(is_trusted_user, age_group=None):
@@ -133,16 +133,16 @@ def manage_scenarios(is_trusted_user, age_group=None):
     
     # NEW: Only auto-load if no scenario is currently loaded
     if is_trusted_user and age_group == "70+" and 'scenario_auto_loaded' not in st.session_state and current == 'New Scenario':
-        st.sidebar.write("🔍 DEBUG: Auto-load check triggered")
-        st.sidebar.write(f"🔍 scenario_auto_loaded in state: {'scenario_auto_loaded' in st.session_state}")
-        
+        # st.sidebar.write("🔍 DEBUG: Auto-load check triggered")
+        # st.sidebar.write(f"🔍 scenario_auto_loaded in state: {'scenario_auto_loaded' in st.session_state}")
+
         if "70+ Retirement Scenario (Private)" in scenario_names:
             scenario_data = scenarios["70+ Retirement Scenario (Private)"]
             apply_scenario_data_safe(scenario_data)
             st.session_state['current_scenario'] = "70+ Retirement Scenario (Private)"
             st.session_state['scenario_auto_loaded'] = True
             st.sidebar.success("✅ Auto-loaded: 70+ Retirement Scenario (Private)")
-            st.sidebar.warning("⚠️ DEBUG: Just overwrote current_scenario!")
+            # st.sidebar.warning("⚠️ DEBUG: Just overwrote current_scenario!")
     
     # If current scenario is imported (not in saved list), add it to dropdown
     if current != "New Scenario" and current not in scenario_names:
@@ -297,14 +297,14 @@ def manage_scenarios(is_trusted_user, age_group=None):
                     st.session_state['current_scenario'] = "New Scenario"
                     st.rerun()
     
-    # AVAILABLE SCENARIOS LIST
-    if scenario_names:
-        st.sidebar.markdown("---")
-        st.sidebar.subheader(f"📋 Available ({len(scenario_names)})")
-        for name in scenario_names:
-            visibility = " 🔒" if "(Private)" in name else " 🌐"
-            st.sidebar.text(f"• {name[:25]}{'...' if len(name) > 25 else ''}{visibility}")
-    
+    # AVAILABLE SCENARIOS LIST - COMMENTED OUT FOR CLEAN UI
+    # if scenario_names:
+    #     st.sidebar.markdown("---")
+    #     st.sidebar.subheader(f"📋 Available ({len(scenario_names)})")
+    #     for name in scenario_names:
+    #         visibility = " 🔒" if "(Private)" in name else " 🌐"
+    #         st.sidebar.text(f"• {name[:25]}{'...' if len(name) > 25 else ''}{visibility}")
+
     return scenarios
 
 # ============================================================================

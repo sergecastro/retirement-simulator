@@ -21,8 +21,8 @@ def inject_explain_visual_system():
     function initExplainVisual() {
         if (window.parent.__EXPLAIN_VISUAL_LOADED__) return;
         window.parent.__EXPLAIN_VISUAL_LOADED__ = true;
-        
-        console.log('[ExplainVisual] Initializing...');
+
+        // console.log('[ExplainVisual] Initializing...');
         
         // CRITICAL: Add styles to PARENT document, not iframe
         const style = window.parent.document.createElement('style');
@@ -230,19 +230,19 @@ def inject_explain_visual_system():
                 }
 
                 // STEP 4: Try to access the chart registry (injected by Python)
-                console.log('[ExplainVisual] Checking chart registry...');
-                console.log('[ExplainVisual] Registry exists:', !!window.parent.__CHART_DATA_REGISTRY__);
-                console.log('[ExplainVisual] Detected chart key:', chartKey);
+                // console.log('[ExplainVisual] Checking chart registry...');
+                // console.log('[ExplainVisual] Registry exists:', !!window.parent.__CHART_DATA_REGISTRY__);
+                // console.log('[ExplainVisual] Detected chart key:', chartKey);
 
                 if (window.parent.__CHART_DATA_REGISTRY__) {
-                    console.log('[ExplainVisual] Registry keys:', Object.keys(window.parent.__CHART_DATA_REGISTRY__));
+                    // console.log('[ExplainVisual] Registry keys:', Object.keys(window.parent.__CHART_DATA_REGISTRY__));
 
                     let matchedChart = null;
 
                     // First, try to match by detected chart key
                     if (chartKey && window.parent.__CHART_DATA_REGISTRY__[chartKey]) {
                         matchedChart = window.parent.__CHART_DATA_REGISTRY__[chartKey];
-                        console.log('[ExplainVisual] ✅ Matched by key:', chartKey);
+                        // console.log('[ExplainVisual] ✅ Matched by key:', chartKey);
                     }
                     // Try to match by position (order in which charts appear)
                     else {
@@ -254,14 +254,14 @@ def inject_explain_visual_system():
                         if (chartIndex >= 0 && chartIndex < registryKeys.length) {
                             const keyByPosition = registryKeys[chartIndex];
                             matchedChart = window.parent.__CHART_DATA_REGISTRY__[keyByPosition];
-                            console.log('[ExplainVisual] ✅ Matched by position:', chartIndex, '→', keyByPosition);
+                            // console.log('[ExplainVisual] ✅ Matched by position:', chartIndex, '→', keyByPosition);
                         }
                     }
 
                     if (matchedChart && matchedChart.data_summary) {
                         data.title = matchedChart.title || data.title;
                         data.data = matchedChart.data_summary;
-                        console.log('[ExplainVisual] ✅ Extracted chart data:', data.data);
+                        // console.log('[ExplainVisual] ✅ Extracted chart data:', data.data);
                         return data;
                     }
                 }
@@ -282,11 +282,11 @@ def inject_explain_visual_system():
                                 y_avg: trace.y ? (trace.y.reduce((a,b) => a+b, 0) / trace.y.length) : null
                             }))
                         };
-                        console.log('[ExplainVisual] ✅ Extracted from Plotly DOM');
+                        // console.log('[ExplainVisual] ✅ Extracted from Plotly DOM');
                         return data;
                     }
                 } catch (e) {
-                    console.warn('[ExplainVisual] DOM extraction failed:', e);
+                    // console.warn('[ExplainVisual] DOM extraction failed:', e);
                 }
 
                 // Final fallback
@@ -354,13 +354,13 @@ Format your response with clear sections using markdown headers (##) for readabi
 
             try {
                 const prompt = buildPrompt(chartData);
-                console.log('[ExplainVisual] Sending to Flask server:');
-                console.log('[ExplainVisual] Prompt length:', prompt.length, 'chars');
-                console.log('[ExplainVisual] Chart data summary:', {
-                    title: chartData.title,
-                    type: chartData.chart_type,
-                    has_traces: chartData.data.traces ? chartData.data.traces.length : 0
-                });
+                // console.log('[ExplainVisual] Sending to Flask server:');
+                // console.log('[ExplainVisual] Prompt length:', prompt.length, 'chars');
+                // console.log('[ExplainVisual] Chart data summary:', {
+                //     title: chartData.title,
+                //     type: chartData.chart_type,
+                //     has_traces: chartData.data.traces ? chartData.data.traces.length : 0
+                // });
 
                 // FIXED: Call our Python backend instead of Anthropic directly (fixes CORS!)
                 const response = await fetch('http://localhost:8502/explain', {
@@ -413,35 +413,35 @@ Format your response with clear sections using markdown headers (##) for readabi
                 
                 btn.onclick = () => {
                     const data = extractChartData(chart);
-                    console.log('[ExplainVisual] Button clicked - Extracted data:', JSON.stringify(data, null, 2));
+                    // console.log('[ExplainVisual] Button clicked - Extracted data:', JSON.stringify(data, null, 2));
                     getExplanation(data);
                 };
                 
                 window.parent.document.body.appendChild(btn);
             });
-            
-            console.log('[ExplainVisual] Placed', charts.length, 'buttons');
-            
+
+            // console.log('[ExplainVisual] Placed', charts.length, 'buttons');
+
             return charts.length; // Return count for polling
         }
-        
+
         // FIXED: Active polling instead of relying on MutationObserver
         let pollAttempts = 0;
         const maxPollAttempts = 100; // 100 attempts × 300ms = 30 seconds max
-        
+
         function pollForCharts() {
             pollAttempts++;
             const chartsFound = placeButtons();
-            
+
             if (chartsFound > 0) {
-                console.log('[ExplainVisual] ✅ Charts detected! Buttons placed after', pollAttempts * 300, 'ms');
+                // console.log('[ExplainVisual] ✅ Charts detected! Buttons placed after', pollAttempts * 300, 'ms');
                 return; // Stop polling once charts are found
             }
-            
+
             if (pollAttempts < maxPollAttempts) {
                 setTimeout(pollForCharts, 300); // Check again in 300ms
             } else {
-                console.log('[ExplainVisual] ⚠️ No charts found after 30 seconds');
+                // console.log('[ExplainVisual] ⚠️ No charts found after 30 seconds');
             }
         }
         

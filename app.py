@@ -258,13 +258,16 @@ if st.button("🎯 Run Financial Simulation", type="primary", use_container_widt
                 st.session_state['user_data'] = user_data
                 st.session_state['sim_params'] = sim_params  # Store sim params for comparison
                 st.success("✅ Simulation Complete!")
-                
+
+                # Info about AI chart explanations
+                st.info("💡 **AI Chart Explanations**: Click any chart below to activate the **?** buttons (or wait ~20 seconds for auto-load), then click **?** to get AI-powered insights about your data!")
+
                 # Show Monte Carlo status
                 if 'monte_carlo_results' in results:
                     st.success("✅ Fresh Monte Carlo data generated - longevity analysis will be accurate")
                 else:
                     st.info("ℹ️ Monte Carlo not run - enable in parameters for longevity analysis")
-                
+
                 display_summary_metrics(results, sim_params['simulation_years'])
             else:
                 st.error("❌ Simulation returned no results")
