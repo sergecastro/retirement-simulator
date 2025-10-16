@@ -135,7 +135,48 @@ if st.session_state.current_page == 'profile':
 elif st.session_state.current_page == 'income':
     st.header("💰 Monthly Income")
     st.caption("Enter your typical monthly income from all sources")
-    
+
+    # === TWO-PATH WORKFLOW CHOICE ===
+    with st.expander("💡 **QUICK TIP: Two Ways to Enter Your Data**", expanded=False):
+        st.markdown("""
+        ### Choose Your Path:
+
+        **📝 Path 1: Manual Entry (Recommended for first-time users)**
+        - Simple, clean form below
+        - Just enter your numbers manually
+        - Perfect for getting started quickly
+
+        **🚀 Path 2: Advanced PDF Parser (Power users / Bulk updates)**
+        - Upload bank statements, credit cards, spreadsheets
+        - AI-powered extraction with full audit trail
+        - Interactive transaction review & reclassification
+        - Smart baseline calculation
+        - Perfect for quarterly/monthly updates
+
+        ---
+
+        ### Using the Advanced PDF Parser:
+
+        1. **Run the parser tool**:
+           ```
+           streamlit run bulk_document_processor.py --server.port 8503
+           ```
+
+        2. **Upload your documents** (PDFs, images, etc.)
+
+        3. **Review & validate** extracted data with full audit features
+
+        4. **Export** to `intake_payload.json`
+
+        5. **Return here** and use sidebar → "📂 Load from Path" to import
+
+        ---
+
+        **For now, you can continue with manual entry below** ⬇️
+        """)
+
+    st.divider()
+
     # Income fields with defaults from existing data
     salary = st.number_input(
         "Salary/Wages (monthly)",
@@ -248,7 +289,48 @@ elif st.session_state.current_page == 'income':
 elif st.session_state.current_page == 'expenses':
     st.header("🏠 Monthly Expenses")
     st.caption("Enter your typical monthly expenses")
-    
+
+    # === TWO-PATH WORKFLOW CHOICE ===
+    with st.expander("💡 **QUICK TIP: Two Ways to Enter Your Data**", expanded=False):
+        st.markdown("""
+        ### Choose Your Path:
+
+        **📝 Path 1: Manual Entry (Recommended for first-time users)**
+        - Simple, clean form below
+        - Just enter your numbers manually
+        - Perfect for getting started quickly
+
+        **🚀 Path 2: Advanced PDF Parser (Power users / Bulk updates)**
+        - Upload bank statements, credit cards, spreadsheets
+        - AI-powered extraction with full audit trail
+        - Interactive transaction review & reclassification
+        - Smart baseline calculation
+        - Perfect for quarterly/monthly updates
+
+        ---
+
+        ### Using the Advanced PDF Parser:
+
+        1. **Run the parser tool**:
+           ```
+           streamlit run bulk_document_processor.py --server.port 8503
+           ```
+
+        2. **Upload your documents** (PDFs, images, etc.)
+
+        3. **Review & validate** extracted data with full audit features
+
+        4. **Export** to `intake_payload.json`
+
+        5. **Return here** and use sidebar → "📂 Load from Path" to import
+
+        ---
+
+        **For now, you can continue with manual entry below** ⬇️
+        """)
+
+    st.divider()
+
     # Expense fields with defaults
     housing = st.number_input(
         "Housing (rent/mortgage)",
