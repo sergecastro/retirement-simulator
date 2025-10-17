@@ -9,7 +9,9 @@ from intake_validation import (validate_age, validate_age_gap, validate_total_in
                                 validate_income_vs_expenses, show_validation_message)
 
 # === Configuration ===
-SHARED_DIR = r"C:\Users\serge\Desktop\retirement-simulator-dev\retirement-simulator\SHARED"
+# Use relative path for deployment compatibility
+from pathlib import Path
+SHARED_DIR = os.path.join(Path(__file__).parent.parent, "SHARED")
 SHARED_PATH = os.path.join(SHARED_DIR, "intake_payload.json")
 
 def ensure_shared_dir():

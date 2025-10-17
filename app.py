@@ -138,7 +138,8 @@ inject_explain_visual_system()
 
 # CRITICAL FIX: Load scenarios AFTER intake to respect imported scenarios
 age_group_for_autoload = st.session_state.get('input_age_group', '70+')
-intake_import_ui(shared_dir=r"C:\Users\serge\Desktop\retirement-simulator-dev\retirement-simulator\SHARED")
+# For deployment: intake_import_ui uses file uploader (no shared dir needed)
+intake_import_ui(shared_dir="")
 scenario_data = manage_scenarios(IS_TRUSTED_USER, age_group_for_autoload)
 
 
