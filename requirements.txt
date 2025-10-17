@@ -1,0 +1,19 @@
+# Core web framework
+streamlit==1.36.0
+
+# Data processing
+pandas==2.2.2
+numpy==2.2.6
+
+# Visualization
+plotly==5.24.0
+
+# Flask API server (for AI explanations)
+Flask==3.0.3
+flask-cors==6.0.1
+
+# AI/ML
+anthropic==0.69.0
+
+# Configuration
+python-dotenv==1.1.0
