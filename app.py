@@ -100,10 +100,29 @@ st.markdown("*The Most Advanced Family Lifecycle Financial Simulation & Planning
 
 # Password protection
 st.header("🔒 Access Control")
-password = st.text_input("Enter password:", type="password")
-if password not in ["abcd123", "uhiRR2938foq"]:
-    st.error("🚫 Incorrect password.")
-    st.info("Demo: 'abcd123' | Trusted: 'uhiRR2938foq'")
+st.markdown("Enter your password to access the retirement planning tools.")
+
+# Developer note with LARGE font for easy copying
+st.markdown("""
+<div style='background-color: #f0f2f6; padding: 15px; border-radius: 5px; margin: 10px 0;'>
+    <p style='margin: 0; color: #666; font-size: 14px;'><strong>Developer Reference:</strong></p>
+    <p style='margin: 5px 0 0 0; font-size: 20px; font-family: monospace;'>
+        Demo: <code style='background: #fff; padding: 5px 10px; border-radius: 3px; font-size: 20px;'>abcd123</code>
+    </p>
+    <p style='margin: 5px 0 0 0; font-size: 20px; font-family: monospace;'>
+        Trusted: <code style='background: #fff; padding: 5px 10px; border-radius: 3px; font-size: 20px;'>uhiRR2938foq</code>
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+password = st.text_input("Enter password:", type="password", placeholder="Type or paste password here")
+
+# Only show error if user actually entered something wrong
+if password and password not in ["abcd123", "uhiRR2938foq"]:
+    st.error("🚫 Incorrect password. Please try again.")
+    st.stop()
+elif not password:
+    st.info("👆 Please enter a password to continue")
     st.stop()
 
 IS_TRUSTED_USER = (password == "uhiRR2938foq")
@@ -128,59 +147,69 @@ scenario_data = manage_scenarios(IS_TRUSTED_USER, age_group_for_autoload)
 def collect_user_inputs():
     """Collect user inputs reading from loaded scenario data"""
     st.header("👤 User Profile")
-    
+
+    # Welcome message
+    st.markdown("""
+    **Welcome!** Please review and update your information below. Make any necessary corrections
+    before running your simulation to ensure accurate results.
+    """)
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
+        # User name field
+        user_name = st.text_input(
+            "Your Name:",
+            value=st.session_state.get('input_user_name', ''),
+            placeholder="Enter your name",
+            key="input_user_name"
+        )
+
         age_group_options = ["25-55", "56-69", "70+"]
         current_age_group = st.session_state.get('input_age_group', '70+')
         try:
             age_group_index = age_group_options.index(current_age_group)
         except ValueError:
             age_group_index = 2  # Default to 70+
-        
+
         age_group = st.selectbox("Age Group:", age_group_options, index=age_group_index, key="input_age_group")
-        
+
         age = st.number_input(
-            "Your Age:", 
-            min_value=18, 
-            max_value=100, 
+            "Your Age:",
+            min_value=18,
+            max_value=100,
             value=int(st.session_state.get('input_age', 76)),
             key="input_age"
         )
-        
-        # CRITICAL FIX: Added key="input_partner_exists" so checkbox updates session state immediately
-        partner_exists = st.checkbox(
-            "Partner/Spouse exists?", 
-            value=st.session_state.get('input_partner_exists', True),
-            key="input_partner_exists"  # THIS IS THE KEY FIX
-        )
-    
+
     with col2:
-        if partner_exists:
-            partner_name = st.text_input(
-                "Partner's Name:", 
-                value=st.session_state.get('input_partner_name', 'Judith'),
-                key="input_partner_name"
-            )
-            
-            partner_age = st.number_input(
-                "Partner's Age:", 
-                min_value=18, 
-                max_value=100, 
-                value=int(st.session_state.get('input_partner_age', 74)),
-                key="input_partner_age"
-            )
-        else:
-            partner_name = ""
-            partner_age = 35
-    
+        # Always show partner fields - leave empty if no partner
+        partner_name = st.text_input(
+            "Partner's Name:",
+            value=st.session_state.get('input_partner_name', ''),
+            placeholder="Leave empty if no partner",
+            key="input_partner_name"
+        )
+
+        partner_age = st.number_input(
+            "Partner's Age:",
+            min_value=18,
+            max_value=100,
+            value=int(st.session_state.get('input_partner_age', 0)) if st.session_state.get('input_partner_age', 0) > 0 else 35,
+            key="input_partner_age",
+            help="Leave at default or set to 0 if no partner"
+        )
+
+    # Determine if partner exists based on whether name is filled
+    partner_exists = bool(partner_name and partner_name.strip())
+
     return {
         'age_group': age_group,
         'age': age,
         'partner_exists': partner_exists,
         'partner_name': partner_name,
-        'partner_age': partner_age
+        'partner_age': partner_age,
+        'user_name': user_name
     }
 
 # Collect user data first (needed for manage_scenarios)
