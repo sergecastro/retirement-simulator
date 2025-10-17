@@ -25,6 +25,47 @@ from streamlit_explain_api import inject_explain_visual_system
 # Page config
 st.set_page_config(page_title="Ultimate Family Retirement Plus", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
 
+# PROFESSIONAL CSS STYLING
+st.markdown("""
+<style>
+    /* Compact headers */
+    h1 {
+        padding-top: 0rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+    h2 {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.25rem !important;
+    }
+    h3 {
+        padding-top: 0.25rem !important;
+        padding-bottom: 0.25rem !important;
+    }
+
+    /* Reduce spacing between elements */
+    .element-container {
+        margin-bottom: 0.5rem !important;
+    }
+
+    /* Make metrics look professional */
+    [data-testid="stMetricValue"] {
+        font-size: 1.8rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* Tighter spacing for columns */
+    .row-widget {
+        gap: 0.5rem !important;
+    }
+
+    /* Clean separator lines */
+    hr {
+        margin-top: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # CHECK FLASK SERVER CONNECTION (does NOT auto-start)
 import socket
 
@@ -167,6 +208,36 @@ features = setup_sidebar(IS_TRUSTED_USER)
 
 # Financial and family inputs (these will read from loaded session state)
 financial_data = collect_financial_data()
+
+# PROFESSIONAL DASHBOARD - Always visible
+st.markdown("---")
+st.subheader("📊 Financial Snapshot")
+col1, col2, col3, col4, col5 = st.columns(5)
+
+with col1:
+    annual_income = financial_data['total_income']
+    st.metric("Annual Income", f"${annual_income:,.0f}", delta=None, help="Total annual income from all sources")
+
+with col2:
+    annual_expenses = financial_data['total_expenses']
+    st.metric("Annual Expenses", f"${annual_expenses:,.0f}", delta=None, help="Total annual expenses")
+
+with col3:
+    monthly_surplus = financial_data['monthly_surplus']
+    surplus_color = "normal" if monthly_surplus >= 0 else "inverse"
+    st.metric("Monthly Cash Flow", f"${monthly_surplus:,.0f}", delta=None, help="Monthly income minus expenses")
+
+with col4:
+    total_assets = financial_data['liquid_assets'] + financial_data['primary_residence_value'] + financial_data.get('secondary_residence_value', 0)
+    net_worth = total_assets - financial_data['total_liabilities']
+    st.metric("Net Worth", f"${net_worth:,.0f}", delta=None, help="Assets minus liabilities")
+
+with col5:
+    emergency_months = financial_data['liquid_assets'] / (annual_expenses / 12) if annual_expenses > 0 else 0
+    st.metric("Emergency Fund", f"{emergency_months:.1f} mo", delta=None, help="Months of expenses covered by liquid assets")
+
+st.markdown("---")
+
 family_data = collect_family_events() if features.get('show_family_events', False) else None
 
 if family_data:
@@ -274,13 +345,7 @@ if st.button("🎯 Run Financial Simulation", type="primary", use_container_widt
                 
         except Exception as e:
             st.error(f"❌ Simulation error: {str(e)}")
-            st.write("**Debug Info:**")
-            st.write(f"• User data: {user_data}")
-            st.write(f"• Financial data keys: {list(financial_data.keys()) if financial_data else 'None'}")
-            if family_data:
-                st.write(f"• Family data keys: {list(family_data.keys())}")
-            import traceback
-            st.code(traceback.format_exc())
+            st.info("💡 **Tip**: Check your inputs and try again. If the problem persists, try loading a saved scenario or starting fresh.")
 
 
 
@@ -346,8 +411,6 @@ if 'simulation_results' in st.session_state:
             show_irmaa_analysis(results, stored_user_data, stored_sim_params)
         except Exception as e:
             st.error(f"IRMAA analysis error: {str(e)}")
-            import traceback
-            st.code(traceback.format_exc())
         
         
         
@@ -489,8 +552,6 @@ if 'simulation_results' in st.session_state:
                             st.error("❌ Comparison failed to generate results")
         except Exception as e:
             st.error(f"Scenario comparison error: {str(e)}")
-            import traceback
-            st.code(traceback.format_exc())
         
         # ============================================
         # DUAL SCENARIO ANALYSIS - COMPLETE VERSION
@@ -585,8 +646,6 @@ if 'simulation_results' in st.session_state:
                             st.error("❌ Dual analysis failed")
         except Exception as e:
             st.error(f"Dual scenario error: {str(e)}")
-            import traceback
-            st.code(traceback.format_exc())
         
         # ============================================
         # AI ADVISOR (Trusted Users Only)

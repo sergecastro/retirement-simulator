@@ -146,19 +146,6 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         user_retirement_balance = ira_balance + four01k_403b_balance
         partner_retirement_balance = partner_ira_balance + partner_four01k_403b_balance
         
-        # DEBUG OUTPUT
-        print(f"\n{'='*60}")
-        print(f"DEBUG: SIMULATION PARAMETERS")
-        print(f"{'='*60}")
-        print(f"Total Income (Monthly): ${base_total_income:,.2f}")
-        print(f"Total Expenses (Monthly): ${base_total_expenses:,.2f}")
-        print(f"Partner Exists: {partner_exists}")
-        print(f"Partner Age: {partner_age}")
-        print(f"Partner Total Retirement: ${partner_retirement_balance:,.2f}")
-        print(f"User Age: {age}")
-        print(f"User Total Retirement: ${user_retirement_balance:,.2f}")
-        print(f"{'='*60}\n")
-        
         monthly_surplus = safe_float(monthly_surplus)
         combined_total_liabilities = safe_float(combined_total_liabilities)
         five29_plan_balance = safe_float(five29_plan_balance)
@@ -246,11 +233,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         
         # Initial savings
         current_savings = combined_financial_assets
-        
-        # Track first RMD for debug
-        first_user_rmd_logged = False
-        first_partner_rmd_logged = False
-        
+
         # CRITICAL FIX: Use actual income/expenses
         savings = combined_financial_assets
         five29_balance = five29_plan_balance
@@ -279,17 +262,11 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
                 factor = rmd_factors.get(user_age, 27.4)
                 user_rmd = user_retirement_balance / factor
                 user_retirement_balance -= user_rmd
-                if not first_user_rmd_logged:
-                    print(f"DEBUG: First User RMD at age {user_age}: ${user_rmd:,.2f}")
-                    first_user_rmd_logged = True
-            
+
             if partner_exists and partner_age >= 73 and partner_retirement_balance > 0:
                 factor = rmd_factors.get(partner_age, 27.4)
                 partner_rmd = partner_retirement_balance / factor
                 partner_retirement_balance -= partner_rmd
-                if not first_partner_rmd_logged:
-                    print(f"DEBUG: First Partner RMD at age {partner_age}: ${partner_rmd:,.2f}")
-                    first_partner_rmd_logged = True
             
             total_rmd = user_rmd + partner_rmd
             
@@ -525,16 +502,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             'health_score': health_score,
             'goal_achievement': goal_achievement
         })
-        
-        # Debug final results
-        print(f"\n{'='*60}")
-        print(f"DEBUG: SIMULATION RESULTS")
-        print(f"{'='*60}")
-        print(f"Final Savings: ${final_savings:,.2f}")
-        print(f"Final Net Worth: ${final_net_worth:,.2f}")
-        print(f"Years Solvent: {years_solvent}/{simulation_years}")
-        print(f"{'='*60}\n")
-        
+
         # Monte Carlo if requested
         if mc_iterations > 0:
             try:
@@ -551,7 +519,5 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         return results
 
     except Exception as e:
-        st.error(f"Simulation error details: {str(e)}")
-        import traceback
-        st.code(traceback.format_exc())
+        st.error(f"Simulation error: {str(e)}")
         return results
