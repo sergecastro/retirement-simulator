@@ -114,16 +114,19 @@ def health():
 
 
 if __name__ == '__main__':
+    # Railway sets PORT environment variable, fallback to 8502 for local dev
+    port = int(os.getenv('PORT', 8502))
+
     print("\n" + "="*60)
     print("EXPLANATION API SERVER STARTING")
     print("="*60)
-    print(f"Running on: http://localhost:8502")
-    print(f"Health check: http://localhost:8502/health")
-    print(f"Explain endpoint: http://localhost:8502/explain")
+    print(f"Running on: http://localhost:{port}")
+    print(f"Health check: http://localhost:{port}/health")
+    print(f"Explain endpoint: http://localhost:{port}/explain")
     print(f"CORS enabled for origins:")
     for origin in ALLOWED_ORIGINS:
         print(f"   - {origin}")
     print("="*60 + "\n")
-    
-    # Run server
-    app.run(host='localhost', port=8502, debug=True)
+
+    # Run server - bind to 0.0.0.0 for Railway/cloud deployment
+    app.run(host='0.0.0.0', port=port, debug=False)
