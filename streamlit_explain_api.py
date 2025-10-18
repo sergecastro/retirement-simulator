@@ -12,11 +12,16 @@ def inject_explain_visual_system():
     """
     Inject the complete Explain Visual system into the Streamlit app.
     """
-    
-    # No need to pass API key to frontend anymore - backend handles it!
-    
+
+    # Get Flask API URL from environment/secrets (Railway URL for production, localhost for dev)
+    api_url = os.getenv('FLASK_API_URL', 'http://localhost:8502')
+
+    # If using Streamlit secrets, prefer that over environment variable
+    if hasattr(st, 'secrets') and 'FLASK_API_URL' in st.secrets:
+        api_url = st.secrets['FLASK_API_URL']
+
     # Create the HTML/JavaScript as a regular string
-    html_code = """
+    html_code = f"""
     <script>
     function initExplainVisual() {
         if (window.parent.__EXPLAIN_VISUAL_LOADED__) return;
@@ -363,15 +368,16 @@ Format your response with clear sections using markdown headers (##) for readabi
                 // });
 
                 // FIXED: Call our Python backend instead of Anthropic directly (fixes CORS!)
-                const response = await fetch('http://localhost:8502/explain', {
+                // API URL configured from Python (Railway for production, localhost for dev)
+                const response = await fetch('{api_url}/explain', {{
                     method: 'POST',
-                    headers: {
+                    headers: {{
                         'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
+                    }},
+                    body: JSON.stringify({{
                         prompt: prompt
-                    })
-                });
+                    }})
+                }});
                 
                 if (!response.ok) {
                     throw new Error('Backend request failed: ' + response.status);
@@ -383,10 +389,10 @@ Format your response with clear sections using markdown headers (##) for readabi
                 const html = markdownToHTML(explanation);
                 
                 showExplanation(html);
-            } catch (error) {
+            }} catch (error) {{
                 console.error('[ExplainVisual] Error:', error);
-                showExplanation('<h2>Error</h2><p>Could not get explanation: ' + error.message + '</p><p>Make sure the explanation API server is running on port 8502.</p>');
-            }
+                showExplanation('<h2>Error</h2><p>Could not get explanation: ' + error.message + '</p><p>Make sure the Flask API server is running at: {api_url}</p>');
+            }}
         }
         
         function placeButtons() {
