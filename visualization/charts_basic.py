@@ -45,9 +45,21 @@ def show_trajectories(results):
     if 'df' not in results or results['df'].empty:
         st.warning("No data for trajectories")
         return
-    
+
     df = results['df']
-    
+
+    # DEBUG: Show data summary to diagnose flat line issue
+    with st.expander("🔍 Debug: Data Summary (click to expand)", expanded=False):
+        st.write(f"**Years**: {df['Year'].min()} to {df['Year'].max()}")
+        st.write(f"**Savings Range**: ${df['Savings_End'].min():,.0f} to ${df['Savings_End'].max():,.0f}")
+        st.write(f"**Net Worth Range**: ${df['Net_Worth'].min():,.0f} to ${df['Net_Worth'].max():,.0f}")
+        st.write(f"**Income Range**: ${df['Total_Income'].min():,.0f} to ${df['Total_Income'].max():,.0f}")
+        st.write(f"**Expenses Range**: ${df['Total_Expenses'].min():,.0f} to ${df['Total_Expenses'].max():,.0f}")
+        st.write("**First 3 rows:**")
+        st.dataframe(df[['Year', 'Savings_End', 'Net_Worth', 'Total_Income', 'Total_Expenses']].head(3))
+        st.write("**Last 3 rows:**")
+        st.dataframe(df[['Year', 'Savings_End', 'Net_Worth', 'Total_Income', 'Total_Expenses']].tail(3))
+
     # Build the Plotly figure
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df['Year'], y=df['Savings_End'], mode='lines', name='Savings'))

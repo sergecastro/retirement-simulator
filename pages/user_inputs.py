@@ -26,12 +26,20 @@ def setup_sidebar(is_trusted_user):
     st.sidebar.markdown("**🎲 Advanced Simulations**")
     features['show_monte_carlo'] = st.sidebar.checkbox("Monte Carlo Analysis", value=True)
     features['show_stress_tests'] = st.sidebar.checkbox("Stress Testing", value=False)
-    
+
+    # AI Chart Explanations - Available to ALL users
+    st.sidebar.markdown("**🤖 AI Chart Explanations**")
+    st.sidebar.info("""
+    **✨ NEW!** Click on any chart to activate the **?** button, then click it for AI-powered insights about your data!
+
+    Works on all charts after simulation runs.
+    """)
+
     if is_trusted_user:
-        st.sidebar.markdown("**🤖 AI Features**")
-        features['show_ai_advisor'] = st.sidebar.checkbox("AI Financial Advisor", value=True)
+        st.sidebar.markdown("**🤖 Advanced AI Features**")
+        features['show_ai_advisor'] = st.sidebar.checkbox("AI Financial Advisor Chat", value=True)
         features['show_auto_optimization'] = st.sidebar.checkbox("Auto-Optimization", value=False)
-    
+
     return features
 
 def collect_user_inputs():
