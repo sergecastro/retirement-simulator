@@ -3,6 +3,7 @@
 import streamlit as st
 import json
 from datetime import datetime
+from embedded_scenarios import EMBEDDED_SCENARIOS
 
 def apply_scenario_data_safe(scenario_data):
     """SAFE: Apply loaded scenario data WITH input_ prefix to match your forms"""
@@ -98,16 +99,63 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
     st.sidebar.markdown("---")
     st.sidebar.header("📂 Scenario Management")
 
+    # AUTO-LOAD DEFAULT SCENARIO ON FIRST VISIT
+    if 'scenario_auto_loaded' not in st.session_state:
+        # Load default scenario for ALL users (unless they uploaded from intake)
+        if 'scenario_loaded' not in st.session_state:
+            default_scenario = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
+            apply_scenario_data_safe(default_scenario)
+            st.session_state['current_scenario'] = 'Original 70+ Retirement (Demo)'
+            st.session_state['scenario_auto_loaded'] = True
+            st.session_state['scenario_loaded'] = True
+
     # Get current scenario name
-    current = st.session_state.get('current_scenario', 'New Scenario')
+    current = st.session_state.get('current_scenario', 'Original 70+ Retirement (Demo)')
 
     if current != "New Scenario":
         st.sidebar.info(f"📋 **Currently:** {current}")
 
     # ============================================
-    # LOAD SCENARIO FROM FILE
+    # EMBEDDED SCENARIOS SELECTOR
     # ============================================
     st.sidebar.subheader("📥 Load Scenario")
+
+    # Build list of available embedded scenarios based on user type
+    embedded_options = ['Original 70+ Retirement (Demo)']
+    if is_trusted_user:
+        embedded_options.append('70+ Retirement (Private - Trusted Only)')
+
+    # Find current selection index
+    try:
+        current_index = embedded_options.index(current) if current in embedded_options else 0
+    except:
+        current_index = 0
+
+    selected_embedded = st.sidebar.selectbox(
+        "Select embedded scenario:",
+        options=embedded_options,
+        index=current_index,
+        help="Pre-loaded scenarios available to all users"
+    )
+
+    # Load selected embedded scenario if changed
+    if selected_embedded != current:
+        if selected_embedded == 'Original 70+ Retirement (Demo)':
+            scenario_data = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
+        else:  # Private scenario
+            scenario_data = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
+
+        apply_scenario_data_safe(scenario_data)
+        st.session_state['current_scenario'] = selected_embedded
+        st.session_state['scenario_loaded'] = True
+        st.sidebar.success(f"✅ Loaded: {selected_embedded}")
+        st.rerun()
+
+    st.sidebar.markdown("**...or upload your own:**")
+
+    # Track if we've already processed this file to prevent loops
+    if 'last_uploaded_file' not in st.session_state:
+        st.session_state['last_uploaded_file'] = None
 
     uploaded_file = st.sidebar.file_uploader(
         "Upload scenario JSON file:",
@@ -116,31 +164,38 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
         key="scenario_uploader"
     )
 
+    # Only process if it's a NEW file (different from last processed)
     if uploaded_file is not None:
-        try:
-            # Read the uploaded file
-            file_content = uploaded_file.read()
-            scenario_data = json.loads(file_content)
+        file_id = f"{uploaded_file.name}_{uploaded_file.size}"
 
-            # Validate it's a dictionary
-            if not isinstance(scenario_data, dict):
-                st.sidebar.error("❌ Invalid scenario file format")
-            else:
-                # Apply the scenario data
-                apply_scenario_data_safe(scenario_data)
+        if st.session_state['last_uploaded_file'] != file_id:
+            try:
+                # Read the uploaded file
+                file_content = uploaded_file.read()
+                scenario_data = json.loads(file_content)
 
-                # Update current scenario name
-                scenario_name = uploaded_file.name.replace('.json', '')
-                st.session_state['current_scenario'] = scenario_name
-                st.session_state['scenario_loaded'] = True
+                # Validate it's a dictionary
+                if not isinstance(scenario_data, dict):
+                    st.sidebar.error("❌ Invalid scenario file format")
+                else:
+                    # Apply the scenario data
+                    apply_scenario_data_safe(scenario_data)
 
-                st.sidebar.success(f"✅ Loaded: {scenario_name}")
-                st.rerun()
+                    # Update current scenario name
+                    scenario_name = uploaded_file.name.replace('.json', '')
+                    st.session_state['current_scenario'] = scenario_name
+                    st.session_state['scenario_loaded'] = True
 
-        except json.JSONDecodeError as e:
-            st.sidebar.error(f"❌ Invalid JSON file: {e}")
-        except Exception as e:
-            st.sidebar.error(f"❌ Error loading file: {e}")
+                    # Mark this file as processed
+                    st.session_state['last_uploaded_file'] = file_id
+
+                    st.sidebar.success(f"✅ Loaded: {scenario_name}")
+                    st.rerun()
+
+            except json.JSONDecodeError as e:
+                st.sidebar.error(f"❌ Invalid JSON file: {e}")
+            except Exception as e:
+                st.sidebar.error(f"❌ Error loading file: {e}")
 
     # ============================================
     # SAVE SCENARIO TO FILE

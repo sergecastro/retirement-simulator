@@ -117,15 +117,12 @@ st.markdown("*The Most Advanced Family Lifecycle Financial Simulation & Planning
 st.header("🔒 Access Control")
 st.markdown("Enter your password to access the retirement planning tools.")
 
-# Developer note with LARGE font for easy copying
+# Show demo password only
 st.markdown("""
 <div style='background-color: #f0f2f6; padding: 15px; border-radius: 5px; margin: 10px 0;'>
-    <p style='margin: 0; color: #666; font-size: 14px;'><strong>Developer Reference:</strong></p>
+    <p style='margin: 0; color: #666; font-size: 14px;'><strong>Demo Access:</strong></p>
     <p style='margin: 5px 0 0 0; font-size: 20px; font-family: monospace;'>
-        Demo: <code style='background: #fff; padding: 5px 10px; border-radius: 3px; font-size: 20px;'>abcd123</code>
-    </p>
-    <p style='margin: 5px 0 0 0; font-size: 20px; font-family: monospace;'>
-        Trusted: <code style='background: #fff; padding: 5px 10px; border-radius: 3px; font-size: 20px;'>uhiRR2938foq</code>
+        Password: <code style='background: #fff; padding: 5px 10px; border-radius: 3px; font-size: 20px;'>abcd123</code>
     </p>
 </div>
 """, unsafe_allow_html=True)
