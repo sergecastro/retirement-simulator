@@ -67,15 +67,30 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # CHECK FLASK SERVER CONNECTION (does NOT auto-start)
+import os
 import socket
 
 def check_flask_connection():
     """Check if Flask explanation server is running"""
     try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(1)
-            result = s.connect_ex(('localhost', 8502))
-            return result == 0
+        # Get Flask API URL from secrets (cloud) or environment (local)
+        api_url = os.getenv('FLASK_API_URL', 'http://localhost:8502')
+
+        # If using Streamlit secrets, prefer that
+        if hasattr(st, 'secrets') and 'FLASK_API_URL' in st.secrets:
+            api_url = st.secrets['FLASK_API_URL']
+
+        # For cloud URLs, use HTTP health check instead of socket
+        if api_url.startswith('http'):
+            import requests
+            response = requests.get(f"{api_url}/health", timeout=3)
+            return response.status_code == 200
+        else:
+            # Fallback to socket for localhost
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(1)
+                result = s.connect_ex(('localhost', 8502))
+                return result == 0
     except:
         return False
 

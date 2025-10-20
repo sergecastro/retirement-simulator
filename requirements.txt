@@ -18,4 +18,7 @@ anthropic==0.69.0
 # Configuration
 python-dotenv==1.1.0
 
+# HTTP requests for health checks
+requests==2.31.0
+
 gunicorn==21.2.0
