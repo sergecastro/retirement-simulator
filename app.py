@@ -8,7 +8,7 @@ from financial_utils import get_all_inputs_as_dict, display_summary_metrics
 from pages.user_inputs import setup_sidebar
 from pages.financial_inputs import collect_financial_data
 from pages.family_inputs import collect_family_events
-from data_manager import manage_scenarios
+from data_manager_cloud import manage_scenarios_cloud as manage_scenarios
 from simulation_core import run_simulation
 from household_events import build_child_objects, build_inheritances
 from basic_analysis import run_simple_fallback_simulation, calculate_simple_health_score

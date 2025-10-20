@@ -1,11 +1,10 @@
-# integration/intake_loader.py - Fixed to use data_manager functions + CUSTOM EXPENSES
+# integration/intake_loader.py - Cloud-compatible version with file upload
 import os
 import json
 from pathlib import Path
 import streamlit as st
-from data_manager import apply_scenario_data_safe
-from data_manager import load_scenarios, save_scenarios  # NEW: For auto-save
-from datetime import datetime  # NEW: For timestamp on duplicates
+from data_manager_cloud import apply_scenario_data_safe
+from datetime import datetime
 
 def sanitize_intake_data(data: dict) -> dict:
     """
@@ -81,69 +80,28 @@ def intake_import_ui(shared_dir: str = ""):
                     data = json.load(f)
 
                 if isinstance(data, dict):
-                    from data_manager import apply_scenario_data_safe
-
                     # Sanitize data to prevent validation errors
                     data = sanitize_intake_data(data)
 
                     # Apply the data
                     apply_scenario_data_safe(data)
-                    
+
                     # CRITICAL FIX: Load custom_expenses into session state
                     if "custom_expenses" in data:
                         st.session_state['custom_expenses'] = data['custom_expenses']
                     else:
                         st.session_state['custom_expenses'] = []
-                    
+
                     # Set scenario name
                     scenario_name = Path(load_path).stem.replace("_", " ").replace("-", " ").title()
-                    final_name = f"Imported: {scenario_name}"  # Prefix for distinction
-                    
-                    st.session_state["current_scenario"] = final_name  # Use final_name
+                    final_name = f"Imported: {scenario_name}"
+
+                    st.session_state["current_scenario"] = final_name
                     st.session_state['scenario_loaded'] = True
                     st.session_state['scenario_auto_loaded'] = True
-                    
-                    # Auto-save to family_scenarios.json for persistence across reloads
-                    scenarios = load_scenarios()
-                    save_key = final_name
-                    if save_key in scenarios:  # Handle duplicates with timestamp
-                        save_key = f"{save_key} ({datetime.now().strftime('%Y-%m-%d %H:%M')})"
-                    
-                    # Collect current data (mirror save logic from data_manager.py)
-                    current_data = {}
-                    for key in st.session_state:
-                        if key.startswith('input_'):
-                            clean_key = key.replace('input_', '')
-                            value = st.session_state[key]
-                            if isinstance(value, (int, float, str, bool, list, dict, type(None))):
-                                current_data[clean_key] = value
-                    
-                    # Family data – write all variants for compatibility
-                    current_data["goals_list"] = st.session_state.get("goals_list", st.session_state.get("goals_data", []))
-                    current_data["goals_data"] = current_data["goals_list"]
-                    
-                    current_data["children_list"] = st.session_state.get("children_list", st.session_state.get("children_rows", []))
-                    current_data["children_rows"] = current_data["children_list"]
-                    current_data["children_data"] = current_data["children_list"]
-                    
-                    current_data["inheritance_list"] = st.session_state.get("inheritance_list", st.session_state.get("inherit_rows", []))
-                    current_data["inherit_rows"] = current_data["inheritance_list"]
-                    current_data["inheritance_data"] = current_data["inheritance_list"]
-                    
-                    # CRITICAL FIX: Save custom_expenses
-                    current_data["custom_expenses"] = st.session_state.get("custom_expenses", [])
-                    
-                    # Mortgage name variations (for compatibility)
-                    if "mortgage_balance" in current_data:
-                        current_data["primary_residence_mortgage"] = current_data["mortgage_balance"]
-                    
-                    scenarios[save_key] = current_data
-                    if save_scenarios(scenarios):
-                        st.sidebar.success(f"✅ Auto-saved as: {save_key}")
-                    else:
-                        st.sidebar.warning("⚠️ Data loaded but auto-save failed - use 'Save Current' manually")
-                    
+
                     st.sidebar.success(f"✅ Loaded: {final_name}")
+                    st.sidebar.info("💡 Use 'Download Scenario' to save this data!")
                 else:
                     st.sidebar.error("❌ Invalid JSON format")
                     
@@ -170,65 +128,27 @@ def intake_import_ui(shared_dir: str = ""):
             data = json.loads(uploaded.getvalue().decode("utf-8"))
 
             if isinstance(data, dict):
-                from data_manager import apply_scenario_data_safe
-
                 # Sanitize data to prevent validation errors
                 data = sanitize_intake_data(data)
 
                 # Apply the data
                 apply_scenario_data_safe(data)
-                
+
                 # CRITICAL FIX: Load custom_expenses into session state
                 if "custom_expenses" in data:
                     st.session_state['custom_expenses'] = data['custom_expenses']
                 else:
                     st.session_state['custom_expenses'] = []
-                
+
                 # Set scenario name
                 scenario_name = Path(uploaded.name).stem.replace("_", " ").replace("-", " ").title()
-                final_name = f"Imported: {scenario_name}"  # Prefix for distinction
-                st.session_state["current_scenario"] = final_name  # Use final_name
+                final_name = f"Imported: {scenario_name}"
+                st.session_state["current_scenario"] = final_name
                 st.session_state['scenario_loaded'] = True
                 st.session_state['scenario_auto_loaded'] = True
-                
-                # Auto-save to family_scenarios.json for persistence across reloads (same as above)
-                scenarios = load_scenarios()
-                save_key = final_name
-                if save_key in scenarios:
-                    save_key = f"{save_key} ({datetime.now().strftime('%Y-%m-%d %H:%M')})"
-                
-                current_data = {}
-                for key in st.session_state:
-                    if key.startswith('input_'):
-                        clean_key = key.replace('input_', '')
-                        value = st.session_state[key]
-                        if isinstance(value, (int, float, str, bool, list, dict, type(None))):
-                            current_data[clean_key] = value
-                
-                current_data["goals_list"] = st.session_state.get("goals_list", st.session_state.get("goals_data", []))
-                current_data["goals_data"] = current_data["goals_list"]
-                
-                current_data["children_list"] = st.session_state.get("children_list", st.session_state.get("children_rows", []))
-                current_data["children_rows"] = current_data["children_list"]
-                current_data["children_data"] = current_data["children_list"]
-                
-                current_data["inheritance_list"] = st.session_state.get("inheritance_list", st.session_state.get("inherit_rows", []))
-                current_data["inherit_rows"] = current_data["inheritance_list"]
-                current_data["inheritance_data"] = current_data["inheritance_list"]
-                
-                # CRITICAL FIX: Save custom_expenses
-                current_data["custom_expenses"] = st.session_state.get("custom_expenses", [])
-                
-                if "mortgage_balance" in current_data:
-                    current_data["primary_residence_mortgage"] = current_data["mortgage_balance"]
-                
-                scenarios[save_key] = current_data
-                if save_scenarios(scenarios):
-                    st.sidebar.success(f"✅ Auto-saved as: {save_key}")
-                else:
-                    st.sidebar.warning("⚠️ Data loaded but auto-save failed - use 'Save Current' manually")
-                
+
                 st.sidebar.success(f"✅ Loaded: {final_name}")
+                st.sidebar.info("💡 Use 'Download Scenario' to save this data!")
                 st.rerun()
             else:
                 st.sidebar.error("❌ Invalid JSON format")
