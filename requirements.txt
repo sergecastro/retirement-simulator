@@ -17,3 +17,5 @@ anthropic==0.69.0
 
 # Configuration
 python-dotenv==1.1.0
+
+gunicorn==21.2.0
