@@ -175,9 +175,6 @@ def show_intake_questionnaire():
                 st.session_state.intake_just_completed = True  # Flag to auto-load data
                 st.rerun()
 
-        st.divider()
-        st.info("💡 In the Main App, click **'Load from Path'** in the sidebar to import your data!")
-
     # Footer
     st.divider()
     st.caption(f"📁 Data location: `{get_shared_path()}`")
