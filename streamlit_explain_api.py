@@ -14,7 +14,7 @@ def inject_explain_visual_system():
     """
 
     # Get Flask API URL from environment/secrets (Railway URL for production, localhost for dev)
-    api_url = os.getenv('FLASK_API_URL', 'http://localhost:8502')
+    api_url = os.getenv('FLASK_API_URL', 'http://localhost:5000')
 
     # If using Streamlit secrets, prefer that over environment variable
     if hasattr(st, 'secrets') and 'FLASK_API_URL' in st.secrets:
