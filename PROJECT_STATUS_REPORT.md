@@ -1,9 +1,9 @@
 # 🚀 PROJECT STATUS REPORT - ForeCash Family Retirement Planning Platform
 **Project Name:** ForeCash - Ultimate Family Retirement Planning Plus v3.0
-**Date:** October 21, 2025
+**Date:** October 21, 2025 (Updated: 11:50 AM)
 **Status:** ✅ PRODUCTION DEPLOYED - Full AI Features Active
 **Branch:** `feature/custom-fields`
-**Domain:** forecash.com *(in setup)*
+**Domain:** aiforecash.com ✅ **LIVE** (www.aiforecash.com also working)
 
 ---
 
@@ -28,6 +28,10 @@
 4. **Port Conflict Resolution** - Fixed Flask/Streamlit port conflicts (Flask now on 5000, Streamlit on 8501/8502)
 5. **Compact UI** - Streamlined sidebar to save vertical space
 6. **Delete Functionality** - Users can manage and delete saved scenarios
+7. ✅ **Render.com Upgraded to Starter Plan** ($7/month - NO MORE COLD STARTS!)
+8. ✅ **Custom Domain Live** - aiforecash.com and www.aiforecash.com both working
+9. ✅ **AI Chart Explanations Tested** - "?" buttons working on most charts
+10. ✅ **AI Advisor Confirmed** - Working "supremely" in production
 
 ---
 
@@ -36,7 +40,7 @@
 ```
 ┌────────────────────────────────────────────────────────────────┐
 │                      USER'S BROWSER                            │
-│                 (forecash.com - pending DNS)                   │
+│           (aiforecash.com - LIVE ✅)                           │
 └──────────────────────────┬─────────────────────────────────────┘
                            │
                            ▼
@@ -60,7 +64,7 @@
 │  │ • Health check endpoint: /health                       │   │
 │  │ • Explanation endpoint: /explain                       │   │
 │  │ • CORS configured for Streamlit apps                   │   │
-│  │ • Free tier: Cold starts after 15 min                  │   │
+│  │ • Starter tier ($7/mo): NO COLD STARTS ✅              │   │
 │  └────────────┬───────────────────────────────────────────┘   │
 └───────────────┼────────────────────────────────────────────────┘
                 │
@@ -234,10 +238,11 @@ your primary risks are: 1) Tax inefficiency on large inheritance (potentially
 - Secrets configured (ANTHROPIC_API_KEY, FLASK_API_URL)
 
 **Render.com (Flask API):**
-- Service: `retirement-simulator`
+- Service: `retirement-api`
 - URL: https://retirement-simulator.onrender.com
 - Port: 5000 (changed from 8502 to avoid Streamlit conflict)
-- Free tier: Cold starts after 15 min (acceptable for now)
+- **Starter tier: $7/month - NO COLD STARTS! ✅** (Upgraded Oct 21, 2025)
+- Instance: 512 MB RAM, 0.5 CPU
 - Python 3.11.9 (for pandas 2.2.2 compatibility)
 
 **Port Allocation:**
@@ -379,28 +384,35 @@ function placeButtons() {
 
 ## 🚀 UPCOMING IMPLEMENTATION (Next Session)
 
-### Immediate Tasks (Today - October 21)
-1. **forecash.com Domain Setup**
-   - Configure DNS CNAME records
-   - Point to Streamlit Cloud app
-   - Wait for DNS propagation (up to 24 hours)
+### ✅ COMPLETED TODAY (October 21, 11:50 AM)
+1. ✅ **aiforecash.com Domain Setup** - LIVE and working (both www and non-www)
+2. ✅ **Render.com Upgraded to Starter Tier** - $7/month, NO MORE COLD STARTS!
+3. ✅ **Production Testing** - App runs smoothly, "?" buttons working on most charts, AI advisor "supreme"
 
-2. **Render.com Upgrade to Paid Tier**
-   - Eliminate cold starts for professional demo
-   - Instant "?" button responses
-   - Cost: $7/month for 1GB RAM tier
+### 🚨 URGENT PRIORITIES (Next Steps)
+1. **MERGE INTAKE APP INTO MAIN APP** ⚠️ **CRITICAL**
+   - Current situation: Intake app exists as separate app on Streamlit Cloud
+   - User requirement: Must have ONE unified app, not two separate apps for end users
+   - Strategy: Merge intake_app.py functionality into app.py
+   - Risk level: HIGH - requires careful branch management
+   - Process:
+     - Create new branch `feature/merge-intake-app`
+     - Systematically merge Intake UI/logic into main app
+     - Thorough testing before merging back
+   - **Status:** Not started (waiting for backup completion)
 
-3. **Save/Load Testing & Fixes**
-   - Systematic testing protocol
+2. **Save/Load Logic Testing & Fixes** ⚠️ **HIGH PRIORITY**
+   - User reported: "something doesn't feel good" about save/load process
+   - Systematic testing protocol needed
    - Fix any data persistence issues
 
-4. **Auto-Refresh Implementation**
+3. **Fix "?" Buttons for Remaining Charts**
+   - Most charts working, some still need fixes
+   - Lower priority (can be addressed after Intake merge)
+
+4. **Auto-Refresh Implementation** (Lower priority)
    - Add JavaScript reload on password/scenario change
    - Test thoroughly for session state preservation
-
-5. **Comprehensive Chart Testing**
-   - Test "?" buttons on all chart types
-   - Verify Claude explanations are contextual
 
 ---
 
@@ -1204,8 +1216,63 @@ Number of families achieving their retirement goals using ForeCash
 
 ---
 
-**Report Version:** 2.0
-**Last Updated:** October 21, 2025
-**Next Review:** After forecash.com domain setup and Render upgrade
+---
+
+## 📝 SESSION LOG: October 21, 2025 (11:00 AM - 11:50 AM)
+
+### Accomplishments This Session:
+1. ✅ **Render Upgrade Completed**
+   - Navigated to Render dashboard
+   - Selected `retirement-api` service
+   - Upgraded from Free → Starter plan ($7/month)
+   - Service redeployed successfully with 512 MB RAM, 0.5 CPU
+   - **Result:** NO MORE COLD STARTS!
+
+2. ✅ **Domain Testing Completed**
+   - Tested https://aiforecash.com → ✅ Works! Redirects to Streamlit app
+   - Tested https://www.aiforecash.com → ✅ Works! Redirects to Streamlit app
+   - GoDaddy forwarding settings confirmed working (301 redirects)
+
+3. ✅ **Production Validation**
+   - Main app running smoothly in deployment
+   - "?" buttons appearing and working for most charts
+   - AI Advisor working "supremely" well
+   - User feedback: Very positive on deployed app performance
+
+### Issues Identified:
+1. 🚨 **URGENT: Intake App Merge Needed**
+   - Intake app (intake_app.py) exists as separate deployment
+   - User requirement: ONE unified app for end users
+   - Never tested in deployed environment after debugging locally
+   - **Action:** Must merge Intake functionality into main app
+
+2. ⚠️ **Save/Load Logic Issues**
+   - User reported save/load workflow "doesn't feel good"
+   - Needs systematic testing and fixes
+
+3. ℹ️ **Some "?" Buttons Not Working**
+   - Most charts working, but some need fixes
+   - Lower priority item for later
+
+### Next Session Plan:
+1. User backs up entire project folder
+2. Update and commit PROJECT_STATUS_REPORT.md
+3. Create new branch `feature/merge-intake-app`
+4. Review intake_app.py code
+5. Plan merge strategy carefully
+6. Systematically merge Intake into main app
+7. Test thoroughly before merging branch
+
+### Git Status at Session End:
+- Branch: `feature/custom-fields`
+- Status: Clean (before report update)
+- Last commit: "Add comprehensive PROJECT STATUS REPORT v2.0"
+- Next commit: Update PROJECT_STATUS_REPORT with Oct 21 progress
+
+---
+
+**Report Version:** 2.1
+**Last Updated:** October 21, 2025 11:50 AM
+**Next Review:** After Intake app merge completion
 **Author:** ForeCash Development Team
-**Status:** 🚀 **PRODUCTION DEPLOYED - READY FOR GROWTH** 🚀
+**Status:** 🚀 **PRODUCTION DEPLOYED - PLANNING INTAKE MERGE** 🚀
