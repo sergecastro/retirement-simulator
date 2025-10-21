@@ -396,7 +396,33 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
     # DELETE SCENARIO - COMPACT
     # ============================================
     with st.sidebar.expander("🗑️ Delete Scenarios"):
-        st.caption("Coming soon: Select & delete saved scenarios")
+        user_scenarios = st.session_state.get('user_scenarios', {})
+
+        if not user_scenarios:
+            st.caption("No saved scenarios to delete")
+        else:
+            st.caption("Select scenarios to delete:")
+
+            # Show checkboxes for each user scenario
+            scenarios_to_delete = []
+            for scenario_name in user_scenarios.keys():
+                if st.checkbox(scenario_name, key=f"delete_{scenario_name}"):
+                    scenarios_to_delete.append(scenario_name)
+
+            # Delete button (only enabled if something selected)
+            if st.button("🗑️ Delete Selected", use_container_width=True,
+                        disabled=not scenarios_to_delete, type="primary"):
+                for name in scenarios_to_delete:
+                    del st.session_state['user_scenarios'][name]
+
+                    # If we deleted the currently loaded scenario, switch to default
+                    if st.session_state.get('current_scenario') == name:
+                        default = 'Original 70+ Retirement (Demo)'
+                        st.session_state['current_scenario'] = default
+                        apply_scenario_data_safe(EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO'])
+
+                st.success(f"✅ Deleted {len(scenarios_to_delete)} scenario(s)")
+                st.rerun()
 
     return {}
 
