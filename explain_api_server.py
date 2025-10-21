@@ -104,18 +104,19 @@ def explain():
 def health():
     """Health check endpoint"""
     api_key_status = "configured" if ANTHROPIC_API_KEY else "missing"
-    
+    port = int(os.getenv('PORT', 5000))
+
     return jsonify({
         'status': 'healthy',
-        'port': 8502,
+        'port': port,
         'api_key': api_key_status,
         'allowed_origins': ALLOWED_ORIGINS
     })
 
 
 if __name__ == '__main__':
-    # Railway sets PORT environment variable, fallback to 8502 for local dev
-    port = int(os.getenv('PORT', 8502))
+    # Railway sets PORT environment variable, fallback to 5000 for local dev
+    port = int(os.getenv('PORT', 5000))
 
     print("\n" + "="*60)
     print("EXPLANATION API SERVER STARTING")

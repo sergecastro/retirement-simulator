@@ -74,7 +74,7 @@ def check_flask_connection():
     """Check if Flask explanation server is running"""
     try:
         # Get Flask API URL from secrets (cloud) or environment (local)
-        api_url = os.getenv('FLASK_API_URL', 'http://localhost:8502')
+        api_url = os.getenv('FLASK_API_URL', 'http://localhost:5000')
 
         # If using Streamlit secrets, prefer that
         if hasattr(st, 'secrets') and 'FLASK_API_URL' in st.secrets:
@@ -89,7 +89,7 @@ def check_flask_connection():
             # Fallback to socket for localhost
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(1)
-                result = s.connect_ex(('localhost', 8502))
+                result = s.connect_ex(('localhost', 5000))
                 return result == 0
     except:
         return False
