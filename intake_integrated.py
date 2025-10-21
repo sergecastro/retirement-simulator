@@ -172,6 +172,7 @@ def show_intake_questionnaire():
                 # Mark intake as complete and go to Analysis mode
                 st.session_state.intake_in_progress = False
                 st.session_state.app_mode = 'Analysis'
+                st.session_state.intake_just_completed = True  # Flag to auto-load data
                 st.rerun()
 
         st.divider()

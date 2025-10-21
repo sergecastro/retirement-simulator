@@ -1,6 +1,7 @@
 # app.py - COMPLETE FULL VERSION - Widget State Fixed - NO TRUNCATION
 import streamlit as st
 import sys
+import os
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -113,35 +114,48 @@ if not check_flask_connection():
     The app will work normally - you just won't have AI explanations for charts.
     """)
 
-st.title("🏠 Ultimate Family Retirement Planning Plus v3.0")
-st.markdown("*The Most Advanced Family Lifecycle Financial Simulation & Planning Tool*")
+# Initialize authentication state
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'IS_TRUSTED_USER' not in st.session_state:
+    st.session_state.IS_TRUSTED_USER = False
 
-# Password protection
-st.header("🔒 Access Control")
-st.markdown("Enter your password to access the retirement planning tools.")
+# Show password screen ONLY if not authenticated
+if not st.session_state.authenticated:
+    st.title("🏠 Ultimate Family Retirement Planning Plus v3.0")
+    st.markdown("*The Most Advanced Family Lifecycle Financial Simulation & Planning Tool*")
 
-# Show demo password only
-st.markdown("""
-<div style='background-color: #f0f2f6; padding: 15px; border-radius: 5px; margin: 10px 0;'>
-    <p style='margin: 0; color: #666; font-size: 14px;'><strong>Demo Access:</strong></p>
-    <p style='margin: 5px 0 0 0; font-size: 20px; font-family: monospace;'>
-        Password: <code style='background: #fff; padding: 5px 10px; border-radius: 3px; font-size: 20px;'>abcd123</code>
-    </p>
-</div>
-""", unsafe_allow_html=True)
+    # Password protection
+    st.header("🔒 Access Control")
+    st.markdown("Enter your password to access the retirement planning tools.")
 
-password = st.text_input("Enter password:", type="password", placeholder="Type or paste password here")
+    # Show demo password only
+    st.markdown("""
+    <div style='background-color: #f0f2f6; padding: 15px; border-radius: 5px; margin: 10px 0;'>
+        <p style='margin: 0; color: #666; font-size: 14px;'><strong>Demo Access:</strong></p>
+        <p style='margin: 5px 0 0 0; font-size: 20px; font-family: monospace;'>
+            Password: <code style='background: #fff; padding: 5px 10px; border-radius: 3px; font-size: 20px;'>abcd123</code>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# Only show error if user actually entered something wrong
-if password and password not in ["abcd123", "uhiRR2938foq"]:
-    st.error("🚫 Incorrect password. Please try again.")
-    st.stop()
-elif not password:
-    st.info("👆 Please enter a password to continue")
-    st.stop()
+    password = st.text_input("Enter password:", type="password", placeholder="Type or paste password here")
 
-IS_TRUSTED_USER = (password == "uhiRR2938foq")
-st.session_state['IS_TRUSTED_USER'] = IS_TRUSTED_USER
+    # Only show error if user actually entered something wrong
+    if password and password not in ["abcd123", "uhiRR2938foq"]:
+        st.error("🚫 Incorrect password. Please try again.")
+        st.stop()
+    elif not password:
+        st.info("👆 Please enter a password to continue")
+        st.stop()
+    else:
+        # Password correct - authenticate!
+        st.session_state.authenticated = True
+        st.session_state.IS_TRUSTED_USER = (password == "uhiRR2938foq")
+        st.rerun()
+
+# User is authenticated - get IS_TRUSTED_USER from session state
+IS_TRUSTED_USER = st.session_state.IS_TRUSTED_USER
 
 # Initialize mode in session state if not exists
 if 'app_mode' not in st.session_state:
@@ -191,6 +205,43 @@ if st.session_state.app_mode == 'Data Entry':
     st.stop()  # Stop here, don't load main app
 
 # If we reach here, we're in Analysis Mode - continue with main app as normal
+
+# AUTO-LOAD INTAKE DATA if user just completed Intake questionnaire
+if st.session_state.get('intake_just_completed', False):
+    import json
+    from pathlib import Path
+    from data_manager_cloud import apply_scenario_data_safe
+
+    # Clear the flag
+    st.session_state.intake_just_completed = False
+
+    # Load the intake data
+    current_dir = os.getcwd()
+    root_dir = Path(current_dir).parent
+    intake_path = root_dir / "SHARED" / "intake_payload.json"
+
+    if intake_path.exists():
+        try:
+            with open(intake_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            # Apply the data to session state
+            apply_scenario_data_safe(data)
+
+            # Load custom_expenses if exists
+            if "custom_expenses" in data:
+                st.session_state['custom_expenses'] = data['custom_expenses']
+            else:
+                st.session_state['custom_expenses'] = []
+
+            # Set scenario name
+            st.session_state["current_scenario"] = "Imported from Intake"
+            st.session_state['scenario_loaded'] = True
+
+            st.success("✅ Your Intake data has been automatically loaded!")
+            st.info("💡 You can now review your data below and run simulations.")
+        except Exception as e:
+            st.error(f"❌ Error loading Intake data: {e}")
 
 # Subtle mode switcher at top (for Analysis mode)
 with st.container():
