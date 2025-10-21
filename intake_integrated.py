@@ -64,6 +64,7 @@ def show_intake_questionnaire():
     # ===== PAGE 1: PROFILE =====
     if current_page == 'profile':
         st.header("👤 Your Profile")
+        st.markdown("*Please enter your basic information. You can enter 0 or leave fields empty if not applicable.*")
 
         # Single or Couple
         default_mode_is_couple = bool(existing.get("input_partner_exists", True))
@@ -88,6 +89,8 @@ def show_intake_questionnaire():
         partner_name = existing.get("input_partner_name", "")
         partner_age_default = int(existing.get("input_partner_age", 68)) if "input_partner_age" in existing else 68
 
+        # Always initialize partner_age (FIX for saving issue)
+        partner_age = None
         if mode == "Couple":
             partner_name = st.text_input("Partner name", value=partner_name)
             partner_age = st.number_input(
@@ -97,8 +100,6 @@ def show_intake_questionnaire():
                 value=partner_age_default,
                 step=1
             )
-        else:
-            partner_age = None
 
         # Intelligent validation
         level, message = validate_age(your_age, is_partner=False)
@@ -112,41 +113,70 @@ def show_intake_questionnaire():
             level, message = validate_age_gap(your_age, partner_age)
             show_validation_message(level, message)
 
-        # Save and continue
-        col1, col2 = st.columns([1, 1])
-        with col2:
-            if st.button("Next: Income →", type="primary", use_container_width=True):
-                # Save profile data
-                data = existing.copy()
-                data["schema_version"] = "1.0"
-                data["input_age"] = int(your_age)
-                data["input_partner_exists"] = (mode == "Couple")
-                if data["input_partner_exists"]:
-                    data["input_partner_name"] = partner_name
-                    data["input_partner_age"] = int(partner_age)
-                else:
-                    data.pop("input_partner_name", None)
-                    data.pop("input_partner_age", None)
-                save_payload(data)
-                go_to_page('income')
+        # Save and continue (NO BACK BUTTON - linear progression only)
+        st.divider()
+        if st.button("Next: Income →", type="primary", use_container_width=True):
+            # Save profile data
+            data = existing.copy()
+            data["schema_version"] = "1.0"
+            data["input_age"] = int(your_age)
+            data["input_partner_exists"] = (mode == "Couple")
+            if data["input_partner_exists"] and partner_age is not None:  # FIX: Check partner_age is not None
+                data["input_partner_name"] = partner_name
+                data["input_partner_age"] = int(partner_age)
+            else:
+                data.pop("input_partner_name", None)
+                data.pop("input_partner_age", None)
+            save_payload(data)
+            go_to_page('income')
 
-    # ===== PAGES 2-7: PLACEHOLDER (Will integrate next) =====
-    elif current_page in ['income', 'expenses', 'assets', 'liabilities', 'family', 'review']:
-        st.markdown(f"### 📝 {current_page.title()} Page")
-        st.info(f"🚧 {current_page.title()} page integration in progress...")
-        st.info(f"💾 Data is being saved to: `{get_shared_path()}`")
+    # ===== PAGES 2-6: PLACEHOLDER (Will integrate next) =====
+    elif current_page in ['income', 'expenses', 'assets', 'liabilities', 'family']:
+        st.header(f"📝 {current_page.title()} Page")
+        st.markdown("*This page is being integrated. For now, proceed to next step.*")
+        st.info(f"🚧 {current_page.title()} page will have full data entry fields with validation (coming soon)")
 
-        # Navigation
-        col1, col2 = st.columns([1, 1])
+        # Linear navigation - ONLY forward, no back, no escape
+        st.divider()
+        next_pages = {'income': 'expenses', 'expenses': 'assets', 'assets': 'liabilities', 'liabilities': 'family', 'family': 'review'}
+        next_page = next_pages.get(current_page, 'review')
+
+        if st.button(f"Next: {next_page.title()} →", type="primary", use_container_width=True):
+            go_to_page(next_page)
+
+    # ===== PAGE 7: REVIEW (FINAL PAGE with celebration!) =====
+    elif current_page == 'review':
+        st.header("🎉 Review & Complete")
+
+        # CELEBRATION BALLOONS!
+        st.balloons()
+
+        st.success("✅ **Congratulations! You've completed the questionnaire!**")
+
+        st.markdown(f"""
+        ### What's Next?
+
+        Your data has been saved to:
+        `{get_shared_path()}`
+
+        **Choose what to do next:**
+        """)
+
+        col1, col2 = st.columns(2)
         with col1:
-            if st.button("← Back to Profile", use_container_width=True):
+            if st.button("🔄 Start Over (Re-enter Data)", use_container_width=True):
+                # Reset to profile page
                 go_to_page('profile')
         with col2:
-            if st.button("🎯 Go to Analysis Mode", type="primary", use_container_width=True):
+            if st.button("📊 Go to Main App (Analysis Mode)", type="primary", use_container_width=True):
+                # Mark intake as complete and go to Analysis mode
+                st.session_state.intake_in_progress = False
                 st.session_state.app_mode = 'Analysis'
                 st.rerun()
 
+        st.divider()
+        st.info("💡 In the Main App, click **'Load from Path'** in the sidebar to import your data!")
+
     # Footer
     st.divider()
-    st.caption(f"📁 Data saves to: `{get_shared_path()}`")
-    st.caption("💡 Use 'Load from Path' in Analysis Mode to import this data into your scenario.")
+    st.caption(f"📁 Data location: `{get_shared_path()}`")

@@ -142,41 +142,45 @@ elif not password:
 
 IS_TRUSTED_USER = (password == "uhiRR2938foq")
 st.session_state['IS_TRUSTED_USER'] = IS_TRUSTED_USER
-if IS_TRUSTED_USER:
-    st.success("✅ Trusted User Access Granted - Full features enabled")
-else:
-    st.info("📌 Demo Mode - Basic features enabled")
-
-# ========== MODE SELECTOR ==========
-st.divider()
-st.header("🚀 Choose Your Mode")
-st.markdown("""
-Select how you'd like to use the app:
-- **📝 Data Entry Mode**: Step-by-step questionnaire to enter all your financial information
-- **📊 Analysis Mode**: Run simulations, view charts, and use AI advisor (main app)
-""")
 
 # Initialize mode in session state if not exists
 if 'app_mode' not in st.session_state:
-    st.session_state.app_mode = 'Analysis'  # Default to Analysis mode
+    st.session_state.app_mode = None  # Not chosen yet
 
-# Mode selector
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("📝 Data Entry Mode", use_container_width=True, type="secondary"):
-        st.session_state.app_mode = 'Data Entry'
-        st.rerun()
-with col2:
-    if st.button("📊 Analysis Mode", use_container_width=True, type="primary"):
-        st.session_state.app_mode = 'Analysis'
-        st.rerun()
+# Initialize intake_in_progress flag
+if 'intake_in_progress' not in st.session_state:
+    st.session_state.intake_in_progress = False
 
-# Show current mode
-current_mode = st.session_state.get('app_mode', 'Analysis')
-if current_mode == 'Data Entry':
-    st.info("🔵 **Current Mode**: Data Entry (Questionnaire)")
-else:
-    st.success("🟢 **Current Mode**: Analysis (Main App)")
+# ========== MODE SELECTOR (Only show if mode not chosen OR if explicitly requested) ==========
+# Don't show mode selector if user is in the middle of Intake
+if st.session_state.app_mode is None and not st.session_state.intake_in_progress:
+    # First time - show access level
+    if IS_TRUSTED_USER:
+        st.success("✅ Trusted User Access Granted - Full features enabled")
+    else:
+        st.info("📌 Demo Mode - Basic features enabled")
+
+    st.divider()
+    st.header("🚀 Choose Your Mode")
+    st.markdown("""
+    Select how you'd like to use the app:
+    - **📝 Data Entry Mode**: Step-by-step questionnaire to enter all your financial information
+    - **📊 Analysis Mode**: Run simulations, view charts, and use AI advisor (main app)
+    """)
+
+    # Mode selector buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📝 Data Entry Mode", use_container_width=True, type="secondary"):
+            st.session_state.app_mode = 'Data Entry'
+            st.session_state.intake_in_progress = True  # Mark that user is entering Intake
+            st.rerun()
+    with col2:
+        if st.button("📊 Analysis Mode", use_container_width=True, type="primary"):
+            st.session_state.app_mode = 'Analysis'
+            st.rerun()
+
+    st.stop()  # Don't proceed until user chooses
 
 st.divider()
 
@@ -187,6 +191,19 @@ if st.session_state.app_mode == 'Data Entry':
     st.stop()  # Stop here, don't load main app
 
 # If we reach here, we're in Analysis Mode - continue with main app as normal
+
+# Subtle mode switcher at top (for Analysis mode)
+with st.container():
+    col1, col2, col3 = st.columns([6, 1, 1])
+    with col2:
+        if st.button("📝 Data Entry", help="Switch to Data Entry Mode", use_container_width=True):
+            st.session_state.app_mode = 'Data Entry'
+            st.session_state.intake_in_progress = True
+            st.rerun()
+    with col3:
+        st.markdown("**📊 Analysis**")
+    st.divider()
+
 # Inject Explain Visual system (Claude-powered chart explanations)
 inject_explain_visual_system()
 
