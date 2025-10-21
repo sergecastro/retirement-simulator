@@ -19,16 +19,107 @@ def get_shared_path():
     shared_dir.mkdir(exist_ok=True)
     return str(shared_dir / "intake_payload.json")
 
+def load_template_data():
+    """Load template data from ORIGINAL 70+ Retirement Scenario for first-time users"""
+    from embedded_scenarios import EMBEDDED_SCENARIOS
+
+    # Get the demo scenario as template
+    scenario = EMBEDDED_SCENARIOS.get('ORIGINAL_70+_RETIREMENT_SCENARIO', {})
+
+    # Map scenario fields to intake field names
+    template = {
+        "schema_version": "1.0",
+
+        # Profile
+        "input_user_name": scenario.get("user_name", ""),
+        "input_age": scenario.get("age", 70),
+        "input_partner_exists": scenario.get("partner_exists", False),
+        "input_partner_name": scenario.get("partner_name", ""),
+        "input_partner_age": scenario.get("partner_age", 68),
+
+        # Income
+        "input_salary_wages": scenario.get("salary_wages", 0.0),
+        "input_self_employment_income": scenario.get("self_employment_income", 0.0),
+        "input_rental_income": scenario.get("rental_income", 0.0),
+        "input_investment_income": scenario.get("investment_income", 0.0),
+        "input_social_security_income": scenario.get("social_security_income", 0.0),
+        "input_pension_income": scenario.get("pension_income", 0.0),
+        "input_other_income": scenario.get("other_income", 0.0),
+        "input_total_income": scenario.get("total_income", 0.0),
+
+        # Expenses
+        "input_housing_expenses": scenario.get("housing_expenses", 0.0),
+        "input_utilities_expenses": scenario.get("utilities_expenses", 0.0),
+        "input_groceries_expenses": scenario.get("groceries_expenses", 0.0),
+        "input_transportation_expenses": scenario.get("transportation_expenses", 0.0),
+        "input_healthcare_expenses": scenario.get("healthcare_expenses", 0.0),
+        "input_insurance_expenses": scenario.get("insurance_expenses", 0.0),
+        "input_property_tax_expenses": scenario.get("property_tax_expenses", 0.0),
+        "input_entertainment_expenses": scenario.get("entertainment_expenses", 0.0),
+        "input_restaurant_expenses": scenario.get("restaurant_expenses", 0.0),
+        "input_travel_expenses": scenario.get("travel_expenses", 0.0),
+        "input_education_expenses": scenario.get("education_expenses", 0.0),
+        "input_childcare_expenses": scenario.get("childcare_expenses", 0.0),
+        "input_clothing_expenses": scenario.get("clothing_expenses", 0.0),
+        "input_charitable_donations": scenario.get("charitable_donations", 0.0),
+        "input_miscellaneous_expenses": scenario.get("miscellaneous_expenses", 0.0),
+        "input_other_expenses": scenario.get("other_expenses", 0.0),
+        "input_total_expenses": scenario.get("total_expenses", 0.0),
+
+        # Assets
+        "input_ira_balance": scenario.get("ira_balance", 0.0),
+        "input_four01k_403b_balance": scenario.get("four01k_403b_balance", 0.0),
+        "input_partner_ira_balance": scenario.get("partner_ira_balance", 0.0),
+        "input_partner_four01k_403b_balance": scenario.get("partner_four01k_403b_balance", 0.0),
+        "input_taxable_investment_accounts": scenario.get("taxable_investment_accounts", 0.0),
+        "input_high_yield_savings_account": scenario.get("high_yield_savings_account", 0.0),
+        "input_hsa_balance": scenario.get("hsa_balance", 0.0),
+        "input_five29_plan_balance": scenario.get("five29_plan_balance", 0.0),
+        "input_primary_residence_value": scenario.get("primary_residence_value", 0.0),
+        "input_secondary_residence_value": scenario.get("secondary_residence_value", 0.0),
+        "input_vehicles_value": scenario.get("vehicles_value", 0.0),
+        "input_jewelry_collectibles_value": scenario.get("jewelry_collectibles_value", 0.0),
+        "input_business_ownership_value": scenario.get("business_ownership_value", 0.0),
+        "input_cryptocurrency_holdings": scenario.get("cryptocurrency_holdings", 0.0),
+        "input_other_assets": scenario.get("other_assets", 0.0),
+
+        # Liabilities
+        "input_mortgage_balance": scenario.get("mortgage_balance", 0.0),
+        "input_auto_loan_balance": scenario.get("auto_loans", 0.0),
+        "input_student_loan_balance": scenario.get("student_loans", 0.0),
+        "input_credit_card_debt": scenario.get("credit_card_debt", 0.0),
+        "input_other_liabilities": scenario.get("other_liabilities", 0.0),
+
+        # Family data
+        "children_list": scenario.get("children_list", []),
+        "children_rows": scenario.get("children_rows", []),
+        "inheritance_list": scenario.get("inheritance_list", []),
+        "inherit_rows": scenario.get("inherit_rows", []),
+        "goals_list": scenario.get("goals_list", []),
+        "goals_data": scenario.get("goals_data", []),
+        "custom_expenses": [],
+        "custom_expenses_list": []
+    }
+
+    return template
+
 def load_existing_payload():
-    """Load previous intake data if exists"""
+    """Load previous intake data if exists, or template for first-time users"""
     shared_path = get_shared_path()
+
     if os.path.exists(shared_path):
+        # RETURNING USER - load their data
         try:
             with open(shared_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+            st.session_state['intake_is_returning_user'] = True
+            return data
         except Exception:
             pass
-    return {}
+
+    # FIRST-TIME USER - load template scenario
+    st.session_state['intake_is_returning_user'] = False
+    return load_template_data()
 
 def save_payload(data):
     """Save intake data to shared JSON file"""
@@ -71,19 +162,30 @@ def show_intake_questionnaire():
     if current_page == 'profile':
         st.header("👤 Your Profile")
 
-        # Welcome greeting for new users
-        st.success("🎉 **Welcome to the Ultimate Retirement Planning Tool!**")
-        st.markdown("""
-        This step-by-step questionnaire will help us understand your complete financial picture.
-        We'll guide you through:
-        - Your profile and family information
-        - Income and expenses
-        - Assets and liabilities
-        - Children's education planning
-        - Future goals and inheritances
+        # Smart detection: First-time vs Returning user messaging
+        is_returning = st.session_state.get('intake_is_returning_user', False)
 
-        **Let's get started!** 📝
-        """)
+        if is_returning:
+            # RETURNING USER
+            st.info("👋 **Welcome back!** Your previous data has been loaded. Update any fields below and continue through the questionnaire.")
+        else:
+            # FIRST-TIME USER
+            st.success("🎉 **Welcome to the Ultimate Retirement Planning Tool!**")
+            st.info("""
+            **First time here?** We've pre-filled example data from our demo scenario to guide you.
+
+            **Simply replace each field with YOUR actual information** as you go through the questionnaire.
+            """)
+            st.markdown("""
+            This step-by-step questionnaire will guide you through:
+            - Your profile and family information
+            - Income and expenses
+            - Assets and liabilities
+            - Children's education planning
+            - Future goals and inheritances
+
+            **Let's get started!** 📝
+            """)
 
         st.divider()
         st.markdown("*Please enter your basic information. You can enter 0 or leave fields empty if not applicable.*")
