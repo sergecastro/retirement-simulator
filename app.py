@@ -690,10 +690,10 @@ if 'simulation_results' in st.session_state:
             st.error(f"Dual scenario error: {str(e)}")
         
         # ============================================
-        # AI ADVISOR (Trusted Users Only)
+        # AI ADVISOR (Available to ALL users)
         # ============================================
         try:
-            if IS_TRUSTED_USER and features.get('show_ai_advisor'):
+            if features.get('show_ai_advisor'):
                 from ai_advisor import show_ai_consultation
                 st.markdown("---")
                 show_ai_consultation(results, stored_user_data, stored_financial_data, stored_sim_params)
