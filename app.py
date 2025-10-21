@@ -238,7 +238,10 @@ if st.session_state.get('intake_just_completed', False):
             st.session_state["current_scenario"] = "Imported from Intake"
             st.session_state['scenario_loaded'] = True
 
-            st.success("✅ Your Intake data has been automatically loaded!")
+            # CELEBRATION BALLOONS! 🎉
+            st.balloons()
+
+            st.success("🎉 **Congratulations!** Your Intake data has been automatically loaded!")
             st.info("💡 You can now review your data below and run simulations.")
         except Exception as e:
             st.error(f"❌ Error loading Intake data: {e}")

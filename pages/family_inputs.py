@@ -54,17 +54,23 @@ def collect_family_events():
                     "Birth Year:",
                     value=int(child_data.get('Birth Year') or date.today().year - 5),
                     min_value=1900,
-                    max_value=date.today().year + 20,
+                    max_value=date.today().year,  # FIX: Can't be born in the future!
                     step=1,
-                    key=f"child_birth_{idx}"
+                    key=f"child_birth_{idx}",
+                    help="Child's birth year (cannot be in the future)"
                 )
                 st.session_state['children_list'][idx]['Birth Year'] = birth_year
             
             with col2:
+                # FIX: Handle None value from loaded data
+                college_plan_value = child_data.get('College Plan', 'None')
+                if college_plan_value is None:
+                    college_plan_value = 'None'
+
                 college_plan = st.selectbox(
                     "College Plan:",
                     ["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"],
-                    index=["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"].index(child_data.get('College Plan', 'None')),
+                    index=["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"].index(college_plan_value),
                     key=f"child_college_{idx}"
                 )
                 st.session_state['children_list'][idx]['College Plan'] = college_plan

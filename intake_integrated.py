@@ -53,18 +53,48 @@ def show_intake_questionnaire():
     existing = load_existing_payload()
 
     # Progress bar
-    pages = ['profile', 'income', 'expenses', 'assets', 'liabilities', 'family', 'review']
+    pages = ['profile', 'income', 'expenses', 'custom_expenses', 'assets', 'liabilities', 'family', 'review']
     current_idx = pages.index(st.session_state.intake_current_page)
     progress = (current_idx + 1) / len(pages)
     st.progress(progress)
-    st.caption(f"Step {current_idx + 1} of {len(pages)}: {st.session_state.intake_current_page.title()}")
+
+    # Display step name (with better formatting for custom_expenses)
+    display_name = st.session_state.intake_current_page.replace('_', ' ').title()
+    st.caption(f"Step {current_idx + 1} of {len(pages)}: {display_name}")
 
     current_page = st.session_state.intake_current_page
+
+    # Force scroll to top on every page load
+    st.markdown('<div id="top"></div>', unsafe_allow_html=True)
 
     # ===== PAGE 1: PROFILE =====
     if current_page == 'profile':
         st.header("👤 Your Profile")
+
+        # Welcome greeting for new users
+        st.success("🎉 **Welcome to the Ultimate Retirement Planning Tool!**")
+        st.markdown("""
+        This step-by-step questionnaire will help us understand your complete financial picture.
+        We'll guide you through:
+        - Your profile and family information
+        - Income and expenses
+        - Assets and liabilities
+        - Children's education planning
+        - Future goals and inheritances
+
+        **Let's get started!** 📝
+        """)
+
+        st.divider()
         st.markdown("*Please enter your basic information. You can enter 0 or leave fields empty if not applicable.*")
+
+        # User name
+        user_name = st.text_input(
+            "Your name",
+            value=existing.get("input_user_name", ""),
+            placeholder="Enter your name",
+            help="Your full name"
+        )
 
         # Single or Couple
         default_mode_is_couple = bool(existing.get("input_partner_exists", True))
@@ -119,6 +149,7 @@ def show_intake_questionnaire():
             # Save profile data
             data = existing.copy()
             data["schema_version"] = "1.0"
+            data["input_user_name"] = user_name  # SAVE USER NAME
             data["input_age"] = int(your_age)
             data["input_partner_exists"] = (mode == "Couple")
             if data["input_partner_exists"] and partner_age is not None:  # FIX: Check partner_age is not None
@@ -132,6 +163,8 @@ def show_intake_questionnaire():
 
     # ===== PAGE 2: INCOME =====
     elif current_page == 'income':
+        # Force scroll to top
+        st.markdown('<div id="top"></div>', unsafe_allow_html=True)
         st.header("💰 Monthly Income")
         st.markdown("*Enter your typical monthly income from all sources. Enter 0 if not applicable.*")
 
@@ -236,6 +269,8 @@ def show_intake_questionnaire():
 
     # ===== PAGE 3: EXPENSES =====
     elif current_page == 'expenses':
+        # Force scroll to top
+        st.markdown('<div id="top"></div>', unsafe_allow_html=True)
         st.header("🏠 Monthly Expenses")
         st.markdown("*Enter your typical monthly expenses. Enter 0 if not applicable.*")
 
@@ -407,7 +442,7 @@ def show_intake_questionnaire():
 
         # Linear navigation - ONLY forward
         st.divider()
-        if st.button("Next: Assets →", type="primary", use_container_width=True):
+        if st.button("Next: Custom Expenses →", type="primary", use_container_width=True):
             # Save expense data
             data = existing.copy()
             data["input_housing_expenses"] = float(housing)
@@ -428,6 +463,94 @@ def show_intake_questionnaire():
             data["input_other_expenses"] = float(other_expenses)
             data["input_total_expenses"] = float(total_expenses)
             save_payload(data)
+            go_to_page('custom_expenses')
+
+    # ===== PAGE 3.5: CUSTOM MONTHLY EXPENSES =====
+    elif current_page == 'custom_expenses':
+        # Force scroll to top
+        st.markdown('<div id="top"></div>', unsafe_allow_html=True)
+        st.header("📝 Custom Monthly Expenses")
+        st.markdown("*Add any special recurring expenses not covered in standard categories (tutoring, special needs care, therapy, etc.)*")
+
+        # Initialize custom expenses list in session state
+        if 'custom_expenses_list' not in st.session_state:
+            # Load from existing data if available
+            st.session_state['custom_expenses_list'] = existing.get('custom_expenses', [])
+
+        # Add custom expense button
+        if st.button("➕ Add Custom Expense", key="add_custom_expense_btn"):
+            st.session_state['custom_expenses_list'].append({
+                'Name': '',
+                'Monthly Amount': 0.0,
+                'Category': 'Other'
+            })
+            st.rerun()
+
+        if len(st.session_state['custom_expenses_list']) == 0:
+            st.info("Click 'Add Custom Expense' to add special recurring expenses, or click 'Next' to skip this section")
+        else:
+            st.write(f"**{len(st.session_state['custom_expenses_list'])} custom expense(s) configured**")
+
+            expenses_to_remove = []
+
+            for idx, expense_data in enumerate(st.session_state['custom_expenses_list']):
+                st.markdown(f"#### Custom Expense {idx + 1}")
+
+                col1, col2, col3 = st.columns([3, 2, 1])
+
+                with col1:
+                    name = st.text_input(
+                        "Expense Name:",
+                        value=expense_data.get('Name', ''),
+                        key=f"custom_exp_name_{idx}",
+                        placeholder="e.g., Tutoring, Therapy, Special care"
+                    )
+                    st.session_state['custom_expenses_list'][idx]['Name'] = name
+
+                with col2:
+                    amount = st.number_input(
+                        "Monthly Amount:",
+                        value=float(expense_data.get('Monthly Amount', 0.0)),
+                        min_value=0.0,
+                        step=50.0,
+                        key=f"custom_exp_amount_{idx}"
+                    )
+                    st.session_state['custom_expenses_list'][idx]['Monthly Amount'] = amount
+
+                    category = st.selectbox(
+                        "Category:",
+                        ["Education", "Healthcare", "Special Needs", "Transportation", "Other"],
+                        index=["Education", "Healthcare", "Special Needs", "Transportation", "Other"].index(
+                            expense_data.get('Category', 'Other')
+                        ),
+                        key=f"custom_exp_category_{idx}"
+                    )
+                    st.session_state['custom_expenses_list'][idx]['Category'] = category
+
+                with col3:
+                    st.write("")  # Spacer
+                    st.write("")  # Spacer
+                    if st.button("🗑️", key=f"delete_custom_exp_{idx}", help="Delete this expense"):
+                        expenses_to_remove.append(idx)
+
+                st.markdown("---")
+
+            # Remove deleted expenses
+            for idx in reversed(expenses_to_remove):
+                st.session_state['custom_expenses_list'].pop(idx)
+
+            # Show total
+            total_custom = sum(exp.get('Monthly Amount', 0.0) for exp in st.session_state['custom_expenses_list'])
+            st.metric("Total Custom Monthly Expenses", f"${total_custom:,.2f}")
+
+        # Linear navigation
+        st.divider()
+        if st.button("Next: Assets →", type="primary", use_container_width=True):
+            # Save custom expenses data
+            data = existing.copy()
+            data["custom_expenses"] = st.session_state['custom_expenses_list']
+            data["custom_expenses_list"] = st.session_state['custom_expenses_list']  # Also save as _list for compatibility
+            save_payload(data)
             go_to_page('assets')
 
     # ===== PAGES 4-6: ASSETS, LIABILITIES, FAMILY =====
@@ -441,49 +564,139 @@ def show_intake_questionnaire():
     elif current_page == 'family':
         show_family_page(existing, save_payload, go_to_page)
 
-    # ===== PAGE 7: REVIEW (FINAL PAGE with celebration!) =====
+    # ===== PAGE 7: REVIEW (FINAL PAGE with edit buttons!) =====
     elif current_page == 'review':
-        # Use the review page from intake_review module, but customize the ending
-        st.header("🎉 Review & Complete")
+        # Force scroll to top
+        st.markdown('<div id="top"></div>', unsafe_allow_html=True)
+        st.header("📋 Review & Complete Your Intake")
+        st.caption("Review all your information before completing - click any section to edit")
 
-        # CELEBRATION BALLOONS!
-        st.balloons()
-
-        st.success("✅ **Congratulations! You've completed the questionnaire!**")
-
-        # Show summary of data collected
-        st.divider()
-        st.subheader("📊 Your Data Summary")
-
+        # Profile Summary
+        st.subheader("👤 Profile")
         col1, col2 = st.columns(2)
         with col1:
+            user_name = existing.get("input_user_name", "Not provided")
+            st.metric("Your Name", user_name)
             st.metric("Your Age", existing.get("input_age", "N/A"))
-            partner_name = existing.get("input_partner_name", "")
-            if partner_name:
-                st.metric("Partner", f"{partner_name}, {existing.get('input_partner_age', 'N/A')}")
         with col2:
-            total_income = float(existing.get("input_total_income", 0.0))
-            total_expenses = float(existing.get("input_total_expenses", 0.0))
-            st.metric("Monthly Income", f"${total_income:,.0f}")
-            st.metric("Monthly Expenses", f"${total_expenses:,.0f}")
+            if existing.get("input_partner_exists"):
+                partner_name = existing.get("input_partner_name", "Partner")
+                partner_age = existing.get("input_partner_age", "N/A")
+                st.metric(f"Partner", f"{partner_name}, age {partner_age}")
+            else:
+                st.metric("Planning Mode", "Single")
 
-        surplus = total_income - total_expenses
-        if surplus > 0:
-            st.success(f"💰 Monthly Surplus: ${surplus:,.0f}")
-        elif surplus < 0:
-            st.warning(f"⚠️ Monthly Deficit: ${abs(surplus):,.0f}")
-        else:
-            st.info("📊 Balanced Budget")
+        if st.button("✏️ Edit Profile", key="edit_profile", use_container_width=True):
+            go_to_page('profile')
 
         st.divider()
-        st.markdown(f"""
-        ### What's Next?
 
-        Your complete data has been saved to:
-        `{get_shared_path()}`
+        # Income & Expenses Summary
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("💰 Monthly Income")
+            total_income = float(existing.get("input_total_income", 0.0))
+            st.metric("Total Income", f"${total_income:,.2f}")
+            if st.button("✏️ Edit Income", key="edit_income", use_container_width=True):
+                go_to_page('income')
 
-        **Choose what to do next:**
-        """)
+        with col2:
+            st.subheader("🏠 Monthly Expenses")
+            total_expenses = float(existing.get("input_total_expenses", 0.0))
+            st.metric("Total Expenses", f"${total_expenses:,.2f}")
+            if st.button("✏️ Edit Expenses", key="edit_expenses", use_container_width=True):
+                go_to_page('expenses')
+
+        # Surplus/Deficit
+        surplus = total_income - total_expenses
+        if surplus >= 0:
+            st.success(f"✅ Monthly Surplus: ${surplus:,.2f}")
+        else:
+            st.error(f"⚠️ Monthly Deficit: ${abs(surplus):,.2f}")
+
+        st.divider()
+
+        # Custom Expenses
+        custom_expenses = existing.get("custom_expenses", [])
+        if custom_expenses:
+            st.subheader("📝 Custom Monthly Expenses")
+            total_custom = sum(exp.get('Monthly Amount', 0.0) for exp in custom_expenses)
+            st.metric("Total Custom Expenses", f"${total_custom:,.2f}/month")
+            with st.expander(f"View {len(custom_expenses)} custom expense(s)"):
+                for exp in custom_expenses:
+                    st.write(f"• **{exp.get('Name', 'N/A')}**: ${exp.get('Monthly Amount', 0):,.2f} ({exp.get('Category', 'N/A')})")
+            if st.button("✏️ Edit Custom Expenses", key="edit_custom", use_container_width=True):
+                go_to_page('custom_expenses')
+            st.divider()
+
+        # Assets & Liabilities Summary
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("💎 Total Assets")
+            total_assets = sum([
+                existing.get("input_ira_balance", 0.0),
+                existing.get("input_four01k_403b_balance", 0.0),
+                existing.get("input_partner_ira_balance", 0.0),
+                existing.get("input_partner_four01k_403b_balance", 0.0),
+                existing.get("input_taxable_investment_accounts", 0.0),
+                existing.get("input_high_yield_savings_account", 0.0),
+                existing.get("input_hsa_balance", 0.0),
+                existing.get("input_five29_plan_balance", 0.0),
+                existing.get("input_primary_residence_value", 0.0),
+                existing.get("input_secondary_residence_value", 0.0),
+                existing.get("input_vehicles_value", 0.0),
+                existing.get("input_jewelry_collectibles_value", 0.0),
+                existing.get("input_business_ownership_value", 0.0),
+                existing.get("input_cryptocurrency_holdings", 0.0),
+                existing.get("input_other_assets", 0.0)
+            ])
+            st.metric("Assets", f"${total_assets:,.2f}")
+            if st.button("✏️ Edit Assets", key="edit_assets", use_container_width=True):
+                go_to_page('assets')
+
+        with col2:
+            st.subheader("💳 Total Liabilities")
+            total_liabilities = sum([
+                existing.get("input_mortgage_balance", 0.0),
+                existing.get("input_auto_loan_balance", 0.0),
+                existing.get("input_student_loan_balance", 0.0),
+                existing.get("input_credit_card_debt", 0.0),
+                existing.get("input_other_liabilities", 0.0)
+            ])
+            st.metric("Liabilities", f"${total_liabilities:,.2f}")
+            if st.button("✏️ Edit Liabilities", key="edit_liabilities", use_container_width=True):
+                go_to_page('liabilities')
+
+        # Net Worth
+        net_worth = total_assets - total_liabilities
+        st.metric("💰 Estimated Net Worth", f"${net_worth:,.2f}")
+
+        st.divider()
+
+        # Family Events Summary
+        st.subheader("👨‍👩‍👧‍👦 Family Events")
+        children_count = len(existing.get("children_rows", existing.get("children_list", [])))
+        inherit_count = len(existing.get("inherit_rows", existing.get("inheritance_list", [])))
+        goals_count = len(existing.get("goals_list", existing.get("goals_data", [])))
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Children", children_count)
+        with col2:
+            st.metric("Inheritances", inherit_count)
+        with col3:
+            st.metric("Goals", goals_count)
+
+        if st.button("✏️ Edit Family Events", key="edit_family", use_container_width=True):
+            go_to_page('family')
+
+        # Final Completion Section
+        st.divider()
+        st.success("✅ **All sections complete! Review the summary above.**")
+        st.info(f"💾 Your data is automatically saved to: `{get_shared_path()}`")
+
+        st.markdown("### 🎉 Ready to Continue?")
+        st.markdown("**Choose what to do next:**")
 
         col1, col2 = st.columns(2)
         with col1:
@@ -491,11 +704,11 @@ def show_intake_questionnaire():
                 # Reset to profile page
                 go_to_page('profile')
         with col2:
-            if st.button("📊 Go to Main App (Analysis Mode)", type="primary", use_container_width=True):
+            if st.button("📊 COMPLETE & Go to Analysis Mode", type="primary", use_container_width=True):
                 # Mark intake as complete and go to Analysis mode
                 st.session_state.intake_in_progress = False
                 st.session_state.app_mode = 'Analysis'
-                st.session_state.intake_just_completed = True  # Flag to auto-load data
+                st.session_state.intake_just_completed = True  # Flag to auto-load data and show balloons
                 st.rerun()
 
     # Footer
