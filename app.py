@@ -1,6 +1,8 @@
 # app.py - COMPLETE FULL VERSION - Widget State Fixed - NO TRUNCATION
 import streamlit as st
 import sys
+import os
+import json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -8,7 +10,7 @@ from financial_utils import get_all_inputs_as_dict, display_summary_metrics
 from pages.user_inputs import setup_sidebar
 from pages.financial_inputs import collect_financial_data
 from pages.family_inputs import collect_family_events
-from data_manager_cloud import manage_scenarios_cloud as manage_scenarios
+from data_manager_cloud import manage_scenarios_cloud as manage_scenarios, apply_scenario_data_safe
 from simulation_core import run_simulation
 from household_events import build_child_objects, build_inheritances
 from basic_analysis import run_simple_fallback_simulation, calculate_simple_health_score
@@ -21,6 +23,13 @@ from visualization.longevity_analysis import show_longevity_analysis
 from visualization.irmaa_analysis import show_irmaa_analysis
 from integration.intake_loader import intake_import_ui
 from streamlit_explain_api import inject_explain_visual_system
+
+# Import intake modules for Data Entry mode
+from intake_validation import (validate_age, validate_age_gap, validate_total_income,
+                                validate_social_security, validate_income_mix,
+                                validate_total_expenses, validate_housing_ratio,
+                                validate_income_vs_expenses, show_validation_message)
+from intake_review import show_assets_page, show_liabilities_page, show_family_page, show_review_page
 
 # Page config
 st.set_page_config(page_title="Ultimate Family Retirement Plus", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
@@ -144,6 +153,95 @@ if IS_TRUSTED_USER:
 else:
     st.info("📌 Demo Mode - Basic features enabled")
 
+# ========== MODE SELECTOR ==========
+st.divider()
+st.header("🚀 Choose Your Mode")
+st.markdown("""
+Select how you'd like to use the app:
+- **📝 Data Entry Mode**: Step-by-step questionnaire to enter all your financial information
+- **📊 Analysis Mode**: Run simulations, view charts, and use AI advisor (main app)
+""")
+
+# Initialize mode in session state if not exists
+if 'app_mode' not in st.session_state:
+    st.session_state.app_mode = 'Analysis'  # Default to Analysis mode
+
+# Mode selector
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("📝 Data Entry Mode", use_container_width=True, type="secondary"):
+        st.session_state.app_mode = 'Data Entry'
+        st.rerun()
+with col2:
+    if st.button("📊 Analysis Mode", use_container_width=True, type="primary"):
+        st.session_state.app_mode = 'Analysis'
+        st.rerun()
+
+# Show current mode
+current_mode = st.session_state.get('app_mode', 'Analysis')
+if current_mode == 'Data Entry':
+    st.info("🔵 **Current Mode**: Data Entry (Questionnaire)")
+else:
+    st.success("🟢 **Current Mode**: Analysis (Main App)")
+
+st.divider()
+
+# ========== INTAKE HELPER FUNCTIONS (for Data Entry Mode) ==========
+def get_shared_path():
+    """Get path to shared intake payload file"""
+    current_dir = os.getcwd()
+    root_dir = Path(current_dir).parent
+    shared_dir = root_dir / "SHARED"
+    shared_dir.mkdir(exist_ok=True)
+    return str(shared_dir / "intake_payload.json")
+
+def load_existing_payload():
+    """Load previous intake data if exists"""
+    shared_path = get_shared_path()
+    if os.path.exists(shared_path):
+        try:
+            with open(shared_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def save_payload(data):
+    """Save intake data to shared JSON file"""
+    shared_path = get_shared_path()
+    with open(shared_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+def go_to_page(page_name):
+    """Navigate to a different intake page"""
+    st.session_state.intake_current_page = page_name
+    st.rerun()
+
+# ========== ROUTE TO APPROPRIATE MODE ==========
+if st.session_state.app_mode == 'Data Entry':
+    # Initialize intake page navigation
+    if 'intake_current_page' not in st.session_state:
+        st.session_state.intake_current_page = 'profile'
+
+    # Load existing data
+    existing = load_existing_payload()
+
+    # Progress bar
+    pages = ['profile', 'income', 'expenses', 'assets', 'liabilities', 'family', 'review']
+    current_idx = pages.index(st.session_state.intake_current_page)
+    progress = (current_idx + 1) / len(pages)
+    st.progress(progress)
+    st.caption(f"Step {current_idx + 1} of {len(pages)}: {st.session_state.intake_current_page.title()}")
+
+    # SHOW INTAKE QUESTIONNAIRE PAGES
+    # Import the full intake page logic from intake_app.py
+    # For now, show placeholder - we'll integrate full pages in next step
+    st.markdown("### 📝 Data Entry Questionnaire")
+    st.info(f"🚧 Currently on page: {st.session_state.intake_current_page}")
+    st.info("Full questionnaire integration in progress. For now, click 'Analysis Mode' above to access the main app.")
+    st.stop()  # Stop here, don't load main app
+
+# If we reach here, we're in Analysis Mode - continue with main app as normal
 # Inject Explain Visual system (Claude-powered chart explanations)
 inject_explain_visual_system()
 
