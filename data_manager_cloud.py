@@ -220,7 +220,11 @@ def delete_scenario_from_localstorage(scenario_name):
 
 
 def manage_scenarios_cloud(is_trusted_user, age_group=None):
-    """Cloud-compatible scenario management using localStorage + download backups"""
+    """Cloud-compatible scenario management using session_state + download backups"""
+
+    # Initialize user scenarios storage
+    if 'user_scenarios' not in st.session_state:
+        st.session_state['user_scenarios'] = {}
 
     # Create sidebar UI
     st.sidebar.markdown("---")
@@ -252,12 +256,15 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
     # ============================================
     st.sidebar.subheader("📥 Load Scenario")
 
-    # Build list of available scenarios
+    # Build list of available scenarios (embedded + user's saved)
     embedded_options = []
     if is_trusted_user:
         embedded_options.append('70+ Retirement (Private - Trusted)')
     embedded_options.append('Original 70+ Retirement (Demo)')
-    all_scenarios = embedded_options
+
+    # Add user's saved scenarios
+    user_scenario_names = list(st.session_state.get('user_scenarios', {}).keys())
+    all_scenarios = embedded_options + user_scenario_names
 
     # Compact selector
     selected_scenario = st.sidebar.selectbox(
@@ -268,10 +275,15 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
     )
 
     if st.sidebar.button("📂 Load", use_container_width=True):
-        if selected_scenario == 'Original 70+ Retirement (Demo)':
+        # Check if it's a user-saved scenario first
+        if selected_scenario in st.session_state.get('user_scenarios', {}):
+            scenario_data = st.session_state['user_scenarios'][selected_scenario]
+        # Otherwise load from embedded
+        elif selected_scenario == 'Original 70+ Retirement (Demo)':
             scenario_data = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
         else:
             scenario_data = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
+
         apply_scenario_data_safe(scenario_data)
         st.session_state['current_scenario'] = selected_scenario
         st.sidebar.success(f"✅ Loaded")
@@ -313,13 +325,18 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
     # Show current name (READ-ONLY)
     st.sidebar.caption(f"**Current:** {current}")
 
-    # SAVE CURRENT button - AT THE TOP!
+    # SAVE CURRENT button - saves to session_state
     if st.sidebar.button("💾 Save Current Scenario", use_container_width=True, type="primary"):
         scenario_data = collect_current_scenario_data()
-        save_scenario_to_localstorage(current, scenario_data)
+
+        # Save to session_state (persists during session)
+        st.session_state['user_scenarios'][current] = scenario_data
+
+        # Also prepare download
         st.session_state['show_download_reminder'] = True
         st.session_state['last_saved_scenario'] = scenario_data
         st.session_state['last_saved_name'] = current
+
         st.sidebar.success(f"✅ Saved: {current}")
         st.rerun()
 
@@ -331,16 +348,23 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
             placeholder="My Retirement Plan 2025",
             key="new_scenario_name_input"
         )
-        if st.button("Create New", use_container_width=True, disabled=not new_scenario_name):
+
+        if st.button("💾 Create New", use_container_width=True, disabled=not new_scenario_name):
             if new_scenario_name:
                 scenario_data = collect_current_scenario_data()
-                save_scenario_to_localstorage(new_scenario_name, scenario_data)
+
+                # Save to session_state
+                st.session_state['user_scenarios'][new_scenario_name] = scenario_data
                 st.session_state['current_scenario'] = new_scenario_name
+
+                # Prepare download
                 st.session_state['show_download_reminder'] = True
                 st.session_state['last_saved_scenario'] = scenario_data
                 st.session_state['last_saved_name'] = new_scenario_name
+
                 st.success(f"✅ Created: {new_scenario_name}")
                 st.rerun()
+
 
     # DOWNLOAD REMINDER (after save)
     if st.session_state.get('show_download_reminder', False):
