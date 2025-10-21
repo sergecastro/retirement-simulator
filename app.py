@@ -234,11 +234,92 @@ if st.session_state.app_mode == 'Data Entry':
     st.caption(f"Step {current_idx + 1} of {len(pages)}: {st.session_state.intake_current_page.title()}")
 
     # SHOW INTAKE QUESTIONNAIRE PAGES
-    # Import the full intake page logic from intake_app.py
-    # For now, show placeholder - we'll integrate full pages in next step
-    st.markdown("### 📝 Data Entry Questionnaire")
-    st.info(f"🚧 Currently on page: {st.session_state.intake_current_page}")
-    st.info("Full questionnaire integration in progress. For now, click 'Analysis Mode' above to access the main app.")
+    current_page = st.session_state.intake_current_page
+
+    # ===== PAGE 1: PROFILE =====
+    if current_page == 'profile':
+        st.header("👤 Your Profile")
+
+        # Single or Couple
+        default_mode_is_couple = bool(existing.get("input_partner_exists", True))
+        mode = st.radio(
+            "Are you planning as:",
+            ["Single", "Couple"],
+            index=1 if default_mode_is_couple else 0
+        )
+
+        # Your age
+        your_age_default = int(existing.get("input_age", 70))
+        your_age = st.number_input(
+            "Your age",
+            min_value=18,
+            max_value=100,
+            value=your_age_default,
+            step=1,
+            help="Your current age"
+        )
+
+        # Partner fields (if couple)
+        partner_name = existing.get("input_partner_name", "")
+        partner_age_default = int(existing.get("input_partner_age", 68)) if "input_partner_age" in existing else 68
+
+        if mode == "Couple":
+            partner_name = st.text_input("Partner name", value=partner_name)
+            partner_age = st.number_input(
+                "Partner age",
+                min_value=18,
+                max_value=100,
+                value=partner_age_default,
+                step=1
+            )
+        else:
+            partner_age = None
+
+        # Intelligent validation
+        level, message = validate_age(your_age, is_partner=False)
+        show_validation_message(level, message)
+
+        if mode == "Couple" and partner_age:
+            level, message = validate_age(partner_age, is_partner=True)
+            show_validation_message(level, message)
+
+            # Validate age gap
+            level, message = validate_age_gap(your_age, partner_age)
+            show_validation_message(level, message)
+
+        # Save and continue
+        col1, col2 = st.columns([1, 1])
+        with col2:
+            if st.button("Next: Income →", type="primary", use_container_width=True):
+                # Save profile data
+                data = existing.copy()
+                data["schema_version"] = "1.0"
+                data["input_age"] = int(your_age)
+                data["input_partner_exists"] = (mode == "Couple")
+                if data["input_partner_exists"]:
+                    data["input_partner_name"] = partner_name
+                    data["input_partner_age"] = int(partner_age)
+                else:
+                    data.pop("input_partner_name", None)
+                    data.pop("input_partner_age", None)
+                save_payload(data)
+                go_to_page('income')
+
+    # ===== PAGES 2-7: PLACEHOLDER (Will integrate next) =====
+    elif current_page in ['income', 'expenses', 'assets', 'liabilities', 'family', 'review']:
+        st.markdown(f"### 📝 {current_page.title()} Page")
+        st.info(f"🚧 {current_page.title()} page integration in progress...")
+
+        # Navigation
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("← Back to Profile", use_container_width=True):
+                go_to_page('profile')
+        with col2:
+            if st.button("🎯 Go to Analysis Mode", type="primary", use_container_width=True):
+                st.session_state.app_mode = 'Analysis'
+                st.rerun()
+
     st.stop()  # Stop here, don't load main app
 
 # If we reach here, we're in Analysis Mode - continue with main app as normal
