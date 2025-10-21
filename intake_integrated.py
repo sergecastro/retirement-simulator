@@ -430,22 +430,20 @@ def show_intake_questionnaire():
             save_payload(data)
             go_to_page('assets')
 
-    # ===== PAGES 4-6: PLACEHOLDER (Will integrate next) =====
-    elif current_page in ['assets', 'liabilities', 'family']:
-        st.header(f"📝 {current_page.title()} Page")
-        st.markdown("*This page is being integrated. For now, proceed to next step.*")
-        st.info(f"🚧 {current_page.title()} page will have full data entry fields (coming soon)")
+    # ===== PAGES 4-6: ASSETS, LIABILITIES, FAMILY =====
+    # These pages use the intake_review module
+    elif current_page == 'assets':
+        show_assets_page(existing, save_payload, go_to_page)
 
-        # Linear navigation - ONLY forward, no back, no escape
-        st.divider()
-        next_pages = {'assets': 'liabilities', 'liabilities': 'family', 'family': 'review'}
-        next_page = next_pages.get(current_page, 'review')
+    elif current_page == 'liabilities':
+        show_liabilities_page(existing, save_payload, go_to_page)
 
-        if st.button(f"Next: {next_page.title()} →", type="primary", use_container_width=True):
-            go_to_page(next_page)
+    elif current_page == 'family':
+        show_family_page(existing, save_payload, go_to_page)
 
     # ===== PAGE 7: REVIEW (FINAL PAGE with celebration!) =====
     elif current_page == 'review':
+        # Use the review page from intake_review module, but customize the ending
         st.header("🎉 Review & Complete")
 
         # CELEBRATION BALLOONS!
@@ -453,10 +451,35 @@ def show_intake_questionnaire():
 
         st.success("✅ **Congratulations! You've completed the questionnaire!**")
 
+        # Show summary of data collected
+        st.divider()
+        st.subheader("📊 Your Data Summary")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Your Age", existing.get("input_age", "N/A"))
+            partner_name = existing.get("input_partner_name", "")
+            if partner_name:
+                st.metric("Partner", f"{partner_name}, {existing.get('input_partner_age', 'N/A')}")
+        with col2:
+            total_income = float(existing.get("input_total_income", 0.0))
+            total_expenses = float(existing.get("input_total_expenses", 0.0))
+            st.metric("Monthly Income", f"${total_income:,.0f}")
+            st.metric("Monthly Expenses", f"${total_expenses:,.0f}")
+
+        surplus = total_income - total_expenses
+        if surplus > 0:
+            st.success(f"💰 Monthly Surplus: ${surplus:,.0f}")
+        elif surplus < 0:
+            st.warning(f"⚠️ Monthly Deficit: ${abs(surplus):,.0f}")
+        else:
+            st.info("📊 Balanced Budget")
+
+        st.divider()
         st.markdown(f"""
         ### What's Next?
 
-        Your data has been saved to:
+        Your complete data has been saved to:
         `{get_shared_path()}`
 
         **Choose what to do next:**
