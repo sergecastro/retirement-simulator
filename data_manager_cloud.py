@@ -1,9 +1,10 @@
-# data_manager_cloud.py - Cloud-compatible scenario management
-# Uses file upload/download instead of local filesystem
+# data_manager_cloud.py - localStorage-based scenario management
+# Works on both local AND cloud deployments
 import streamlit as st
 import json
 from datetime import datetime
 from embedded_scenarios import EMBEDDED_SCENARIOS
+import streamlit.components.v1 as components
 
 def apply_scenario_data_safe(scenario_data):
     """SAFE: Apply loaded scenario data WITH input_ prefix to match your forms"""
@@ -13,7 +14,7 @@ def apply_scenario_data_safe(scenario_data):
         # Skip family table keys - we'll handle them separately
         if key in ["children_data", "inheritance_data", "goals_data",
                    "children_list", "inheritance_list", "goals_list",
-                   "children_rows", "inherit_rows", "schema_version"]:
+                   "children_rows", "inherit_rows", "schema_version", "saved_at"]:
             continue
 
         # If key already has input_ prefix, use it directly
@@ -92,8 +93,134 @@ def collect_current_scenario_data():
     return current_data
 
 
+def get_user_scenarios_from_localstorage():
+    """Get list of user scenarios from localStorage via JavaScript"""
+
+    # JavaScript code to retrieve scenarios from localStorage
+    js_code = """
+    <script>
+    // Get all user scenarios from localStorage
+    const scenarios = JSON.parse(localStorage.getItem('retirement_scenarios') || '{}');
+    const scenarioNames = Object.keys(scenarios);
+
+    // Send to Streamlit
+    window.parent.postMessage({
+        type: 'streamlit:setComponentValue',
+        value: scenarioNames
+    }, '*');
+    </script>
+    """
+
+    # Return empty list by default (will be populated by JS callback)
+    return []
+
+
+def save_scenario_to_localstorage(scenario_name, scenario_data):
+    """Save scenario to browser localStorage"""
+
+    scenario_json = json.dumps(scenario_data)
+
+    # JavaScript to save to localStorage
+    js_code = f"""
+    <script>
+    (function() {{
+        try {{
+            // Get existing scenarios
+            let scenarios = JSON.parse(localStorage.getItem('retirement_scenarios') || '{{}}');
+
+            // Add/update this scenario
+            scenarios['{scenario_name}'] = {scenario_json};
+
+            // Save back to localStorage
+            localStorage.setItem('retirement_scenarios', JSON.stringify(scenarios));
+
+            console.log('Saved scenario: {scenario_name}');
+
+            // Notify Streamlit of success
+            window.parent.postMessage({{
+                type: 'streamlit:setComponentValue',
+                value: {{success: true, name: '{scenario_name}'}}
+            }}, '*');
+        }} catch(e) {{
+            console.error('localStorage save failed:', e);
+            window.parent.postMessage({{
+                type: 'streamlit:setComponentValue',
+                value: {{success: false, error: e.message}}
+            }}, '*');
+        }}
+    }})();
+    </script>
+    """
+
+    components.html(js_code, height=0)
+    return True
+
+
+def load_scenario_from_localstorage(scenario_name):
+    """Load scenario from browser localStorage"""
+
+    # We'll use session state to pass the scenario name, then JS will load it
+    st.session_state['_load_scenario_name'] = scenario_name
+
+    js_code = f"""
+    <script>
+    (function() {{
+        try {{
+            // Get scenarios from localStorage
+            const scenarios = JSON.parse(localStorage.getItem('retirement_scenarios') || '{{}}');
+            const scenario = scenarios['{scenario_name}'];
+
+            if (scenario) {{
+                // Send scenario data to Streamlit
+                window.parent.postMessage({{
+                    type: 'streamlit:setComponentValue',
+                    value: {{success: true, data: scenario}}
+                }}, '*');
+            }} else {{
+                window.parent.postMessage({{
+                    type: 'streamlit:setComponentValue',
+                    value: {{success: false, error: 'Scenario not found'}}
+                }}, '*');
+            }}
+        }} catch(e) {{
+            console.error('localStorage load failed:', e);
+        }}
+    }})();
+    </script>
+    """
+
+    components.html(js_code, height=0)
+
+
+def delete_scenario_from_localstorage(scenario_name):
+    """Delete scenario from browser localStorage"""
+
+    js_code = f"""
+    <script>
+    (function() {{
+        try {{
+            let scenarios = JSON.parse(localStorage.getItem('retirement_scenarios') || '{{}}');
+            delete scenarios['{scenario_name}'];
+            localStorage.setItem('retirement_scenarios', JSON.stringify(scenarios));
+            console.log('Deleted scenario: {scenario_name}');
+
+            window.parent.postMessage({{
+                type: 'streamlit:setComponentValue',
+                value: {{success: true}}
+            }}, '*');
+        }} catch(e) {{
+            console.error('localStorage delete failed:', e);
+        }}
+    }})();
+    </script>
+    """
+
+    components.html(js_code, height=0)
+    return True
+
+
 def manage_scenarios_cloud(is_trusted_user, age_group=None):
-    """Cloud-compatible scenario management using file upload/download"""
+    """Cloud-compatible scenario management using localStorage + download backups"""
 
     # Create sidebar UI
     st.sidebar.markdown("---")
@@ -101,166 +228,199 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
 
     # AUTO-LOAD DEFAULT SCENARIO ON FIRST VISIT
     if 'scenario_auto_loaded' not in st.session_state:
-        # Load default scenario for ALL users (unless they uploaded from intake)
         if 'scenario_loaded' not in st.session_state:
-            default_scenario = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
+            # Load appropriate default based on user type
+            if is_trusted_user:
+                default_scenario = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
+                default_name = '70+ Retirement (Private - Trusted)'
+            else:
+                default_scenario = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
+                default_name = 'Original 70+ Retirement (Demo)'
+
             apply_scenario_data_safe(default_scenario)
-            st.session_state['current_scenario'] = 'Original 70+ Retirement (Demo)'
+            st.session_state['current_scenario'] = default_name
             st.session_state['scenario_auto_loaded'] = True
             st.session_state['scenario_loaded'] = True
 
     # Get current scenario name
     current = st.session_state.get('current_scenario', 'Original 70+ Retirement (Demo)')
 
-    if current != "New Scenario":
-        st.sidebar.info(f"📋 **Currently:** {current}")
+    st.sidebar.info(f"📋 **Currently:** {current}")
 
     # ============================================
-    # EMBEDDED SCENARIOS SELECTOR
+    # LOAD SCENARIO SECTION
     # ============================================
     st.sidebar.subheader("📥 Load Scenario")
 
-    # Build list of available embedded scenarios based on user type
-    embedded_options = ['Original 70+ Retirement (Demo)']
+    # Build list of available scenarios
+    embedded_options = []
     if is_trusted_user:
-        embedded_options.append('70+ Retirement (Private - Trusted Only)')
+        embedded_options.append('70+ Retirement (Private - Trusted)')
+    embedded_options.append('Original 70+ Retirement (Demo)')
 
-    # Find current selection index
-    try:
-        current_index = embedded_options.index(current) if current in embedded_options else 0
-    except:
-        current_index = 0
+    # TODO: Add user's saved scenarios from localStorage
+    # For now, just show embedded scenarios
+    all_scenarios = embedded_options
 
-    selected_embedded = st.sidebar.selectbox(
-        "Select embedded scenario:",
-        options=embedded_options,
-        index=current_index,
-        help="Pre-loaded scenarios available to all users"
+    # Scenario selector dropdown
+    selected_scenario = st.sidebar.selectbox(
+        "Select scenario to load:",
+        options=all_scenarios,
+        index=0 if current not in all_scenarios else all_scenarios.index(current),
+        help="Choose from embedded scenarios or your saved scenarios",
+        key="scenario_selector"
     )
 
-    # Load selected embedded scenario if changed
-    if selected_embedded != current:
-        if selected_embedded == 'Original 70+ Retirement (Demo)':
+    # Load button
+    if st.sidebar.button("📂 Load Selected Scenario", use_container_width=True):
+        if selected_scenario == 'Original 70+ Retirement (Demo)':
             scenario_data = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
-        else:  # Private scenario
+            apply_scenario_data_safe(scenario_data)
+            st.session_state['current_scenario'] = selected_scenario
+            st.sidebar.success(f"✅ Loaded: {selected_scenario}")
+            st.rerun()
+        elif selected_scenario == '70+ Retirement (Private - Trusted)':
             scenario_data = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
+            apply_scenario_data_safe(scenario_data)
+            st.session_state['current_scenario'] = selected_scenario
+            st.sidebar.success(f"✅ Loaded: {selected_scenario}")
+            st.rerun()
 
-        apply_scenario_data_safe(scenario_data)
-        st.session_state['current_scenario'] = selected_embedded
-        st.session_state['scenario_loaded'] = True
-        st.sidebar.success(f"✅ Loaded: {selected_embedded}")
-        st.rerun()
+    st.sidebar.markdown("**...or upload from file:**")
 
-    st.sidebar.markdown("**...or upload your own:**")
-
-    # Track if we've already processed this file to prevent loops
+    # File uploader
     if 'last_uploaded_file' not in st.session_state:
         st.session_state['last_uploaded_file'] = None
 
     uploaded_file = st.sidebar.file_uploader(
         "Upload scenario JSON file:",
         type=['json'],
-        help="Select a previously saved scenario file",
+        help="Load a previously downloaded scenario",
         key="scenario_uploader"
     )
 
-    # Only process if it's a NEW file (different from last processed)
     if uploaded_file is not None:
         file_id = f"{uploaded_file.name}_{uploaded_file.size}"
-
         if st.session_state['last_uploaded_file'] != file_id:
             try:
-                # Read the uploaded file
                 file_content = uploaded_file.read()
                 scenario_data = json.loads(file_content)
 
-                # Validate it's a dictionary
-                if not isinstance(scenario_data, dict):
-                    st.sidebar.error("❌ Invalid scenario file format")
-                else:
-                    # Apply the scenario data
+                if isinstance(scenario_data, dict):
                     apply_scenario_data_safe(scenario_data)
-
-                    # Update current scenario name
                     scenario_name = uploaded_file.name.replace('.json', '')
                     st.session_state['current_scenario'] = scenario_name
-                    st.session_state['scenario_loaded'] = True
-
-                    # Mark this file as processed
                     st.session_state['last_uploaded_file'] = file_id
-
                     st.sidebar.success(f"✅ Loaded: {scenario_name}")
                     st.rerun()
-
-            except json.JSONDecodeError as e:
-                st.sidebar.error(f"❌ Invalid JSON file: {e}")
+                else:
+                    st.sidebar.error("❌ Invalid scenario file format")
             except Exception as e:
                 st.sidebar.error(f"❌ Error loading file: {e}")
 
     # ============================================
-    # SAVE SCENARIO TO FILE
+    # SAVE SCENARIO SECTION
     # ============================================
     st.sidebar.markdown("---")
     st.sidebar.subheader("💾 Save Scenario")
 
-    # Scenario name input
-    default_name = current if current != "New Scenario" else "my-scenario"
-    scenario_save_name = st.sidebar.text_input(
-        "Scenario name:",
-        value=default_name,
-        placeholder="e.g., retirement-plan-2025",
-        help="Enter a name for your scenario (will be saved as .json file)",
-        key="scenario_save_name_input"
+    # Current scenario name (for updating)
+    st.sidebar.text_input(
+        "Current scenario name:",
+        value=current,
+        key="current_scenario_name_display",
+        disabled=True,
+        help="This is your currently loaded scenario"
     )
 
-    # Generate download filename
-    if scenario_save_name:
-        # Clean filename (remove invalid characters)
-        clean_name = "".join(c for c in scenario_save_name if c.isalnum() or c in (' ', '-', '_')).strip()
-        clean_name = clean_name.replace(' ', '-')
-        download_filename = f"{clean_name}.json"
-    else:
-        download_filename = "scenario.json"
+    # SAVE CURRENT button
+    if st.sidebar.button("💾 Save Current Scenario", use_container_width=True, type="primary"):
+        scenario_data = collect_current_scenario_data()
+        scenario_json = json.dumps(scenario_data, indent=2)
 
-    # Collect current data
-    scenario_data = collect_current_scenario_data()
-    scenario_json = json.dumps(scenario_data, indent=2)
+        # Save to localStorage
+        save_scenario_to_localstorage(current, scenario_data)
 
-    # Download button
-    st.sidebar.download_button(
-        label="💾 Download Scenario",
-        data=scenario_json,
-        file_name=download_filename,
-        mime="application/json",
-        help="Download your current scenario as a JSON file",
-        use_container_width=True
-    )
+        # Show success with download reminder
+        st.session_state['show_download_reminder'] = True
+        st.session_state['last_saved_scenario'] = scenario_data
+        st.session_state['last_saved_name'] = current
 
-    st.sidebar.info("""
-    **💡 How it works:**
-    - Click "Download Scenario" to save current data to your computer
-    - Use "Upload scenario" to load it back later
-    - Share files with others or keep backups!
-    """)
-
-    # ============================================
-    # CLEAR/RESET SCENARIO
-    # ============================================
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("🗑️ Clear Scenario")
-
-    if st.sidebar.button("🔄 Start New Scenario", help="Clear all data and start fresh"):
-        # Clear all input fields
-        for k in list(st.session_state.keys()):
-            if k.startswith('input_') or k in ['children_list', 'children_rows', 'inheritance_list', 'inherit_rows', 'goals_list', 'goals_data']:
-                del st.session_state[k]
-
-        st.session_state['current_scenario'] = "New Scenario"
-        st.session_state.pop('scenario_loaded', None)
-        st.sidebar.success("✅ Started New Scenario")
+        st.sidebar.success(f"✅ Saved: {current}")
         st.rerun()
 
-    return {}  # Return empty dict for compatibility with old code
+    # SAVE AS NEW button
+    st.sidebar.markdown("**...or save as new scenario:**")
+
+    new_scenario_name = st.sidebar.text_input(
+        "New scenario name:",
+        value="",
+        placeholder="e.g., My Retirement Plan 2025",
+        help="Enter a name for your new scenario",
+        key="new_scenario_name_input"
+    )
+
+    if st.sidebar.button("💾 Save As New Scenario", use_container_width=True, disabled=not new_scenario_name):
+        if new_scenario_name:
+            scenario_data = collect_current_scenario_data()
+
+            # Save to localStorage
+            save_scenario_to_localstorage(new_scenario_name, scenario_data)
+
+            # Update current scenario
+            st.session_state['current_scenario'] = new_scenario_name
+            st.session_state['show_download_reminder'] = True
+            st.session_state['last_saved_scenario'] = scenario_data
+            st.session_state['last_saved_name'] = new_scenario_name
+
+            st.sidebar.success(f"✅ Created new scenario: {new_scenario_name}")
+            st.rerun()
+
+    # DOWNLOAD REMINDER (after save)
+    if st.session_state.get('show_download_reminder', False):
+        st.sidebar.warning("💡 **Recommended:** Download a backup copy for safety!")
+
+        scenario_data = st.session_state.get('last_saved_scenario', collect_current_scenario_data())
+        scenario_name = st.session_state.get('last_saved_name', current)
+        scenario_json = json.dumps(scenario_data, indent=2)
+
+        clean_name = "".join(c for c in scenario_name if c.isalnum() or c in (' ', '-', '_')).strip()
+        clean_name = clean_name.replace(' ', '-')
+        download_filename = f"{clean_name}.json"
+
+        st.sidebar.download_button(
+            label="📥 Download Backup",
+            data=scenario_json,
+            file_name=download_filename,
+            mime="application/json",
+            help="Download this scenario as a backup file",
+            use_container_width=True,
+            type="secondary"
+        )
+
+        if st.sidebar.button("✅ Got it, dismiss", use_container_width=True):
+            st.session_state['show_download_reminder'] = False
+            st.rerun()
+
+    # ============================================
+    # DELETE SCENARIO SECTION
+    # ============================================
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🗑️ Delete Scenario")
+
+    # TODO: List user's saved scenarios with checkboxes
+    # For now, show message
+    st.sidebar.info("Select scenarios to delete (coming in next update)")
+
+    st.sidebar.markdown("---")
+    st.sidebar.info("""
+    **💡 How it works:**
+    - Scenarios are saved to your browser automatically
+    - Download backups to use on other devices
+    - Upload backup files to restore scenarios
+    """)
+
+    return {}
 
 
 def load_scenario_from_path(uploaded_file):
@@ -269,18 +429,13 @@ def load_scenario_from_path(uploaded_file):
     Returns: (success: bool, scenario_data: dict or None)
     """
     try:
-        # Read the uploaded file
         file_content = uploaded_file.read()
         scenario_data = json.loads(file_content)
 
-        # Validate it's a dictionary
         if not isinstance(scenario_data, dict):
             return False, None
 
-        # Apply the scenario data using our safe function
         apply_scenario_data_safe(scenario_data)
-
-        # Mark as loaded from external file
         st.session_state['current_scenario'] = f"Imported: {uploaded_file.name}"
         st.session_state['scenario_loaded'] = True
 
