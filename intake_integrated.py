@@ -130,15 +130,315 @@ def show_intake_questionnaire():
             save_payload(data)
             go_to_page('income')
 
-    # ===== PAGES 2-6: PLACEHOLDER (Will integrate next) =====
-    elif current_page in ['income', 'expenses', 'assets', 'liabilities', 'family']:
+    # ===== PAGE 2: INCOME =====
+    elif current_page == 'income':
+        st.header("💰 Monthly Income")
+        st.markdown("*Enter your typical monthly income from all sources. Enter 0 if not applicable.*")
+
+        # Income fields with defaults from existing data
+        salary = st.number_input(
+            "Salary/Wages (monthly)",
+            min_value=0.0,
+            max_value=1000000.0,
+            value=float(existing.get("input_salary_wages", 0.0)),
+            step=100.0,
+            help="Your regular employment income (before taxes)"
+        )
+
+        self_employment = st.number_input(
+            "Self-Employment Income (monthly)",
+            min_value=0.0,
+            max_value=1000000.0,
+            value=float(existing.get("input_self_employment_income", 0.0)),
+            step=100.0,
+            help="Net income from business or freelance work"
+        )
+
+        rental = st.number_input(
+            "Rental Income (monthly)",
+            min_value=0.0,
+            max_value=100000.0,
+            value=float(existing.get("input_rental_income", 0.0)),
+            step=100.0,
+            help="Net rental income after expenses"
+        )
+
+        investment = st.number_input(
+            "Investment Income (monthly)",
+            min_value=0.0,
+            max_value=100000.0,
+            value=float(existing.get("input_investment_income", 0.0)),
+            step=50.0,
+            help="Dividends, interest, capital gains (average monthly)"
+        )
+
+        social_security = st.number_input(
+            "Social Security (monthly)",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_social_security_income", 0.0)),
+            step=50.0,
+            help="Your monthly Social Security benefit"
+        )
+
+        pension = st.number_input(
+            "Pension Income (monthly)",
+            min_value=0.0,
+            max_value=50000.0,
+            value=float(existing.get("input_pension_income", 0.0)),
+            step=50.0,
+            help="Monthly pension from employer or government"
+        )
+
+        other_income = st.number_input(
+            "Other Income (monthly)",
+            min_value=0.0,
+            max_value=100000.0,
+            value=float(existing.get("input_other_income", 0.0)),
+            step=50.0,
+            help="Alimony, royalties, or other regular income"
+        )
+
+        # Calculate total
+        total_income = salary + self_employment + rental + investment + social_security + pension + other_income
+
+        # Display total
+        st.divider()
+        st.metric("Total Monthly Income", f"${total_income:,.2f}")
+
+        # Intelligent validation (GENIUS DESIGN - KEEP ALL!)
+        user_age = int(existing.get("input_age", 65))
+
+        level, message = validate_total_income(total_income, user_age)
+        show_validation_message(level, message)
+
+        level, message = validate_social_security(social_security, user_age)
+        show_validation_message(level, message)
+
+        level, message = validate_income_mix(salary + self_employment, pension, social_security, total_income, user_age)
+        show_validation_message(level, message)
+
+        # Linear navigation - ONLY forward
+        st.divider()
+        if st.button("Next: Expenses →", type="primary", use_container_width=True):
+            # Save income data
+            data = existing.copy()
+            data["input_salary_wages"] = float(salary)
+            data["input_self_employment_income"] = float(self_employment)
+            data["input_rental_income"] = float(rental)
+            data["input_investment_income"] = float(investment)
+            data["input_social_security_income"] = float(social_security)
+            data["input_pension_income"] = float(pension)
+            data["input_other_income"] = float(other_income)
+            data["input_total_income"] = float(total_income)
+            save_payload(data)
+            go_to_page('expenses')
+
+    # ===== PAGE 3: EXPENSES =====
+    elif current_page == 'expenses':
+        st.header("🏠 Monthly Expenses")
+        st.markdown("*Enter your typical monthly expenses. Enter 0 if not applicable.*")
+
+        # Expense fields with defaults
+        housing = st.number_input(
+            "Housing (rent/mortgage)",
+            min_value=0.0,
+            max_value=100000.0,
+            value=float(existing.get("input_housing_expenses", 0.0)),
+            step=100.0,
+            help="Monthly rent or mortgage payment"
+        )
+
+        utilities = st.number_input(
+            "Utilities",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_utilities_expenses", 0.0)),
+            step=10.0,
+            help="Electric, gas, water, internet, phone"
+        )
+
+        groceries = st.number_input(
+            "Groceries/Food",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_groceries_expenses", 0.0)),
+            step=50.0,
+            help="Food and household supplies"
+        )
+
+        transportation = st.number_input(
+            "Transportation",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_transportation_expenses", 0.0)),
+            step=50.0,
+            help="Gas, car payments, insurance, public transit"
+        )
+
+        healthcare = st.number_input(
+            "Healthcare",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_healthcare_expenses", 0.0)),
+            step=50.0,
+            help="Medical, dental, prescriptions, copays"
+        )
+
+        insurance = st.number_input(
+            "Insurance (non-health)",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_insurance_expenses", 0.0)),
+            step=25.0,
+            help="Life, home, auto insurance (if not included elsewhere)"
+        )
+
+        property_tax = st.number_input(
+            "Property Tax",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_property_tax_expenses", 0.0)),
+            step=50.0,
+            help="Monthly property tax (if not in mortgage)"
+        )
+
+        entertainment = st.number_input(
+            "Entertainment",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_entertainment_expenses", 0.0)),
+            step=25.0,
+            help="Streaming, hobbies, sports, activities"
+        )
+
+        restaurants = st.number_input(
+            "Dining Out/Restaurants",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_restaurant_expenses", 0.0)),
+            step=25.0,
+            help="Meals at restaurants, takeout, delivery"
+        )
+
+        travel = st.number_input(
+            "Travel/Vacation",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_travel_expenses", 0.0)),
+            step=50.0,
+            help="Average monthly amount for travel/vacations"
+        )
+
+        education = st.number_input(
+            "Education",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_education_expenses", 0.0)),
+            step=50.0,
+            help="Tuition, courses, student loans"
+        )
+
+        childcare = st.number_input(
+            "Childcare",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_childcare_expenses", 0.0)),
+            step=50.0,
+            help="Daycare, babysitting, child support"
+        )
+
+        clothing = st.number_input(
+            "Clothing",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_clothing_expenses", 0.0)),
+            step=25.0,
+            help="Clothing and personal care items"
+        )
+
+        charitable = st.number_input(
+            "Charitable Donations",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_charitable_donations", 0.0)),
+            step=25.0,
+            help="Regular charitable giving"
+        )
+
+        miscellaneous = st.number_input(
+            "Miscellaneous",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_miscellaneous_expenses", 0.0)),
+            step=25.0,
+            help="Pet care, gifts, subscriptions, other"
+        )
+
+        other_expenses = st.number_input(
+            "Other Expenses",
+            min_value=0.0,
+            max_value=10000.0,
+            value=float(existing.get("input_other_expenses", 0.0)),
+            step=25.0,
+            help="Any other regular monthly expenses"
+        )
+
+        # Calculate total
+        total_expenses = (housing + utilities + groceries + transportation + healthcare +
+                         insurance + property_tax + entertainment + restaurants + travel +
+                         education + childcare + clothing + charitable + miscellaneous + other_expenses)
+
+        # Display total
+        st.divider()
+        st.metric("Total Monthly Expenses", f"${total_expenses:,.2f}")
+
+        # Intelligent validation (GENIUS DESIGN - KEEP ALL!)
+        total_income = float(existing.get("input_total_income", 0.0))
+
+        level, message = validate_total_expenses(total_expenses)
+        show_validation_message(level, message)
+
+        level, message = validate_housing_ratio(housing, total_income)
+        show_validation_message(level, message)
+
+        level, message = validate_income_vs_expenses(total_income, total_expenses)
+        show_validation_message(level, message)
+
+        # Linear navigation - ONLY forward
+        st.divider()
+        if st.button("Next: Assets →", type="primary", use_container_width=True):
+            # Save expense data
+            data = existing.copy()
+            data["input_housing_expenses"] = float(housing)
+            data["input_utilities_expenses"] = float(utilities)
+            data["input_groceries_expenses"] = float(groceries)
+            data["input_transportation_expenses"] = float(transportation)
+            data["input_healthcare_expenses"] = float(healthcare)
+            data["input_insurance_expenses"] = float(insurance)
+            data["input_property_tax_expenses"] = float(property_tax)
+            data["input_entertainment_expenses"] = float(entertainment)
+            data["input_restaurant_expenses"] = float(restaurants)
+            data["input_travel_expenses"] = float(travel)
+            data["input_education_expenses"] = float(education)
+            data["input_childcare_expenses"] = float(childcare)
+            data["input_clothing_expenses"] = float(clothing)
+            data["input_charitable_donations"] = float(charitable)
+            data["input_miscellaneous_expenses"] = float(miscellaneous)
+            data["input_other_expenses"] = float(other_expenses)
+            data["input_total_expenses"] = float(total_expenses)
+            save_payload(data)
+            go_to_page('assets')
+
+    # ===== PAGES 4-6: PLACEHOLDER (Will integrate next) =====
+    elif current_page in ['assets', 'liabilities', 'family']:
         st.header(f"📝 {current_page.title()} Page")
         st.markdown("*This page is being integrated. For now, proceed to next step.*")
-        st.info(f"🚧 {current_page.title()} page will have full data entry fields with validation (coming soon)")
+        st.info(f"🚧 {current_page.title()} page will have full data entry fields (coming soon)")
 
         # Linear navigation - ONLY forward, no back, no escape
         st.divider()
-        next_pages = {'income': 'expenses', 'expenses': 'assets', 'assets': 'liabilities', 'liabilities': 'family', 'family': 'review'}
+        next_pages = {'assets': 'liabilities', 'liabilities': 'family', 'family': 'review'}
         next_page = next_pages.get(current_page, 'review')
 
         if st.button(f"Next: {next_page.title()} →", type="primary", use_container_width=True):
