@@ -45,7 +45,13 @@ from .medicare_data import (
     get_medigap_premiums_for_state,
     calculate_medigap_premium_by_age,
     project_part_b_premium,
-    get_medicare_cost_summary
+    get_medicare_cost_summary,
+    # Data freshness functions
+    DATA_VERSION,
+    DATA_YEAR,
+    get_data_version_info,
+    check_data_freshness,
+    get_data_update_instructions
 )
 
 from .medicare_irmaa_calculator import (
@@ -104,6 +110,12 @@ __all__ = [
     "calculate_medigap_premium_by_age",
     "project_part_b_premium",
     "get_medicare_cost_summary",
+    # Data Freshness
+    "DATA_VERSION",
+    "DATA_YEAR",
+    "get_data_version_info",
+    "check_data_freshness",
+    "get_data_update_instructions",
     # Calculator
     "IRMAABracket",
     "MedicarePremiun",

@@ -162,6 +162,38 @@ def show_calculator_page():
 
     st.title("🏥 Medicare IRMAA Calculator")
 
+    # ==========================================
+    # Check data freshness
+    from healthcare.medicare_data import check_data_freshness, get_data_version_info
+    freshness = check_data_freshness()
+
+    # Show data freshness warning
+    if freshness['severity'] == 'error':
+        st.error(freshness['message'])
+        with st.expander("⚠️ IMPORTANT: Read Before Using Calculator", expanded=True):
+            st.markdown(freshness['detailed_message'])
+            st.markdown(f"[Check Medicare.gov for Current Rates →]({freshness['update_url']})")
+    elif freshness['severity'] == 'warning':
+        st.warning(freshness['message'])
+    elif freshness['severity'] == 'info':
+        st.info(freshness['message'])
+
+    # Show data version in sidebar
+    with st.sidebar:
+        version_info = get_data_version_info()
+        with st.expander("📊 Data Version Info"):
+            st.markdown(f"""
+**Medicare Data:**
+- Version: {version_info['version']}
+- Year: {version_info['year']}
+- Last Updated: {version_info['last_updated']}
+- Valid Through: {version_info['valid_through']}
+
+**Status:** {freshness['message']}
+            """)
+    # ==========================================
+    # END NEW CODE
+
     # Show disclaimer
     show_medicare_irmaa_disclaimer()
 

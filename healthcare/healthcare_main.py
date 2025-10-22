@@ -399,6 +399,34 @@ def main():
     # Require disclaimer acknowledgment
     require_healthcare_disclaimer_acknowledgment()
 
+    # ==========================================
+    # Check data freshness and show warning if needed
+    from healthcare.medicare_data import check_data_freshness, get_data_version_info
+    freshness = check_data_freshness()
+
+    if freshness['severity'] == 'error':
+        st.error(freshness['message'])
+        with st.expander("⚠️ Click for Details", expanded=True):
+            st.markdown(freshness['detailed_message'])
+            st.markdown(f"**Official Medicare Information:** [{freshness['update_url']}]({freshness['update_url']})")
+
+    elif freshness['severity'] == 'warning':
+        st.warning(freshness['message'])
+        with st.expander("📋 Click for Details"):
+            st.markdown(freshness['detailed_message'])
+
+    elif freshness['severity'] == 'info':
+        st.info(freshness['message'])
+        with st.expander("📋 Click for Details"):
+            st.markdown(freshness['detailed_message'])
+
+    # Data version in sidebar
+    with st.sidebar:
+        version_info = get_data_version_info()
+        st.caption(f"📊 Medicare Data: v{version_info['version']} ({version_info['year']})")
+    # ==========================================
+    # END NEW CODE
+
     # Check if user selected a specific tool
     if 'healthcare_page' in st.session_state and st.session_state['healthcare_page'] == 'medicare_calculator':
         # Import and show Medicare calculator

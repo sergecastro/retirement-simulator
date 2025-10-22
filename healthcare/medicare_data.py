@@ -12,6 +12,199 @@ Data Sources: CMS, Kaiser Family Foundation, AARP
 
 from typing import Dict, List
 from dataclasses import dataclass
+from datetime import datetime
+
+
+# =============================================================================
+# DATA VERSION TRACKING & FRESHNESS CHECKING
+# =============================================================================
+
+# IMPORTANT: Update these values when Medicare data changes (annually in November)
+DATA_VERSION = "2025.1"
+DATA_YEAR = 2025
+DATA_LAST_UPDATED = "2025-10-22"
+DATA_VALID_THROUGH = "2025-12-31"  # Data expires end of calendar year
+DATA_SOURCE_DATE = "2025-10-22"  # When we last verified CMS data
+
+# Next update information
+NEXT_UPDATE_EXPECTED = "2025-11-01"  # CMS typically announces in October/November
+NEXT_DATA_EFFECTIVE = "2026-01-01"  # New rates effective January 1st
+
+
+def get_data_version_info():
+    """
+    Get complete data version information
+
+    Returns:
+        dict: Version metadata
+    """
+    return {
+        "version": DATA_VERSION,
+        "year": DATA_YEAR,
+        "last_updated": DATA_LAST_UPDATED,
+        "valid_through": DATA_VALID_THROUGH,
+        "source_date": DATA_SOURCE_DATE,
+        "next_update_expected": NEXT_UPDATE_EXPECTED,
+        "next_effective": NEXT_DATA_EFFECTIVE
+    }
+
+
+def check_data_freshness():
+    """
+    Check if Medicare data is current and provide appropriate warnings
+
+    Returns:
+        dict: Freshness status with message and severity level
+    """
+    today = datetime.now().date()
+    valid_through = datetime.strptime(DATA_VALID_THROUGH, "%Y-%m-%d").date()
+    next_update = datetime.strptime(NEXT_UPDATE_EXPECTED, "%Y-%m-%d").date()
+
+    # Critical: Data is expired
+    if today > valid_through:
+        days_old = (today - valid_through).days
+        return {
+            "status": "expired",
+            "severity": "error",
+            "is_current": False,
+            "message": f"⚠️ **MEDICARE DATA OUTDATED** (expired {days_old} days ago)",
+            "detailed_message": f"""
+This calculator uses {DATA_YEAR} Medicare rates. New rates for {DATA_YEAR + 1}
+are typically announced in October/November and effective January 1st.
+
+**Action Required:**
+- Check Medicare.gov for current {DATA_YEAR + 1} rates
+- IRMAA brackets may have changed
+- Part B/D premiums may have changed
+
+**Current Data:**
+- Version: {DATA_VERSION}
+- Last Updated: {DATA_LAST_UPDATED}
+- Valid Through: {DATA_VALID_THROUGH}
+            """,
+            "days_old": days_old,
+            "show_calculator": True,
+            "update_url": "https://www.medicare.gov/basics/costs/medicare-costs"
+        }
+
+    # Warning: Approaching expiration (within 60 days)
+    days_remaining = (valid_through - today).days
+    if days_remaining <= 60:
+        return {
+            "status": "expiring_soon",
+            "severity": "warning",
+            "is_current": True,
+            "message": f"📅 Medicare data expires in {days_remaining} days ({DATA_VALID_THROUGH})",
+            "detailed_message": f"""
+Current data is valid but will expire soon. New Medicare rates for
+{DATA_YEAR + 1} are expected to be announced around {NEXT_UPDATE_EXPECTED}.
+
+**What This Means:**
+- Current calculations are still accurate for {DATA_YEAR}
+- Check back after {NEXT_UPDATE_EXPECTED} for {DATA_YEAR + 1} rates
+- IRMAA brackets typically adjust 3-5% annually for inflation
+
+**Current Data:**
+- Version: {DATA_VERSION}
+- Last Updated: {DATA_LAST_UPDATED}
+            """,
+            "days_remaining": days_remaining,
+            "show_calculator": True,
+            "update_url": "https://www.medicare.gov/basics/costs/medicare-costs"
+        }
+
+    # Warning: Update period (October/November)
+    if today >= next_update and today <= valid_through:
+        return {
+            "status": "update_period",
+            "severity": "info",
+            "is_current": True,
+            "message": f"📢 New Medicare rates for {DATA_YEAR + 1} may be available soon",
+            "detailed_message": f"""
+We're in the typical Medicare rate announcement period (October/November).
+CMS may have announced new rates for {DATA_YEAR + 1}.
+
+**Current Status:**
+- Using {DATA_YEAR} rates (still valid through {DATA_VALID_THROUGH})
+- New {DATA_YEAR + 1} rates effective {NEXT_DATA_EFFECTIVE}
+- Check Medicare.gov for latest announcements
+
+**Current Data:**
+- Version: {DATA_VERSION}
+- Last Updated: {DATA_LAST_UPDATED}
+            """,
+            "days_remaining": days_remaining,
+            "show_calculator": True,
+            "update_url": "https://www.medicare.gov/basics/costs/medicare-costs"
+        }
+
+    # All good: Data is current
+    return {
+        "status": "current",
+        "severity": "success",
+        "is_current": True,
+        "message": f"✅ Medicare data is current (valid through {DATA_VALID_THROUGH})",
+        "detailed_message": f"""
+Using the latest available Medicare data for {DATA_YEAR}.
+
+**Current Data:**
+- Version: {DATA_VERSION}
+- Last Updated: {DATA_LAST_UPDATED}
+- Valid Through: {DATA_VALID_THROUGH}
+- Source: CMS {DATA_YEAR} IRMAA Tables
+
+**Next Update:**
+- Expected: {NEXT_UPDATE_EXPECTED}
+- Effective: {NEXT_DATA_EFFECTIVE}
+        """,
+        "days_remaining": days_remaining,
+        "show_calculator": True,
+        "update_url": "https://www.medicare.gov/basics/costs/medicare-costs"
+    }
+
+
+def get_data_update_instructions():
+    """
+    Get instructions for updating Medicare data
+
+    Returns:
+        str: Markdown-formatted update instructions
+    """
+    return """
+# How to Update Medicare Data
+
+## When to Update:
+Update annually in **October/November** after CMS announces new rates.
+
+## What to Update:
+
+### 1. IRMAA Brackets
+File: `medicare_irmaa_calculator.py`
+- Lines 25-90: Update all 6 IRMAA brackets
+- Source: https://www.cms.gov/medicare/health-plans/medigap/irmaa
+
+### 2. Standard Premiums
+File: `medicare_irmaa_calculator.py`
+- Line 23: `BASE_PART_B_PREMIUM`
+- Line 24: `BASE_PART_D_PREMIUM`
+- Source: https://www.medicare.gov/basics/costs/medicare-costs
+
+### 3. Historical Data
+File: `medicare_data.py`
+- Line 17+: Add new year to `HISTORICAL_PART_B_PREMIUMS`
+
+### 4. Data Version (This File!)
+File: `medicare_data.py`
+- Update `DATA_VERSION`, `DATA_YEAR`, `DATA_LAST_UPDATED`, etc.
+
+## Testing:
+1. Run: `python -m healthcare.medicare_irmaa_calculator`
+2. Verify brackets match CMS.gov
+3. Test UI calculations
+
+## Commit:
+`git commit -m "Update Medicare data for [YEAR]"`
+    """
 
 
 # =============================================================================
