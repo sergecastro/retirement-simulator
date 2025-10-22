@@ -6,6 +6,7 @@ import streamlit as st
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
 import json
+import disclaimers  # Regulatory compliance
 
 # We'll use the Anthropic SDK if available, with fallback to requests
 try:
@@ -401,7 +402,10 @@ def show_ai_consultation(results: Dict, user_data: Dict, financial_data: Dict, s
     """
     st.header("🤖 AI Financial Advisor")
     st.markdown("*Ask any financial question and get personalized advice based on your complete financial profile.*")
-    
+
+    # ✅ REGULATORY COMPLIANCE: Show AI advisor disclaimer
+    disclaimers.show_ai_advisor_disclaimer()
+
     # Test API connection on first load
     if 'ai_advisor_tested' not in st.session_state:
         with st.spinner("Testing Claude API connection..."):
