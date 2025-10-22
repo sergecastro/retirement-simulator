@@ -26,6 +26,9 @@ from streamlit_explain_api import inject_explain_visual_system
 # Import intake module for Data Entry mode
 from intake_integrated import show_intake_questionnaire
 
+# Import disclaimers module for regulatory compliance
+import disclaimers
+
 # Page config
 st.set_page_config(page_title="Ultimate Family Retirement Plus", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
 
@@ -156,6 +159,9 @@ if not st.session_state.authenticated:
 
 # User is authenticated - get IS_TRUSTED_USER from session state
 IS_TRUSTED_USER = st.session_state.IS_TRUSTED_USER
+
+# ✅ REGULATORY COMPLIANCE: Require disclaimer acknowledgment
+disclaimers.require_disclaimer_acknowledgment()
 
 # Initialize mode in session state if not exists
 if 'app_mode' not in st.session_state:
@@ -369,6 +375,9 @@ if current_scenario != "New Scenario":
 # Sidebar features
 features = setup_sidebar(IS_TRUSTED_USER)
 
+# ✅ REGULATORY COMPLIANCE: Show data privacy notice in sidebar
+disclaimers.show_data_privacy_notice()
+
 # Financial and family inputs (these will read from loaded session state)
 financial_data = collect_financial_data()
 
@@ -535,7 +544,10 @@ if 'simulation_results' in st.session_state:
     if results is not None:
         st.markdown("---")
         st.header("📊 Simulation Results & Analysis")
-        
+
+        # ✅ REGULATORY COMPLIANCE: Show disclaimer before results
+        disclaimers.show_simulation_results_disclaimer()
+
         # ============================================
         # DETAILED PROJECTION TABLE
         # ============================================
@@ -556,6 +568,8 @@ if 'simulation_results' in st.session_state:
         # Monte Carlo
         try:
             if features.get('show_monte_carlo') and 'monte_carlo_results' in results:
+                # ✅ REGULATORY COMPLIANCE: Show Monte Carlo disclaimer
+                disclaimers.show_monte_carlo_disclaimer()
                 show_monte_carlo(results)
         except Exception as e:
             st.error(f"Monte Carlo error: {str(e)}")
