@@ -8,6 +8,9 @@ Modules:
 - healthcare_disclaimers: Legal disclaimers and acknowledgment system
 - medicare_data: Historical Medicare data and state-specific premiums
 - medicare_irmaa_calculator: IRMAA calculation engine for Medicare premiums
+- medicare_calculator_ui: Streamlit UI for Medicare IRMAA calculator
+- medicare_charts: Plotly visualization library for Medicare costs
+- healthcare_main: Main navigation hub for healthcare planning tools
 
 Author: ForeCash Development Team
 Last Updated: October 22, 2025
@@ -52,6 +55,25 @@ from .medicare_irmaa_calculator import (
     calculate_medicare_cost
 )
 
+# UI Components (optional imports - require streamlit/plotly)
+try:
+    from .medicare_calculator_ui import show_calculator_page
+    from .medicare_charts import (
+        create_irmaa_waterfall_chart,
+        create_irmaa_bracket_heatmap,
+        create_bracket_threshold_chart,
+        create_stacked_area_projection,
+        create_cumulative_cost_chart,
+        create_roth_conversion_multi_scenario_chart,
+        create_conversion_breakeven_chart,
+        create_medicare_cost_gauge,
+        create_cost_breakdown_pie
+    )
+    from .healthcare_main import main as healthcare_main
+    UI_AVAILABLE = True
+except ImportError:
+    UI_AVAILABLE = False
+
 __version__ = "1.0.0"
 __all__ = [
     # Disclaimers
@@ -87,4 +109,22 @@ __all__ = [
     "MedicarePremiun",
     "MedicareIRMAACalculator",
     "calculate_medicare_cost",
+    # UI Components (if available)
+    "UI_AVAILABLE",
 ]
+
+# Conditionally add UI exports if available
+if UI_AVAILABLE:
+    __all__.extend([
+        "show_calculator_page",
+        "create_irmaa_waterfall_chart",
+        "create_irmaa_bracket_heatmap",
+        "create_bracket_threshold_chart",
+        "create_stacked_area_projection",
+        "create_cumulative_cost_chart",
+        "create_roth_conversion_multi_scenario_chart",
+        "create_conversion_breakeven_chart",
+        "create_medicare_cost_gauge",
+        "create_cost_breakdown_pie",
+        "healthcare_main",
+    ])
