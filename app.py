@@ -241,6 +241,13 @@ if st.session_state.get('intake_just_completed', False):
             # CELEBRATION BALLOONS! 🎉
             st.balloons()
 
+            # Force scroll to top of Analysis page
+            st.components.v1.html("""
+            <script>
+            window.parent.scrollTo(0, 0);
+            </script>
+            """, height=0)
+
             st.success("🎉 **Congratulations!** Your Intake data has been automatically loaded!")
             st.info("💡 You can now review your data below and run simulations.")
         except Exception as e:
