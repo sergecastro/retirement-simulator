@@ -1,4 +1,4 @@
-# ai_advisor.py - AI Financial Advisor Module
+# ai_advisor.py - AI Planning Assistant Module
 # Direct Claude API integration (no Flask server needed)
 # Bulletproof error handling, context-aware responses, proactive recommendations
 
@@ -190,7 +190,7 @@ def build_system_prompt() -> str:
     Build the system prompt that defines Claude's role and behavior.
     This makes Claude act as a professional financial advisor.
     """
-    return """You are an expert CFP® (Certified Financial Planner) and AI Financial Advisor. 
+    return """You are an expert CFP®-level AI Planning Assistant. 
 
 Your role is to provide personalized, actionable financial advice based on the user's COMPLETE financial profile (which will be provided in context).
 
@@ -397,10 +397,10 @@ Their current metrics:
 
 def show_ai_consultation(results: Dict, user_data: Dict, financial_data: Dict, sim_params: Dict):
     """
-    Main function called by app.py to show AI Financial Advisor interface.
-    This is what appears when users enable the AI Advisor feature.
+    Main function called by app.py to show AI Planning Assistant interface.
+    This is what appears when users enable the AI Planning Assistant feature.
     """
-    st.header("🤖 AI Financial Advisor")
+    st.header("🤖 AI Planning Assistant")
     st.markdown("*Ask any financial question and get personalized advice based on your complete financial profile.*")
 
     # ✅ REGULATORY COMPLIANCE: Show AI advisor disclaimer
@@ -454,10 +454,10 @@ def show_ai_consultation(results: Dict, user_data: Dict, financial_data: Dict, s
             if msg['role'] == 'user':
                 st.markdown(f"**You:** {msg['content']}")
             else:
-                st.markdown(f"**AI Advisor:**\n\n{msg['content']}")
+                st.markdown(f"**AI Assistant:**\n\n{msg['content']}")
             st.markdown("---")
     else:
-        st.info("👋 **Hi! I'm your AI Financial Advisor.**\n\nI've analyzed your complete financial profile. Ask me anything:\n- Should I buy or lease my next car?\n- Can I afford to retire early?\n- Should I pay off my mortgage or invest?\n- How can I reduce my taxes?\n- What's the impact of [any life decision] on my retirement?")
+        st.info("👋 **Hi! I'm your AI Planning Assistant.**\n\nI've analyzed your complete financial profile. Ask me anything:\n- Should I buy or lease my next car?\n- Can I afford to retire early?\n- Should I pay off my mortgage or invest?\n- How can I reduce my taxes?\n- What's the impact of [any life decision] on my retirement?")
     
     # ============================================
     # EXAMPLE QUESTIONS (Quick Starts)
@@ -504,7 +504,7 @@ def show_ai_consultation(results: Dict, user_data: Dict, financial_data: Dict, s
     
     col1, col2 = st.columns([3, 1])
     with col1:
-        ask_button = st.button("💬 Ask AI Advisor", type="primary", use_container_width=True)
+        ask_button = st.button("💬 Ask AI Assistant", type="primary", use_container_width=True)
     with col2:
         if st.button("🗑️ Clear Chat", use_container_width=True):
             st.session_state['ai_conversation'] = []

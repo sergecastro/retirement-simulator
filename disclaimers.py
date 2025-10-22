@@ -41,14 +41,14 @@ own risk.**
 
 
 # =============================================================================
-# AI ADVISOR DISCLAIMER (Use at start of AI chat and periodically)
+# AI PLANNING ASSISTANT DISCLAIMER (Use at start of AI chat and periodically)
 # =============================================================================
 
 AI_ADVISOR_DISCLAIMER = """
-**🤖 AI FINANCIAL ADVISOR - IMPORTANT NOTICE:**
+**🤖 AI PLANNING ASSISTANT - IMPORTANT NOTICE:**
 
-This AI assistant uses Claude (Anthropic) to provide **general educational information** 
-about retirement planning concepts. 
+This AI assistant uses Claude (Anthropic) to provide **general educational information**
+about retirement planning concepts.
 
 **What This AI Does:**
 ✅ Explains financial planning concepts in plain English
@@ -59,7 +59,7 @@ about retirement planning concepts.
 **What This AI Does NOT Do:**
 ❌ Does NOT provide personalized financial advice
 ❌ Does NOT recommend specific investments or securities
-❌ Does NOT replace professional financial advisors
+❌ Does NOT replace qualified financial professionals
 ❌ Does NOT guarantee accuracy of any information
 ❌ Does NOT act in a fiduciary capacity
 
@@ -69,10 +69,10 @@ about retirement planning concepts.
 - AI cannot provide tax, legal, or investment advice
 - AI responses are not tailored to your specific needs
 
-**⚠️ Always verify important information with qualified professionals before making 
+**⚠️ Always verify important information with qualified professionals before making
 financial decisions.**
 
-Your data is processed in real-time and is not permanently stored. We prioritize your 
+Your data is processed in real-time and is not permanently stored. We prioritize your
 privacy and data security.
 """
 
@@ -432,8 +432,8 @@ USAGE IN ai_advisor.py:
 
 import disclaimers
 
-def show_ai_advisor(user_data, financial_data, results):
-    st.header("🤖 AI Financial Advisor")
+def show_ai_consultation(user_data, financial_data, results):
+    st.header("🤖 AI Planning Assistant")
     
     # Show disclaimer FIRST
     disclaimers.show_ai_advisor_disclaimer()
