@@ -585,6 +585,8 @@ if 'simulation_results' in st.session_state:
         # IRMAA Medicare Planning Analysis (NEW!)
         try:
             st.markdown("---")
+            # ✅ REGULATORY COMPLIANCE: Show Medicare/IRMAA disclaimer
+            disclaimers.show_medicare_disclaimer()
             show_irmaa_analysis(results, stored_user_data, stored_sim_params)
         except Exception as e:
             st.error(f"IRMAA analysis error: {str(e)}")
