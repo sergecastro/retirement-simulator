@@ -1,4 +1,4 @@
-# pages/financial_inputs.py - COMPLETE with RELIABLE Goals (individual fields)
+# pages/financial_inputs.py - COMPLETE with RELIABLE Goals (individual fields) + CUSTOM EXPENSES
 import streamlit as st
 from datetime import date
 from financial_utils import (
@@ -152,15 +152,49 @@ def collect_financial_data():
             key="input_other_expenses"
         )
     
-    total_expenses = calculate_total_expenses(
+    # ============================================
+    # CUSTOM EXPENSES SECTION (NEW!)
+    # ============================================
+    st.markdown("---")
+    st.subheader("📝 Custom Monthly Expenses")
+    
+    # Get custom expenses from session state (loaded from intake JSON)
+    custom_expenses = st.session_state.get('custom_expenses', [])
+    
+    if custom_expenses:
+        st.info(f"ℹ️ {len(custom_expenses)} custom expense(s) imported from intake app")
+        
+        # Display custom expenses in a nice format
+        for idx, expense in enumerate(custom_expenses):
+            col1, col2, col3 = st.columns([3, 2, 2])
+            with col1:
+                st.write(f"**{expense.get('Name', 'N/A')}**")
+            with col2:
+                st.write(f"${expense.get('Monthly Amount', 0):,.2f}/month")
+            with col3:
+                st.write(f"*{expense.get('Category', 'N/A')}*")
+        
+        # Calculate total custom expenses
+        custom_expenses_total = sum(expense.get('Monthly Amount', 0) for expense in custom_expenses)
+        st.success(f"📊 **Total Custom Expenses: ${custom_expenses_total:,.2f}/month**")
+    else:
+        st.caption("No custom expenses defined. You can add them in the intake app.")
+        custom_expenses_total = 0.0
+    
+    # ============================================
+    # CALCULATE TOTAL EXPENSES (including custom)
+    # ============================================
+    base_expenses = calculate_total_expenses(
         housing, utilities, groceries, transportation, healthcare,
         insurance, property_tax, entertainment, restaurants, travel,
         education, childcare, clothing, charitable, miscellaneous, other_expenses
     )
+    
+    total_expenses = base_expenses + custom_expenses_total
     st.session_state['input_total_expenses'] = total_expenses
     
     # Assets section
-    st.header("🏦 Assets")
+    st.header("🦠 Assets")
     
     st.subheader("🏠 Real Estate")
     col1, col2 = st.columns(2)
@@ -208,7 +242,7 @@ def collect_financial_data():
     
     if partner_exists:
         st.markdown("---")
-        st.subheader("👥 Partner Retirement Accounts")
+        st.subheader("💥 Partner Retirement Accounts")
         st.info("Partner detected - enter retirement account balances for RMD calculations")
         
         col1, col2 = st.columns(2)
@@ -354,6 +388,10 @@ def collect_financial_data():
         net_worth = liquid_assets + primary_residence + secondary_residence + vehicles + jewelry + crypto - total_liabilities
         st.metric("Estimated Net Worth", f"${net_worth:,.0f}")
     
+    # Show custom expenses impact on surplus
+    if custom_expenses_total > 0:
+        st.info(f"ℹ️ Custom expenses (${custom_expenses_total:,.2f}/month) are included in your total expenses and surplus calculation")
+    
     # ============================================
     # RELIABLE GOALS SECTION - Individual Input Fields
     # ============================================
@@ -407,9 +445,12 @@ def collect_financial_data():
                     st.session_state['goals_list'][idx]['amount'] = goal_amount
                 
                 with col3:
+                    default_year = date.today().year + 10
+                    year_value = goal_data.get('year', default_year)
+                    year = int(year_value) if year_value is not None else default_year
                     goal_year = st.number_input(
                         "Target Year:",
-                        value=int(goal_data.get('year', date.today().year + 10)),
+                        value=year,
                         min_value=date.today().year,
                         max_value=date.today().year + 50,
                         step=1,
@@ -450,7 +491,7 @@ def collect_financial_data():
         else:
             st.warning("Fill in goal names and amounts for simulation")
     
-    # Return all data
+    # Return all data (including custom expenses)
     return {
         'total_income': total_income,
         'total_expenses': total_expenses,
@@ -465,5 +506,7 @@ def collect_financial_data():
         'partner_four01k_403b_balance': partner_four01k_balance,
         'other_assets': vehicles + jewelry + crypto,
         'goal_costs': goal_costs,
-        'partner_liabilities': 0
+        'partner_liabilities': 0,
+        'custom_expenses': custom_expenses,
+        'custom_expenses_total': custom_expenses_total
     }

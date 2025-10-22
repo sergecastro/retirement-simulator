@@ -3,7 +3,38 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
+import json
 from datetime import date
+
+
+# ============================================================
+# HELPER: Register chart data for Claude explanation system
+# ============================================================
+def register_chart_data(chart_id, title, fig, data_summary):
+    """
+    Register chart data for Claude explanation system.
+
+    Args:
+        chart_id: Unique identifier for this chart
+        title: Human-readable title
+        fig: Plotly figure object
+        data_summary: Dictionary with key metrics/summary data
+    """
+    if '__chart_registry__' not in st.session_state:
+        st.session_state.__chart_registry__ = {}
+
+    # Convert Plotly figure to JSON (this is the KEY step!)
+    plotly_json = fig.to_json()
+
+    st.session_state.__chart_registry__[chart_id] = {
+        'title': title,
+        'data': {
+            'plotly_spec': json.loads(plotly_json),  # Full Plotly figure spec
+            'summary': data_summary  # Additional context
+        }
+    }
+
+    print(f"[Chart Registry] Registered: {chart_id} with {len(fig.data)} traces")
 
 def show_sankey(results):
     st.subheader("💰 Cash Flow Analysis (Sankey Diagram)")
@@ -50,7 +81,51 @@ def show_sankey(results):
             )
         ))
         fig.update_layout(title="Cash Flow Sankey Diagram", height=500)
-        st.plotly_chart(fig, use_container_width=True)
+
+        # Register chart data for Claude explanations
+        data_summary = {
+            "chart_type": "sankey_cash_flow",
+            "total_income": float(total_income),
+            "total_expenses": float(total_expenses),
+            "total_taxes": float(total_taxes),
+            "total_savings": float(total_savings),
+            "total_rmd": float(total_rmd),
+            "inheritance_total": float(inheritance_total),
+            "college_total": float(college_total),
+            "net_savings_rate": float(total_savings / total_income * 100) if total_income > 0 else 0,
+            "major_flows": [
+                {"from": "Primary Income", "to": "Total Available", "amount": float(total_income)},
+                {"from": "Total Available", "to": "Taxes", "amount": float(total_taxes)},
+                {"from": "Total Available", "to": "Living Expenses", "amount": float(total_expenses)},
+                {"from": "Total Available", "to": "Net Savings", "amount": float(max(0, total_savings))}
+            ]
+        }
+
+        register_chart_data(
+            chart_id="sankey_cash_flow",
+            title="Cash Flow Sankey Diagram",
+            fig=fig,
+            data_summary=data_summary
+        )
+
+        # Inject chart data as JavaScript
+        chart_data_json = json.dumps({
+            'chart_id': 'sankey_cash_flow',
+            'title': 'Cash Flow Sankey Diagram',
+            'data_summary': data_summary
+        })
+
+        st.components.v1.html(f"""
+        <script>
+        if (!window.parent.__CHART_DATA_REGISTRY__) {{
+            window.parent.__CHART_DATA_REGISTRY__ = {{}};
+        }}
+        window.parent.__CHART_DATA_REGISTRY__['sankey_cash_flow'] = {chart_data_json};
+        console.log('[ChartRegistry] Registered sankey_cash_flow:', window.parent.__CHART_DATA_REGISTRY__['sankey_cash_flow']);
+        </script>
+        """, height=0)
+
+        st.plotly_chart(fig, use_container_width=True, key="sankey_chart")
     else:
         st.info("Insufficient data for Sankey diagram")
 
@@ -148,8 +223,48 @@ def show_monte_carlo(results):
     
     # Format y-axis as currency
     fig.update_yaxes(tickformat="$,.0f")
-    
-    st.plotly_chart(fig, use_container_width=True)
+
+    # Register chart data for Claude explanations
+    data_summary = {
+        "chart_type": "monte_carlo_simulation",
+        "num_iterations": int(num_iterations),
+        "num_years": int(num_years),
+        "start_year": int(years[0]),
+        "end_year": int(years[-1]),
+        "success_rate": float(success_rate),
+        "median_final_savings": float(percentile_50[-1]),
+        "optimistic_final_savings": float(percentile_90[-1]),
+        "pessimistic_final_savings": float(percentile_10[-1]),
+        "probability_positive": float((mc_df.iloc[-1].values > 0).sum() / num_iterations * 100),
+        "probability_above_1m": float((mc_df.iloc[-1].values > 1_000_000).sum() / num_iterations * 100),
+        "probability_above_5m": float((mc_df.iloc[-1].values > 5_000_000).sum() / num_iterations * 100),
+    }
+
+    register_chart_data(
+        chart_id="monte_carlo_simulation",
+        title=f"Monte Carlo Simulation: {num_iterations} Scenarios",
+        fig=fig,
+        data_summary=data_summary
+    )
+
+    # Inject chart data as JavaScript
+    chart_data_json = json.dumps({
+        'chart_id': 'monte_carlo_simulation',
+        'title': f"Monte Carlo Simulation: {num_iterations} Scenarios",
+        'data_summary': data_summary
+    })
+
+    st.components.v1.html(f"""
+    <script>
+    if (!window.parent.__CHART_DATA_REGISTRY__) {{
+        window.parent.__CHART_DATA_REGISTRY__ = {{}};
+    }}
+    window.parent.__CHART_DATA_REGISTRY__['monte_carlo_simulation'] = {chart_data_json};
+    console.log('[ChartRegistry] Registered monte_carlo_simulation:', window.parent.__CHART_DATA_REGISTRY__['monte_carlo_simulation']);
+    </script>
+    """, height=0)
+
+    st.plotly_chart(fig, use_container_width=True, key="monte_carlo_chart")
     
     # Display key statistics
     col1, col2, col3, col4 = st.columns(4)

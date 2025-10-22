@@ -1,75 +1,163 @@
-# integration/intake_loader.py
-import os, json, streamlit as st
+# integration/intake_loader.py - Cloud-compatible version with file upload
+import os
+import json
+from pathlib import Path
+import streamlit as st
+from data_manager_cloud import apply_scenario_data_safe
+from datetime import datetime
 
-def _apply_intake_dict(d: dict):
-    """Write values into st.session_state, matching your existing input_... keys.
-       Also sets children/inheritance tables if present, and recomputes totals if missing."""
-    # 1) Apply all scalar fields
-    for k, v in d.items():
-        if k in ("children_rows", "inherit_rows", "goals_data"):
-            continue
-        if k.startswith("input_"):
-            st.session_state[k] = v
-        else:
-            # also accept plain keys from older/simpler exporters
-            st.session_state[f"input_{k}"] = v
+def sanitize_intake_data(data: dict) -> dict:
+    """
+    Sanitize imported data to prevent validation errors.
+    - Caps birth years at reasonable max (current year + 20)
+    - Validates other fields
+    """
+    max_birth_year = datetime.now().year + 20  # Match family_inputs.py validation
+    warnings = []
 
-    # 2) Family tables (optional)
-    if "children_rows" in d:
-        st.session_state["children_rows"] = d["children_rows"]
-    if "inherit_rows" in d:
-        st.session_state["inherit_rows"] = d["inherit_rows"]
-    if "goals_data" in d:
-        st.session_state["goals_data"] = d["goals_data"]
+    # Sanitize children data
+    if "children_list" in data:
+        for child in data["children_list"]:
+            if "Birth Year" in child:
+                original_year = child["Birth Year"]
+                if original_year > max_birth_year:
+                    child["Birth Year"] = max_birth_year
+                    warnings.append(f"⚠️ Child '{child.get('Name', 'Unknown')}' birth year adjusted from {original_year} to {max_birth_year}")
 
-    # 3) Totals if missing
-    if "input_total_income" not in st.session_state:
-        income_keys = [
-            "input_salary_wages","input_self_employment_income","input_rental_income",
-            "input_investment_income","input_social_security_income","input_pension_income",
-            "input_other_income"
-        ]
-        st.session_state["input_total_income"] = float(sum(st.session_state.get(k, 0.0) or 0.0 for k in income_keys))
+    # Also sanitize children_rows (backward compatibility)
+    if "children_rows" in data:
+        for child in data["children_rows"]:
+            if "Birth Year" in child:
+                original_year = child["Birth Year"]
+                if original_year > max_birth_year:
+                    child["Birth Year"] = max_birth_year
+                    warnings.append(f"⚠️ Child '{child.get('Name', 'Unknown')}' birth year adjusted from {original_year} to {max_birth_year}")
 
-    if "input_total_expenses" not in st.session_state:
-        expense_keys = [
-            "input_housing_expenses","input_utilities_expenses","input_groceries_expenses",
-            "input_transportation_expenses","input_healthcare_expenses","input_insurance_expenses",
-            "input_property_tax_expenses","input_entertainment_expenses","input_restaurant_expenses",
-            "input_travel_expenses","input_education_expenses","input_childcare_expenses",
-            "input_clothing_expenses","input_charitable_donations","input_miscellaneous_expenses",
-            "input_other_expenses"
-        ]
-        st.session_state["input_total_expenses"] = float(sum(st.session_state.get(k, 0.0) or 0.0 for k in expense_keys))
+    # Show warnings to user
+    if warnings:
+        for warning in warnings:
+            st.sidebar.warning(warning)
 
-def intake_import_ui(shared_dir: str):
-    """Small sidebar UI block to import intake_payload.json from a known path or via drag&drop."""
+    return data
+
+def intake_import_ui(shared_dir: str = ""):
+    """Sidebar UI to import Intake JSON by path or upload."""
+    
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📥 Import from Intake App")
-
-    # Option A: type a path and click Load
-    default_path = os.path.join(shared_dir, "intake_payload.json")
-    path = st.sidebar.text_input("File path (.json):", value=default_path)
-    if st.sidebar.button("Load from path"):
-        if os.path.exists(path):
+    st.sidebar.markdown("### 🔥 Import from Intake App")
+    
+    # PATH LOADER - Fixed to point to SHARED folder at root level
+    current_dir = os.getcwd()
+    root_dir = Path(current_dir).parent
+    default_path = str(root_dir / "SHARED" / "intake_payload.json")
+    
+    # Use a session state key to track if we should load
+    if 'intake_path_to_load' not in st.session_state:
+        st.session_state.intake_path_to_load = None
+    
+    path = st.sidebar.text_input(
+        "Load from path:", 
+        value=default_path,
+        placeholder="C:/path/to/intake_payload.json",
+        key="intake_path_input"
+    )
+    
+    # Button sets a flag instead of loading directly
+    if st.sidebar.button("📂 Load from Path", use_container_width=True, key="load_path_btn"):
+        st.session_state.intake_path_to_load = path
+        st.rerun()
+    
+    # Actually load after rerun
+    if st.session_state.intake_path_to_load:
+        load_path = st.session_state.intake_path_to_load
+        st.session_state.intake_path_to_load = None  # Clear flag
+        
+        if os.path.exists(load_path):
             try:
-                with open(path, "r", encoding="utf-8") as f:
+                st.sidebar.info(f"📄 Loading from: {Path(load_path).name}")
+                
+                with open(load_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                _apply_intake_dict(data)
-                st.sidebar.success("✅ Intake data loaded. Review values, then run simulation.")
-                st.rerun()
-            except Exception as e:
-                st.sidebar.error(f"Failed to load: {e}")
-        else:
-            st.sidebar.warning("Path not found. Check the file exists.")
 
-    # Option B: drag&drop the JSON
-    uploaded = st.sidebar.file_uploader("…or drop intake_payload.json here", type=["json"])
+                if isinstance(data, dict):
+                    # Sanitize data to prevent validation errors
+                    data = sanitize_intake_data(data)
+
+                    # Apply the data
+                    apply_scenario_data_safe(data)
+
+                    # CRITICAL FIX: Load custom_expenses into session state
+                    if "custom_expenses" in data:
+                        st.session_state['custom_expenses'] = data['custom_expenses']
+                    else:
+                        st.session_state['custom_expenses'] = []
+
+                    # Set scenario name
+                    scenario_name = Path(load_path).stem.replace("_", " ").replace("-", " ").title()
+                    final_name = f"Imported: {scenario_name}"
+
+                    st.session_state["current_scenario"] = final_name
+                    st.session_state['scenario_loaded'] = True
+                    st.session_state['scenario_auto_loaded'] = True
+
+                    st.sidebar.success(f"✅ Loaded: {final_name}")
+                    st.sidebar.info("💡 Use 'Download Scenario' to save this data!")
+                else:
+                    st.sidebar.error("❌ Invalid JSON format")
+                    
+            except json.JSONDecodeError as e:
+                st.sidebar.error(f"❌ Invalid JSON: {e}")
+            except Exception as e:
+                st.sidebar.error(f"❌ Load failed: {e}")
+        else:
+            st.sidebar.warning(f"⚠️ File not found: {load_path}")
+    
+    # FILE UPLOADER
+    st.sidebar.markdown("**...or upload file:**")
+    uploaded = st.sidebar.file_uploader(
+        "Drop intake_payload.json here", 
+        type=["json"],
+        label_visibility="collapsed",
+        key="intake_file_upload"
+    )
+    
     if uploaded is not None:
         try:
+            st.sidebar.info(f"📄 Processing: {uploaded.name}")
+            
             data = json.loads(uploaded.getvalue().decode("utf-8"))
-            _apply_intake_dict(data)
-            st.sidebar.success("✅ Intake data loaded from upload.")
-            st.rerun()
+
+            if isinstance(data, dict):
+                # Sanitize data to prevent validation errors
+                data = sanitize_intake_data(data)
+
+                # Apply the data
+                apply_scenario_data_safe(data)
+
+                # CRITICAL FIX: Load custom_expenses into session state
+                if "custom_expenses" in data:
+                    st.session_state['custom_expenses'] = data['custom_expenses']
+                else:
+                    st.session_state['custom_expenses'] = []
+
+                # Set scenario name
+                scenario_name = Path(uploaded.name).stem.replace("_", " ").replace("-", " ").title()
+                final_name = f"Imported: {scenario_name}"
+                st.session_state["current_scenario"] = final_name
+                st.session_state['scenario_loaded'] = True
+                st.session_state['scenario_auto_loaded'] = True
+
+                st.sidebar.success(f"✅ Loaded: {final_name}")
+                st.sidebar.info("💡 Use 'Download Scenario' to save this data!")
+                st.rerun()
+            else:
+                st.sidebar.error("❌ Invalid JSON format")
+                
+        except json.JSONDecodeError as e:
+            st.sidebar.error(f"❌ Invalid JSON: {e}")
         except Exception as e:
-            st.sidebar.error(f"Upload failed: {e}")
+            st.sidebar.error(f"❌ Upload failed: {e}")
+
+# Back-compat alias for older imports
+def sidebar_intake_importer():
+    return intake_import_ui()

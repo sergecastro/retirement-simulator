@@ -2,7 +2,38 @@
 import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
+import json
 from datetime import date
+
+
+# ============================================================
+# HELPER: Register chart data for Claude explanation system
+# ============================================================
+def register_chart_data(chart_id, title, fig, data_summary):
+    """
+    Register chart data for Claude explanation system.
+
+    Args:
+        chart_id: Unique identifier for this chart
+        title: Human-readable title
+        fig: Plotly figure object
+        data_summary: Dictionary with key metrics/summary data
+    """
+    if '__chart_registry__' not in st.session_state:
+        st.session_state.__chart_registry__ = {}
+
+    # Convert Plotly figure to JSON
+    plotly_json = fig.to_json()
+
+    st.session_state.__chart_registry__[chart_id] = {
+        'title': title,
+        'data': {
+            'plotly_spec': json.loads(plotly_json),
+            'summary': data_summary
+        }
+    }
+
+    print(f"[Chart Registry] Registered: {chart_id} with {len(fig.data)} traces")
 
 # 2025 IRMAA Income Thresholds (inflation-adjusted estimates)
 IRMAA_BRACKETS_2025 = {
@@ -208,10 +239,52 @@ def show_irmaa_analysis(results, user_data, sim_params):
         height=500,
         hovermode='x unified'
     )
-    
+
     fig.update_yaxes(tickformat="$,.0f")
-    
-    st.plotly_chart(fig, use_container_width=True)
+
+    # Register chart data for Claude explanations
+    data_summary = {
+        "chart_type": "irmaa_magi_trajectory",
+        "filing_status": filing_status,
+        "current_magi": float(df_copy['MAGI_For_IRMAA'].iloc[0]),
+        "average_magi": float(df_copy['MAGI_For_IRMAA'].mean()),
+        "max_magi": float(df_copy['MAGI_For_IRMAA'].max()),
+        "min_magi": float(df_copy['MAGI_For_IRMAA'].min()),
+        "years_above_base_threshold": int((df_copy['MAGI_For_IRMAA'] > brackets[0]['max']).sum()),
+        "threshold_crossings": len(df_copy[df_copy['MAGI_For_IRMAA'] > brackets[1]['min']]),
+        "irmaa_brackets": [{
+            'threshold': int(b['min']),
+            'monthly_surcharge': float(b['surcharge_monthly']),
+            'annual_cost_single': float((b['surcharge_monthly'] + b['part_d_base']) * 12),
+            'annual_cost_couple': float((b['surcharge_monthly'] + b['part_d_base']) * 12 * 2)
+        } for b in brackets[1:]]  # Skip base bracket
+    }
+
+    register_chart_data(
+        chart_id="irmaa_magi_trajectory",
+        title=f"MAGI Trajectory vs IRMAA Thresholds",
+        fig=fig,
+        data_summary=data_summary
+    )
+
+    # Inject chart data as JavaScript
+    chart_data_json = json.dumps({
+        'chart_id': 'irmaa_magi_trajectory',
+        'title': 'MAGI Trajectory vs IRMAA Thresholds',
+        'data_summary': data_summary
+    })
+
+    st.components.v1.html(f"""
+    <script>
+    if (!window.parent.__CHART_DATA_REGISTRY__) {{
+        window.parent.__CHART_DATA_REGISTRY__ = {{}};
+    }}
+    window.parent.__CHART_DATA_REGISTRY__['irmaa_magi_trajectory'] = {chart_data_json};
+    console.log('[ChartRegistry] Registered irmaa_magi_trajectory:', window.parent.__CHART_DATA_REGISTRY__['irmaa_magi_trajectory']);
+    </script>
+    """, height=0)
+
+    st.plotly_chart(fig, use_container_width=True, key="irmaa_magi_chart")
     
     # Annual cost visualization
     st.markdown("### 💰 Annual IRMAA Costs Over Time")
@@ -233,8 +306,48 @@ def show_irmaa_analysis(results, user_data, sim_params):
         yaxis_title="Annual IRMAA Cost ($)",
         height=400
     )
-    
-    st.plotly_chart(fig2, use_container_width=True)
+
+    # Register chart data for Claude explanations
+    data_summary2 = {
+        "chart_type": "irmaa_annual_costs",
+        "filing_status": filing_status,
+        "total_irmaa_over_period": float(df_copy['IRMAA_Annual_Cost'].sum()),
+        "average_annual_cost": float(df_copy['IRMAA_Annual_Cost'].mean()),
+        "max_annual_cost": float(df_copy['IRMAA_Annual_Cost'].max()),
+        "years_with_costs": int((df_copy['IRMAA_Annual_Cost'] > 0).sum()),
+        "years_with_surcharges": int((df_copy['IRMAA_Monthly_Surcharge'] > 0).sum()),
+        "current_year_cost": float(df_copy['IRMAA_Annual_Cost'].iloc[0]),
+        "year_by_year_costs": [
+            {"year": int(row['Year']), "cost": float(row['IRMAA_Annual_Cost'])}
+            for _, row in df_copy[['Year', 'IRMAA_Annual_Cost']].iterrows()
+        ]
+    }
+
+    register_chart_data(
+        chart_id="irmaa_annual_costs",
+        title="Annual IRMAA Costs Over Time",
+        fig=fig2,
+        data_summary=data_summary2
+    )
+
+    # Inject chart data as JavaScript
+    chart_data_json2 = json.dumps({
+        'chart_id': 'irmaa_annual_costs',
+        'title': 'Annual IRMAA Costs Over Time',
+        'data_summary': data_summary2
+    })
+
+    st.components.v1.html(f"""
+    <script>
+    if (!window.parent.__CHART_DATA_REGISTRY__) {{
+        window.parent.__CHART_DATA_REGISTRY__ = {{}};
+    }}
+    window.parent.__CHART_DATA_REGISTRY__['irmaa_annual_costs'] = {chart_data_json2};
+    console.log('[ChartRegistry] Registered irmaa_annual_costs:', window.parent.__CHART_DATA_REGISTRY__['irmaa_annual_costs']);
+    </script>
+    """, height=0)
+
+    st.plotly_chart(fig2, use_container_width=True, key="irmaa_costs_chart")
     
     # Detailed year-by-year breakdown
     with st.expander("📋 Year-by-Year IRMAA Breakdown"):

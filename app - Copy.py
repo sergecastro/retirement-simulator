@@ -1,7 +1,6 @@
 # app.py - COMPLETE FULL VERSION - Widget State Fixed - NO TRUNCATION
 import streamlit as st
 import sys
-import os
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -9,7 +8,7 @@ from financial_utils import get_all_inputs_as_dict, display_summary_metrics
 from pages.user_inputs import setup_sidebar
 from pages.financial_inputs import collect_financial_data
 from pages.family_inputs import collect_family_events
-from data_manager_cloud import manage_scenarios_cloud as manage_scenarios, apply_scenario_data_safe
+from data_manager import manage_scenarios
 from simulation_core import run_simulation
 from household_events import build_child_objects, build_inheritances
 from basic_analysis import run_simple_fallback_simulation, calculate_simple_health_score
@@ -23,81 +22,19 @@ from visualization.irmaa_analysis import show_irmaa_analysis
 from integration.intake_loader import intake_import_ui
 from streamlit_explain_api import inject_explain_visual_system
 
-# Import intake module for Data Entry mode
-from intake_integrated import show_intake_questionnaire
-
-# Import disclaimers module for regulatory compliance
-import disclaimers
-
 # Page config
-st.set_page_config(page_title="ForeCash Retirement Planner", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
-
-# PROFESSIONAL CSS STYLING
-st.markdown("""
-<style>
-    /* Compact headers */
-    h1 {
-        padding-top: 0rem !important;
-        padding-bottom: 0.5rem !important;
-    }
-    h2 {
-        padding-top: 0.5rem !important;
-        padding-bottom: 0.25rem !important;
-    }
-    h3 {
-        padding-top: 0.25rem !important;
-        padding-bottom: 0.25rem !important;
-    }
-
-    /* Reduce spacing between elements */
-    .element-container {
-        margin-bottom: 0.5rem !important;
-    }
-
-    /* Make metrics look professional */
-    [data-testid="stMetricValue"] {
-        font-size: 1.8rem !important;
-        font-weight: 600 !important;
-    }
-
-    /* Tighter spacing for columns */
-    .row-widget {
-        gap: 0.5rem !important;
-    }
-
-    /* Clean separator lines */
-    hr {
-        margin-top: 1rem !important;
-        margin-bottom: 1rem !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="Ultimate Family Retirement Plus", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
 
 # CHECK FLASK SERVER CONNECTION (does NOT auto-start)
-import os
 import socket
 
 def check_flask_connection():
     """Check if Flask explanation server is running"""
     try:
-        # Get Flask API URL from secrets (cloud) or environment (local)
-        api_url = os.getenv('FLASK_API_URL', 'http://localhost:5000')
-
-        # If using Streamlit secrets, prefer that
-        if hasattr(st, 'secrets') and 'FLASK_API_URL' in st.secrets:
-            api_url = st.secrets['FLASK_API_URL']
-
-        # For cloud URLs, use HTTP health check instead of socket
-        if api_url.startswith('http'):
-            import requests
-            response = requests.get(f"{api_url}/health", timeout=3)
-            return response.status_code == 200
-        else:
-            # Fallback to socket for localhost
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(1)
-                result = s.connect_ex(('localhost', 5000))
-                return result == 0
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(1)
+            result = s.connect_ex(('localhost', 8502))
+            return result == 0
     except:
         return False
 
@@ -117,168 +54,32 @@ if not check_flask_connection():
     The app will work normally - you just won't have AI explanations for charts.
     """)
 
-# Initialize authentication state
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
-if 'IS_TRUSTED_USER' not in st.session_state:
-    st.session_state.IS_TRUSTED_USER = False
+st.title("🏠 Ultimate Family Retirement Planning Plus v3.0")
+st.markdown("*The Most Advanced Family Lifecycle Financial Simulation & Planning Tool*")
 
-# Show password screen ONLY if not authenticated
-if not st.session_state.authenticated:
-    st.title("🏠 ForeCash Family Lifecycle Retirement Planner v3.0")
-    st.markdown("*Interactive Financial Planning & Simulation Tool*")
+# Password protection
+st.header("🔒 Access Control")
+password = st.text_input("Enter password:", type="password")
+if password not in ["abcd123", "uhiRR2938foq"]:
+    st.error("🚫 Incorrect password.")
+    st.info("Demo: 'abcd123' | Trusted: 'uhiRR2938foq'")
+    st.stop()
 
-    # Password protection
-    st.header("🔒 Access Control")
-    st.markdown("Enter your password to access the retirement planning tools.")
-
-    # Show demo password only
-    st.markdown("""
-    <div style='background-color: #f0f2f6; padding: 15px; border-radius: 5px; margin: 10px 0;'>
-        <p style='margin: 0; color: #666; font-size: 14px;'><strong>Demo Access:</strong></p>
-        <p style='margin: 5px 0 0 0; font-size: 20px; font-family: monospace;'>
-            Password: <code style='background: #fff; padding: 5px 10px; border-radius: 3px; font-size: 20px;'>abcd123</code>
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    password = st.text_input("Enter password:", type="password", placeholder="Type or paste password here")
-
-    # Only show error if user actually entered something wrong
-    if password and password not in ["abcd123", "uhiRR2938foq"]:
-        st.error("🚫 Incorrect password. Please try again.")
-        st.stop()
-    elif not password:
-        st.info("👆 Please enter a password to continue")
-        st.stop()
-    else:
-        # Password correct - authenticate!
-        st.session_state.authenticated = True
-        st.session_state.IS_TRUSTED_USER = (password == "uhiRR2938foq")
-        st.rerun()
-
-# User is authenticated - get IS_TRUSTED_USER from session state
-IS_TRUSTED_USER = st.session_state.IS_TRUSTED_USER
-
-# ✅ REGULATORY COMPLIANCE: Require disclaimer acknowledgment
-disclaimers.require_disclaimer_acknowledgment()
-
-# Initialize mode in session state if not exists
-if 'app_mode' not in st.session_state:
-    st.session_state.app_mode = None  # Not chosen yet
-
-# Initialize intake_in_progress flag
-if 'intake_in_progress' not in st.session_state:
-    st.session_state.intake_in_progress = False
-
-# ========== MODE SELECTOR (Only show if mode not chosen OR if explicitly requested) ==========
-# Don't show mode selector if user is in the middle of Intake
-if st.session_state.app_mode is None and not st.session_state.intake_in_progress:
-    # First time - show access level
-    if IS_TRUSTED_USER:
-        st.success("✅ Trusted User Access Granted - Full features enabled")
-    else:
-        st.info("📌 Demo Mode - Basic features enabled")
-
-    st.divider()
-    st.header("🚀 Choose Your Mode")
-    st.markdown("""
-    Select how you'd like to use the app:
-    - **📝 Data Entry Mode**: Step-by-step questionnaire to enter all your financial information
-    - **📊 Analysis Mode**: Run simulations, view charts, and use AI advisor (main app)
-    """)
-
-    # Mode selector buttons
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📝 Data Entry Mode", use_container_width=True, type="secondary"):
-            st.session_state.app_mode = 'Data Entry'
-            st.session_state.intake_in_progress = True  # Mark that user is entering Intake
-            st.rerun()
-    with col2:
-        if st.button("📊 Analysis Mode", use_container_width=True, type="primary"):
-            st.session_state.app_mode = 'Analysis'
-            st.rerun()
-
-    st.stop()  # Don't proceed until user chooses
-
-st.divider()
-
-# ========== ROUTE TO APPROPRIATE MODE ==========
-if st.session_state.app_mode == 'Data Entry':
-    # Call the intake questionnaire module (separate file)
-    show_intake_questionnaire()
-    st.stop()  # Stop here, don't load main app
-
-# If we reach here, we're in Analysis Mode - continue with main app as normal
-
-# AUTO-LOAD INTAKE DATA if user just completed Intake questionnaire
-if st.session_state.get('intake_just_completed', False):
-    import json
-    from pathlib import Path
-    from data_manager_cloud import apply_scenario_data_safe
-
-    # Clear the flag
-    st.session_state.intake_just_completed = False
-
-    # Load the intake data
-    current_dir = os.getcwd()
-    root_dir = Path(current_dir).parent
-    intake_path = root_dir / "SHARED" / "intake_payload.json"
-
-    if intake_path.exists():
-        try:
-            with open(intake_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-
-            # Apply the data to session state
-            apply_scenario_data_safe(data)
-
-            # Load custom_expenses if exists
-            if "custom_expenses" in data:
-                st.session_state['custom_expenses'] = data['custom_expenses']
-            else:
-                st.session_state['custom_expenses'] = []
-
-            # Set scenario name
-            st.session_state["current_scenario"] = "Imported from Intake"
-            st.session_state['scenario_loaded'] = True
-
-            # CELEBRATION BALLOONS! 🎉
-            st.balloons()
-
-            # Force scroll to top of Analysis page
-            st.components.v1.html("""
-            <script>
-            window.parent.scrollTo(0, 0);
-            </script>
-            """, height=0)
-
-            st.success("🎉 **Congratulations!** Your Intake data has been automatically loaded!")
-            st.info("💡 You can now review your data below and run simulations.")
-        except Exception as e:
-            st.error(f"❌ Error loading Intake data: {e}")
-
-# Subtle mode switcher at top (for Analysis mode)
-with st.container():
-    col1, col2, col3 = st.columns([6, 1, 1])
-    with col2:
-        if st.button("📝 Data Entry", help="Switch to Data Entry Mode", use_container_width=True):
-            st.session_state.app_mode = 'Data Entry'
-            st.session_state.intake_in_progress = True
-            st.rerun()
-    with col3:
-        st.markdown("**📊 Analysis**")
-    st.divider()
+IS_TRUSTED_USER = (password == "uhiRR2938foq")
+st.session_state['IS_TRUSTED_USER'] = IS_TRUSTED_USER
+if IS_TRUSTED_USER:
+    st.success("✅ Trusted User Access Granted - Full features enabled")
+else:
+    st.info("📌 Demo Mode - Basic features enabled")
 
 # Inject Explain Visual system (Claude-powered chart explanations)
 inject_explain_visual_system()
 
 
+
 # CRITICAL FIX: Load scenarios AFTER intake to respect imported scenarios
 age_group_for_autoload = st.session_state.get('input_age_group', '70+')
-# For deployment: intake_import_ui uses file uploader (no shared dir needed)
-intake_import_ui(shared_dir="")
+intake_import_ui(shared_dir=r"C:\Users\serge\Desktop\retirement-simulator-dev\retirement-simulator\SHARED")
 scenario_data = manage_scenarios(IS_TRUSTED_USER, age_group_for_autoload)
 
 
@@ -287,69 +88,59 @@ scenario_data = manage_scenarios(IS_TRUSTED_USER, age_group_for_autoload)
 def collect_user_inputs():
     """Collect user inputs reading from loaded scenario data"""
     st.header("👤 User Profile")
-
-    # Welcome message
-    st.markdown("""
-    **Welcome!** Please review and update your information below. Make any necessary corrections
-    before running your simulation to ensure accurate results.
-    """)
-
+    
     col1, col2 = st.columns(2)
-
+    
     with col1:
-        # User name field
-        user_name = st.text_input(
-            "Your Name:",
-            value=st.session_state.get('input_user_name', ''),
-            placeholder="Enter your name",
-            key="input_user_name"
-        )
-
         age_group_options = ["25-55", "56-69", "70+"]
         current_age_group = st.session_state.get('input_age_group', '70+')
         try:
             age_group_index = age_group_options.index(current_age_group)
         except ValueError:
             age_group_index = 2  # Default to 70+
-
+        
         age_group = st.selectbox("Age Group:", age_group_options, index=age_group_index, key="input_age_group")
-
+        
         age = st.number_input(
-            "Your Age:",
-            min_value=18,
-            max_value=100,
+            "Your Age:", 
+            min_value=18, 
+            max_value=100, 
             value=int(st.session_state.get('input_age', 76)),
             key="input_age"
         )
-
+        
+        # CRITICAL FIX: Added key="input_partner_exists" so checkbox updates session state immediately
+        partner_exists = st.checkbox(
+            "Partner/Spouse exists?", 
+            value=st.session_state.get('input_partner_exists', True),
+            key="input_partner_exists"  # THIS IS THE KEY FIX
+        )
+    
     with col2:
-        # Always show partner fields - leave empty if no partner
-        partner_name = st.text_input(
-            "Partner's Name:",
-            value=st.session_state.get('input_partner_name', ''),
-            placeholder="Leave empty if no partner",
-            key="input_partner_name"
-        )
-
-        partner_age = st.number_input(
-            "Partner's Age:",
-            min_value=18,
-            max_value=100,
-            value=int(st.session_state.get('input_partner_age', 0)) if st.session_state.get('input_partner_age', 0) > 0 else 35,
-            key="input_partner_age",
-            help="Leave at default or set to 0 if no partner"
-        )
-
-    # Determine if partner exists based on whether name is filled
-    partner_exists = bool(partner_name and partner_name.strip())
-
+        if partner_exists:
+            partner_name = st.text_input(
+                "Partner's Name:", 
+                value=st.session_state.get('input_partner_name', 'Judith'),
+                key="input_partner_name"
+            )
+            
+            partner_age = st.number_input(
+                "Partner's Age:", 
+                min_value=18, 
+                max_value=100, 
+                value=int(st.session_state.get('input_partner_age', 74)),
+                key="input_partner_age"
+            )
+        else:
+            partner_name = ""
+            partner_age = 35
+    
     return {
         'age_group': age_group,
         'age': age,
         'partner_exists': partner_exists,
         'partner_name': partner_name,
-        'partner_age': partner_age,
-        'user_name': user_name
+        'partner_age': partner_age
     }
 
 # Collect user data first (needed for manage_scenarios)
@@ -375,41 +166,8 @@ if current_scenario != "New Scenario":
 # Sidebar features
 features = setup_sidebar(IS_TRUSTED_USER)
 
-# ✅ REGULATORY COMPLIANCE: Show data privacy notice in sidebar
-disclaimers.show_data_privacy_notice()
-
 # Financial and family inputs (these will read from loaded session state)
 financial_data = collect_financial_data()
-
-# PROFESSIONAL DASHBOARD - Always visible
-st.markdown("---")
-st.subheader("📊 Financial Snapshot")
-col1, col2, col3, col4, col5 = st.columns(5)
-
-with col1:
-    annual_income = financial_data['total_income']
-    st.metric("Annual Income", f"${annual_income:,.0f}", delta=None, help="Total annual income from all sources")
-
-with col2:
-    annual_expenses = financial_data['total_expenses']
-    st.metric("Annual Expenses", f"${annual_expenses:,.0f}", delta=None, help="Total annual expenses")
-
-with col3:
-    monthly_surplus = financial_data['monthly_surplus']
-    surplus_color = "normal" if monthly_surplus >= 0 else "inverse"
-    st.metric("Monthly Cash Flow", f"${monthly_surplus:,.0f}", delta=None, help="Monthly income minus expenses")
-
-with col4:
-    total_assets = financial_data['liquid_assets'] + financial_data['primary_residence_value'] + financial_data.get('secondary_residence_value', 0)
-    net_worth = total_assets - financial_data['total_liabilities']
-    st.metric("Net Worth", f"${net_worth:,.0f}", delta=None, help="Assets minus liabilities")
-
-with col5:
-    emergency_months = financial_data['liquid_assets'] / (annual_expenses / 12) if annual_expenses > 0 else 0
-    st.metric("Emergency Fund", f"{emergency_months:.1f} mo", delta=None, help="Months of expenses covered by liquid assets")
-
-st.markdown("---")
-
 family_data = collect_family_events() if features.get('show_family_events', False) else None
 
 if family_data:
@@ -501,40 +259,32 @@ if st.button("🎯 Run Financial Simulation", type="primary", use_container_widt
                 st.session_state['user_data'] = user_data
                 st.session_state['sim_params'] = sim_params  # Store sim params for comparison
                 st.success("✅ Simulation Complete!")
-
-                # Info about AI chart explanations
-                st.info("💡 **AI Chart Explanations**: Click any chart below to activate the **?** buttons (or wait ~20 seconds for auto-load), then click **?** to get AI-powered insights about your data!")
-
+                
                 # Show Monte Carlo status
                 if 'monte_carlo_results' in results:
                     st.success("✅ Fresh Monte Carlo data generated - longevity analysis will be accurate")
                 else:
                     st.info("ℹ️ Monte Carlo not run - enable in parameters for longevity analysis")
-
+                
                 display_summary_metrics(results, sim_params['simulation_years'])
             else:
                 st.error("❌ Simulation returned no results")
                 
         except Exception as e:
             st.error(f"❌ Simulation error: {str(e)}")
-            st.info("💡 **Tip**: Check your inputs and try again. If the problem persists, try loading a saved scenario or starting fresh.")
+            st.write("**Debug Info:**")
+            st.write(f"• User data: {user_data}")
+            st.write(f"• Financial data keys: {list(financial_data.keys()) if financial_data else 'None'}")
+            if family_data:
+                st.write(f"• Family data keys: {list(family_data.keys())}")
+            import traceback
+            st.code(traceback.format_exc())
 
 
 
 # FIXED: Display results with proper variable scoping
 if 'simulation_results' in st.session_state:
     results = st.session_state['simulation_results']
-    
-    # INJECT CHART REGISTRY AFTER CHARTS ARE CREATED
-    if '__chart_registry__' in st.session_state and st.session_state['__chart_registry__']:
-        import json
-        registry_json = json.dumps(st.session_state['__chart_registry__'])
-        st.components.v1.html(f"""
-        <script>
-        window.parent.__CHART_DATA_REGISTRY__ = {registry_json};
-        console.log('[Injected After Charts] Registry:', window.parent.__CHART_DATA_REGISTRY__);
-        </script>
-        """, height=0)
     stored_family_data = st.session_state.get('family_data')
     stored_financial_data = st.session_state.get('financial_data')
     stored_user_data = st.session_state.get('user_data')
@@ -544,10 +294,7 @@ if 'simulation_results' in st.session_state:
     if results is not None:
         st.markdown("---")
         st.header("📊 Simulation Results & Analysis")
-
-        # ✅ REGULATORY COMPLIANCE: Show disclaimer before results
-        disclaimers.show_simulation_results_disclaimer()
-
+        
         # ============================================
         # DETAILED PROJECTION TABLE
         # ============================================
@@ -568,8 +315,6 @@ if 'simulation_results' in st.session_state:
         # Monte Carlo
         try:
             if features.get('show_monte_carlo') and 'monte_carlo_results' in results:
-                # ✅ REGULATORY COMPLIANCE: Show Monte Carlo disclaimer
-                disclaimers.show_monte_carlo_disclaimer()
                 show_monte_carlo(results)
         except Exception as e:
             st.error(f"Monte Carlo error: {str(e)}")
@@ -585,11 +330,11 @@ if 'simulation_results' in st.session_state:
         # IRMAA Medicare Planning Analysis (NEW!)
         try:
             st.markdown("---")
-            # ✅ REGULATORY COMPLIANCE: Show Medicare/IRMAA disclaimer
-            disclaimers.show_medicare_disclaimer()
             show_irmaa_analysis(results, stored_user_data, stored_sim_params)
         except Exception as e:
             st.error(f"IRMAA analysis error: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
         
         
         
@@ -731,6 +476,8 @@ if 'simulation_results' in st.session_state:
                             st.error("❌ Comparison failed to generate results")
         except Exception as e:
             st.error(f"Scenario comparison error: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
         
         # ============================================
         # DUAL SCENARIO ANALYSIS - COMPLETE VERSION
@@ -825,12 +572,14 @@ if 'simulation_results' in st.session_state:
                             st.error("❌ Dual analysis failed")
         except Exception as e:
             st.error(f"Dual scenario error: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
         
         # ============================================
-        # AI ADVISOR (Available to ALL users)
+        # AI ADVISOR (Trusted Users Only)
         # ============================================
         try:
-            if features.get('show_ai_advisor'):
+            if IS_TRUSTED_USER and features.get('show_ai_advisor'):
                 from ai_advisor import show_ai_consultation
                 st.markdown("---")
                 show_ai_consultation(results, stored_user_data, stored_financial_data, stored_sim_params)
@@ -850,8 +599,8 @@ if 'simulation_results' in st.session_state:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666;'>
-<p><strong>ForeCash Family Lifecycle Retirement Planner v3.0</strong></p>
-<p>Educational planning tool powered by Claude AI</p>
-<p>Privacy-First Design | Session-Only Data Storage | Educational Purposes Only</p>
+<p><strong>Ultimate Family Retirement Planning Plus v3.0</strong></p>
+<p>Combining the best of GROK and CLAUDE architectures</p>
+<p>Your trusted financial planning companion | 100% Private | AI-Powered</p>
 </div>
 """, unsafe_allow_html=True)
