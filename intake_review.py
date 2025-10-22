@@ -233,13 +233,15 @@ def show_assets_page(existing, save_payload, go_to_page):
 
 def show_liabilities_page(existing, save_payload, go_to_page):
     """Page 5: Liabilities & Debts"""
-    # Force scroll to top with JavaScript
+    st.header("💳 Liabilities & Debts")
+    # Force scroll to top with delayed JavaScript
     st.components.v1.html("""
     <script>
-    window.parent.scrollTo(0, 0);
+    setTimeout(function() {
+        window.parent.scrollTo({top: 0, behavior: 'instant'});
+    }, 50);
     </script>
     """, height=0)
-    st.header("💳 Liabilities & Debts")
     st.caption("Enter outstanding balances (leave at $0 if you don't have these)")
     
     mortgage = st.number_input(

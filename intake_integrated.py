@@ -371,13 +371,15 @@ def show_intake_questionnaire():
 
     # ===== PAGE 3: EXPENSES =====
     elif current_page == 'expenses':
-        # Force scroll to top with JavaScript
+        st.header("🏠 Monthly Expenses")
+        # Force scroll to top with delayed JavaScript
         st.components.v1.html("""
         <script>
-        window.parent.scrollTo(0, 0);
+        setTimeout(function() {
+            window.parent.scrollTo({top: 0, behavior: 'instant'});
+        }, 50);
         </script>
         """, height=0)
-        st.header("🏠 Monthly Expenses")
         st.markdown("*Enter your typical monthly expenses. Enter 0 if not applicable.*")
 
         # Expense fields with defaults
@@ -672,13 +674,15 @@ def show_intake_questionnaire():
 
     # ===== PAGE 7: REVIEW (FINAL PAGE with edit buttons!) =====
     elif current_page == 'review':
-        # Force scroll to top with JavaScript
+        st.header("📋 Review & Complete Your Intake")
+        # Force scroll to top with delayed JavaScript
         st.components.v1.html("""
         <script>
-        window.parent.scrollTo(0, 0);
+        setTimeout(function() {
+            window.parent.scrollTo({top: 0, behavior: 'instant'});
+        }, 50);
         </script>
         """, height=0)
-        st.header("📋 Review & Complete Your Intake")
         st.caption("Review all your information before completing - click any section to edit")
 
         # Profile Summary
