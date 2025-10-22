@@ -30,7 +30,7 @@ from intake_integrated import show_intake_questionnaire
 import disclaimers
 
 # Page config
-st.set_page_config(page_title="Ultimate Family Retirement Plus", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="ForeCash Retirement Planner", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
 
 # PROFESSIONAL CSS STYLING
 st.markdown("""
@@ -125,8 +125,8 @@ if 'IS_TRUSTED_USER' not in st.session_state:
 
 # Show password screen ONLY if not authenticated
 if not st.session_state.authenticated:
-    st.title("🏠 Ultimate Family Retirement Planning Plus v3.0")
-    st.markdown("*The Most Advanced Family Lifecycle Financial Simulation & Planning Tool*")
+    st.title("🏠 ForeCash Family Lifecycle Retirement Planner v3.0")
+    st.markdown("*Interactive Financial Planning & Simulation Tool*")
 
     # Password protection
     st.header("🔒 Access Control")
@@ -850,8 +850,8 @@ if 'simulation_results' in st.session_state:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666;'>
-<p><strong>Ultimate Family Retirement Planning Plus v3.0</strong></p>
-<p>Combining the best of GROK and CLAUDE architectures</p>
-<p>Your trusted financial planning companion | 100% Private | AI-Powered</p>
+<p><strong>ForeCash Family Lifecycle Retirement Planner v3.0</strong></p>
+<p>Educational planning tool powered by Claude AI</p>
+<p>Privacy-First Design | Session-Only Data Storage | Educational Purposes Only</p>
 </div>
 """, unsafe_allow_html=True)
