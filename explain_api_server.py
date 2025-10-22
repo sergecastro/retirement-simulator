@@ -41,6 +41,19 @@ else:
     print("OK: Anthropic API key loaded successfully")
 
 
+# ✅ REGULATORY COMPLIANCE: Chart explanation disclaimer
+CHART_EXPLANATION_DISCLAIMER = """
+
+---
+
+**📊 Chart Analysis Disclaimer:**
+
+This explanation is AI-generated for educational purposes only. It analyzes patterns in
+your scenario data but does NOT constitute financial advice. Always consult qualified
+professionals before making financial decisions based on these projections.
+"""
+
+
 @app.route('/explain', methods=['POST', 'OPTIONS'])
 def explain():
     """
@@ -77,11 +90,14 @@ def explain():
         )
         
         explanation = message.content[0].text
-        
-        print(f"[API] OK: Generated explanation ({len(explanation)} chars)")
-        
+
+        # ✅ REGULATORY COMPLIANCE: Wrap explanation with disclaimer
+        final_explanation = f"{explanation}{CHART_EXPLANATION_DISCLAIMER}"
+
+        print(f"[API] OK: Generated explanation ({len(explanation)} chars) + disclaimer")
+
         return jsonify({
-            'explanation': explanation,
+            'explanation': final_explanation,
             'success': True
         })
         
