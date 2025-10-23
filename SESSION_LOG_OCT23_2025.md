@@ -169,41 +169,49 @@ To https://github.com/sergecastro/retirement-simulator.git
 ### Deployment Steps
 
 #### Step A: Render Setup
-**Status:** 🔄 IN PROGRESS with Claude.ai
+**Status:** ✅ COMPLETED @ 2:50 PM
 **Responsible:** Claude.ai (guidance), Serge (execution), Claude Code (support)
 
-**Planned Actions:**
-1. Navigate to render.com
-2. Create new Web Service
-3. Connect GitHub repository (sergecastro/retirement-simulator)
-4. Select branch: `refactor/modular-app-structure`
-5. Configure build settings:
+**Actions Completed:**
+1. ✅ Navigated to render.com
+2. ✅ Created new Web Service
+3. ✅ Connected GitHub repository (sergecastro/retirement-simulator)
+4. ✅ Selected branch: `refactor/modular-app-structure`
+5. ✅ Configured build settings:
+   - Root Directory: (BLANK - this was the key fix!)
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `streamlit run app.py --server.port=$PORT --server.address=0.0.0.0`
-6. Set environment variables
-7. Deploy
+6. ✅ Set environment variables
+7. ✅ Deployed successfully!
 
-**Environment Variables to Set:**
+**Environment Variables Set:**
 ```
-DEMO_PASSWORD=<value_from_serge>
-ANTHROPIC_API_KEY=<value_from_serge>
-TRUSTED_USERS=<value_from_serge>
+DEMO_PASSWORD=<configured>
+ANTHROPIC_API_KEY=<configured>
+TRUSTED_USERS=<configured>
 ```
+
+**Result:** 🎉 **APP IS LIVE!**
+**URL:** https://forcash.onrender.com
 
 #### Step B: DNS Configuration
-**Status:** ⏳ PENDING (after Render deployment successful)
+**Status:** 🔄 IN PROGRESS
 **Responsible:** Claude.ai (guidance), Serge (execution)
 
-**Planned Actions:**
-1. Get Render URL from deployment
-2. Open GoDaddy DNS Manager at dcc.godaddy.com/manage/dns
-3. Add CNAME record:
+**Render URL Obtained:** https://forcash.onrender.com
+
+**Actions to Complete:**
+1. ✅ Get Render URL from deployment: `forcash.onrender.com`
+2. ⏳ Open GoDaddy DNS Manager at dcc.godaddy.com/manage/dns
+3. ⏳ Add CNAME record:
    - Type: CNAME
    - Host: @ (root domain)
-   - Points to: [Render URL from deployment]
+   - Points to: `forcash.onrender.com`
    - TTL: 600 seconds (10 minutes)
-4. Wait 15-30 minutes for DNS propagation
-5. Test at https://forcash.ai
+4. ⏳ Wait 15-30 minutes for DNS propagation
+5. ⏳ Test at https://forcash.ai
+6. ⏳ Add custom domain in Render dashboard
+7. ⏳ Wait for SSL certificate auto-provisioning
 
 #### Step C: Post-Deployment Testing
 **Status:** ⏳ PENDING
