@@ -23,20 +23,35 @@ except ImportError:
 
 def get_api_key() -> Optional[str]:
     """
-    Get Claude API key from Streamlit secrets.
+    Get Claude API key from Streamlit secrets or environment variables.
     Supports multiple possible key names for flexibility.
+    Cloud deployment (Render) uses environment variables.
+    Local development can use secrets.toml or environment variables.
     """
+    import os
+
+    # First try environment variables (for Render deployment)
+    env_keys = ['ANTHROPIC_API_KEY', 'CLAUDE_API_KEY']
+    for key_name in env_keys:
+        value = os.getenv(key_name)
+        if value:
+            return value
+
+    # Fallback to Streamlit secrets (for local development)
     possible_keys = [
         'ANTHROPIC_API_KEY',
         'CLAUDE_API_KEY',
         'anthropic_api_key',
         'claude_api_key'
     ]
-    
+
     for key_name in possible_keys:
-        if key_name in st.secrets:
-            return st.secrets[key_name]
-    
+        try:
+            if key_name in st.secrets:
+                return st.secrets[key_name]
+        except:
+            pass  # secrets.toml doesn't exist, continue
+
     return None
 
 

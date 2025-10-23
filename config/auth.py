@@ -4,21 +4,20 @@ ForeCash Authentication
 User authentication and access control.
 
 Author: ForeCash Development Team
-Last Updated: October 22, 2025
+Last Updated: October 23, 2025
 """
 
 import streamlit as st
+import os
 
 
 # =============================================================================
 # PASSWORD CONFIGURATION
 # =============================================================================
 
-# Demo password (available to all)
-DEMO_PASSWORD = "abcd123"
-
-# Trusted user password (advanced features)
-TRUSTED_PASSWORD = "uhiRR2938foq"
+# Get passwords from environment variables (Render) or use defaults (local dev)
+DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "abcd123")
+TRUSTED_PASSWORD = os.getenv("TRUSTED_PASSWORD", "uhiRR2938foq")
 
 
 # =============================================================================

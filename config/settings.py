@@ -111,20 +111,28 @@ def check_flask_connection():
 
 
 def show_flask_warning():
-    """Display warning if Flask API is not running"""
-    st.warning("""
-    ⚠️ **Claude Explanation API Not Running**
+    """
+    Display warning if Flask API is not running
 
-    The "?" buttons on charts won't work without the explanation server.
+    NOTE: Flask explanation server is OPTIONAL and not used in cloud deployment.
+    AI Advisor uses direct Anthropic API calls instead.
+    This warning is disabled for cloud deployment.
+    """
+    # Disable Flask warning - we use direct Anthropic API in ai_advisor.py
+    # Flask server (explain_api_server.py) is optional and not deployed to Render
+    return
 
-    **To enable chart explanations:**
-    1. Open a new terminal/command prompt
-    2. Navigate to your project folder
-    3. Run: `start_flask_server.bat` (or `python explain_api_server.py`)
-    4. Refresh this page
-
-    The app will work normally - you just won't have AI explanations for charts.
-    """)
+    # Legacy code (kept for reference, not executed):
+    # st.warning("""
+    # ⚠️ **Claude Explanation API Not Running**
+    # The "?" buttons on charts won't work without the explanation server.
+    # **To enable chart explanations:**
+    # 1. Open a new terminal/command prompt
+    # 2. Navigate to your project folder
+    # 3. Run: `start_flask_server.bat` (or `python explain_api_server.py`)
+    # 4. Refresh this page
+    # The app will work normally - you just won't have AI explanations for charts.
+    # """)
 
 
 # =============================================================================
