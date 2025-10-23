@@ -6,8 +6,28 @@ from datetime import datetime
 from embedded_scenarios import EMBEDDED_SCENARIOS
 import streamlit.components.v1 as components
 
+def queue_scenario_load(scenario_data):
+    """
+    Queue scenario data for loading BEFORE widgets are created.
+    Sets a pending flag instead of directly modifying session state.
+    """
+    # Store the scenario data to be loaded
+    st.session_state['_pending_scenario_data'] = scenario_data
+    st.session_state['_pending_scenario_load'] = True
+
+    # Rerun to trigger the load in the next render cycle
+    st.rerun()
+
+
 def apply_scenario_data_safe(scenario_data):
-    """SAFE: Apply loaded scenario data WITH input_ prefix to match your forms"""
+    """
+    SAFE: Apply loaded scenario data WITH input_ prefix to match your forms.
+    This function should ONLY be called BEFORE any widgets are created.
+    """
+    # Clear ALL existing widget keys to prevent conflicts
+    keys_to_clear = [k for k in st.session_state.keys() if k.startswith('input_')]
+    for key in keys_to_clear:
+        del st.session_state[key]
 
     # Apply all scenario fields to session state
     for key, value in scenario_data.items():
@@ -241,10 +261,10 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
                 default_scenario = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
                 default_name = 'Original 70+ Retirement (Demo)'
 
-            apply_scenario_data_safe(default_scenario)
+            # ✅ Queue the default scenario for loading
             st.session_state['current_scenario'] = default_name
             st.session_state['scenario_auto_loaded'] = True
-            st.session_state['scenario_loaded'] = True
+            queue_scenario_load(default_scenario)  # This will rerun
 
     # Get current scenario name
     current = st.session_state.get('current_scenario', 'Original 70+ Retirement (Demo)')
@@ -256,15 +276,20 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
     # ============================================
     st.sidebar.subheader("📥 Load Scenario")
 
-    # Build list of available scenarios (embedded + user's saved)
-    embedded_options = []
-    if is_trusted_user:
-        embedded_options.append('70+ Retirement (Private - Trusted)')
-    embedded_options.append('Original 70+ Retirement (Demo)')
-
-    # Add user's saved scenarios
+    # Build list of available scenarios (user's saved + embedded)
+    # ✅ CRITICAL FIX: Put user scenarios FIRST and remove duplicates
+    # This ensures user-saved versions take priority over embedded versions
     user_scenario_names = list(st.session_state.get('user_scenarios', {}).keys())
-    all_scenarios = embedded_options + user_scenario_names
+
+    # Add embedded options only if not already in user scenarios
+    embedded_options = []
+    if is_trusted_user and '70+ Retirement (Private - Trusted)' not in user_scenario_names:
+        embedded_options.append('70+ Retirement (Private - Trusted)')
+    if 'Original 70+ Retirement (Demo)' not in user_scenario_names:
+        embedded_options.append('Original 70+ Retirement (Demo)')
+
+    # User scenarios first, then embedded (no duplicates!)
+    all_scenarios = user_scenario_names + embedded_options
 
     # Compact selector
     selected_scenario = st.sidebar.selectbox(
@@ -284,10 +309,9 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
         else:
             scenario_data = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
 
-        apply_scenario_data_safe(scenario_data)
+        # ✅ Queue the scenario for loading BEFORE widgets are created
         st.session_state['current_scenario'] = selected_scenario
-        st.sidebar.success(f"✅ Loaded")
-        st.rerun()
+        queue_scenario_load(scenario_data)  # This will rerun automatically
 
     # Upload - in expander to save space
     with st.sidebar.expander("📤 Upload File"):
@@ -307,12 +331,11 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
                     file_content = uploaded_file.read()
                     scenario_data = json.loads(file_content)
                     if isinstance(scenario_data, dict):
-                        apply_scenario_data_safe(scenario_data)
+                        # ✅ Queue the uploaded scenario for loading
                         scenario_name = uploaded_file.name.replace('.json', '')
                         st.session_state['current_scenario'] = scenario_name
                         st.session_state['last_uploaded_file'] = file_id
-                        st.success(f"✅ Loaded")
-                        st.rerun()
+                        queue_scenario_load(scenario_data)  # This will rerun automatically
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
 
@@ -332,12 +355,10 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
         # Save to session_state (persists during session)
         st.session_state['user_scenarios'][current] = scenario_data
 
-        # Also prepare download
-        st.session_state['show_download_reminder'] = True
-        st.session_state['last_saved_scenario'] = scenario_data
-        st.session_state['last_saved_name'] = current
-
+        # ✅ SUCCESS! Changes are now saved to this scenario
+        # When you load it again, it will have your updated values
         st.sidebar.success(f"✅ Saved: {current}")
+        st.sidebar.info("💡 Use Load button to reload these values anytime!")
         st.rerun()
 
     # SAVE AS NEW - Compact
@@ -357,40 +378,16 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
                 st.session_state['user_scenarios'][new_scenario_name] = scenario_data
                 st.session_state['current_scenario'] = new_scenario_name
 
-                # Prepare download
-                st.session_state['show_download_reminder'] = True
-                st.session_state['last_saved_scenario'] = scenario_data
-                st.session_state['last_saved_name'] = new_scenario_name
-
+                # ✅ SUCCESS! New scenario created and saved
                 st.success(f"✅ Created: {new_scenario_name}")
+                st.info("💡 Select it from dropdown and click Load to use it!")
                 st.rerun()
 
 
-    # DOWNLOAD REMINDER (after save)
-    if st.session_state.get('show_download_reminder', False):
-        st.sidebar.warning("💡 **Recommended:** Download a backup copy for safety!")
-
-        scenario_data = st.session_state.get('last_saved_scenario', collect_current_scenario_data())
-        scenario_name = st.session_state.get('last_saved_name', current)
-        scenario_json = json.dumps(scenario_data, indent=2)
-
-        clean_name = "".join(c for c in scenario_name if c.isalnum() or c in (' ', '-', '_')).strip()
-        clean_name = clean_name.replace(' ', '-')
-        download_filename = f"{clean_name}.json"
-
-        st.sidebar.download_button(
-            label="📥 Download Backup",
-            data=scenario_json,
-            file_name=download_filename,
-            mime="application/json",
-            help="Download this scenario as a backup file",
-            use_container_width=True,
-            type="secondary"
-        )
-
-        if st.sidebar.button("✅ Got it, dismiss", use_container_width=True):
-            st.session_state['show_download_reminder'] = False
-            st.rerun()
+    # ✅ DOWNLOAD REMINDER REMOVED - Not needed anymore!
+    # Save Current now directly saves to user_scenarios
+    # When user loads, it loads their saved version (not embedded version)
+    # Download feature still available via Upload File expander if needed
 
     # ============================================
     # DELETE SCENARIO - COMPACT
@@ -412,6 +409,9 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
             # Delete button (only enabled if something selected)
             if st.button("🗑️ Delete Selected", use_container_width=True,
                         disabled=not scenarios_to_delete, type="primary"):
+                # Track if we're deleting the current scenario
+                need_reload_default = False
+
                 for name in scenarios_to_delete:
                     del st.session_state['user_scenarios'][name]
 
@@ -419,10 +419,14 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
                     if st.session_state.get('current_scenario') == name:
                         default = 'Original 70+ Retirement (Demo)'
                         st.session_state['current_scenario'] = default
-                        apply_scenario_data_safe(EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO'])
+                        need_reload_default = True
 
-                st.success(f"✅ Deleted {len(scenarios_to_delete)} scenario(s)")
-                st.rerun()
+                # ✅ Queue default scenario load if needed
+                if need_reload_default:
+                    queue_scenario_load(EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO'])
+                else:
+                    st.success(f"✅ Deleted {len(scenarios_to_delete)} scenario(s)")
+                    st.rerun()
 
     return {}
 

@@ -5,7 +5,17 @@ from datetime import date
 import streamlit as st
 from household_events import build_child_objects, build_inheritances, make_family_cashflows
 from financial_utils import safe_float, safe_int
-from visualization.irmaa_analysis import calculate_magi, get_irmaa_bracket  # Added for IRMAA
+# ⚠️ HEALTHCARE MODULE DISABLED - Uncomment when ready to deploy healthcare features
+# from visualization.irmaa_analysis import calculate_magi, get_irmaa_bracket  # Added for IRMAA
+
+# Stub functions to replace IRMAA calculations (healthcare module disabled)
+def calculate_magi(total_income, tax_exempt_interest):
+    """Stub function - returns total_income as MAGI when healthcare module disabled"""
+    return total_income
+
+def get_irmaa_bracket(magi, filing_status):
+    """Stub function - returns zero IRMAA when healthcare module disabled"""
+    return {'surcharge_monthly': 0, 'bracket': 'N/A'}
 
 # 2025 Tax Brackets (Single/Joint) - Update annually
 TAX_BRACKETS_2025 = {

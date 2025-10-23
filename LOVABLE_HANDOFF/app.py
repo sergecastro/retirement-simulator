@@ -39,62 +39,6 @@ from intake_integrated import show_intake_questionnaire
 # Import disclaimers
 import disclaimers
 
-# Additional imports for INTAKE data loading
-import json
-import os
-from pathlib import Path
-
-
-# =============================================================================
-# SCROLL TO TOP FIX
-# =============================================================================
-# JavaScript to force page scroll to top BEFORE content renders
-SCROLL_TO_TOP_JS = """
-<script>
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTo(0, 0);
-</script>
-"""
-
-
-# =============================================================================
-# INTAKE DATA LOADING HELPER
-# =============================================================================
-
-def load_intake_data_to_session():
-    """Load INTAKE data from intake_payload.json into session state for Analysis mode"""
-    # Get the correct path (same as intake_integrated.py uses)
-    current_dir = os.getcwd()
-    root_dir = Path(current_dir).parent
-    shared_dir = root_dir / "SHARED"
-    intake_file = shared_dir / "intake_payload.json"
-
-    # Check if INTAKE data exists
-    if not os.path.exists(intake_file):
-        return  # No INTAKE data, Analysis mode will use sidebar inputs
-
-    # ✅ CRITICAL FIX: Only load data ONCE, not on every rerun!
-    # This prevents overwriting user changes in Analysis mode
-    if 'intake_data_loaded' not in st.session_state:
-        try:
-            # Load the INTAKE data
-            with open(intake_file, "r", encoding="utf-8") as f:
-                intake_data = json.load(f)
-
-            # Load all data into session state so sidebar inputs can use it
-            for key, value in intake_data.items():
-                st.session_state[key] = value
-
-            # Mark as loaded so we don't reload on every rerun
-            st.session_state.intake_data_loaded = True
-
-            # Show a one-time message that INTAKE data was loaded
-            st.success("✅ INTAKE data loaded! Your information has been populated.")
-            st.session_state.intake_data_loaded_message_shown = True
-
-        except Exception as e:
-            st.warning(f"Could not load INTAKE data: {str(e)}")
-
 
 # =============================================================================
 # MAIN APPLICATION
@@ -138,8 +82,30 @@ def main():
         show_sidebar_footer(is_trusted)
         st.stop()  # ← STOP EXECUTION HERE!
 
+    # Show mode selector in sidebar (always visible for easy switching)
+    with st.sidebar:
+        st.markdown("### 🎯 Quick Mode Switch")
+
+        # Determine smart default based on current mode
+        default_index = 0 if st.session_state.current_mode == "INTAKE" else 1
+
+        # Mode selector radio buttons
+        mode = st.radio(
+            "Choose mode:",
+            options=["INTAKE", "Analysis"],
+            index=default_index,
+            key="mode_selector",
+            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation"
+        )
+
+        # Sync radio button with session state
+        if mode != st.session_state.current_mode:
+            st.session_state.current_mode = mode
+            st.session_state.mode_selected = True
+
+        st.markdown("---")
+
     # Route based on selected mode
-    # (Mode selector moved below scenario management for better UX)
     if not st.session_state.mode_selected:
         # Show welcome landing page (should never reach here due to stop above)
         show_sidebar_footer(is_trusted)
@@ -151,40 +117,7 @@ def main():
         show_intake_mode()
 
     elif st.session_state.current_mode == "Analysis":
-        # ✅ FIXED: Load INTAKE data into session state if available
-        load_intake_data_to_session()
-
-        # ✅ SCENARIO MANAGEMENT - MUST BE FIRST IN SIDEBAR!
-        # Call this BEFORE feature toggles so it appears at top
-        try:
-            manage_scenarios(is_trusted)
-        except Exception as e:
-            st.sidebar.error(f"Scenario management error: {str(e)}")
-
-        # Mode selector - appears AFTER scenario management
-        with st.sidebar:
-            st.markdown("---")
-            st.markdown("### 🎯 Quick Mode Switch")
-
-            # Determine smart default based on current mode
-            default_index = 0 if st.session_state.current_mode == "INTAKE" else 1
-
-            # Mode selector radio buttons
-            mode = st.radio(
-                "Choose mode:",
-                options=["INTAKE", "Analysis"],
-                index=default_index,
-                key="mode_selector_analysis",
-                help="INTAKE: Guided questionnaire | Analysis: Advanced simulation"
-            )
-
-            # Sync radio button with session state
-            if mode != st.session_state.current_mode:
-                st.session_state.current_mode = mode
-                st.session_state.mode_selected = True
-                st.rerun()
-
-        # Get feature toggles for Analysis mode (appears BELOW mode selector)
+        # Get feature toggles for Analysis mode
         features = show_feature_toggles(is_trusted)
         show_sidebar_footer(is_trusted)
 
@@ -218,13 +151,13 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 
     # Welcome message box
     st.markdown("""
-    <div style='background-color: #E8E6E0; padding: 20px; border-radius: 10px; border-left: 5px solid #E8B541;'>
-        <h3 style='margin-top: 0; color: #003D5B;'>👋 Welcome!</h3>
-        <p style='font-size: 16px; color: #555B66;'>
+    <div style='background-color: #f0f8ff; padding: 20px; border-radius: 10px; border-left: 5px solid #4CAF50;'>
+        <h3 style='margin-top: 0; color: #2c3e50;'>👋 Welcome!</h3>
+        <p style='font-size: 16px; color: #34495e;'>
             ForeCash is your comprehensive retirement planning companion. We help you visualize your
             financial future with interactive simulations, AI-powered insights, and detailed projections.
         </p>
-        <p style='font-size: 16px; color: #555B66; margin-bottom: 0;'>
+        <p style='font-size: 16px; color: #34495e; margin-bottom: 0;'>
             <strong>Get started by choosing how you'd like to begin:</strong>
         </p>
     </div>
@@ -248,16 +181,16 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 
     with col1:
         st.markdown("""
-        <div style='background: linear-gradient(135deg, #E8E6E0 0%, #FFFFFF 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
-            <h3 style='color: #003D5B; margin-top: 0;'>📝 INTAKE Mode</h3>
-            <p style='color: #003D5B;'><strong>Guided Questionnaire</strong></p>
-            <ul style='color: #003D5B;'>
+        <div style='background-color: #fff3cd; padding: 15px; border-radius: 8px; height: 280px;'>
+            <h3 style='color: #856404; margin-top: 0;'>📝 INTAKE Mode</h3>
+            <p style='color: #856404;'><strong>Guided Questionnaire</strong></p>
+            <ul style='color: #856404;'>
                 <li>Step-by-step data collection</li>
                 <li>Profile & demographic questions</li>
                 <li>Financial information gathering</li>
                 <li>Family & lifecycle details</li>
             </ul>
-            <p style='color: #003D5B; margin-bottom: 0;'><strong>✨ Best for:</strong> First-time users or updating your profile</p>
+            <p style='color: #856404; margin-bottom: 0;'><strong>✨ Best for:</strong> First-time users or updating your profile</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -270,16 +203,16 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 
     with col2:
         st.markdown("""
-        <div style='background: linear-gradient(135deg, #003D5B 0%, #004D73 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
-            <h3 style='color: #FFFFFF; margin-top: 0;'>📊 Analysis Mode</h3>
-            <p style='color: #FFFFFF;'><strong>Advanced Simulation & Planning</strong></p>
-            <ul style='color: #FFFFFF;'>
+        <div style='background-color: #d1ecf1; padding: 15px; border-radius: 8px; height: 280px;'>
+            <h3 style='color: #0c5460; margin-top: 0;'>📊 Analysis Mode</h3>
+            <p style='color: #0c5460;'><strong>Advanced Simulation & Planning</strong></p>
+            <ul style='color: #0c5460;'>
                 <li>Retirement trajectory projections</li>
                 <li>Interactive charts & visualizations</li>
                 <li>Monte Carlo probability analysis</li>
                 <li>AI-powered financial advisor</li>
             </ul>
-            <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Returning users or quick simulations</p>
+            <p style='color: #0c5460; margin-bottom: 0;'><strong>✨ Best for:</strong> Returning users or quick simulations</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -358,43 +291,15 @@ def show_analysis_mode(nav_state):
     Args:
         nav_state: Navigation state with features and settings
     """
-    # ✅ PHASE 1: Handle pending scenario load BEFORE creating any widgets
-    if st.session_state.get('_pending_scenario_load', False):
-        # Get the queued scenario data
-        scenario_data = st.session_state.get('_pending_scenario_data', {})
-
-        # Import the apply function here to avoid circular import at module level
-        from data_manager_cloud import apply_scenario_data_safe
-
-        # Apply the scenario data (this clears old keys and sets new values)
-        apply_scenario_data_safe(scenario_data)
-
-        # Clear the pending flags
-        st.session_state['_pending_scenario_load'] = False
-        if '_pending_scenario_data' in st.session_state:
-            del st.session_state['_pending_scenario_data']
-
-        # Show success message
-        st.sidebar.success(f"✅ Scenario loaded!")
-
-        # Rerun to create widgets with new values
-        st.rerun()
-
-    # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-    st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
-
     st.title("📊 Retirement Analysis")
     st.markdown("*Advanced simulation and planning tools*")
     st.markdown("---")
 
-    # Get user trust status
-    is_trusted = nav_state['is_trusted']
-
-    # NOTE: Scenario management is now called in main() before this function
-    # It appears at top of sidebar (above features and data inputs)
-
     # Collect data from sidebar
     try:
+        # Get user trust status
+        is_trusted = nav_state['is_trusted']
+
         # User demographic data
         user_data = collect_user_data(is_trusted)
 
@@ -411,6 +316,15 @@ def show_analysis_mode(nav_state):
         st.error(f"Data collection error: {str(e)}")
         st.info("💡 Please check your inputs in the sidebar.")
         return
+
+    # Scenario management
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 💾 Scenario Management")
+        try:
+            manage_scenarios()
+        except Exception as e:
+            st.error(f"Scenario management error: {str(e)}")
 
     # Show results page
     try:

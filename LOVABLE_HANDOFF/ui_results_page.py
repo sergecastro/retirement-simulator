@@ -23,8 +23,7 @@ from visualization.timeline import (
     show_detailed_projection_table
 )
 from visualization.longevity_analysis import show_longevity_analysis
-# ⚠️ HEALTHCARE MODULE DISABLED - Uncomment when ready to deploy healthcare features
-# from visualization.irmaa_analysis import show_irmaa_analysis
+from visualization.irmaa_analysis import show_irmaa_analysis
 import disclaimers
 
 
@@ -48,8 +47,8 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
     disclaimers.show_simulation_results_disclaimer()
 
     # Build household events
-    children = build_child_objects(st.session_state.get("children_rows", []))  # ✅ FIXED: Pass children_rows argument
-    inheritances = build_inheritances(st.session_state.get("inherit_rows", []))  # ✅ FIXED: Pass inherit_rows argument
+    children = build_child_objects()
+    inheritances = build_inheritances()
 
     # Extract features
     features = nav_state.get('features', {})
@@ -59,9 +58,9 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
 
     with st.spinner("Calculating your retirement trajectory..."):
         results = run_simulation(
-            age=user_data.get('age', 35),  # ✅ FIXED: Use .get() with default
-            partner_exists=user_data.get('partner_exists', False),  # ✅ FIXED: Use .get() with default
-            partner_age=user_data.get('partner_age', user_data.get('age', 35)),  # ✅ FIXED: Safe nested .get()
+            age=user_data['age'],
+            partner_exists=user_data['partner_exists'],
+            partner_age=user_data.get('partner_age', user_data['age']),
             total_income=financial_data['total_income'],
             total_expenses=financial_data['total_expenses'],
             combined_financial_assets=financial_data['liquid_assets'],
@@ -153,9 +152,9 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             if st.button("🎲 Run Monte Carlo (1000 iterations)", type="primary"):
                 with st.spinner("Running Monte Carlo simulation..."):
                     mc_results = run_simple_monte_carlo(
-                        age=user_data.get('age', 35),  # ✅ FIXED: Use .get() with default
-                        partner_exists=user_data.get('partner_exists', False),  # ✅ FIXED: Use .get() with default
-                        partner_age=user_data.get('partner_age', user_data.get('age', 35)),  # ✅ FIXED: Safe nested .get()
+                        age=user_data['age'],
+                        partner_exists=user_data['partner_exists'],
+                        partner_age=user_data.get('partner_age', user_data['age']),
                         total_income=financial_data['total_income'],
                         total_expenses=financial_data['total_expenses'],
                         combined_financial_assets=financial_data['liquid_assets'],
@@ -205,13 +204,13 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
     # =============================================================================
     # IRMAA ANALYSIS (TRUSTED USERS)
     # =============================================================================
-    # ⚠️ HEALTHCARE MODULE DISABLED - Uncomment when ready to deploy healthcare features
-    # if features.get('show_irmaa_analysis'):
-    #     st.markdown("---")
-    #     try:
-    #         show_irmaa_analysis(results, user_data, financial_data)
-    #     except Exception as e:
-    #         st.error(f"IRMAA analysis error: {str(e)}")
+
+    if features.get('show_irmaa_analysis'):
+        st.markdown("---")
+        try:
+            show_irmaa_analysis(results, user_data, financial_data)
+        except Exception as e:
+            st.error(f"IRMAA analysis error: {str(e)}")
 
     # =============================================================================
     # DETAILED PROJECTION TABLE (TRUSTED USERS)

@@ -64,16 +64,20 @@ def show_feature_toggles(is_trusted):
         features['show_timeline'] = st.checkbox("Timeline View", value=True)
         features['show_ai_advisor'] = st.checkbox("AI Advisor", value=True)
 
-        # ✅ FIXED: All advanced features available to ALL users
-        st.markdown("**🎯 Advanced Features:**")
-        features['show_monte_carlo'] = st.checkbox("Monte Carlo Simulation", value=True)
-        features['show_sankey'] = st.checkbox("Sankey Diagram", value=True)
-        features['show_longevity_analysis'] = st.checkbox("Longevity Analysis", value=True)
-        # ⚠️ HEALTHCARE MODULE DISABLED - Uncomment when ready to deploy healthcare features
-        # features['show_irmaa_analysis'] = st.checkbox("IRMAA Analysis", value=True)
-        features['show_irmaa_analysis'] = False  # Disabled for this deployment
-        features['show_scenario_comparison'] = st.checkbox("Scenario Comparison", value=True)
-        features['show_detailed_table'] = st.checkbox("Detailed Projection Table", value=True)
+        # Advanced features (trusted users only)
+        if is_trusted:
+            st.markdown("**Advanced Features:**")
+            features['show_monte_carlo'] = st.checkbox("Monte Carlo Simulation", value=False)
+            features['show_sankey'] = st.checkbox("Sankey Diagram", value=False)
+            features['show_longevity_analysis'] = st.checkbox("Longevity Analysis", value=False)
+            features['show_irmaa_analysis'] = st.checkbox("IRMAA Analysis", value=False)
+            features['show_scenario_comparison'] = st.checkbox("Scenario Comparison", value=False)
+            features['show_detailed_table'] = st.checkbox("Detailed Projection Table", value=False)
+        else:
+            # Show locked features for demo users
+            st.markdown("**🔒 Advanced Features (Locked):**")
+            st.caption("Monte Carlo, Sankey, Longevity Analysis, etc.")
+            st.caption("*Available with full access*")
 
         st.markdown("---")
 
@@ -97,7 +101,7 @@ def show_navigation_menu():
         pages = [
             "🏠 Home",
             "📊 Analysis",
-            # "🏥 Healthcare",  # ⚠️ HEALTHCARE MODULE DISABLED - Uncomment when ready to deploy
+            "🏥 Healthcare",
             "🤖 AI Advisor",
             "ℹ️ About"
         ]

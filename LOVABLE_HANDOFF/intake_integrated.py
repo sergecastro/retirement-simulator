@@ -10,15 +10,6 @@ from intake_validation import (validate_age, validate_age_gap, validate_total_in
                                 validate_income_vs_expenses, show_validation_message)
 from intake_review import show_assets_page, show_liabilities_page, show_family_page, show_review_page
 
-# ========== SCROLL TO TOP FIX ==========
-# JavaScript to force page scroll to top BEFORE content renders
-SCROLL_TO_TOP_JS = """
-<script>
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTo(0, 0);
-</script>
-"""
-
 # ========== HELPER FUNCTIONS ==========
 def get_shared_path():
     """Get path to shared intake payload file"""
@@ -149,10 +140,6 @@ def show_intake_questionnaire():
     if 'intake_current_page' not in st.session_state:
         st.session_state.intake_current_page = 'profile'
 
-    # Initialize "came from review" flag for quick return
-    if 'intake_from_review' not in st.session_state:
-        st.session_state.intake_from_review = False
-
     # Load existing data
     existing = load_existing_payload()
 
@@ -168,26 +155,11 @@ def show_intake_questionnaire():
 
     current_page = st.session_state.intake_current_page
 
-    # Show "Return to Review" banner if editing from review page
-    if st.session_state.intake_from_review and current_page != 'review':
-        st.info("✏️ **Editing from Review Page** - Click the button below to save and return to review when done.")
-        if st.button("← Save & Return to Review", type="secondary", use_container_width=True):
-            st.session_state.intake_from_review = False
-            go_to_page('review')
-        st.divider()
-
     # Force scroll to top on every page load
     st.markdown('<div id="top"></div>', unsafe_allow_html=True)
 
-    # Reset flag when reaching review page normally (not from edit)
-    if current_page == 'review' and st.session_state.intake_from_review:
-        st.session_state.intake_from_review = False
-
     # ===== PAGE 1: PROFILE =====
     if current_page == 'profile':
-        # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
-
         st.header("👤 Your Profile")
 
         # Smart detection: First-time vs Returning user messaging
@@ -273,68 +245,28 @@ def show_intake_questionnaire():
             level, message = validate_age_gap(your_age, partner_age)
             show_validation_message(level, message)
 
-        # Save and continue
+        # Save and continue (NO BACK BUTTON - linear progression only)
         st.divider()
-
-        # Show "Back to Review" button if came from review page
-        if st.session_state.intake_from_review:
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("← Back to Review", use_container_width=True):
-                    # Save profile data first
-                    data = existing.copy()
-                    data["schema_version"] = "1.0"
-                    data["input_user_name"] = user_name
-                    data["input_age"] = int(your_age)
-                    data["input_partner_exists"] = (mode == "Couple")
-                    if data["input_partner_exists"] and partner_age is not None:
-                        data["input_partner_name"] = partner_name
-                        data["input_partner_age"] = int(partner_age)
-                    else:
-                        data.pop("input_partner_name", None)
-                        data.pop("input_partner_age", None)
-                    save_payload(data)
-                    st.session_state.intake_from_review = False  # Reset flag
-                    go_to_page('review')
-            with col2:
-                if st.button("Next: Income →", type="primary", use_container_width=True):
-                    # Save profile data
-                    data = existing.copy()
-                    data["schema_version"] = "1.0"
-                    data["input_user_name"] = user_name
-                    data["input_age"] = int(your_age)
-                    data["input_partner_exists"] = (mode == "Couple")
-                    if data["input_partner_exists"] and partner_age is not None:
-                        data["input_partner_name"] = partner_name
-                        data["input_partner_age"] = int(partner_age)
-                    else:
-                        data.pop("input_partner_name", None)
-                        data.pop("input_partner_age", None)
-                    save_payload(data)
-                    st.session_state.intake_from_review = False  # Reset flag when going forward
-                    go_to_page('income')
-        else:
-            # Normal flow: just show Next button
-            if st.button("Next: Income →", type="primary", use_container_width=True):
-                # Save profile data
-                data = existing.copy()
-                data["schema_version"] = "1.0"
-                data["input_user_name"] = user_name
-                data["input_age"] = int(your_age)
-                data["input_partner_exists"] = (mode == "Couple")
-                if data["input_partner_exists"] and partner_age is not None:
-                    data["input_partner_name"] = partner_name
-                    data["input_partner_age"] = int(partner_age)
-                else:
-                    data.pop("input_partner_name", None)
-                    data.pop("input_partner_age", None)
-                save_payload(data)
-                go_to_page('income')
+        if st.button("Next: Income →", type="primary", use_container_width=True):
+            # Save profile data
+            data = existing.copy()
+            data["schema_version"] = "1.0"
+            data["input_user_name"] = user_name  # SAVE USER NAME
+            data["input_age"] = int(your_age)
+            data["input_partner_exists"] = (mode == "Couple")
+            if data["input_partner_exists"] and partner_age is not None:  # FIX: Check partner_age is not None
+                data["input_partner_name"] = partner_name
+                data["input_partner_age"] = int(partner_age)
+            else:
+                data.pop("input_partner_name", None)
+                data.pop("input_partner_age", None)
+            save_payload(data)
+            go_to_page('income')
 
     # ===== PAGE 2: INCOME =====
     elif current_page == 'income':
-        # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
+        # Force scroll to top
+        st.markdown('<div id="top"></div>', unsafe_allow_html=True)
         st.header("💰 Monthly Income")
         st.markdown("*Enter your typical monthly income from all sources. Enter 0 if not applicable.*")
 
@@ -439,9 +371,6 @@ def show_intake_questionnaire():
 
     # ===== PAGE 3: EXPENSES =====
     elif current_page == 'expenses':
-        # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
-
         st.header("🏠 Monthly Expenses")
         st.markdown("*Enter your typical monthly expenses. Enter 0 if not applicable.*")
 
@@ -638,8 +567,8 @@ def show_intake_questionnaire():
 
     # ===== PAGE 3.5: CUSTOM MONTHLY EXPENSES =====
     elif current_page == 'custom_expenses':
-        # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
+        # Force scroll to top
+        st.markdown('<div id="top"></div>', unsafe_allow_html=True)
         st.header("📝 Custom Monthly Expenses")
         st.markdown("*Add any special recurring expenses not covered in standard categories (tutoring, special needs care, therapy, etc.)*")
 
@@ -737,9 +666,6 @@ def show_intake_questionnaire():
 
     # ===== PAGE 7: REVIEW (FINAL PAGE with edit buttons!) =====
     elif current_page == 'review':
-        # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
-
         st.header("📋 Review & Complete Your Intake")
         st.caption("Review all your information before completing - click any section to edit")
 
@@ -759,7 +685,6 @@ def show_intake_questionnaire():
                 st.metric("Planning Mode", "Single")
 
         if st.button("✏️ Edit Profile", key="edit_profile", use_container_width=True):
-            st.session_state.intake_from_review = True  # Flag to show "Back to Review" button
             go_to_page('profile')
 
         st.divider()
@@ -771,7 +696,6 @@ def show_intake_questionnaire():
             total_income = float(existing.get("input_total_income", 0.0))
             st.metric("Total Income", f"${total_income:,.2f}")
             if st.button("✏️ Edit Income", key="edit_income", use_container_width=True):
-                st.session_state.intake_from_review = True
                 go_to_page('income')
 
         with col2:
@@ -779,7 +703,6 @@ def show_intake_questionnaire():
             total_expenses = float(existing.get("input_total_expenses", 0.0))
             st.metric("Total Expenses", f"${total_expenses:,.2f}")
             if st.button("✏️ Edit Expenses", key="edit_expenses", use_container_width=True):
-                st.session_state.intake_from_review = True
                 go_to_page('expenses')
 
         # Surplus/Deficit
@@ -801,7 +724,6 @@ def show_intake_questionnaire():
                 for exp in custom_expenses:
                     st.write(f"• **{exp.get('Name', 'N/A')}**: ${exp.get('Monthly Amount', 0):,.2f} ({exp.get('Category', 'N/A')})")
             if st.button("✏️ Edit Custom Expenses", key="edit_custom", use_container_width=True):
-                st.session_state.intake_from_review = True
                 go_to_page('custom_expenses')
             st.divider()
 
@@ -828,7 +750,6 @@ def show_intake_questionnaire():
             ])
             st.metric("Assets", f"${total_assets:,.2f}")
             if st.button("✏️ Edit Assets", key="edit_assets", use_container_width=True):
-                st.session_state.intake_from_review = True
                 go_to_page('assets')
 
         with col2:
@@ -842,7 +763,6 @@ def show_intake_questionnaire():
             ])
             st.metric("Liabilities", f"${total_liabilities:,.2f}")
             if st.button("✏️ Edit Liabilities", key="edit_liabilities", use_container_width=True):
-                st.session_state.intake_from_review = True
                 go_to_page('liabilities')
 
         # Net Worth
@@ -866,7 +786,6 @@ def show_intake_questionnaire():
             st.metric("Goals", goals_count)
 
         if st.button("✏️ Edit Family Events", key="edit_family", use_container_width=True):
-            st.session_state.intake_from_review = True
             go_to_page('family')
 
         # Final Completion Section
@@ -886,19 +805,9 @@ def show_intake_questionnaire():
             if st.button("📊 COMPLETE & Go to Analysis Mode", type="primary", use_container_width=True):
                 # Mark intake as complete and go to Analysis mode
                 st.session_state.intake_in_progress = False
-                st.session_state.current_mode = 'Analysis'  # ✅ FIXED: Use current_mode (app.py expects this)
-                st.session_state.mode_selected = True  # ✅ FIXED: Mark mode as selected
-                st.session_state.intake_completed = True  # ✅ FIXED: Use intake_completed (app.py expects this)
-
-                # ✅ Show celebration!
-                st.balloons()
-                st.success("✅ INTAKE completed successfully! Switching to Analysis mode...")
-
-                # ✅ Brief pause so user sees the success message
-                import time
-                time.sleep(1.5)
-
-                st.rerun()  # ✅ Only rerun AFTER save and celebration
+                st.session_state.app_mode = 'Analysis'
+                st.session_state.intake_just_completed = True  # Flag to auto-load data and show balloons
+                st.rerun()
 
     # Footer
     st.divider()

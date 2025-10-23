@@ -4,6 +4,15 @@ import streamlit as st
 import pandas as pd
 import json
 
+# ========== SCROLL TO TOP FIX ==========
+# JavaScript to force page scroll to top BEFORE content renders
+SCROLL_TO_TOP_JS = """
+<script>
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTo(0, 0);
+</script>
+"""
+
 # ---------- small helpers (types + currency sanitizing) ----------
 def _to_float(x, default=0.0):
     try:
@@ -58,8 +67,8 @@ def _ensure_columns(df: pd.DataFrame, columns_with_dtype):
 
 def show_assets_page(existing, save_payload, go_to_page):
     """Page 4: Assets & Accounts"""
-    # Force scroll to top
-    st.markdown('<div id="top"></div>', unsafe_allow_html=True)
+    # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
+    st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
     st.header("💎 Assets & Accounts")
     st.caption("Enter current balances for all your accounts and assets")
     
@@ -233,6 +242,9 @@ def show_assets_page(existing, save_payload, go_to_page):
 
 def show_liabilities_page(existing, save_payload, go_to_page):
     """Page 5: Liabilities & Debts"""
+    # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
+    st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
+
     st.header("💳 Liabilities & Debts")
     st.caption("Enter outstanding balances (leave at $0 if you don't have these)")
     
@@ -326,8 +338,8 @@ def show_liabilities_page(existing, save_payload, go_to_page):
 
 def show_family_page(existing, save_payload, go_to_page):
     """Page 6: Family Events (Children & Inheritances)"""
-    # Force scroll to top
-    st.markdown('<div id="top"></div>', unsafe_allow_html=True)
+    # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
+    st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
     st.header("👨‍👩‍👧‍👦 Family Events (Optional)")
     st.caption("Add children, college plans, and expected inheritances - skip if not applicable")
     
