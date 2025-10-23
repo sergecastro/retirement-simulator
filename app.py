@@ -1,857 +1,405 @@
-# app.py - COMPLETE FULL VERSION - Widget State Fixed - NO TRUNCATION
-import streamlit as st
-import sys
-import os
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+"""
+ForeCash - Retirement Planning Tool
+====================================
+Main application entry point and navigation.
 
-from financial_utils import get_all_inputs_as_dict, display_summary_metrics
-from pages.user_inputs import setup_sidebar
+Author: ForeCash Development Team
+Last Updated: October 22, 2025
+Version: 3.0 (Refactored - Modular Architecture)
+"""
+
+import streamlit as st
+
+# Import configuration
+from config.settings import initialize_app, show_footer
+from config.auth import require_authentication, is_trusted_user
+
+# Import navigation
+from ui.navigation import (
+    show_mode_selector,
+    show_feature_toggles,
+    show_sidebar_header,
+    show_sidebar_footer
+)
+
+# Import pages
+from ui.results_page import show_results_page
+
+# Import data collection
+from pages.user_inputs import setup_sidebar as collect_user_data
 from pages.financial_inputs import collect_financial_data
 from pages.family_inputs import collect_family_events
-from data_manager_cloud import manage_scenarios_cloud as manage_scenarios, apply_scenario_data_safe
-from simulation_core import run_simulation
-from household_events import build_child_objects, build_inheritances
-from basic_analysis import run_simple_fallback_simulation, calculate_simple_health_score
-from monte_carlo import run_simple_monte_carlo
-from scenario_tools import run_scenario_comparison
-from visualization.charts_basic import show_trajectories, show_health_dashboard
-from visualization.charts_advanced import show_monte_carlo, show_sankey
-from visualization.timeline import show_timeline, show_goal_gauges, show_download_options, show_detailed_projection_table
-from visualization.longevity_analysis import show_longevity_analysis
-from visualization.irmaa_analysis import show_irmaa_analysis
-from integration.intake_loader import intake_import_ui
-from streamlit_explain_api import inject_explain_visual_system
 
-# Import intake module for Data Entry mode
+# Import data management
+from data_manager_cloud import manage_scenarios_cloud as manage_scenarios
+
+# Import INTAKE module
 from intake_integrated import show_intake_questionnaire
 
-# Import disclaimers module for regulatory compliance
+# Import disclaimers
 import disclaimers
 
-# Page config
-st.set_page_config(page_title="ForeCash Retirement Planner", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
 
-# PROFESSIONAL CSS STYLING
-st.markdown("""
-<style>
-    /* Compact headers */
-    h1 {
-        padding-top: 0rem !important;
-        padding-bottom: 0.5rem !important;
-    }
-    h2 {
-        padding-top: 0.5rem !important;
-        padding-bottom: 0.25rem !important;
-    }
-    h3 {
-        padding-top: 0.25rem !important;
-        padding-bottom: 0.25rem !important;
-    }
+# =============================================================================
+# MAIN APPLICATION
+# =============================================================================
 
-    /* Reduce spacing between elements */
-    .element-container {
-        margin-bottom: 0.5rem !important;
-    }
+def main():
+    """Main application entry point"""
 
-    /* Make metrics look professional */
-    [data-testid="stMetricValue"] {
-        font-size: 1.8rem !important;
-        font-weight: 600 !important;
-    }
+    # Initialize app (page config, CSS, Flask check)
+    initialize_app()
 
-    /* Tighter spacing for columns */
-    .row-widget {
-        gap: 0.5rem !important;
-    }
+    # Require authentication
+    if not require_authentication():
+        return
 
-    /* Clean separator lines */
-    hr {
-        margin-top: 1rem !important;
-        margin-bottom: 1rem !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+    # Require disclaimer acknowledgment
+    disclaimers.require_disclaimer_acknowledgment()
 
-# CHECK FLASK SERVER CONNECTION (does NOT auto-start)
-import os
-import socket
+    # Show sidebar header
+    show_sidebar_header()
 
-def check_flask_connection():
-    """Check if Flask explanation server is running"""
-    try:
-        # Get Flask API URL from secrets (cloud) or environment (local)
-        api_url = os.getenv('FLASK_API_URL', 'http://localhost:5000')
+    # Initialize mode selection in session state
+    if 'mode_selected' not in st.session_state:
+        st.session_state.mode_selected = False
+        st.session_state.current_mode = None
 
-        # If using Streamlit secrets, prefer that
-        if hasattr(st, 'secrets') and 'FLASK_API_URL' in st.secrets:
-            api_url = st.secrets['FLASK_API_URL']
+    # FORCE CHECK: If current_mode is None, MUST show landing page
+    if st.session_state.current_mode is None:
+        st.session_state.mode_selected = False
 
-        # For cloud URLs, use HTTP health check instead of socket
-        if api_url.startswith('http'):
-            import requests
-            response = requests.get(f"{api_url}/health", timeout=3)
-            return response.status_code == 200
-        else:
-            # Fallback to socket for localhost
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(1)
-                result = s.connect_ex(('localhost', 5000))
-                return result == 0
-    except:
-        return False
+    # Check if user has completed INTAKE data
+    import os
+    has_intake_data = os.path.exists('SHARED/intake_payload.json')
 
-# Show warning if Flask is not running (but don't block the app)
-if not check_flask_connection():
-    st.warning("""
-    ⚠️ **Claude Explanation API Not Running**
-    
-    The "?" buttons on charts won't work without the explanation server.
-    
-    **To enable chart explanations:**
-    1. Open a new terminal/command prompt
-    2. Navigate to your project folder
-    3. Run: `start_flask_server.bat` (or `python explain_api_server.py`)
-    4. Refresh this page
-    
-    The app will work normally - you just won't have AI explanations for charts.
-    """)
+    # Get user type
+    is_trusted = is_trusted_user()
 
-# Initialize authentication state
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
-if 'IS_TRUSTED_USER' not in st.session_state:
-    st.session_state.IS_TRUSTED_USER = False
+    # CRITICAL: SHOW LANDING PAGE if mode not selected
+    if not st.session_state.mode_selected or st.session_state.current_mode is None:
+        show_mode_selection_landing_page(has_intake_data, is_trusted)
+        show_sidebar_footer(is_trusted)
+        st.stop()  # ← STOP EXECUTION HERE!
 
-# Show password screen ONLY if not authenticated
-if not st.session_state.authenticated:
-    st.title("🏠 ForeCash Family Lifecycle Retirement Planner v3.0")
-    st.markdown("*Interactive Financial Planning & Simulation Tool*")
+    # Show mode selector in sidebar (always visible for easy switching)
+    with st.sidebar:
+        st.markdown("### 🎯 Quick Mode Switch")
 
-    # Password protection
-    st.header("🔒 Access Control")
-    st.markdown("Enter your password to access the retirement planning tools.")
+        # Determine smart default based on current mode
+        default_index = 0 if st.session_state.current_mode == "INTAKE" else 1
 
-    # Show demo password only
+        # Mode selector radio buttons
+        mode = st.radio(
+            "Choose mode:",
+            options=["INTAKE", "Analysis"],
+            index=default_index,
+            key="mode_selector",
+            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation"
+        )
+
+        # Sync radio button with session state
+        if mode != st.session_state.current_mode:
+            st.session_state.current_mode = mode
+            st.session_state.mode_selected = True
+
+        st.markdown("---")
+
+    # Route based on selected mode
+    if not st.session_state.mode_selected:
+        # Show welcome landing page (should never reach here due to stop above)
+        show_sidebar_footer(is_trusted)
+        show_mode_selection_landing_page(has_intake_data, is_trusted)
+        st.stop()
+
+    elif st.session_state.current_mode == "INTAKE":
+        show_sidebar_footer(is_trusted)
+        show_intake_mode()
+
+    elif st.session_state.current_mode == "Analysis":
+        # Get feature toggles for Analysis mode
+        features = show_feature_toggles(is_trusted)
+        show_sidebar_footer(is_trusted)
+
+        nav_state = {
+            'mode': st.session_state.current_mode,
+            'features': features,
+            'is_trusted': is_trusted
+        }
+
+        show_analysis_mode(nav_state)
+
+    # Show footer
+    show_footer()
+
+
+# =============================================================================
+# WELCOME LANDING PAGE
+# =============================================================================
+
+def show_mode_selection_landing_page(has_intake_data, is_trusted):
+    """
+    Display landing page for mode selection with welcome message
+
+    Args:
+        has_intake_data: Whether INTAKE data exists
+        is_trusted: Whether user has trusted access
+    """
+    # Welcome header
+    st.title("🏠 Welcome to ForeCash!")
+    st.markdown("## *Family Lifecycle Retirement Planner*")
+
+    # Welcome message box
     st.markdown("""
-    <div style='background-color: #f0f2f6; padding: 15px; border-radius: 5px; margin: 10px 0;'>
-        <p style='margin: 0; color: #666; font-size: 14px;'><strong>Demo Access:</strong></p>
-        <p style='margin: 5px 0 0 0; font-size: 20px; font-family: monospace;'>
-            Password: <code style='background: #fff; padding: 5px 10px; border-radius: 3px; font-size: 20px;'>abcd123</code>
+    <div style='background-color: #f0f8ff; padding: 20px; border-radius: 10px; border-left: 5px solid #4CAF50;'>
+        <h3 style='margin-top: 0; color: #2c3e50;'>👋 Welcome!</h3>
+        <p style='font-size: 16px; color: #34495e;'>
+            ForeCash is your comprehensive retirement planning companion. We help you visualize your
+            financial future with interactive simulations, AI-powered insights, and detailed projections.
+        </p>
+        <p style='font-size: 16px; color: #34495e; margin-bottom: 0;'>
+            <strong>Get started by choosing how you'd like to begin:</strong>
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    password = st.text_input("Enter password:", type="password", placeholder="Type or paste password here")
+    st.markdown("")  # Spacing
 
-    # Only show error if user actually entered something wrong
-    if password and password not in ["abcd123", "uhiRR2938foq"]:
-        st.error("🚫 Incorrect password. Please try again.")
-        st.stop()
-    elif not password:
-        st.info("👆 Please enter a password to continue")
-        st.stop()
+    # Show status based on returning user
+    if has_intake_data:
+        st.success("✅ **Welcome back!** We found your previous INTAKE data. You can go straight to Analysis or update your information.")
     else:
-        # Password correct - authenticate!
-        st.session_state.authenticated = True
-        st.session_state.IS_TRUSTED_USER = (password == "uhiRR2938foq")
-        st.rerun()
+        st.info("ℹ️ **First time here?** We recommend starting with INTAKE to collect your financial profile.")
 
-# User is authenticated - get IS_TRUSTED_USER from session state
-IS_TRUSTED_USER = st.session_state.IS_TRUSTED_USER
+    st.markdown("---")
 
-# ✅ REGULATORY COMPLIANCE: Require disclaimer acknowledgment
-disclaimers.require_disclaimer_acknowledgment()
+    # Mode selection header
+    st.markdown("### 🎯 Choose Your Starting Point")
 
-# Initialize mode in session state if not exists
-if 'app_mode' not in st.session_state:
-    st.session_state.app_mode = None  # Not chosen yet
-
-# Initialize intake_in_progress flag
-if 'intake_in_progress' not in st.session_state:
-    st.session_state.intake_in_progress = False
-
-# ========== MODE SELECTOR (Only show if mode not chosen OR if explicitly requested) ==========
-# Don't show mode selector if user is in the middle of Intake
-if st.session_state.app_mode is None and not st.session_state.intake_in_progress:
-    # First time - show access level
-    if IS_TRUSTED_USER:
-        st.success("✅ Trusted User Access Granted - Full features enabled")
-    else:
-        st.info("📌 Demo Mode - Basic features enabled")
-
-    st.divider()
-    st.header("🚀 Choose Your Mode")
-    st.markdown("""
-    Select how you'd like to use the app:
-    - **📝 Data Entry Mode**: Step-by-step questionnaire to enter all your financial information
-    - **📊 Analysis Mode**: Run simulations, view charts, and use AI advisor (main app)
-    """)
-
-    # Mode selector buttons
+    # Two big buttons for mode selection
     col1, col2 = st.columns(2)
+
     with col1:
-        if st.button("📝 Data Entry Mode", use_container_width=True, type="secondary"):
-            st.session_state.app_mode = 'Data Entry'
-            st.session_state.intake_in_progress = True  # Mark that user is entering Intake
+        st.markdown("""
+        <div style='background-color: #fff3cd; padding: 15px; border-radius: 8px; height: 280px;'>
+            <h3 style='color: #856404; margin-top: 0;'>📝 INTAKE Mode</h3>
+            <p style='color: #856404;'><strong>Guided Questionnaire</strong></p>
+            <ul style='color: #856404;'>
+                <li>Step-by-step data collection</li>
+                <li>Profile & demographic questions</li>
+                <li>Financial information gathering</li>
+                <li>Family & lifecycle details</li>
+            </ul>
+            <p style='color: #856404; margin-bottom: 0;'><strong>✨ Best for:</strong> First-time users or updating your profile</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("")  # Spacing
+
+        if st.button("🚀 Start INTAKE Questionnaire", type="primary", use_container_width=True, key="btn_intake"):
+            st.session_state.mode_selected = True
+            st.session_state.current_mode = "INTAKE"
             st.rerun()
+
     with col2:
-        if st.button("📊 Analysis Mode", use_container_width=True, type="primary"):
-            st.session_state.app_mode = 'Analysis'
+        st.markdown("""
+        <div style='background-color: #d1ecf1; padding: 15px; border-radius: 8px; height: 280px;'>
+            <h3 style='color: #0c5460; margin-top: 0;'>📊 Analysis Mode</h3>
+            <p style='color: #0c5460;'><strong>Advanced Simulation & Planning</strong></p>
+            <ul style='color: #0c5460;'>
+                <li>Retirement trajectory projections</li>
+                <li>Interactive charts & visualizations</li>
+                <li>Monte Carlo probability analysis</li>
+                <li>AI-powered financial advisor</li>
+            </ul>
+            <p style='color: #0c5460; margin-bottom: 0;'><strong>✨ Best for:</strong> Returning users or quick simulations</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("")  # Spacing
+
+        if st.button("🚀 Go to Analysis Tools", type="primary", use_container_width=True, key="btn_analysis"):
+            st.session_state.mode_selected = True
+            st.session_state.current_mode = "Analysis"
             st.rerun()
 
-    st.stop()  # Don't proceed until user chooses
+    st.markdown("---")
 
-st.divider()
+    # Help section
+    with st.expander("❓ Not sure which mode to choose?"):
+        st.markdown("""
+        ### Making Your Choice
 
-# ========== ROUTE TO APPROPRIATE MODE ==========
-if st.session_state.app_mode == 'Data Entry':
-    # Call the intake questionnaire module (separate file)
-    show_intake_questionnaire()
-    st.stop()  # Stop here, don't load main app
+        **Choose INTAKE Mode if:**
+        - 🆕 This is your first time using ForeCash
+        - 📝 You want guided, step-by-step data collection
+        - 🔄 You want to update or review your profile information
+        - 🤔 You're not sure what information you need
 
-# If we reach here, we're in Analysis Mode - continue with main app as normal
+        **Choose Analysis Mode if:**
+        - 🔙 You've already completed INTAKE previously
+        - 💼 You have your financial data ready to input manually
+        - 🎯 You want to jump straight to retirement simulations
+        - ⚡ You're familiar with financial planning tools
 
-# AUTO-LOAD INTAKE DATA if user just completed Intake questionnaire
-if st.session_state.get('intake_just_completed', False):
-    import json
-    from pathlib import Path
-    from data_manager_cloud import apply_scenario_data_safe
+        **💡 Pro Tip:** You can always switch between modes later using the sidebar button!
+        """)
 
-    # Clear the flag
-    st.session_state.intake_just_completed = False
+    # Footer with user info
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if is_trusted:
+            st.success("🔓 **Full Access Granted** - All advanced features unlocked")
+        else:
+            st.info("👤 **Demo Access** - Core features available")
 
-    # Load the intake data
-    current_dir = os.getcwd()
-    root_dir = Path(current_dir).parent
-    intake_path = root_dir / "SHARED" / "intake_payload.json"
 
-    if intake_path.exists():
+# =============================================================================
+# INTAKE MODE
+# =============================================================================
+
+def show_intake_mode():
+    """Display INTAKE questionnaire mode"""
+    st.title("📝 INTAKE Questionnaire")
+    st.markdown("*Guided data collection for retirement planning*")
+    st.markdown("---")
+
+    # Check if INTAKE was just completed
+    if 'intake_completed' in st.session_state and st.session_state.intake_completed:
+        st.success("✅ INTAKE completed! Switching to Analysis mode...")
+        st.info("👉 Please select 'Analysis' mode in the sidebar to view your results.")
+        # Reset the flag
+        st.session_state.intake_completed = False
+        return
+
+    try:
+        show_intake_questionnaire()
+    except Exception as e:
+        st.error(f"INTAKE error: {str(e)}")
+        st.info("💡 Try switching to Analysis mode if you encounter issues.")
+
+
+# =============================================================================
+# ANALYSIS MODE
+# =============================================================================
+
+def show_analysis_mode(nav_state):
+    """
+    Display Analysis mode with simulations
+
+    Args:
+        nav_state: Navigation state with features and settings
+    """
+    st.title("📊 Retirement Analysis")
+    st.markdown("*Advanced simulation and planning tools*")
+    st.markdown("---")
+
+    # Collect data from sidebar
+    try:
+        # Get user trust status
+        is_trusted = nav_state['is_trusted']
+
+        # User demographic data
+        user_data = collect_user_data(is_trusted)
+
+        # Financial data
+        financial_data = collect_financial_data()
+
+        # Family events (children, inheritances)
+        collect_family_events()
+
+        # Simulation parameters
+        sim_params = get_simulation_parameters()
+
+    except Exception as e:
+        st.error(f"Data collection error: {str(e)}")
+        st.info("💡 Please check your inputs in the sidebar.")
+        return
+
+    # Scenario management
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 💾 Scenario Management")
         try:
-            with open(intake_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-
-            # Apply the data to session state
-            apply_scenario_data_safe(data)
-
-            # Load custom_expenses if exists
-            if "custom_expenses" in data:
-                st.session_state['custom_expenses'] = data['custom_expenses']
-            else:
-                st.session_state['custom_expenses'] = []
-
-            # Set scenario name
-            st.session_state["current_scenario"] = "Imported from Intake"
-            st.session_state['scenario_loaded'] = True
-
-            # CELEBRATION BALLOONS! 🎉
-            st.balloons()
-
-            # Force scroll to top of Analysis page
-            st.components.v1.html("""
-            <script>
-            window.parent.scrollTo(0, 0);
-            </script>
-            """, height=0)
-
-            st.success("🎉 **Congratulations!** Your Intake data has been automatically loaded!")
-            st.info("💡 You can now review your data below and run simulations.")
+            manage_scenarios()
         except Exception as e:
-            st.error(f"❌ Error loading Intake data: {e}")
+            st.error(f"Scenario management error: {str(e)}")
 
-# Subtle mode switcher at top (for Analysis mode)
-with st.container():
-    col1, col2, col3 = st.columns([6, 1, 1])
-    with col2:
-        if st.button("📝 Data Entry", help="Switch to Data Entry Mode", use_container_width=True):
-            st.session_state.app_mode = 'Data Entry'
-            st.session_state.intake_in_progress = True
-            st.rerun()
-    with col3:
-        st.markdown("**📊 Analysis**")
-    st.divider()
-
-# Inject Explain Visual system (Claude-powered chart explanations)
-inject_explain_visual_system()
+    # Show results page
+    try:
+        show_results_page(nav_state, user_data, financial_data, sim_params)
+    except Exception as e:
+        st.error(f"Results display error: {str(e)}")
+        st.info("💡 Please check your simulation parameters.")
 
 
-# CRITICAL FIX: Load scenarios AFTER intake to respect imported scenarios
-age_group_for_autoload = st.session_state.get('input_age_group', '70+')
-# For deployment: intake_import_ui uses file uploader (no shared dir needed)
-intake_import_ui(shared_dir="")
-scenario_data = manage_scenarios(IS_TRUSTED_USER, age_group_for_autoload)
+# =============================================================================
+# SIMULATION PARAMETERS
+# =============================================================================
 
+def get_simulation_parameters():
+    """
+    Get simulation parameters from sidebar
 
+    Returns:
+        dict: Simulation parameters
+    """
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### ⚙️ Simulation Parameters")
 
-# User inputs that read from loaded session state
-def collect_user_inputs():
-    """Collect user inputs reading from loaded scenario data"""
-    st.header("👤 User Profile")
+        col1, col2 = st.columns(2)
 
-    # Welcome message
-    st.markdown("""
-    **Welcome!** Please review and update your information below. Make any necessary corrections
-    before running your simulation to ensure accurate results.
-    """)
+        with col1:
+            tax_rate = st.slider(
+                "Tax Rate (%)",
+                min_value=0.0,
+                max_value=50.0,
+                value=25.0,
+                step=1.0,
+                help="Effective tax rate"
+            ) / 100
 
-    col1, col2 = st.columns(2)
+            inflation_rate = st.slider(
+                "Inflation (%)",
+                min_value=0.0,
+                max_value=10.0,
+                value=3.0,
+                step=0.5,
+                help="Annual inflation rate"
+            ) / 100
 
-    with col1:
-        # User name field
-        user_name = st.text_input(
-            "Your Name:",
-            value=st.session_state.get('input_user_name', ''),
-            placeholder="Enter your name",
-            key="input_user_name"
-        )
+        with col2:
+            investment_return_rate = st.slider(
+                "Investment Return (%)",
+                min_value=0.0,
+                max_value=15.0,
+                value=7.0,
+                step=0.5,
+                help="Expected annual return"
+            ) / 100
 
-        age_group_options = ["25-55", "56-69", "70+"]
-        current_age_group = st.session_state.get('input_age_group', '70+')
-        try:
-            age_group_index = age_group_options.index(current_age_group)
-        except ValueError:
-            age_group_index = 2  # Default to 70+
-
-        age_group = st.selectbox("Age Group:", age_group_options, index=age_group_index, key="input_age_group")
-
-        age = st.number_input(
-            "Your Age:",
-            min_value=18,
-            max_value=100,
-            value=int(st.session_state.get('input_age', 76)),
-            key="input_age"
-        )
-
-    with col2:
-        # Always show partner fields - leave empty if no partner
-        partner_name = st.text_input(
-            "Partner's Name:",
-            value=st.session_state.get('input_partner_name', ''),
-            placeholder="Leave empty if no partner",
-            key="input_partner_name"
-        )
-
-        partner_age = st.number_input(
-            "Partner's Age:",
-            min_value=18,
-            max_value=100,
-            value=int(st.session_state.get('input_partner_age', 0)) if st.session_state.get('input_partner_age', 0) > 0 else 35,
-            key="input_partner_age",
-            help="Leave at default or set to 0 if no partner"
-        )
-
-    # Determine if partner exists based on whether name is filled
-    partner_exists = bool(partner_name and partner_name.strip())
+            simulation_years = st.number_input(
+                "Years to Simulate",
+                min_value=10,
+                max_value=50,
+                value=30,
+                step=5,
+                help="Simulation duration"
+            )
 
     return {
-        'age_group': age_group,
-        'age': age,
-        'partner_exists': partner_exists,
-        'partner_name': partner_name,
-        'partner_age': partner_age,
-        'user_name': user_name
+        'tax_rate': tax_rate,
+        'inflation_rate': inflation_rate,
+        'investment_return_rate': investment_return_rate,
+        'simulation_years': simulation_years
     }
 
-# Collect user data first (needed for manage_scenarios)
-user_data = collect_user_inputs()
 
-# Show currently loaded scenario prominently
-current_scenario = st.session_state.get('current_scenario', 'New Scenario')
-if current_scenario != "New Scenario":
-    st.info(f"📋 **Currently Loaded**: {current_scenario}")
-    
-    # Show loaded data confirmation
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Age", f"{st.session_state.get('input_age', 'N/A')}")
-    with col2:
-        partner_name_display = st.session_state.get('input_partner_name', 'None')
-        st.metric("Partner", partner_name_display if partner_name_display else "None")
-    with col3:
-        st.metric("Income", f"${st.session_state.get('input_total_income', 0):,.0f}")
-    with col4:
-        st.metric("Expenses", f"${st.session_state.get('input_total_expenses', 0):,.0f}")
+# =============================================================================
+# RUN APPLICATION
+# =============================================================================
 
-# Sidebar features
-features = setup_sidebar(IS_TRUSTED_USER)
-
-# ✅ REGULATORY COMPLIANCE: Show data privacy notice in sidebar
-disclaimers.show_data_privacy_notice()
-
-# Financial and family inputs (these will read from loaded session state)
-financial_data = collect_financial_data()
-
-# PROFESSIONAL DASHBOARD - Always visible
-st.markdown("---")
-st.subheader("📊 Financial Snapshot")
-col1, col2, col3, col4, col5 = st.columns(5)
-
-with col1:
-    annual_income = financial_data['total_income']
-    st.metric("Annual Income", f"${annual_income:,.0f}", delta=None, help="Total annual income from all sources")
-
-with col2:
-    annual_expenses = financial_data['total_expenses']
-    st.metric("Annual Expenses", f"${annual_expenses:,.0f}", delta=None, help="Total annual expenses")
-
-with col3:
-    monthly_surplus = financial_data['monthly_surplus']
-    surplus_color = "normal" if monthly_surplus >= 0 else "inverse"
-    st.metric("Monthly Cash Flow", f"${monthly_surplus:,.0f}", delta=None, help="Monthly income minus expenses")
-
-with col4:
-    total_assets = financial_data['liquid_assets'] + financial_data['primary_residence_value'] + financial_data.get('secondary_residence_value', 0)
-    net_worth = total_assets - financial_data['total_liabilities']
-    st.metric("Net Worth", f"${net_worth:,.0f}", delta=None, help="Assets minus liabilities")
-
-with col5:
-    emergency_months = financial_data['liquid_assets'] / (annual_expenses / 12) if annual_expenses > 0 else 0
-    st.metric("Emergency Fund", f"{emergency_months:.1f} mo", delta=None, help="Months of expenses covered by liquid assets")
-
-st.markdown("---")
-
-family_data = collect_family_events() if features.get('show_family_events', False) else None
-
-if family_data:
-    st.session_state["children_rows"] = family_data['children']
-    st.session_state["inherit_rows"] = family_data['inheritances']
-    inheritance_total = sum(inh.get('Amount', 0) for inh in family_data['inheritances'] if inh.get('Amount', 0) > 0)
-    if inheritance_total > 0:
-        st.info(f"🎯 INHERITANCE EVENTS DETECTED: Total ${inheritance_total:,} across events")
-        with st.expander("💰 Inheritance Summary"):
-            for inh in family_data['inheritances']:
-                if inh.get('Amount', 0) > 0:
-                    st.write(f"• {inh.get('Year')}: ${inh.get('Amount'):,} - {inh.get('Description', 'No description')}")
-
-# Simulation params (read from loaded session state)
-st.header("⚙️ Simulation Parameters")
-col1, col2, col3 = st.columns(3)
-with col1:
-    tax_rate = st.number_input("Tax Rate (%):", value=float(st.session_state.get('input_tax_rate', 25.0)), key="input_tax_rate")
-    inflation_rate = st.number_input("Inflation (%):", value=float(st.session_state.get('input_inflation_rate', 2.5)), key="input_inflation_rate")
-with col2:
-    return_rate = st.number_input("Return Rate (%):", value=float(st.session_state.get('input_investment_return_rate', 5.0)), key="input_investment_return_rate")
-    years = st.number_input("Years:", value=int(st.session_state.get('input_simulation_years', 14)), key="input_simulation_years")
-with col3:
-    mc_iters = st.number_input("Monte Carlo Iterations:", value=int(st.session_state.get('input_mc_iterations', 1000)), min_value=0, key="input_mc_iterations") if features.get('show_monte_carlo') else 0
-
-sim_params = {
-    'tax_rate': tax_rate,
-    'inflation_rate': inflation_rate,
-    'investment_return_rate': return_rate,
-    'simulation_years': years,
-    'mc_iterations': mc_iters
-}
-
-# FIXED: Run simulation with proper error handling and DEBUG output
-
-# Add this to app.py in the "Run Financial Simulation" button section
-# Replace the existing button handler (around line 160-220)
-
-
-   
-if st.button("🎯 Run Financial Simulation", type="primary", use_container_width=True):
-    with st.spinner("Running simulation..."):
-        try:
-            # Save current state before running
-            stored_user_data = user_data
-            stored_financial_data = financial_data
-            stored_family_data = family_data if family_data else {}
-            stored_sim_params = sim_params
-
-            # Run the simulation with collected data
-            results = run_simulation(
-                age=stored_user_data['age'],
-                partner_exists=stored_user_data['partner_exists'],
-                partner_age=stored_user_data['partner_age'],
-                total_income=stored_financial_data['total_income'],
-                total_expenses=stored_financial_data['total_expenses'],
-                combined_financial_assets=stored_financial_data['liquid_assets'],
-                primary_residence_value=stored_financial_data['primary_residence_value'],
-                secondary_residence_value=stored_financial_data['secondary_residence_value'],
-                combined_other_assets_total=stored_financial_data.get('other_assets', 0),
-                total_liabilities_local=stored_financial_data['total_liabilities'],
-                partner_liabilities=stored_financial_data.get('partner_liabilities', 0),
-                tax_rate=stored_sim_params['tax_rate'],
-                inflation_rate=stored_sim_params['inflation_rate'],
-                investment_return_rate=stored_sim_params['investment_return_rate'],
-                simulation_years=stored_sim_params['simulation_years'],
-                mc_iterations=stored_sim_params['mc_iterations'],
-                goal_costs=stored_financial_data['goal_costs'],
-                college_inflation_pct=stored_family_data.get('college_inflation_pct', 4.0),
-                base_public_in=stored_family_data.get('base_public_in', 20000),
-                base_public_out=stored_family_data.get('base_public_out', 40000),
-                base_private=stored_family_data.get('base_private', 60000),
-                ira_balance=stored_financial_data['ira_balance'],
-                four01k_403b_balance=stored_financial_data['four01k_403b_balance'],
-                partner_ira_balance=stored_financial_data.get('partner_ira_balance', 0),
-                partner_four01k_403b_balance=stored_financial_data.get('partner_four01k_403b_balance', 0),
-                monthly_surplus=stored_financial_data['monthly_surplus'],
-                combined_total_liabilities=stored_financial_data['total_liabilities'],
-                custom_expenses_total=stored_financial_data.get('custom_expenses_total', 0.0)
-            )
-            
-                       
-
-            # Check if results were returned
-            if results is not None:
-                st.session_state['simulation_results'] = results
-                st.session_state['family_data'] = family_data
-                st.session_state['financial_data'] = financial_data
-                st.session_state['user_data'] = user_data
-                st.session_state['sim_params'] = sim_params  # Store sim params for comparison
-                st.success("✅ Simulation Complete!")
-
-                # Info about AI chart explanations
-                st.info("💡 **AI Chart Explanations**: Click any chart below to activate the **?** buttons (or wait ~20 seconds for auto-load), then click **?** to get AI-powered insights about your data!")
-
-                # Show Monte Carlo status
-                if 'monte_carlo_results' in results:
-                    st.success("✅ Fresh Monte Carlo data generated - longevity analysis will be accurate")
-                else:
-                    st.info("ℹ️ Monte Carlo not run - enable in parameters for longevity analysis")
-
-                display_summary_metrics(results, sim_params['simulation_years'])
-            else:
-                st.error("❌ Simulation returned no results")
-                
-        except Exception as e:
-            st.error(f"❌ Simulation error: {str(e)}")
-            st.info("💡 **Tip**: Check your inputs and try again. If the problem persists, try loading a saved scenario or starting fresh.")
-
-
-
-# FIXED: Display results with proper variable scoping
-if 'simulation_results' in st.session_state:
-    results = st.session_state['simulation_results']
-    
-    # INJECT CHART REGISTRY AFTER CHARTS ARE CREATED
-    if '__chart_registry__' in st.session_state and st.session_state['__chart_registry__']:
-        import json
-        registry_json = json.dumps(st.session_state['__chart_registry__'])
-        st.components.v1.html(f"""
-        <script>
-        window.parent.__CHART_DATA_REGISTRY__ = {registry_json};
-        console.log('[Injected After Charts] Registry:', window.parent.__CHART_DATA_REGISTRY__);
-        </script>
-        """, height=0)
-    stored_family_data = st.session_state.get('family_data')
-    stored_financial_data = st.session_state.get('financial_data')
-    stored_user_data = st.session_state.get('user_data')
-    stored_sim_params = st.session_state.get('sim_params', sim_params)
-    
-    # Ensure we have valid results before proceeding
-    if results is not None:
-        st.markdown("---")
-        st.header("📊 Simulation Results & Analysis")
-
-        # ✅ REGULATORY COMPLIANCE: Show disclaimer before results
-        disclaimers.show_simulation_results_disclaimer()
-
-        # ============================================
-        # DETAILED PROJECTION TABLE
-        # ============================================
-        try:
-            show_detailed_projection_table(results)
-        except Exception as e:
-            st.error(f"Detailed table error: {str(e)}")
-        
-        st.markdown("---")
-        
-        # Financial trajectories
-        try:
-            if features.get('show_trajectories'):
-                show_trajectories(results)
-        except Exception as e:
-            st.error(f"Trajectories error: {str(e)}")
-        
-        # Monte Carlo
-        try:
-            if features.get('show_monte_carlo') and 'monte_carlo_results' in results:
-                # ✅ REGULATORY COMPLIANCE: Show Monte Carlo disclaimer
-                disclaimers.show_monte_carlo_disclaimer()
-                show_monte_carlo(results)
-        except Exception as e:
-            st.error(f"Monte Carlo error: {str(e)}")
-            
-        # Longevity Analysis (NEW!)
-        try:
-            if features.get('show_monte_carlo') and 'monte_carlo_results' in results:
-                st.markdown("---")
-                show_longevity_analysis(results, stored_user_data, stored_sim_params)
-        except Exception as e:
-            st.error(f"Longevity analysis error: {str(e)}")
-        
-        # IRMAA Medicare Planning Analysis (NEW!)
-        try:
-            st.markdown("---")
-            # ✅ REGULATORY COMPLIANCE: Show Medicare/IRMAA disclaimer
-            disclaimers.show_medicare_disclaimer()
-            show_irmaa_analysis(results, stored_user_data, stored_sim_params)
-        except Exception as e:
-            st.error(f"IRMAA analysis error: {str(e)}")
-        
-        
-        
-        
-        # Sankey diagram
-        try:
-            if features.get('show_sankey'):
-                show_sankey(results)
-        except Exception as e:
-            st.error(f"Sankey error: {str(e)}")
-        
-        # Goal gauges
-        try:
-            if features.get('show_goals'):
-                show_goal_gauges(results)
-        except Exception as e:
-            st.error(f"Goals error: {str(e)}")
-        
-        # Timeline
-        try:
-            if features.get('show_timeline'):
-                show_timeline(results, stored_user_data, stored_family_data)
-        except Exception as e:
-            st.error(f"Timeline error: {str(e)}")
-        
-        # Health dashboard
-        try:
-            if features.get('show_health_dashboard'):
-                show_health_dashboard(
-                    stored_financial_data['liquid_assets'], 
-                    stored_financial_data['total_expenses'], 
-                    stored_financial_data['total_income'], 
-                    stored_financial_data['total_liabilities'], 
-                    results
-                )
-        except Exception as e:
-            st.error(f"Health dashboard error: {str(e)}")
-        
-        # ============================================
-        # SCENARIO COMPARISON TOOL - COMPLETE VERSION
-        # ============================================
-        try:
-            if features.get('show_scenario_comparison'):
-                st.markdown("---")
-                st.subheader("📊 Scenario Comparison Tool")
-                st.info("💡 Adjust sliders and click 'Run Comparison' to see how changes affect projections")
-                
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    income_adj = st.slider("Income Adjustment (%):", -100, 100, 0, key="comp_income")
-                with col2:
-                    expense_adj = st.slider("Expense Adjustment (%):", -100, 100, 0, key="comp_expense")
-                with col3:
-                    return_adj = st.slider("Return Rate Adjustment (%):", -10, 10, 0, key="comp_return")
-                
-                if st.button("🔄 Run Comparison", key="run_comparison_btn", type="primary"):
-                    # Calculate adjusted values
-                    adj_income = stored_financial_data['total_income'] * (1 + income_adj/100)
-                    adj_expenses = stored_financial_data['total_expenses'] * (1 + expense_adj/100)
-                    adj_return = stored_sim_params['investment_return_rate'] + return_adj
-                    
-                    st.write(f"**Adjustments Applied:**")
-                    st.write(f"• Base Income: ${stored_financial_data['total_income']:,.0f} → Adjusted: ${adj_income:,.0f} ({income_adj:+.0f}%)")
-                    st.write(f"• Base Expenses: ${stored_financial_data['total_expenses']:,.0f} → Adjusted: ${adj_expenses:,.0f} ({expense_adj:+.0f}%)")
-                    st.write(f"• Base Return: {stored_sim_params['investment_return_rate']:.1f}% → Adjusted: {adj_return:.1f}% ({return_adj:+.1f}%)")
-                    
-                    with st.spinner("Running comparison scenario..."):
-                        comp_results = run_simulation(
-                            age=stored_user_data['age'],
-                            partner_exists=stored_user_data['partner_exists'],
-                            partner_age=stored_user_data['partner_age'],
-                            total_income=adj_income,
-                            total_expenses=adj_expenses,
-                            combined_financial_assets=stored_financial_data['liquid_assets'],
-                            primary_residence_value=stored_financial_data['primary_residence_value'],
-                            secondary_residence_value=stored_financial_data['secondary_residence_value'],
-                            combined_other_assets_total=stored_financial_data.get('other_assets', 0),
-                            total_liabilities_local=stored_financial_data['total_liabilities'],
-                            partner_liabilities=0,
-                            tax_rate=stored_sim_params['tax_rate'],
-                            inflation_rate=stored_sim_params['inflation_rate'],
-                            investment_return_rate=adj_return,
-                            simulation_years=stored_sim_params['simulation_years'],
-                            mc_iterations=0,
-                            goal_costs={},
-                            college_inflation_pct=4.0,
-                            base_public_in=20000, base_public_out=40000, base_private=60000,
-                            ira_balance=stored_financial_data['ira_balance'],
-                            four01k_403b_balance=stored_financial_data['four01k_403b_balance'],
-                            partner_ira_balance=stored_financial_data.get('partner_ira_balance', 0),
-                            partner_four01k_403b_balance=stored_financial_data.get('partner_four01k_403b_balance', 0),
-                            monthly_surplus=adj_income - adj_expenses,
-                            combined_total_liabilities=stored_financial_data['total_liabilities']
-                        )
-                        
-                        if comp_results:
-                            st.success("✅ Comparison complete!")
-                            
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.markdown("#### Base Scenario")
-                                st.metric("Final Savings", f"${results['final_savings']:,.0f}")
-                                st.metric("Final Net Worth", f"${results['final_net_worth']:,.0f}")
-                                st.metric("Years Solvent", f"{results['years_solvent']}")
-                            with col2:
-                                st.markdown("#### Adjusted Scenario")
-                                delta_savings = comp_results['final_savings'] - results['final_savings']
-                                delta_nw = comp_results['final_net_worth'] - results['final_net_worth']
-                                delta_years = comp_results['years_solvent'] - results['years_solvent']
-                                st.metric("Final Savings", f"${comp_results['final_savings']:,.0f}", delta=f"${delta_savings:,.0f}")
-                                st.metric("Final Net Worth", f"${comp_results['final_net_worth']:,.0f}", delta=f"${delta_nw:,.0f}")
-                                st.metric("Years Solvent", f"{comp_results['years_solvent']}", delta=f"{delta_years:+d} years")
-                            
-                            # Comparison chart
-                            import plotly.graph_objects as go
-                            fig = go.Figure()
-                            fig.add_trace(go.Scatter(
-                                x=results['df']['Year'],
-                                y=results['df']['Savings_End'],
-                                mode='lines',
-                                name='Base Scenario',
-                                line=dict(color='blue', width=3)
-                            ))
-                            fig.add_trace(go.Scatter(
-                                x=comp_results['df']['Year'],
-                                y=comp_results['df']['Savings_End'],
-                                mode='lines',
-                                name='Adjusted Scenario',
-                                line=dict(color='red', width=3, dash='dash')
-                            ))
-                            fig.update_layout(
-                                title="Savings Trajectory Comparison",
-                                xaxis_title="Year",
-                                yaxis_title="Savings ($)",
-                                height=500
-                            )
-                            st.plotly_chart(fig, use_container_width=True)
-                        else:
-                            st.error("❌ Comparison failed to generate results")
-        except Exception as e:
-            st.error(f"Scenario comparison error: {str(e)}")
-        
-        # ============================================
-        # DUAL SCENARIO ANALYSIS - COMPLETE VERSION
-        # ============================================
-        try:
-            if features.get('show_scenario_comparison'):
-                st.markdown("---")
-                st.subheader("🔀 Dual Scenario Analysis")
-                st.info("Compare WITH vs WITHOUT major life events (inheritances, college costs)")
-                
-                if st.button("📊 Run Dual Analysis", key="run_dual_btn", type="primary"):
-                    with st.spinner("Running dual scenario analysis..."):
-                        # Save current family events
-                        saved_children = st.session_state.get('children_rows', [])
-                        saved_inherit = st.session_state.get('inherit_rows', [])
-                        
-                        # Temporarily clear for "without" scenario
-                        st.session_state['children_rows'] = []
-                        st.session_state['inherit_rows'] = []
-                        
-                        # Run without events
-                        without_results = run_simulation(
-                            age=stored_user_data['age'],
-                            partner_exists=stored_user_data['partner_exists'],
-                            partner_age=stored_user_data['partner_age'],
-                            total_income=stored_financial_data['total_income'],
-                            total_expenses=stored_financial_data['total_expenses'],
-                            combined_financial_assets=stored_financial_data['liquid_assets'],
-                            primary_residence_value=stored_financial_data['primary_residence_value'],
-                            secondary_residence_value=stored_financial_data['secondary_residence_value'],
-                            combined_other_assets_total=stored_financial_data.get('other_assets', 0),
-                            total_liabilities_local=stored_financial_data['total_liabilities'],
-                            partner_liabilities=0,
-                            tax_rate=stored_sim_params['tax_rate'],
-                            inflation_rate=stored_sim_params['inflation_rate'],
-                            investment_return_rate=stored_sim_params['investment_return_rate'],
-                            simulation_years=stored_sim_params['simulation_years'],
-                            mc_iterations=0,
-                            goal_costs={},
-                            college_inflation_pct=4.0,
-                            base_public_in=20000, base_public_out=40000, base_private=60000,
-                            ira_balance=stored_financial_data['ira_balance'],
-                            four01k_403b_balance=stored_financial_data['four01k_403b_balance'],
-                            partner_ira_balance=0,
-                            partner_four01k_403b_balance=0,
-                            monthly_surplus=stored_financial_data['monthly_surplus'],
-                            combined_total_liabilities=stored_financial_data['total_liabilities']
-                        )
-                        
-                        # Restore family events
-                        st.session_state['children_rows'] = saved_children
-                        st.session_state['inherit_rows'] = saved_inherit
-                        
-                        if without_results:
-                            st.success("✅ Dual analysis complete!")
-                            
-                            # Show comparison chart
-                            import plotly.graph_objects as go
-                            fig = go.Figure()
-                            fig.add_trace(go.Scatter(
-                                x=results['df']['Year'], 
-                                y=results['df']['Savings_End'],
-                                mode='lines', 
-                                name='With Life Events', 
-                                line=dict(color='green', width=3)
-                            ))
-                            fig.add_trace(go.Scatter(
-                                x=without_results['df']['Year'], 
-                                y=without_results['df']['Savings_End'],
-                                mode='lines', 
-                                name='Without Life Events', 
-                                line=dict(color='orange', width=3, dash='dot')
-                            ))
-                            fig.update_layout(
-                                title="Impact of Major Life Events on Savings",
-                                xaxis_title="Year",
-                                yaxis_title="Savings ($)",
-                                height=500
-                            )
-                            st.plotly_chart(fig, use_container_width=True)
-                            
-                            # Show metrics
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
-                                st.metric("With Events", f"${results['final_savings']:,.0f}")
-                            with col2:
-                                st.metric("Without Events", f"${without_results['final_savings']:,.0f}")
-                            with col3:
-                                impact = results['final_savings'] - without_results['final_savings']
-                                st.metric("Net Impact", f"${impact:,.0f}", delta=f"${impact:,.0f}")
-                        else:
-                            st.error("❌ Dual analysis failed")
-        except Exception as e:
-            st.error(f"Dual scenario error: {str(e)}")
-        
-        # ============================================
-        # AI ADVISOR (Available to ALL users)
-        # ============================================
-        try:
-            if features.get('show_ai_advisor'):
-                from ai_advisor import show_ai_consultation
-                st.markdown("---")
-                show_ai_consultation(results, stored_user_data, stored_financial_data, stored_sim_params)
-        except Exception as e:
-            st.error(f"AI advisor error: {str(e)}")
-        
-        # ============================================
-        # DOWNLOAD OPTIONS
-        # ============================================
-        st.markdown("---")
-        try:
-            show_download_options(results)
-        except Exception as e:
-            st.error(f"Download options error: {str(e)}")
-
-# Footer
-st.markdown("---")
-st.markdown("""
-<div style='text-align: center; color: #666;'>
-<p><strong>ForeCash Family Lifecycle Retirement Planner v3.0</strong></p>
-<p>Educational planning tool powered by Claude AI</p>
-<p>Privacy-First Design | Session-Only Data Storage | Educational Purposes Only</p>
-</div>
-""", unsafe_allow_html=True)
+if __name__ == "__main__":
+    main()
