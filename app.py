@@ -4,11 +4,15 @@ ForeCash - Retirement Planning Tool
 Main application entry point and navigation.
 
 Author: ForeCash Development Team
-Last Updated: October 22, 2025
+Last Updated: October 23, 2025
 Version: 3.0 (Refactored - Modular Architecture)
 """
 
 import streamlit as st
+import warnings
+
+# Suppress Streamlit secrets warning for cloud deployment
+warnings.filterwarnings('ignore', message='.*secrets.*')
 
 # Import configuration
 from config.settings import initialize_app, show_footer
