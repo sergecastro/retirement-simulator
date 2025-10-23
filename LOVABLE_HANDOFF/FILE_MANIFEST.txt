@@ -1,0 +1,10 @@
+total 128K
+-rw-r--r-- 1 serge 197609  14K Oct 23 05:46 app.py
+-rw-r--r-- 1 serge 197609 6.2K Oct 23 05:46 config_settings.py
+-rw-r--r-- 1 serge 197609    0 Oct 23 05:47 FILE_MANIFEST.txt
+-rw-r--r-- 1 serge 197609  17K Oct 23 05:46 healthcare_main.py
+-rw-r--r-- 1 serge 197609  35K Oct 23 05:46 intake_integrated.py
+-rw-r--r-- 1 serge 197609 2.5K Oct 23 05:46 LOVABLE_INSTRUCTIONS.md
+-rw-r--r-- 1 serge 197609  18K Oct 23 05:46 medicare_calculator_ui.py
+-rw-r--r-- 1 serge 197609 6.4K Oct 23 05:46 ui_navigation.py
+-rw-r--r-- 1 serge 197609  16K Oct 23 05:46 ui_results_page.py
