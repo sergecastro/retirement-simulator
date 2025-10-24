@@ -500,11 +500,21 @@ def get_simulation_parameters():
                 help="Simulation duration"
             )
 
+            mc_iterations = st.number_input(
+                "Monte Carlo Iterations",
+                min_value=0,
+                max_value=10000,
+                value=0,
+                step=100,
+                help="Number of Monte Carlo simulations (0 = disabled, 1000+ recommended)"
+            )
+
     return {
         'tax_rate': tax_rate,
         'inflation_rate': inflation_rate,
         'investment_return_rate': investment_return_rate,
-        'simulation_years': simulation_years
+        'simulation_years': simulation_years,
+        'mc_iterations': mc_iterations
     }
 
 

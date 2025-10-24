@@ -96,7 +96,7 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             inflation_rate=sim_params['inflation_rate'],
             investment_return_rate=sim_params['investment_return_rate'],
             simulation_years=sim_params['simulation_years'],
-            mc_iterations=0,
+            mc_iterations=sim_params.get('mc_iterations', 0),
             goal_costs={},
             college_inflation_pct=4.0,
             base_public_in=20000,
