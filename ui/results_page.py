@@ -174,7 +174,7 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             st.error(f"Goal gauges error: {str(e)}")
 
     # =============================================================================
-    # MONTE CARLO (TRUSTED USERS)
+    # MONTE CARLO (ALWAYS ENABLED - 1000 ITERATIONS)
     # =============================================================================
 
     if features.get('show_monte_carlo'):
@@ -182,24 +182,12 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         st.subheader("🎲 Monte Carlo Simulation")
         disclaimers.show_monte_carlo_disclaimer()
 
+        # Monte Carlo runs automatically as part of main simulation (1000 iterations)
+        # Just display the results here
         try:
-            if st.button("🎲 Run Monte Carlo (1000 iterations)", type="primary"):
-                with st.spinner("Running Monte Carlo simulation..."):
-                    mc_params = sim_params.copy()
-                    mc_params['mc_iterations'] = 1000
-                    mc_results = run_simple_monte_carlo(
-                        financial_data,
-                        mc_params,
-                        family_cashflows
-                    )
-
-                    if mc_results:
-                        st.success("✅ Monte Carlo complete!")
-                        show_monte_carlo(mc_results)
-                    else:
-                        st.error("❌ Monte Carlo simulation failed")
+            show_monte_carlo(results)
         except Exception as e:
-            st.error(f"Monte Carlo error: {str(e)}")
+            st.error(f"Monte Carlo display error: {str(e)}")
 
     # =============================================================================
     # SANKEY DIAGRAM (TRUSTED USERS)
