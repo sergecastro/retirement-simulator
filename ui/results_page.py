@@ -251,13 +251,17 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                 with col1:
                     adj_income = st.number_input(
                         "Adjusted Annual Income",
-                        value=financial_data['total_income'],
-                        step=5000
+                        min_value=0.0,
+                        max_value=10000000.0,
+                        value=float(financial_data['total_income']),
+                        step=5000.0
                     )
                     adj_expenses = st.number_input(
                         "Adjusted Annual Expenses",
-                        value=financial_data['total_expenses'],
-                        step=5000
+                        min_value=0.0,
+                        max_value=10000000.0,
+                        value=float(financial_data['total_expenses']),
+                        step=5000.0
                     )
 
                 with col2:
