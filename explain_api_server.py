@@ -25,8 +25,10 @@ CORS(app, resources={
     r"/*": {
         "origins": ALLOWED_ORIGINS,
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"],
-        "supports_credentials": False
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": False,
+        "expose_headers": ["Content-Type"],
+        "max_age": 3600
     }
 })
 
