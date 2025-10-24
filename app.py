@@ -8,6 +8,21 @@ Last Updated: October 23, 2025
 Version: 3.0 (Refactored - Modular Architecture)
 """
 
+# =============================================================================
+# STARTUP: Create empty secrets.toml to prevent warning
+# =============================================================================
+import os
+from pathlib import Path
+
+# Create .streamlit directory and empty secrets.toml if they don't exist
+streamlit_dir = Path.home() / ".streamlit"
+streamlit_dir.mkdir(exist_ok=True)
+secrets_file = streamlit_dir / "secrets.toml"
+if not secrets_file.exists():
+    secrets_file.write_text("# Placeholder - actual secrets in environment variables\n")
+
+# =============================================================================
+
 import streamlit as st
 import warnings
 
@@ -43,7 +58,7 @@ from intake_integrated import show_intake_questionnaire
 # Import disclaimers
 import disclaimers
 
-# Import chart explanation system
+# Import FULL chart explanation system (the real one!)
 from streamlit_explain_api_direct import inject_explain_visual_system
 
 # Additional imports for INTAKE data loading
