@@ -14,7 +14,7 @@ def inject_explain_visual_system():
     No Flask server needed - calls Anthropic API directly from Python.
     """
 
-    # Get API key from environment
+    # Get API key from environment (optional - buttons will show "coming soon" if missing)
     api_key = os.getenv('ANTHROPIC_API_KEY', '')
 
     # Try secrets as fallback
@@ -24,9 +24,8 @@ def inject_explain_visual_system():
         except:
             pass
 
-    if not api_key:
-        st.warning("⚠️ Chart explanations disabled - ANTHROPIC_API_KEY not found")
-        return
+    # NOTE: We inject buttons even WITHOUT API key - they'll show "coming soon" message
+    # This ensures question mark buttons are visible in deployment
 
     # Create JavaScript with inline API call handling
     html_code = """
