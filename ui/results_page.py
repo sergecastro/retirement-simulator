@@ -273,18 +273,27 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                     )
 
                 with col2:
+                    # Safety check for sim_params values
+                    return_rate = sim_params.get('investment_return_rate')
+                    if return_rate is None:
+                        return_rate = 0.07
+
+                    inflation = sim_params.get('inflation_rate')
+                    if inflation is None:
+                        inflation = 0.03
+
                     adj_return = st.slider(
                         "Adjusted Investment Return (%)",
                         min_value=0.0,
                         max_value=15.0,
-                        value=float(sim_params.get('investment_return_rate', 0.07) * 100),
+                        value=float(return_rate * 100),
                         step=0.5
                     ) / 100
                     adj_inflation = st.slider(
                         "Adjusted Inflation Rate (%)",
                         min_value=0.0,
                         max_value=10.0,
-                        value=float(sim_params.get('inflation_rate', 0.03) * 100),
+                        value=float(inflation * 100),
                         step=0.5
                     ) / 100
 
