@@ -103,24 +103,31 @@ def explain():
 
         print(f"[API] OK: Generated explanation ({len(explanation)} chars) + disclaimer")
 
-        return jsonify({
+        # Return with explicit CORS headers
+        response = jsonify({
             'explanation': final_explanation,
             'success': True
         })
+        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        return response
         
     except anthropic.APIError as e:
         print(f"[API] ERROR: Anthropic API Error: {e}")
-        return jsonify({
+        response = jsonify({
             'error': f'Claude API error: {str(e)}',
             'success': False
-        }), 500
+        })
+        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        return response, 500
 
     except Exception as e:
         print(f"[API] ERROR: Unexpected Error: {e}")
-        return jsonify({
+        response = jsonify({
             'error': f'Server error: {str(e)}',
             'success': False
-        }), 500
+        })
+        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        return response, 500
 
 
 @app.route('/health', methods=['GET'])
