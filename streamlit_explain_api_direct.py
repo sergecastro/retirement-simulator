@@ -28,11 +28,14 @@ def inject_explain_visual_system():
     # This ensures question mark buttons are visible in deployment
 
     # Create JavaScript with inline API call handling
+    # Added timestamp comment to force cache refresh
     html_code = """
     <script>
+    // ExplainVisual System v2.0 - Cache Buster: 2025-10-24-03:00
     function initExplainVisual() {
         if (window.parent.__EXPLAIN_VISUAL_LOADED__) return;
         window.parent.__EXPLAIN_VISUAL_LOADED__ = true;
+        console.log('[ExplainVisual] System initializing...');
 
         // Add styles
         const style = window.parent.document.createElement('style');
@@ -300,4 +303,6 @@ def inject_explain_visual_system():
     </script>
     """
 
-    components.html(html_code, height=0)
+    # Force Streamlit to reload by using a unique key
+    import time
+    components.html(html_code, height=0, key=f"explain_visual_{int(time.time())}")
