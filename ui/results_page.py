@@ -13,7 +13,6 @@ from financial_utils import display_summary_metrics
 from simulation_core import run_simulation
 from household_events import build_child_objects, build_inheritances, make_family_cashflows
 from monte_carlo import run_simple_monte_carlo
-from scenario_tools import run_scenario_comparison
 from visualization.charts_basic import show_trajectories, show_health_dashboard
 from visualization.charts_advanced import show_monte_carlo, show_sankey
 from visualization.timeline import (
@@ -296,16 +295,44 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
 
                 if submitted:
                     with st.spinner("Running comparison..."):
-                        comp_results = run_scenario_comparison(
-                            base_income=financial_data['total_income'],
-                            base_expenses=financial_data['total_expenses'],
-                            adj_income=adj_income,
-                            adj_expenses=adj_expenses,
-                            adj_return=adj_return,
-                            adj_inflation=adj_inflation,
-                            user_data=user_data,
-                            financial_data=financial_data,
-                            sim_params=sim_params
+                        # Build adjusted parameters
+                        adjusted_financial_data = financial_data.copy()
+                        adjusted_financial_data['total_income'] = adj_income
+                        adjusted_financial_data['total_expenses'] = adj_expenses
+
+                        adjusted_sim_params = sim_params.copy()
+                        adjusted_sim_params['investment_return_rate'] = adj_return
+                        adjusted_sim_params['inflation_rate'] = adj_inflation
+
+                        # Run adjusted simulation
+                        comp_results = run_simulation(
+                            age=user_data.get('age', 35),
+                            partner_exists=user_data.get('partner_exists', False),
+                            partner_age=user_data.get('partner_age', user_data.get('age', 35)),
+                            total_income=adjusted_financial_data['total_income'],
+                            total_expenses=adjusted_financial_data['total_expenses'],
+                            combined_financial_assets=adjusted_financial_data['liquid_assets'],
+                            primary_residence_value=adjusted_financial_data.get('primary_residence_value', 0),
+                            secondary_residence_value=adjusted_financial_data.get('secondary_residence_value', 0),
+                            combined_other_assets_total=adjusted_financial_data.get('other_assets', 0),
+                            total_liabilities_local=adjusted_financial_data['total_liabilities'],
+                            partner_liabilities=0,
+                            tax_rate=adjusted_sim_params['tax_rate'],
+                            inflation_rate=adjusted_sim_params['inflation_rate'],
+                            investment_return_rate=adjusted_sim_params['investment_return_rate'],
+                            simulation_years=adjusted_sim_params['simulation_years'],
+                            mc_iterations=0,
+                            goal_costs={},
+                            college_inflation_pct=4.0,
+                            base_public_in=20000,
+                            base_public_out=40000,
+                            base_private=60000,
+                            ira_balance=adjusted_financial_data.get('ira_balance', 0),
+                            four01k_403b_balance=adjusted_financial_data.get('four01k_403b_balance', 0),
+                            partner_ira_balance=0,
+                            partner_four01k_403b_balance=0,
+                            monthly_surplus=adjusted_financial_data.get('monthly_surplus', 0),
+                            combined_total_liabilities=adjusted_financial_data['total_liabilities']
                         )
 
                         if comp_results:
