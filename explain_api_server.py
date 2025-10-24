@@ -61,9 +61,14 @@ def explain():
     """
     Receive a prompt from frontend and return Claude's explanation
     """
-    # Handle preflight OPTIONS request
+    # Handle preflight OPTIONS request with explicit CORS headers
     if request.method == 'OPTIONS':
-        return '', 204
+        response = jsonify({'status': 'ok'})
+        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Max-Age'] = '3600'
+        return response, 200
     
     try:
         # Check if API key is available
