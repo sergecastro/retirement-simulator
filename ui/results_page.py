@@ -44,6 +44,15 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
     """
     st.title("📊 Retirement Analysis Results")
 
+    # Ensure sim_params has defaults for all values
+    if sim_params is None:
+        sim_params = {}
+    sim_params.setdefault('tax_rate', 0.25)
+    sim_params.setdefault('inflation_rate', 0.03)
+    sim_params.setdefault('investment_return_rate', 0.07)
+    sim_params.setdefault('simulation_years', 30)
+    sim_params.setdefault('mc_iterations', 0)
+
     # Show disclaimers
     disclaimers.show_simulation_results_disclaimer()
 
@@ -115,7 +124,7 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         st.markdown("---")
         st.subheader("📈 Financial Summary")
         try:
-            display_summary_metrics(results)
+            display_summary_metrics(results, sim_params['simulation_years'])
         except Exception as e:
             st.error(f"Summary metrics error: {str(e)}")
 
@@ -150,7 +159,12 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         st.markdown("---")
         st.subheader("📅 Retirement Timeline")
         try:
-            show_timeline(results, user_data, financial_data)
+            # Build family_data dict for timeline
+            family_timeline_data = {
+                'children': st.session_state.get("children_rows", []),
+                'inheritances': st.session_state.get("inherit_rows", [])
+            }
+            show_timeline(results, user_data, family_timeline_data)
         except Exception as e:
             st.error(f"Timeline error: {str(e)}")
 

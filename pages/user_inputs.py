@@ -4,41 +4,14 @@ from datetime import date
 from financial_utils import calculate_total_income, calculate_total_expenses, calculate_liquid_assets, calculate_total_assets, calculate_total_liabilities, calculate_other_assets, parse_goal_costs, safe_int
 
 def setup_sidebar(is_trusted_user):
-    """Enhanced sidebar with all your original features"""
-    st.sidebar.header("🚀 Advanced Features")
-    features = {}
-    
-    st.sidebar.markdown("**📊 Financial Health Dashboard**")
-    features['show_health_dashboard'] = st.sidebar.checkbox("Financial Health Scoring", value=True)
-    features['show_risk_analysis'] = st.sidebar.checkbox("Risk Analysis Matrix", value=True)
-    
-    st.sidebar.markdown("**🗓️ Interactive Timeline & Planning**")
-    features['show_timeline'] = st.sidebar.checkbox("Interactive Family Timeline", value=True)
-    features['show_scenario_comparison'] = st.sidebar.checkbox("Scenario Comparison Tool", value=True)
-    features['show_family_events'] = st.sidebar.checkbox("Family Events Planning", value=True)
-    
-    st.sidebar.markdown("**📈 Visual Analytics Lab**")
-    features['show_trajectories'] = st.sidebar.checkbox("Financial Trajectories", value=True)
-    features['show_sankey'] = st.sidebar.checkbox("Cash-Flow Sankey", value=True)
-    features['show_goals'] = st.sidebar.checkbox("Goal-Funding Gauges", value=True)
-    features['show_calendar'] = st.sidebar.checkbox("Monthly Heatmap", value=False)
-    
-    st.sidebar.markdown("**🎲 Advanced Simulations**")
-    features['show_monte_carlo'] = st.sidebar.checkbox("Monte Carlo Analysis", value=True)
-    features['show_stress_tests'] = st.sidebar.checkbox("Stress Testing", value=False)
+    """
+    Collect user demographic data (NOT feature toggles - those are in ui/navigation.py)
 
-    # AI Features - Available to ALL users
-    st.sidebar.markdown("**🤖 AI Features**")
-    st.sidebar.info("""
-    **✨ AI Chart Explanations:** Click any chart to activate the **?** button for AI-powered insights!
-    """)
-    features['show_ai_advisor'] = st.sidebar.checkbox("AI Planning Assistant", value=True)
-
-    if is_trusted_user:
-        st.sidebar.markdown("**🔧 Advanced Features**")
-        features['show_auto_optimization'] = st.sidebar.checkbox("Auto-Optimization", value=False)
-
-    return features
+    NOTE: This function was refactored during modular cleanup.
+    Feature toggles are now handled by ui/navigation.py show_feature_toggles()
+    """
+    # Simply call collect_user_inputs() - no feature toggles here
+    return collect_user_inputs()
 
 def collect_user_inputs():
     """Collect user inputs with session state integration for scenario loading"""
