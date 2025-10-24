@@ -437,12 +437,20 @@ def show_analysis_mode(nav_state):
         st.info("💡 Please check your inputs in the sidebar.")
         return
 
-    # Show results page
-    try:
-        show_results_page(nav_state, user_data, financial_data, sim_params)
-    except Exception as e:
-        st.error(f"Results display error: {str(e)}")
-        st.info("💡 Please check your simulation parameters.")
+    # Add RUN SIMULATION button
+    st.markdown("---")
+    if st.button("🚀 RUN FINANCIAL SIMULATION", type="primary", use_container_width=True):
+        st.session_state.run_simulation = True
+
+    # Show results page if button was clicked
+    if st.session_state.get('run_simulation', False):
+        try:
+            show_results_page(nav_state, user_data, financial_data, sim_params)
+        except Exception as e:
+            st.error(f"Results display error: {str(e)}")
+            st.info("💡 Please check your simulation parameters.")
+    else:
+        st.info("👆 Click 'RUN FINANCIAL SIMULATION' button above to see results")
 
 
 # =============================================================================

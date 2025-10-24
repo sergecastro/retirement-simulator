@@ -46,36 +46,28 @@ def show_feature_toggles(is_trusted):
     """
     Show feature toggles in sidebar for Analysis mode
 
+    SIMPLIFIED: All features enabled by default - no checkboxes
+    This prevents confusion and broken workflows
+
     Args:
         is_trusted: Whether user has trusted access
 
     Returns:
-        dict: Selected features
+        dict: All features enabled
     """
-    features = {}
-
-    with st.sidebar:
-        st.markdown("### ⚙️ Features")
-
-        # Basic features (always available)
-        st.markdown("**Core Features:**")
-        features['show_summary_metrics'] = st.checkbox("Summary Metrics", value=True)
-        features['show_basic_charts'] = st.checkbox("Basic Charts", value=True)
-        features['show_timeline'] = st.checkbox("Timeline View", value=True)
-        features['show_ai_advisor'] = st.checkbox("AI Advisor", value=True)
-
-        # ✅ FIXED: All advanced features available to ALL users
-        st.markdown("**🎯 Advanced Features:**")
-        features['show_monte_carlo'] = st.checkbox("Monte Carlo Simulation", value=True)
-        features['show_sankey'] = st.checkbox("Sankey Diagram", value=True)
-        features['show_longevity_analysis'] = st.checkbox("Longevity Analysis", value=True)
-        # ⚠️ HEALTHCARE MODULE DISABLED - Uncomment when ready to deploy healthcare features
-        # features['show_irmaa_analysis'] = st.checkbox("IRMAA Analysis", value=True)
-        features['show_irmaa_analysis'] = False  # Disabled for this deployment
-        features['show_scenario_comparison'] = st.checkbox("Scenario Comparison", value=True)
-        features['show_detailed_table'] = st.checkbox("Detailed Projection Table", value=True)
-
-        st.markdown("---")
+    # ALL FEATURES ENABLED - No user toggles
+    features = {
+        'show_summary_metrics': True,
+        'show_basic_charts': True,
+        'show_timeline': True,
+        'show_ai_advisor': True,
+        'show_monte_carlo': True,
+        'show_sankey': True,
+        'show_longevity_analysis': True,
+        'show_irmaa_analysis': False,  # Healthcare module disabled
+        'show_scenario_comparison': True,
+        'show_detailed_table': True
+    }
 
     return features
 
