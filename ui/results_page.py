@@ -363,6 +363,21 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             st.error(f"AI advisor error: {str(e)}")
 
     # =============================================================================
+    # INJECT CHART EXPLANATION BUTTONS
+    # =============================================================================
+    # CRITICAL: Inject AFTER all charts are rendered so JavaScript can find them!
+    print("[DEBUG] About to inject chart explanation system...")
+    try:
+        # Use the OLD WORKING version (with Flask API)
+        from streamlit_explain_api import inject_explain_visual_system
+        print("[DEBUG] Successfully imported inject_explain_visual_system from OLD file")
+        inject_explain_visual_system()
+        print("[DEBUG] inject_explain_visual_system() completed")
+    except Exception as e:
+        print(f"[DEBUG] Exception caught: {str(e)}")
+        st.error(f"Chart explanation system error: {str(e)}")
+
+    # =============================================================================
     # DOWNLOAD OPTIONS
     # =============================================================================
 

@@ -456,26 +456,29 @@ Format your response with clear sections using markdown headers (##) for readabi
             return charts.length; // Return count for polling
         }}
 
-        // FIXED: Active polling instead of relying on MutationObserver
+        // CRITICAL: Keep polling for up to 60 seconds to catch all charts as they load
         let pollAttempts = 0;
-        const maxPollAttempts = 100; // 100 attempts × 300ms = 30 seconds max
+        let lastChartCount = 0;
+        const maxPollAttempts = 200; // 200 attempts × 300ms = 60 seconds max
 
         function pollForCharts() {{
             pollAttempts++;
             const chartsFound = placeButtons();
 
-            if (chartsFound > 0) {{
-                // console.log('[ExplainVisual] ✅ Charts detected! Buttons placed after', pollAttempts * 300, 'ms');
-                return; // Stop polling once charts are found
+            // Log when chart count changes
+            if (chartsFound !== lastChartCount) {{
+                console.log('[ExplainVisual] Found', chartsFound, 'charts, placing buttons');
+                lastChartCount = chartsFound;
             }}
 
+            // Keep polling for full duration to catch charts that load with data
             if (pollAttempts < maxPollAttempts) {{
                 setTimeout(pollForCharts, 300); // Check again in 300ms
             }} else {{
-                // console.log('[ExplainVisual] ⚠️ No charts found after 30 seconds');
+                console.log('[ExplainVisual] Stopped polling after 60 seconds -', lastChartCount, 'charts found');
             }}
         }}
-        
+
         // Start polling immediately
         pollForCharts();
         

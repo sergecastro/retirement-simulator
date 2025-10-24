@@ -58,9 +58,6 @@ from intake_integrated import show_intake_questionnaire
 # Import disclaimers
 import disclaimers
 
-# Import FULL chart explanation system (the real one!)
-from streamlit_explain_api_direct import inject_explain_visual_system
-
 # Additional imports for INTAKE data loading
 import json
 import os
@@ -134,9 +131,6 @@ def main():
 
     # Require disclaimer acknowledgment
     disclaimers.require_disclaimer_acknowledgment()
-
-    # Inject chart explanation system (? buttons on charts)
-    inject_explain_visual_system()
 
     # Show sidebar header
     show_sidebar_header()

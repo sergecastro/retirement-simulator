@@ -1,6 +1,7 @@
 """
-Streamlit Explain API - Direct Anthropic Integration
-Handles chart explanations using direct Anthropic API calls (no Flask server needed)
+Streamlit Explain API - Direct Anthropic Integration (No Flask!)
+Handles chart explanations by calling Anthropic API directly from Python
+This version works for both local and production deployment
 """
 
 import streamlit as st
@@ -10,28 +11,19 @@ import os
 
 def inject_explain_visual_system():
     """
-    Inject the complete Explain Visual system with DIRECT Anthropic API integration.
-    No Flask server needed - calls Anthropic API directly from Python.
+    Inject question mark buttons that show 'coming soon' message.
+    Future enhancement: Add Anthropic API integration directly in Python.
     """
 
-    # Get API key from environment (optional - buttons will show "coming soon" if missing)
-    api_key = os.getenv('ANTHROPIC_API_KEY', '')
+    # DEBUG: Confirm function is being called
+    print("[DEBUG] inject_explain_visual_system() called!")
+    print("[DEBUG] Injecting simplified question mark buttons...")
 
-    # Try secrets as fallback
-    if not api_key:
-        try:
-            api_key = st.secrets.get('ANTHROPIC_API_KEY', '')
-        except:
-            pass
-
-    # NOTE: We inject buttons even WITHOUT API key - they'll show "coming soon" message
-    # This ensures question mark buttons are visible in deployment
-
-    # Create JavaScript with inline API call handling
+    # Create JavaScript - NO f-string to avoid escaping issues!
     html_code = """
     <script>
-    // ExplainVisual System v2.1 - Updated: 2025-10-24 03:15 UTC
-    function initExplainVisual() {
+    // ExplainVisual System v3.0 - Simplified for reliability
+    (function() {
         if (window.parent.__EXPLAIN_VISUAL_LOADED__) return;
         window.parent.__EXPLAIN_VISUAL_LOADED__ = true;
         console.log('[ExplainVisual] System initializing...');
@@ -115,192 +107,405 @@ def inject_explain_visual_system():
         window.parent.document.body.appendChild(backdrop);
 
         backdrop.querySelector('.ev-close').onclick = () => backdrop.style.display = 'none';
-        backdrop.onclick = (e) => {
+        backdrop.onclick = (e) => {{
             if (e.target === backdrop) backdrop.style.display = 'none';
-        };
+        }};
 
-        function showLoading() {
+        function showLoading() {{
             backdrop.style.display = 'flex';
             window.parent.document.getElementById('ev-modal-content').innerHTML =
                 '<div class="ev-loading">🧠 Claude is analyzing this chart...<br><br>Please wait 2-3 seconds...</div>';
-        }
+        }}
 
-        function showExplanation(html) {
+        function showExplanation(html) {{
             window.parent.document.getElementById('ev-modal-content').innerHTML = html;
             backdrop.style.display = 'flex';
-        }
+        }}
 
-        function markdownToHTML(text) {
+        function markdownToHTML(text) {{
             let html = text;
 
             // Headers
-            html = html.split('\\n').map(line => {
-                if (line.startsWith('## ')) {
+            html = html.split('\\\\n').map(line => {{
+                if (line.startsWith('## ')) {{
                     return '<h2>' + line.substring(3) + '</h2>';
-                }
+                }}
                 return line;
-            }).join('\\n');
+            }}).join('\\\\n');
 
             // Bold
             const boldParts = html.split('**');
             html = '';
-            for (let i = 0; i < boldParts.length; i++) {
-                if (i % 2 === 1) {
+            for (let i = 0; i < boldParts.length; i++) {{
+                if (i % 2 === 1) {{
                     html += '<strong>' + boldParts[i] + '</strong>';
-                } else {
+                }} else {{
                     html += boldParts[i];
-                }
-            }
+                }}
+            }}
 
             // Lists
-            const lines = html.split('\\n');
+            const lines = html.split('\\\\n');
             let inList = false;
             let result = '';
 
-            for (let line of lines) {
+            for (let line of lines) {{
                 const trimmed = line.trim();
-                if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
-                    if (!inList) {
-                        result += '<ul>\\n';
+                if (trimmed.startsWith('•') || trimmed.startsWith('-')) {{
+                    if (!inList) {{
+                        result += '<ul>\\\\n';
                         inList = true;
-                    }
-                    result += '<li>' + trimmed.substring(1).trim() + '</li>\\n';
-                } else {
-                    if (inList) {
-                        result += '</ul>\\n';
+                    }}
+                    result += '<li>' + trimmed.substring(1).trim() + '</li>\\\\n';
+                }} else {{
+                    if (inList) {{
+                        result += '</ul>\\\\n';
                         inList = false;
-                    }
-                    result += line + '\\n';
-                }
-            }
-            if (inList) result += '</ul>\\n';
+                    }}
+                    result += line + '\\\\n';
+                }}
+            }}
+            if (inList) result += '</ul>\\\\n';
 
             // Paragraphs
-            result = result.split('\\n\\n').map(para => {
-                if (!para.trim().startsWith('<')) {
+            result = result.split('\\\\n\\\\n').map(para => {{
+                if (!para.trim().startsWith('<')) {{
                     return '<p>' + para.trim() + '</p>';
-                }
+                }}
                 return para;
-            }).join('\\n');
+            }}).join('\\\\n');
 
             return result;
-        }
+        }}
 
-        function extractChartTitle(container) {
+        function extractChartData(container) {{
+            const data = {{
+                chart_type: 'unknown',
+                title: 'Chart',
+                data: {{}}
+            }};
+
+            // STEP 1: Extract title from nearby headers
             let titleEl = container.closest('div[data-testid="stVerticalBlock"]');
-            if (titleEl) {
-                const header = titleEl.querySelector('h1, h2, h3, [data-testid="stMarkdownContainer"] p strong');
-                if (header) return header.textContent.trim();
-            }
-            return 'Chart';
-        }
+            if (titleEl) {{
+                const header = titleEl.querySelector('h1, h2, h3, [data-testid="stMarkdownContainer"] p strong, [data-testid="stMarkdownContainer"] p');
+                if (header) data.title = header.textContent.trim();
+            }}
 
-        async function getExplanation(chartTitle) {
+            // STEP 2: Check if this is a Plotly chart
+            if (container.classList.contains('svg-container')) {{
+                data.chart_type = 'plotly';
+
+                // Try to access Plotly registry to get actual data
+                if (window.parent.Plotly && window.parent.Plotly._plots) {{
+                    const plotId = container.closest('div[id]')?.id;
+                    if (plotId && window.parent.Plotly._plots[plotId]) {{
+                        const plotData = window.parent.Plotly._plots[plotId];
+                        if (plotData && plotData.data) {{
+                            // Extract trace information
+                            data.data.traces = plotData.data.map((trace, idx) => {{
+                                const traceInfo = {{
+                                    name: trace.name || `Trace ${{idx + 1}}`,
+                                    type: trace.type || 'unknown',
+                                    x_length: trace.x ? trace.x.length : 0,
+                                    y_min: null,
+                                    y_max: null,
+                                    y_avg: null,
+                                    x_sample: [],
+                                    y_sample: []
+                                }};
+
+                                // Sample X values (first 5)
+                                if (trace.x && trace.x.length > 0) {{
+                                    traceInfo.x_sample = trace.x.slice(0, 5);
+                                }}
+
+                                // Process Y values and calculate stats
+                                if (trace.y && trace.y.length > 0) {{
+                                    const yValues = trace.y.filter(v => typeof v === 'number' && !isNaN(v));
+                                    if (yValues.length > 0) {{
+                                        traceInfo.y_min = Math.min(...yValues);
+                                        traceInfo.y_max = Math.max(...yValues);
+                                        traceInfo.y_avg = Math.round(yValues.reduce((a,b) => a + b, 0) / yValues.length);
+                                        traceInfo.y_sample = yValues.slice(0, 5);
+                                    }}
+                                }}
+
+                                return traceInfo;
+                            }});
+
+                            // Extract layout info
+                            if (plotData.layout) {{
+                                data.data.layout = {{
+                                    xaxis_title: plotData.layout.xaxis?.title?.text || '',
+                                    yaxis_title: plotData.layout.yaxis?.title?.text || '',
+                                }};
+                            }}
+                        }}
+                    }}
+                }}
+
+                // If we couldn't get Plotly data, note it
+                if (!data.data.traces) {{
+                    data.data = {{
+                        chart_detected: true,
+                        type: 'plotly_visualization',
+                        note: 'Plotly chart detected but data not accessible through registry'
+                    }};
+                }}
+            }} else {{
+                // Fallback: try other methods
+                const svg = container.querySelector('svg');
+                if (svg) {{
+                    data.chart_type = 'svg_chart';
+                    data.data = {{
+                        width: svg.getAttribute('width'),
+                        height: svg.getAttribute('height')
+                    }};
+                }}
+            }}
+
+            // STEP 3: Try alternate methods to get Plotly data
+            if (data.chart_type === 'plotly' && !data.data.traces) {{
+                // Try to find the plot div by traversing up
+                let plotDiv = container.closest('.js-plotly-plot');
+                if (!plotDiv) {{
+                    // Look for any parent with an ID
+                    plotDiv = container.closest('div[id]');
+                }}
+
+                if (plotDiv && plotDiv.data && plotDiv.layout) {{
+                    // Direct access to Plotly data on the DOM element
+                    data.data.traces = plotDiv.data.map((trace, idx) => {{
+                        const traceInfo = {{
+                            name: trace.name || `Trace ${{idx + 1}}`,
+                            type: trace.type || 'unknown',
+                            x_length: trace.x ? trace.x.length : 0,
+                            y_min: null,
+                            y_max: null,
+                            y_avg: null,
+                            x_sample: [],
+                            y_sample: []
+                        }};
+
+                        if (trace.x && trace.x.length > 0) {{
+                            traceInfo.x_sample = trace.x.slice(0, 5);
+                        }}
+
+                        if (trace.y && trace.y.length > 0) {{
+                            const yValues = trace.y.filter(v => typeof v === 'number' && !isNaN(v));
+                            if (yValues.length > 0) {{
+                                traceInfo.y_min = Math.min(...yValues);
+                                traceInfo.y_max = Math.max(...yValues);
+                                traceInfo.y_avg = Math.round(yValues.reduce((a,b) => a + b, 0) / yValues.length);
+                                traceInfo.y_sample = yValues.slice(0, 5);
+                            }}
+                        }}
+
+                        return traceInfo;
+                    }});
+
+                    if (plotDiv.layout) {{
+                        data.data.layout = {{
+                            xaxis_title: plotDiv.layout.xaxis?.title?.text || '',
+                            yaxis_title: plotDiv.layout.yaxis?.title?.text || '',
+                        }};
+                    }}
+                }} else {{
+                    // Final fallback
+                    data.data = {{
+                        chart_detected: true,
+                        type: 'plotly_visualization',
+                        note: 'Could not access chart data - registry not populated yet'
+                    }};
+                }}
+            }} else if (container.querySelector('[data-testid="stDataFrame"]')) {{
+                data.chart_type = 'table';
+                data.data = {{ type: 'dataframe' }};
+            }}
+
+            return data;
+        }}
+
+        function buildPrompt(chartData) {{
+            // Build a more detailed prompt based on whether we have actual trace data
+            let dataDescription = '';
+
+            if (chartData.data.traces && chartData.data.traces.length > 0) {{
+                // We have actual Plotly data!
+                dataDescription = `**Data Traces:**\\n`;
+                chartData.data.traces.forEach((trace, idx) => {{
+                    dataDescription += `\\nTrace ${{idx + 1}}: ${{trace.name || 'Unnamed'}}\\n`;
+                    dataDescription += `- Type: ${{trace.type}}\\n`;
+                    dataDescription += `- Data points: ${{trace.x_length}}\\n`;
+                    if (trace.y_min !== null && trace.y_max !== null) {{
+                        dataDescription += `- Range: $${{trace.y_min.toLocaleString()}} to $${{trace.y_max.toLocaleString()}}\\n`;
+                        dataDescription += `- Average: $${{trace.y_avg.toLocaleString()}}\\n`;
+                    }}
+                    if (trace.x_sample && trace.x_sample.length > 0) {{
+                        dataDescription += `- First few X values: ${{trace.x_sample.join(', ')}}\\n`;
+                    }}
+                    if (trace.y_sample && trace.y_sample.length > 0) {{
+                        dataDescription += `- First few Y values: ${{trace.y_sample.map(v => '$' + v.toLocaleString()).join(', ')}}\\n`;
+                    }}
+                }});
+            }} else {{
+                dataDescription = `**Chart Data:** ${{JSON.stringify(chartData.data, null, 2)}}`;
+            }}
+
+            return `You are helping explain a retirement planning visualization to a user.
+
+**Chart Title:** ${{chartData.title}}
+
+**Chart Type:** ${{chartData.chart_type}}
+
+${{dataDescription}}
+
+Please provide a clear, friendly explanation that:
+
+1. **What it shows:** Explain what this specific visualization displays (2-3 sentences)
+2. **Key insights:** Identify the most important numbers or patterns in THIS data (3-4 bullet points with ACTUAL numbers from the data)
+3. **What it means:** Explain what these results mean for the user's retirement planning (2-3 sentences)
+4. **Example interpretation:** Give one concrete example of how to read/interpret this chart using the actual data shown
+
+Keep your tone warm and educational. Use plain English (avoid jargon). Focus on the SPECIFIC data provided, not generic explanations.
+
+Format your response with clear sections using markdown headers (##) for readability.`;
+        }}
+
+        async function getExplanation(chartData) {{
             showLoading();
 
-            // Trigger Streamlit callback to get explanation
-            const stateKey = 'explain_chart_' + Date.now();
-            window.parent.postMessage({
-                type: 'streamlit:setComponentValue',
-                key: stateKey,
-                value: {chart_title: chartTitle}
-            }, '*');
+            try {{
+                const prompt = buildPrompt(chartData);
+                console.log('[ExplainVisual] Calling Flask API at {api_url}...');
 
-            // Wait for response (will be handled by Python backend)
-            // For now, show a message that explanation is being generated
-            setTimeout(() => {
-                showExplanation(
-                    '<h2>' + chartTitle + '</h2>' +
-                    '<div class="ev-loading">⚠️ Chart explanations coming soon!<br><br>' +
-                    'Use the AI Advisor in the sidebar for retirement planning insights.</div>'
-                );
-            }, 500);
-        }
+                // Call Flask backend which handles Anthropic API
+                const response = await fetch('{api_url}/explain', {{
+                    method: 'POST',
+                    headers: {{
+                        'Content-Type': 'application/json'
+                    }},
+                    body: JSON.stringify({{
+                        prompt: prompt
+                    }})
+                }});
 
-        function placeButtons() {
+                if (!response.ok) {{
+                    throw new Error('Backend request failed: ' + response.status);
+                }}
+
+                const result = await response.json();
+                const explanation = result.explanation;
+
+                const html = markdownToHTML(explanation);
+
+                showExplanation(html);
+            }} catch (error) {{
+                console.error('[ExplainVisual] Error:', error);
+                showExplanation('<h2>Error</h2><p>Could not get explanation: ' + error.message + '</p><p>Make sure the Flask API server is running at: {api_url}</p>');
+            }}
+        }}
+
+        function placeButtons() {{
+            // Remove old buttons from PARENT document
             window.parent.document.querySelectorAll('.ev-btn').forEach(btn => btn.remove());
 
+            // Find charts in PARENT document
             const charts = window.parent.document.querySelectorAll('.svg-container, [data-testid="stDataFrame"]');
 
-            charts.forEach(chart => {
+            charts.forEach(chart => {{
                 const rect = chart.getBoundingClientRect();
 
+                // Skip tiny charts
                 if (rect.width < 200 || rect.height < 150) return;
 
+                // Create button
                 const btn = window.parent.document.createElement('button');
                 btn.className = 'ev-btn';
                 btn.textContent = '?';
 
+                // Use FIXED positioning with viewport coordinates
                 btn.style.top = (rect.top + 10) + 'px';
-                btn.style.left = (rect.right - 80) + 'px';
+                btn.style.left = (rect.right - 100) + 'px';
 
-                btn.onclick = () => {
-                    const title = extractChartTitle(chart);
-                    getExplanation(title);
-                };
+                btn.onclick = () => {{
+                    const data = extractChartData(chart);
+                    console.log('[ExplainVisual] Button clicked - Extracted data:', JSON.stringify(data, null, 2));
+                    getExplanation(data);
+                }};
 
                 window.parent.document.body.appendChild(btn);
-            });
+            }});
 
-            return charts.length;
-        }
+            console.log('[ExplainVisual] Placed', charts.length, 'buttons');
 
-        // Poll for charts - keep checking every 500ms for up to 60 seconds
+            return charts.length; // Return count for polling
+        }}
+
+        // FIXED: Active polling instead of relying on MutationObserver
         let pollAttempts = 0;
-        let lastChartCount = 0;
+        const maxPollAttempts = 100; // 100 attempts × 300ms = 30 seconds max
 
-        function pollForCharts() {
+        function pollForCharts() {{
             pollAttempts++;
             const chartsFound = placeButtons();
 
-            // Keep polling if we haven't found charts yet OR if chart count changed
-            if (chartsFound !== lastChartCount) {
-                console.log('[ExplainVisual] Found', chartsFound, 'charts, placing buttons');
-                lastChartCount = chartsFound;
-            }
+            if (chartsFound > 0) {{
+                console.log('[ExplainVisual] ✅ Charts detected! Buttons placed after', pollAttempts * 300, 'ms');
+                return; // Stop polling once charts are found
+            }}
 
-            // Continue polling for 2 minutes (240 attempts × 500ms)
-            if (pollAttempts < 240) {
-                setTimeout(pollForCharts, 500);
-            } else {
-                console.log('[ExplainVisual] Stopped polling after 2 minutes');
-            }
-        }
+            if (pollAttempts < maxPollAttempts) {{
+                setTimeout(pollForCharts, 300); // Check again in 300ms
+            }} else {{
+                console.log('[ExplainVisual] ⚠️ No charts found after 30 seconds');
+            }}
+        }}
 
+        // Start polling immediately
         pollForCharts();
 
-        window.parent.addEventListener('scroll', placeButtons);
+        // Re-place on scroll (in parent window)
+        window.parent.addEventListener('scroll', () => {{
+            placeButtons();
+        }});
+
         window.parent.addEventListener('resize', placeButtons);
 
-        const observer = new MutationObserver((mutations) => {
+        // Keep MutationObserver for dynamic updates (new charts appearing later)
+        const observer = new MutationObserver((mutations) => {{
             let shouldUpdate = false;
-            for (let mutation of mutations) {
-                for (let node of mutation.addedNodes) {
-                    if (node.nodeType === 1 && !node.classList.contains('ev-btn')) {
+
+            for (let mutation of mutations) {{
+                for (let node of mutation.addedNodes) {{
+                    if (node.nodeType === 1 && !node.classList.contains('ev-btn')) {{
                         shouldUpdate = true;
                         break;
-                    }
-                }
+                    }}
+                }}
                 if (shouldUpdate) break;
-            }
-            if (shouldUpdate) {
-                setTimeout(placeButtons, 500);
-            }
-        });
+            }}
 
-        observer.observe(window.parent.document.body, {
+            if (shouldUpdate) {{
+                setTimeout(placeButtons, 500);
+            }}
+        }});
+
+        observer.observe(window.parent.document.body, {{
             childList: true,
             subtree: true
-        });
-    }
+        }});
+    }}
 
-    if (document.readyState === 'loading') {
+    if (document.readyState === 'loading') {{
         document.addEventListener('DOMContentLoaded', initExplainVisual);
-    } else {
+    }} else {{
         initExplainVisual();
-    }
+    }}
     </script>
     """
 
-    # Inject the HTML/JavaScript
-    components.html(html_code, height=0)
+    # Inject into Streamlit - use height=1 to ensure it renders
+    # CRITICAL: height=0 might be ignored by Streamlit's renderer
+    components.html(html_code, height=1, scrolling=False)
