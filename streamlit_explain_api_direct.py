@@ -243,18 +243,25 @@ def inject_explain_visual_system():
             return charts.length;
         }
 
-        // Poll for charts
+        // Poll for charts - keep checking every 500ms for up to 60 seconds
         let pollAttempts = 0;
+        let lastChartCount = 0;
+
         function pollForCharts() {
             pollAttempts++;
             const chartsFound = placeButtons();
 
-            if (chartsFound > 0) {
-                return;
+            // Keep polling if we haven't found charts yet OR if chart count changed
+            if (chartsFound !== lastChartCount) {
+                console.log('[ExplainVisual] Found', chartsFound, 'charts, placing buttons');
+                lastChartCount = chartsFound;
             }
 
-            if (pollAttempts < 50) {
-                setTimeout(pollForCharts, 300);
+            // Continue polling for 2 minutes (240 attempts × 500ms)
+            if (pollAttempts < 240) {
+                setTimeout(pollForCharts, 500);
+            } else {
+                console.log('[ExplainVisual] Stopped polling after 2 minutes');
             }
         }
 
