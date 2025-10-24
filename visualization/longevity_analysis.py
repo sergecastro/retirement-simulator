@@ -12,26 +12,13 @@ def show_longevity_analysis(results, user_data, sim_params):
     """
     
     st.subheader("⏳ Portfolio Longevity Analysis")
-    
-    # CRITICAL FIX: Check if Monte Carlo was actually enabled for THIS simulation
-    mc_iterations = sim_params.get('mc_iterations', 0)
-    
-    if mc_iterations == 0:
-        st.warning("""
-        **Monte Carlo simulation not enabled**
-        
-        To see longevity analysis:
-        1. Scroll up to "Simulation Parameters"
-        2. Set "Monte Carlo Iterations" to 1000 (or higher)
-        3. Click "Run Financial Simulation" again
-        
-        This will generate probability distributions for the longevity analysis.
-        """)
-        return
-    
+
+    # Monte Carlo is always enabled (hardcoded to 1000 iterations)
+    mc_iterations = sim_params.get('mc_iterations', 1000)
+
     # Get Monte Carlo results
     if 'monte_carlo_results' not in results:
-        st.warning("Monte Carlo data not found. Please run simulation with Monte Carlo enabled.")
+        st.error("Monte Carlo data not found in results. This is a bug - please report it!")
         return
     
     mc_results = results['monte_carlo_results']
