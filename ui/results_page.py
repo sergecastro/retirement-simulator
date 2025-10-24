@@ -245,51 +245,56 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         st.info("Compare different financial scenarios side-by-side")
 
         try:
-            with st.expander("⚙️ Adjust Parameters for Comparison"):
-                col1, col2 = st.columns(2)
+            with st.expander("⚙️ Adjust Parameters for Comparison", expanded=True):
+                # Use st.form to prevent app reboot on slider changes
+                with st.form("scenario_comparison_form"):
+                    col1, col2 = st.columns(2)
 
-                with col1:
-                    adj_income = st.number_input(
-                        "Adjusted Annual Income",
-                        min_value=0.0,
-                        max_value=10000000.0,
-                        value=float(financial_data['total_income']),
-                        step=5000.0
-                    )
-                    adj_expenses = st.number_input(
-                        "Adjusted Annual Expenses",
-                        min_value=0.0,
-                        max_value=10000000.0,
-                        value=float(financial_data['total_expenses']),
-                        step=5000.0
-                    )
+                    with col1:
+                        adj_income = st.number_input(
+                            "Adjusted Annual Income",
+                            min_value=0.0,
+                            max_value=10000000.0,
+                            value=float(financial_data['total_income']),
+                            step=5000.0
+                        )
+                        adj_expenses = st.number_input(
+                            "Adjusted Annual Expenses",
+                            min_value=0.0,
+                            max_value=10000000.0,
+                            value=float(financial_data['total_expenses']),
+                            step=5000.0
+                        )
 
-                with col2:
-                    # Safety check for sim_params values
-                    return_rate = sim_params.get('investment_return_rate')
-                    if return_rate is None:
-                        return_rate = 0.07
+                    with col2:
+                        # Safety check for sim_params values
+                        return_rate = sim_params.get('investment_return_rate')
+                        if return_rate is None:
+                            return_rate = 0.07
 
-                    inflation = sim_params.get('inflation_rate')
-                    if inflation is None:
-                        inflation = 0.03
+                        inflation = sim_params.get('inflation_rate')
+                        if inflation is None:
+                            inflation = 0.03
 
-                    adj_return = st.slider(
-                        "Adjusted Investment Return (%)",
-                        min_value=0.0,
-                        max_value=15.0,
-                        value=float(return_rate * 100),
-                        step=0.5
-                    ) / 100
-                    adj_inflation = st.slider(
-                        "Adjusted Inflation Rate (%)",
-                        min_value=0.0,
-                        max_value=10.0,
-                        value=float(inflation * 100),
-                        step=0.5
-                    ) / 100
+                        adj_return = st.slider(
+                            "Adjusted Investment Return (%)",
+                            min_value=0.0,
+                            max_value=15.0,
+                            value=float(return_rate * 100),
+                            step=0.5
+                        ) / 100
+                        adj_inflation = st.slider(
+                            "Adjusted Inflation Rate (%)",
+                            min_value=0.0,
+                            max_value=10.0,
+                            value=float(inflation * 100),
+                            step=0.5
+                        ) / 100
 
-                if st.button("📊 Run Comparison", type="primary"):
+                    # Submit button for the form
+                    submitted = st.form_submit_button("📊 Run Comparison", type="primary")
+
+                if submitted:
                     with st.spinner("Running comparison..."):
                         comp_results = run_scenario_comparison(
                             base_income=financial_data['total_income'],
