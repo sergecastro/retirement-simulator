@@ -11,7 +11,7 @@ Last Updated: October 22, 2025
 import streamlit as st
 from financial_utils import display_summary_metrics
 from simulation_core import run_simulation
-from household_events import build_child_objects, build_inheritances
+from household_events import build_child_objects, build_inheritances, make_family_cashflows
 from monte_carlo import run_simple_monte_carlo
 from scenario_tools import run_scenario_comparison
 from visualization.charts_basic import show_trajectories, show_health_dashboard
@@ -50,6 +50,19 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
     # Build household events
     children = build_child_objects(st.session_state.get("children_rows", []))  # ✅ FIXED: Pass children_rows argument
     inheritances = build_inheritances(st.session_state.get("inherit_rows", []))  # ✅ FIXED: Pass inherit_rows argument
+
+    # Build family cashflows for Monte Carlo
+    from datetime import date
+    current_year = date.today().year
+    family_cashflows = make_family_cashflows(
+        children, inheritances,
+        start_year=current_year,
+        horizon_end=current_year + sim_params['simulation_years'],
+        college_inflation_pct=4.0,
+        base_public_in=20000,
+        base_public_out=40000,
+        base_private=60000
+    )
 
     # Extract features
     features = nav_state.get('features', {})
@@ -119,7 +132,13 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             st.error(f"Trajectory chart error: {str(e)}")
 
         try:
-            show_health_dashboard(results)
+            show_health_dashboard(
+                financial_data['liquid_assets'],
+                financial_data['total_expenses'],
+                financial_data['total_income'],
+                financial_data['total_liabilities'],
+                results
+            )
         except Exception as e:
             st.error(f"Health dashboard error: {str(e)}")
 
@@ -131,7 +150,7 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         st.markdown("---")
         st.subheader("📅 Retirement Timeline")
         try:
-            show_timeline(results)
+            show_timeline(results, user_data, financial_data)
         except Exception as e:
             st.error(f"Timeline error: {str(e)}")
 
@@ -152,23 +171,12 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         try:
             if st.button("🎲 Run Monte Carlo (1000 iterations)", type="primary"):
                 with st.spinner("Running Monte Carlo simulation..."):
+                    mc_params = sim_params.copy()
+                    mc_params['mc_iterations'] = 1000
                     mc_results = run_simple_monte_carlo(
-                        age=user_data.get('age', 35),  # ✅ FIXED: Use .get() with default
-                        partner_exists=user_data.get('partner_exists', False),  # ✅ FIXED: Use .get() with default
-                        partner_age=user_data.get('partner_age', user_data.get('age', 35)),  # ✅ FIXED: Safe nested .get()
-                        total_income=financial_data['total_income'],
-                        total_expenses=financial_data['total_expenses'],
-                        combined_financial_assets=financial_data['liquid_assets'],
-                        primary_residence_value=financial_data.get('primary_residence_value', 0),
-                        secondary_residence_value=financial_data.get('secondary_residence_value', 0),
-                        combined_other_assets_total=financial_data.get('other_assets', 0),
-                        total_liabilities_local=financial_data['total_liabilities'],
-                        partner_liabilities=0,
-                        tax_rate=sim_params['tax_rate'],
-                        inflation_rate=sim_params['inflation_rate'],
-                        investment_return_rate=sim_params['investment_return_rate'],
-                        simulation_years=sim_params['simulation_years'],
-                        mc_iterations=1000
+                        financial_data,
+                        mc_params,
+                        family_cashflows
                     )
 
                     if mc_results:
@@ -255,14 +263,14 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                         "Adjusted Investment Return (%)",
                         min_value=0.0,
                         max_value=15.0,
-                        value=sim_params['investment_return_rate'] * 100,
+                        value=float(sim_params.get('investment_return_rate', 0.07) * 100),
                         step=0.5
                     ) / 100
                     adj_inflation = st.slider(
                         "Adjusted Inflation Rate (%)",
                         min_value=0.0,
                         max_value=10.0,
-                        value=sim_params['inflation_rate'] * 100,
+                        value=float(sim_params.get('inflation_rate', 0.03) * 100),
                         step=0.5
                     ) / 100
 
