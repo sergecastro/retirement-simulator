@@ -465,11 +465,16 @@ def show_ai_consultation(results: Dict, user_data: Dict, financial_data: Dict, s
     
     # Display conversation history
     if st.session_state['ai_conversation']:
-        for msg in st.session_state['ai_conversation']:
+        for idx, msg in enumerate(st.session_state['ai_conversation']):
             if msg['role'] == 'user':
                 st.markdown(f"**You:** {msg['content']}")
             else:
                 st.markdown(f"**AI Assistant:**\n\n{msg['content']}")
+
+                # Voice feature - Read Aloud
+                from features.ai_voice_handler import create_voice_player
+                create_voice_player(msg['content'], f"voice_{idx}")
+
             st.markdown("---")
     else:
         st.info("👋 **Hi! I'm your AI Planning Assistant.**\n\nI've analyzed your complete financial profile. Ask me anything:\n- Should I buy or lease my next car?\n- Can I afford to retire early?\n- Should I pay off my mortgage or invest?\n- How can I reduce my taxes?\n- What's the impact of [any life decision] on my retirement?")
