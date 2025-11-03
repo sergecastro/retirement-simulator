@@ -874,6 +874,23 @@ def show_intake_questionnaire():
         st.success("✅ **All sections complete! Review the summary above.**")
         st.info(f"💾 Your data is automatically saved to: `{get_shared_path()}`")
 
+        # Download button for data
+        try:
+            import json
+            data = load_existing_payload()
+            if data:
+                json_str = json.dumps(data, indent=2)
+                st.download_button(
+                    label="📥 Download My Data (JSON)",
+                    data=json_str,
+                    file_name=f"intake_data_{data.get('input_user_name', 'user').replace(' ', '_')}.json",
+                    mime="application/json",
+                    help="Download your intake data as a JSON file",
+                    use_container_width=True
+                )
+        except Exception as e:
+            st.error(f"Download error: {e}")
+
         st.markdown("### 🎉 Ready to Continue?")
         st.markdown("**Choose what to do next:**")
 
@@ -902,21 +919,4 @@ def show_intake_questionnaire():
 
     # Footer
     st.divider()
-
-    # Download button for data
-    try:
-        import json
-        data = load_existing_payload()
-        if data:
-            json_str = json.dumps(data, indent=2)
-            st.download_button(
-                label="📥 Download My Data (JSON)",
-                data=json_str,
-                file_name=f"intake_data_{data.get('input_user_name', 'user').replace(' ', '_')}.json",
-                mime="application/json",
-                help="Download your intake data as a JSON file"
-            )
-    except:
-        pass
-
     st.caption(f"📁 Data location: `{get_shared_path()}`")
