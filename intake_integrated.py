@@ -902,4 +902,21 @@ def show_intake_questionnaire():
 
     # Footer
     st.divider()
+
+    # Download button for data
+    try:
+        import json
+        data = load_existing_payload()
+        if data:
+            json_str = json.dumps(data, indent=2)
+            st.download_button(
+                label="📥 Download My Data (JSON)",
+                data=json_str,
+                file_name=f"intake_data_{data.get('input_user_name', 'user').replace(' ', '_')}.json",
+                mime="application/json",
+                help="Download your intake data as a JSON file"
+            )
+    except:
+        pass
+
     st.caption(f"📁 Data location: `{get_shared_path()}`")
