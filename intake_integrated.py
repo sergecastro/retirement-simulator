@@ -907,6 +907,10 @@ def show_intake_questionnaire():
                 st.session_state.mode_selected = True  # ✅ FIXED: Mark mode as selected
                 st.session_state.intake_completed = True  # ✅ FIXED: Use intake_completed (app.py expects this)
 
+                # ✅ CRITICAL: Clear the "already loaded" flag so Analysis mode loads fresh data
+                if 'intake_data_loaded' in st.session_state:
+                    del st.session_state['intake_data_loaded']
+
                 # ✅ Show celebration!
                 st.balloons()
                 st.success("✅ INTAKE completed successfully! Switching to Analysis mode...")
