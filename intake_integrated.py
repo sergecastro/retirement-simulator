@@ -2,6 +2,7 @@
 # This module provides the Data Entry Mode questionnaire
 import os
 import json
+import time
 import streamlit as st
 from pathlib import Path
 from intake_validation import (validate_age, validate_age_gap, validate_total_income,
@@ -142,23 +143,37 @@ def go_to_page(page_name):
     st.rerun()
 
 
-# ========== âœ… CRITICAL FIX: CALLBACK FUNCTION FOR COMPLETE BUTTON ==========
+# ========== ✅ CRITICAL FIX: CALLBACK FUNCTION FOR COMPLETE BUTTON ==========
 def transition_to_analysis():
     """
     Callback function that runs BEFORE st.rerun()
-    This ensures session state changes actually persist!
+    Uses multiple strategies to ensure flags persist across st.rerun()
     """
-    # Delete the intake_data_loaded flag so Analysis mode will reload data
-    if 'intake_data_loaded' in st.session_state:
-        del st.session_state['intake_data_loaded']
-    
-    # Set the force reload flag
+    import time
+
+    # Strategy 1: Delete old flags AGGRESSIVELY
+    keys_to_delete = [
+        'intake_data_loaded',
+        'intake_data_loaded_message_shown',
+        '_intake_loaded_timestamp'
+    ]
+    for key in keys_to_delete:
+        if key in st.session_state:
+            del st.session_state[key]
+
+    # Strategy 2: Set MULTIPLE reload flags (redundancy)
     st.session_state['force_reload_intake'] = True
-    
-    # Set mode flags
+    st.session_state['_force_reload_intake'] = True
+    st.session_state['_reload_timestamp'] = time.time()
+
+    # Strategy 3: Set mode flags
     st.session_state.current_mode = 'Analysis'
     st.session_state.mode_selected = True
     st.session_state.intake_completed = True
+
+    # Strategy 4: Add verification flag
+    st.session_state['callback_executed'] = True
+    st.session_state['callback_timestamp'] = time.time()
 
 
 # ========== MAIN INTAKE QUESTIONNAIRE ==========
@@ -920,19 +935,30 @@ def show_intake_questionnaire():
                 # Reset to profile page
                 go_to_page('profile')
         with col2:
-            # ✅ THE FIX: Use callback function with on_click parameter
-            st.button(
+            # ✅ FOOLPROOF FIX: Re-save file to update timestamp
+            if st.button(
                 "📊 COMPLETE & Go to Analysis Mode",
                 type="primary",
                 use_container_width=True,
-                on_click=transition_to_analysis,  # ← This runs BEFORE rerun!
                 key="complete_intake_btn"
-            )
-            
-            # Show celebration if button was clicked
-            if st.session_state.get('intake_completed', False):
+            ):
+                # RE-SAVE file to update timestamp (ensures "fresh" detection works)
+                data = load_existing_payload()
+                save_payload(data)
+
+                # Show celebration
                 st.balloons()
                 st.success("✅ INTAKE completed successfully! Switching to Analysis mode...")
+
+                # Set mode flags
+                st.session_state.current_mode = 'Analysis'
+                st.session_state.mode_selected = True
+
+                # Brief pause so user sees success
+                time.sleep(1.5)
+
+                # Rerun to Analysis mode - file will be loaded automatically
+                st.rerun()
 
     # Footer
     st.divider()

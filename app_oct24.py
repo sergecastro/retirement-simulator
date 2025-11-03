@@ -4,7 +4,7 @@ ForeCash - Retirement Planning Tool
 Main application entry point and navigation.
 
 Author: ForeCash Development Team
-Last Updated: November 3, 2025
+Last Updated: October 23, 2025
 Version: 3.0 (Refactored - Modular Architecture)
 """
 
@@ -58,6 +58,9 @@ from intake_integrated import show_intake_questionnaire
 # Import disclaimers
 import disclaimers
 
+# Import FULL chart explanation system (the real one!)
+from streamlit_explain_api_direct import inject_explain_visual_system
+
 # Additional imports for INTAKE data loading
 import json
 import os
@@ -82,67 +85,37 @@ SCROLL_TO_TOP_JS = """
 
 def load_intake_data_to_session():
     """Load INTAKE data from intake_payload.json into session state for Analysis mode"""
-    import os
-    import time
-    from pathlib import Path
-
-    # Get the correct path
+    # Get the correct path (same as intake_integrated.py uses)
     current_dir = os.getcwd()
-
-    if os.path.exists("/opt/render"):
-        shared_dir = Path("/opt/render/project/SHARED")
-    else:
-        root_dir = Path(current_dir).parent
-        shared_dir = root_dir / "SHARED"
-
-    shared_dir.mkdir(parents=True, exist_ok=True)
+    root_dir = Path(current_dir).parent
+    shared_dir = root_dir / "SHARED"
     intake_file = shared_dir / "intake_payload.json"
 
-    # DEBUG
-    st.sidebar.error("=== INTAKE LOADING DEBUG ===")
-
+    # Check if INTAKE data exists
     if not os.path.exists(intake_file):
-        st.sidebar.warning("No INTAKE file found")
-        return
+        return  # No INTAKE data, Analysis mode will use sidebar inputs
 
-    # CHECK: Was the file modified recently? (within last 10 seconds)
-    file_modified_time = os.path.getmtime(intake_file)
-    current_time = time.time()
-    seconds_since_modified = current_time - file_modified_time
-
-    st.sidebar.warning(f"File modified {seconds_since_modified:.1f} seconds ago")
-
-    # If file was modified recently, user just completed INTAKE - MUST reload!
-    # Using 30 seconds to be safe (covers Complete button → balloons → sleep → rerun → Analysis load)
-    file_is_fresh = seconds_since_modified < 30
-    already_loaded = 'intake_data_loaded' in st.session_state
-
-    st.sidebar.warning(f"File is fresh: {file_is_fresh}")
-    st.sidebar.warning(f"Already loaded: {already_loaded}")
-
-    # LOAD IF: File is fresh OR never loaded before
-    if file_is_fresh or not already_loaded:
-        st.sidebar.success("LOADING DATA NOW...")
+    # ✅ CRITICAL FIX: Only load data ONCE, not on every rerun!
+    # This prevents overwriting user changes in Analysis mode
+    if 'intake_data_loaded' not in st.session_state:
         try:
+            # Load the INTAKE data
             with open(intake_file, "r", encoding="utf-8") as f:
                 intake_data = json.load(f)
 
-            st.sidebar.info(f"Name: {intake_data.get('input_user_name', 'NONE')}")
-            st.sidebar.info(f"Age: {intake_data.get('input_age', 'NONE')}")
-
-            # Load all data into session state
+            # Load all data into session state so sidebar inputs can use it
             for key, value in intake_data.items():
                 st.session_state[key] = value
 
+            # Mark as loaded so we don't reload on every rerun
             st.session_state.intake_data_loaded = True
-            st.sidebar.success("✅ DATA LOADED!")
+
+            # Show a one-time message that INTAKE data was loaded
+            st.success("✅ INTAKE data loaded! Your information has been populated.")
+            st.session_state.intake_data_loaded_message_shown = True
 
         except Exception as e:
-            st.sidebar.error(f"Error: {e}")
-    else:
-        st.sidebar.warning("SKIPPING - File is old and already loaded")
-
-    st.sidebar.error("=" * 30)
+            st.warning(f"Could not load INTAKE data: {str(e)}")
 
 
 # =============================================================================
@@ -161,6 +134,9 @@ def main():
 
     # Require disclaimer acknowledgment
     disclaimers.require_disclaimer_acknowledgment()
+
+    # Inject chart explanation system (? buttons on charts)
+    inject_explain_visual_system()
 
     # Show sidebar header
     show_sidebar_header()
@@ -461,20 +437,12 @@ def show_analysis_mode(nav_state):
         st.info("💡 Please check your inputs in the sidebar.")
         return
 
-    # Add RUN SIMULATION button
-    st.markdown("---")
-    if st.button("🚀 RUN FINANCIAL SIMULATION", type="primary", use_container_width=True):
-        st.session_state.run_simulation = True
-
-    # Show results page if button was clicked
-    if st.session_state.get('run_simulation', False):
-        try:
-            show_results_page(nav_state, user_data, financial_data, sim_params)
-        except Exception as e:
-            st.error(f"Results display error: {str(e)}")
-            st.info("💡 Please check your simulation parameters.")
-    else:
-        st.info("👆 Click 'RUN FINANCIAL SIMULATION' button above to see results")
+    # Show results page
+    try:
+        show_results_page(nav_state, user_data, financial_data, sim_params)
+    except Exception as e:
+        st.error(f"Results display error: {str(e)}")
+        st.info("💡 Please check your simulation parameters.")
 
 
 # =============================================================================
@@ -532,12 +500,21 @@ def get_simulation_parameters():
                 help="Simulation duration"
             )
 
+            mc_iterations = st.number_input(
+                "Monte Carlo Iterations",
+                min_value=0,
+                max_value=10000,
+                value=0,
+                step=100,
+                help="Number of Monte Carlo simulations (0 = disabled, 1000+ recommended)"
+            )
+
     return {
         'tax_rate': tax_rate,
         'inflation_rate': inflation_rate,
         'investment_return_rate': investment_return_rate,
         'simulation_years': simulation_years,
-        'mc_iterations': 1000  # HARDCODED: Always run Monte Carlo with 1000 iterations
+        'mc_iterations': mc_iterations
     }
 
 
