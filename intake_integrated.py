@@ -141,6 +141,26 @@ def go_to_page(page_name):
     st.session_state.intake_current_page = page_name
     st.rerun()
 
+
+# ========== âœ… CRITICAL FIX: CALLBACK FUNCTION FOR COMPLETE BUTTON ==========
+def transition_to_analysis():
+    """
+    Callback function that runs BEFORE st.rerun()
+    This ensures session state changes actually persist!
+    """
+    # Delete the intake_data_loaded flag so Analysis mode will reload data
+    if 'intake_data_loaded' in st.session_state:
+        del st.session_state['intake_data_loaded']
+    
+    # Set the force reload flag
+    st.session_state['force_reload_intake'] = True
+    
+    # Set mode flags
+    st.session_state.current_mode = 'Analysis'
+    st.session_state.mode_selected = True
+    st.session_state.intake_completed = True
+
+
 # ========== MAIN INTAKE QUESTIONNAIRE ==========
 def show_intake_questionnaire():
     """Main function to display the intake questionnaire"""
@@ -212,7 +232,7 @@ def show_intake_questionnaire():
             - Children's education planning
             - Future goals and inheritances
 
-            **Let's get started!** 📝
+            **Let's get started!** 🚀
             """)
 
         st.divider()
@@ -900,26 +920,19 @@ def show_intake_questionnaire():
                 # Reset to profile page
                 go_to_page('profile')
         with col2:
-            if st.button("📊 COMPLETE & Go to Analysis Mode", type="primary", use_container_width=True):
-                # Mark intake as complete and go to Analysis mode
-                st.session_state.intake_in_progress = False
-                st.session_state.current_mode = 'Analysis'  # ✅ FIXED: Use current_mode (app.py expects this)
-                st.session_state.mode_selected = True  # ✅ FIXED: Mark mode as selected
-                st.session_state.intake_completed = True  # ✅ FIXED: Use intake_completed (app.py expects this)
-
-                # ✅ CRITICAL: Clear the "already loaded" flag so Analysis mode loads fresh data
-                if 'intake_data_loaded' in st.session_state:
-                    del st.session_state['intake_data_loaded']
-
-                # ✅ Show celebration!
+            # ✅ THE FIX: Use callback function with on_click parameter
+            st.button(
+                "📊 COMPLETE & Go to Analysis Mode",
+                type="primary",
+                use_container_width=True,
+                on_click=transition_to_analysis,  # ← This runs BEFORE rerun!
+                key="complete_intake_btn"
+            )
+            
+            # Show celebration if button was clicked
+            if st.session_state.get('intake_completed', False):
                 st.balloons()
                 st.success("✅ INTAKE completed successfully! Switching to Analysis mode...")
-
-                # ✅ Brief pause so user sees the success message
-                import time
-                time.sleep(1.5)
-
-                st.rerun()  # ✅ Only rerun AFTER save and celebration
 
     # Footer
     st.divider()

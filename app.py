@@ -4,7 +4,7 @@ ForeCash - Retirement Planning Tool
 Main application entry point and navigation.
 
 Author: ForeCash Development Team
-Last Updated: October 23, 2025
+Last Updated: November 3, 2025
 Version: 3.0 (Refactored - Modular Architecture)
 """
 
@@ -97,22 +97,17 @@ def load_intake_data_to_session():
     shared_dir.mkdir(parents=True, exist_ok=True)
     intake_file = shared_dir / "intake_payload.json"
 
-    # DEBUG: Show what we're checking
-    st.warning(f"🔍 DEBUG: Checking for INTAKE data...")
-    st.warning(f"🔍 Path: {intake_file}")
-    st.warning(f"🔍 File exists: {os.path.exists(intake_file)}")
-    st.warning(f"🔍 Already loaded flag: {'intake_data_loaded' in st.session_state}")
-
     # Check if INTAKE data exists
     if not os.path.exists(intake_file):
-        st.error(f"❌ No INTAKE data found at: {intake_file}")
         return  # No INTAKE data, Analysis mode will use sidebar inputs
-    else:
-        st.success(f"✅ Found INTAKE data at: {intake_file}")
 
-    # ✅ CRITICAL FIX: Only load data ONCE, not on every rerun!
-    # This prevents overwriting user changes in Analysis mode
-    if 'intake_data_loaded' not in st.session_state:
+    # ✅ FIXED: Check if we should reload data
+    force_reload = st.session_state.get('force_reload_intake', False)
+    
+    # Load data if:
+    # 1. Never loaded before (first visit to Analysis), OR
+    # 2. force_reload_intake flag is True (just completed INTAKE)
+    if force_reload or 'intake_data_loaded' not in st.session_state:
         try:
             # Load the INTAKE data
             with open(intake_file, "r", encoding="utf-8") as f:
@@ -125,9 +120,13 @@ def load_intake_data_to_session():
             # Mark as loaded so we don't reload on every rerun
             st.session_state.intake_data_loaded = True
 
-            # Show a one-time message that INTAKE data was loaded
-            st.success("✅ INTAKE data loaded! Your information has been populated.")
-            st.session_state.intake_data_loaded_message_shown = True
+            # Clear the force reload flag if it exists
+            if 'force_reload_intake' in st.session_state:
+                del st.session_state['force_reload_intake']
+
+            # Show a one-time success message
+            if force_reload:
+                st.success("✅ INTAKE data loaded! Your information has been populated.")
 
         except Exception as e:
             st.warning(f"Could not load INTAKE data: {str(e)}")
