@@ -97,12 +97,18 @@ def load_intake_data_to_session():
     shared_dir.mkdir(parents=True, exist_ok=True)
     intake_file = shared_dir / "intake_payload.json"
 
+    # DEBUG: Show what we're checking
+    st.warning(f"🔍 DEBUG: Checking for INTAKE data...")
+    st.warning(f"🔍 Path: {intake_file}")
+    st.warning(f"🔍 File exists: {os.path.exists(intake_file)}")
+    st.warning(f"🔍 Already loaded flag: {'intake_data_loaded' in st.session_state}")
+
     # Check if INTAKE data exists
     if not os.path.exists(intake_file):
-        st.warning(f"⚠️ No INTAKE data found at: {intake_file}")
+        st.error(f"❌ No INTAKE data found at: {intake_file}")
         return  # No INTAKE data, Analysis mode will use sidebar inputs
     else:
-        st.info(f"📁 Found INTAKE data at: {intake_file}")
+        st.success(f"✅ Found INTAKE data at: {intake_file}")
 
     # ✅ CRITICAL FIX: Only load data ONCE, not on every rerun!
     # This prevents overwriting user changes in Analysis mode
