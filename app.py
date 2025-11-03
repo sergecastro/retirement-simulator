@@ -84,8 +84,17 @@ def load_intake_data_to_session():
     """Load INTAKE data from intake_payload.json into session state for Analysis mode"""
     # Get the correct path (same as intake_integrated.py uses)
     current_dir = os.getcwd()
-    root_dir = Path(current_dir).parent
-    shared_dir = root_dir / "SHARED"
+
+    # Check if we're on Render (production) or local
+    if os.path.exists("/opt/render"):
+        # Production: SHARED is at /opt/render/project/SHARED
+        shared_dir = Path("/opt/render/project/SHARED")
+    else:
+        # Local: SHARED is one level up
+        root_dir = Path(current_dir).parent
+        shared_dir = root_dir / "SHARED"
+
+    shared_dir.mkdir(parents=True, exist_ok=True)
     intake_file = shared_dir / "intake_payload.json"
 
     # Check if INTAKE data exists
