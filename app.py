@@ -99,7 +99,10 @@ def load_intake_data_to_session():
 
     # Check if INTAKE data exists
     if not os.path.exists(intake_file):
+        st.warning(f"⚠️ No INTAKE data found at: {intake_file}")
         return  # No INTAKE data, Analysis mode will use sidebar inputs
+    else:
+        st.info(f"📁 Found INTAKE data at: {intake_file}")
 
     # ✅ CRITICAL FIX: Only load data ONCE, not on every rerun!
     # This prevents overwriting user changes in Analysis mode
