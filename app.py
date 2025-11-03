@@ -98,51 +98,34 @@ def load_intake_data_to_session():
     shared_dir.mkdir(parents=True, exist_ok=True)
     intake_file = shared_dir / "intake_payload.json"
 
-    # DEBUG
-    st.sidebar.error("=== INTAKE LOADING DEBUG ===")
-
     if not os.path.exists(intake_file):
-        st.sidebar.warning("No INTAKE file found")
         return
 
-    # CHECK: Was the file modified recently? (within last 10 seconds)
+    # CHECK: Was the file modified recently? (within last 30 seconds)
     file_modified_time = os.path.getmtime(intake_file)
     current_time = time.time()
     seconds_since_modified = current_time - file_modified_time
-
-    st.sidebar.warning(f"File modified {seconds_since_modified:.1f} seconds ago")
 
     # If file was modified recently, user just completed INTAKE - MUST reload!
     # Using 30 seconds to be safe (covers Complete button → balloons → sleep → rerun → Analysis load)
     file_is_fresh = seconds_since_modified < 30
     already_loaded = 'intake_data_loaded' in st.session_state
 
-    st.sidebar.warning(f"File is fresh: {file_is_fresh}")
-    st.sidebar.warning(f"Already loaded: {already_loaded}")
-
     # LOAD IF: File is fresh OR never loaded before
     if file_is_fresh or not already_loaded:
-        st.sidebar.success("LOADING DATA NOW...")
         try:
             with open(intake_file, "r", encoding="utf-8") as f:
                 intake_data = json.load(f)
-
-            st.sidebar.info(f"Name: {intake_data.get('input_user_name', 'NONE')}")
-            st.sidebar.info(f"Age: {intake_data.get('input_age', 'NONE')}")
 
             # Load all data into session state
             for key, value in intake_data.items():
                 st.session_state[key] = value
 
             st.session_state.intake_data_loaded = True
-            st.sidebar.success("✅ DATA LOADED!")
 
         except Exception as e:
-            st.sidebar.error(f"Error: {e}")
-    else:
-        st.sidebar.warning("SKIPPING - File is old and already loaded")
-
-    st.sidebar.error("=" * 30)
+            # Silently fail - user will use sidebar inputs
+            pass
 
 
 # =============================================================================
@@ -434,6 +417,27 @@ def show_analysis_mode(nav_state):
 
     st.title("📊 Retirement Analysis")
     st.markdown("*Advanced simulation and planning tools*")
+
+    # ✅ Welcome message with user data from INTAKE
+    user_name = st.session_state.get('input_user_name', '')
+    user_age = st.session_state.get('input_age', None)
+    partner_exists = st.session_state.get('input_partner_exists', False)
+    partner_name = st.session_state.get('input_partner_name', '')
+    partner_age = st.session_state.get('input_partner_age', None)
+
+    if user_name:
+        st.success(f"👋 **Welcome {user_name}!**")
+        welcome_parts = []
+        if user_age:
+            welcome_parts.append(f"Your Age: **{user_age}**")
+        if partner_exists and partner_name:
+            partner_info = f"Partner: **{partner_name}**"
+            if partner_age:
+                partner_info += f", Age **{partner_age}**"
+            welcome_parts.append(partner_info)
+        if welcome_parts:
+            st.info(" | ".join(welcome_parts))
+
     st.markdown("---")
 
     # Get user trust status
