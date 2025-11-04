@@ -123,17 +123,17 @@ def load_existing_payload():
     """Load previous intake data if exists, or template for first-time users"""
     shared_path = get_shared_path()
 
-    # DEBUG: Show what we're checking
-    st.warning(f"🔍 Looking for saved data at: {shared_path}")
-    st.warning(f"🔍 File exists: {os.path.exists(shared_path)}")
-
     if os.path.exists(shared_path):
         # RETURNING USER - load their data
         try:
             with open(shared_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             st.session_state['intake_is_returning_user'] = True
-            st.success(f"✅ Loading YOUR saved data: {data.get('input_user_name', 'Unknown')}")
+            user_name = data.get('input_user_name', '')
+            if user_name:
+                st.success(f"👋 Welcome back, {user_name}! Your previous data has been loaded.")
+            else:
+                st.success("👋 Welcome back! Your previous data has been loaded.")
             return data
         except Exception as e:
             st.error(f"❌ Error loading saved data: {e}")
@@ -141,7 +141,7 @@ def load_existing_payload():
 
     # FIRST-TIME USER - load template scenario
     st.session_state['intake_is_returning_user'] = False
-    st.info("ℹ️ No saved data found - loading demo template")
+    st.info("ℹ️ No saved data found - starting with a sample scenario to guide you.")
     return load_template_data()
 
 def save_payload(data):
