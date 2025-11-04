@@ -1,7 +1,7 @@
-# ⚖️ ForeCash Regulatory Compliance Disclaimers
+# ⚖️ Family Forecast Regulatory Compliance Disclaimers
 """
 CRITICAL: These disclaimers MUST appear in all appropriate locations to ensure
-ForeCash complies with financial regulatory requirements and clearly communicates
+Family Forecast complies with financial regulatory requirements and clearly communicates
 that we provide planning tools, NOT financial advice.
 
 Last Updated: October 21, 2025
@@ -18,24 +18,24 @@ import streamlit as st
 PRIMARY_DISCLAIMER = """
 **⚠️ IMPORTANT LEGAL DISCLAIMER:**
 
-ForeCash is an **educational planning tool** and does **NOT provide financial, investment, 
-tax, or legal advice**. All projections, simulations, and AI-generated content are for 
-**informational and educational purposes only** and should not be considered professional 
+Family Forecast is an **educational planning tool** and does **NOT provide financial, investment,
+tax, or legal advice**. All projections, simulations, and AI-generated content are for
+**informational and educational purposes only** and should not be considered professional
 financial advice or recommendations.
 
 **Key Points:**
-- 📊 **Not Financial Advice:** ForeCash does not recommend specific investments, securities, 
+- 📊 **Not Financial Advice:** Family Forecast does not recommend specific investments, securities,
   or financial strategies
-- 🤖 **AI-Generated Content:** AI responses are based on algorithms and may contain errors 
+- 🤖 **AI-Generated Content:** AI responses are based on algorithms and may contain errors
   or inaccuracies
 - 📈 **No Guarantees:** Past performance and projections do not guarantee future results
-- 👨‍💼 **Consult Professionals:** Always consult qualified financial advisors, tax 
+- 👨‍💼 **Consult Professionals:** Always consult qualified financial advisors, tax
   professionals, and legal counsel before making financial decisions
-- 🔒 **Your Data:** All data is stored in your browser session only and is not saved on 
+- 🔒 **Your Data:** All data is stored in your browser session only and is not saved on
   our servers (privacy-first design)
-- ⚖️ **Not Fiduciary:** ForeCash and its operators do not act in a fiduciary capacity
+- ⚖️ **Not Fiduciary:** Family Forecast and its operators do not act in a fiduciary capacity
 
-**By using ForeCash, you acknowledge this disclaimer and agree to use this tool at your 
+**By using Family Forecast, you acknowledge this disclaimer and agree to use this tool at your
 own risk.**
 """
 
@@ -132,7 +132,7 @@ SIMULATION_RESULTS_DISCLAIMER = """
 DATA_PRIVACY_NOTICE = """
 **🔒 YOUR DATA PRIVACY:**
 
-**How ForeCash Handles Your Data:**
+**How Family Forecast Handles Your Data:**
 ✅ **Session-Only Storage:** All financial data stored in your browser session only
 ✅ **No Server Storage:** We do NOT save your financial information on our servers
 ✅ **No Account Required:** No email, no registration, no tracking
@@ -187,7 +187,7 @@ returns to show a range of possible outcomes.
 TAX_DISCLAIMER = """
 **💰 TAX INFORMATION DISCLAIMER:**
 
-**IMPORTANT:** ForeCash provides **general information** about tax concepts (RMDs, Roth 
+**IMPORTANT:** Family Forecast provides **general information** about tax concepts (RMDs, Roth
 conversions, tax brackets, etc.) for **educational purposes only**.
 
 **We Do NOT:**
@@ -202,10 +202,10 @@ conversions, tax brackets, etc.) for **educational purposes only**.
 - Changed frequently by legislation
 - Affected by state and federal laws
 
-**⚠️ ALWAYS consult a qualified tax professional (CPA, EA, or tax attorney) before making 
+**⚠️ ALWAYS consult a qualified tax professional (CPA, EA, or tax attorney) before making
 tax-related decisions.**
 
-The tax calculations in ForeCash use simplified assumptions and may not reflect your 
+The tax calculations in Family Forecast use simplified assumptions and may not reflect your
 actual tax liability.
 """
 
@@ -217,7 +217,7 @@ actual tax liability.
 MEDICARE_IRMAA_DISCLAIMER = """
 **🏥 MEDICARE & IRMAA INFORMATION DISCLAIMER:**
 
-ForeCash provides **general information** about Medicare premiums and Income-Related 
+Family Forecast provides **general information** about Medicare premiums and Income-Related
 Monthly Adjustment Amounts (IRMAA) for **educational purposes only**.
 
 **Not Healthcare Advice:**
@@ -346,11 +346,11 @@ def require_disclaimer_acknowledgment():
         with col2:
             acknowledge = st.checkbox(
                 "✅ I have read and understand the disclaimer above. I acknowledge that "
-                "ForeCash is an educational planning tool and does NOT provide financial advice.",
+                "Family Forecast is an educational planning tool and does NOT provide financial advice.",
                 key="disclaimer_checkbox"
             )
-            
-            if st.button("Continue to ForeCash", disabled=not acknowledge, type="primary"):
+
+            if st.button("Continue to Family Forecast", disabled=not acknowledge, type="primary"):
                 st.session_state.disclaimer_acknowledged = True
                 st.rerun()
         
@@ -487,7 +487,7 @@ ONGOING MAINTENANCE:
 
 
 if __name__ == "__main__":
-    print("✅ ForeCash Regulatory Disclaimers Module")
+    print("✅ Family Forecast Regulatory Disclaimers Module")
     print("=" * 60)
     print("\nThis module provides comprehensive legal disclaimers for:")
     print("  • Main application")
