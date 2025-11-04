@@ -155,6 +155,11 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         # Track retirement balances for RMD calculations
         user_retirement_balance = ira_balance + four01k_403b_balance
         partner_retirement_balance = partner_ira_balance + partner_four01k_403b_balance
+
+        # DEBUG: Show initial partner retirement balance
+        print(f"🔍 DEBUG INITIAL: partner_exists={partner_exists}, partner_age={partner_age}")
+        print(f"🔍 DEBUG INITIAL: partner_ira_balance={partner_ira_balance}, partner_401k={partner_four01k_403b_balance}")
+        print(f"🔍 DEBUG INITIAL: partner_retirement_balance={partner_retirement_balance}")
         
         monthly_surplus = safe_float(monthly_surplus)
         combined_total_liabilities = safe_float(combined_total_liabilities)
@@ -273,10 +278,20 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
                 user_rmd = user_retirement_balance / factor
                 user_retirement_balance -= user_rmd
 
+            # DEBUG: Partner RMD calculation
+            if year_idx == 0:  # Only print for first year to avoid spam
+                print(f"🔍 DEBUG RMD YEAR {year}: partner_exists={partner_exists}, current_partner_age={current_partner_age}, partner_retirement_balance={partner_retirement_balance}")
+                print(f"🔍 DEBUG RMD: Condition check: partner_exists={partner_exists}, age>=73={current_partner_age >= 73}, balance>0={partner_retirement_balance > 0}")
+
             if partner_exists and current_partner_age >= 73 and partner_retirement_balance > 0:
                 factor = rmd_factors.get(current_partner_age, 27.4)
                 partner_rmd = partner_retirement_balance / factor
                 partner_retirement_balance -= partner_rmd
+                if year_idx == 0:  # Only print for first year
+                    print(f"🔍 DEBUG RMD: CALCULATING! factor={factor}, partner_rmd={partner_rmd}")
+            else:
+                if year_idx == 0:  # Only print for first year
+                    print(f"🔍 DEBUG RMD: SKIPPED (condition failed)")
             
             total_rmd = user_rmd + partner_rmd
             
