@@ -231,14 +231,14 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         # IRMAA costs (Added for IRMAA)
         irmaa_cost_list = []
         
-        # RMD factors (IRS Uniform Lifetime Table)
+        # RMD factors (IRS Uniform Lifetime Table) - Corrected 2024+ values
         rmd_factors = {
-            73: 27.4, 74: 26.5, 75: 25.5, 76: 24.6, 77: 23.7, 
-            78: 22.9, 79: 22.0, 80: 21.1, 81: 20.2, 82: 19.4,
-            83: 18.5, 84: 17.7, 85: 16.8, 86: 16.0, 87: 15.2,
-            88: 14.4, 89: 13.7, 90: 12.9, 91: 12.2, 92: 11.5,
-            93: 10.8, 94: 10.1, 95: 9.5, 96: 8.9, 97: 8.4,
-            98: 7.8, 99: 7.3, 100: 6.8
+            73: 27.4, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9,
+            78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4, 82: 18.5,
+            83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4,
+            88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5, 92: 10.8,
+            93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4, 97: 7.8,
+            98: 7.3, 99: 6.8, 100: 6.4
         }
         
         # Initial savings
@@ -251,7 +251,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         for year_idx in range(simulation_years):
             year = start_year + year_idx
             user_age = age + year_idx
-            partner_age = partner_age + year_idx if partner_exists else 0
+            current_partner_age = partner_age + year_idx if partner_exists else 0
             
             # Initialize annual values
             annual_income = base_total_income * (1 + inflation_rate / 100) ** year_idx
@@ -273,8 +273,8 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
                 user_rmd = user_retirement_balance / factor
                 user_retirement_balance -= user_rmd
 
-            if partner_exists and partner_age >= 73 and partner_retirement_balance > 0:
-                factor = rmd_factors.get(partner_age, 27.4)
+            if partner_exists and current_partner_age >= 73 and partner_retirement_balance > 0:
+                factor = rmd_factors.get(current_partner_age, 27.4)
                 partner_rmd = partner_retirement_balance / factor
                 partner_retirement_balance -= partner_rmd
             
