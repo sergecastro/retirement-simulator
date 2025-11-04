@@ -1,6 +1,6 @@
 # features/ai_voice_handler.py
 """
-AI Voice Handler - Text-to-Speech for ForeCash AI Advisor
+AI Voice Handler - Text-to-Speech for Family Forecast AI Advisor
 Uses browser's built-in TTS (works on desktop and mobile)
 """
 
@@ -146,7 +146,7 @@ def test_voice():
     """Quick test function"""
     st.title("🎤 Voice Test")
 
-    test_text = "Hello! This is ForeCash AI advisor. Based on your retirement savings of eight hundred thousand dollars, your projected annual expenses of seventy-five thousand dollars, and your planned retirement age of sixty-five, our Monte Carlo analysis shows a ninety-two percent success rate."
+    test_text = "Hello! This is Family Forecast AI advisor. Based on your retirement savings of eight hundred thousand dollars, your projected annual expenses of seventy-five thousand dollars, and your planned retirement age of sixty-five, our Monte Carlo analysis shows a ninety-two percent success rate."
 
     st.write("**Test Text:**")
     st.write(test_text)
