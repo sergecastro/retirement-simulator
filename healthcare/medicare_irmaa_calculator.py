@@ -4,7 +4,7 @@ Medicare IRMAA Calculator
 Calculates Medicare Part B and Part D premiums including Income-Related
 Monthly Adjustment Amounts (IRMAA) based on Modified Adjusted Gross Income (MAGI).
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 22, 2025
 Data Source: CMS 2025 IRMAA Tables
 """

@@ -5,7 +5,7 @@ Comprehensive data tables for Medicare costs, IRMAA brackets, regional adjustmen
 and historical trends. This module provides all the reference data needed for
 Medicare cost projections.
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 22, 2025
 Data Sources: CMS, Kaiser Family Foundation, AARP
 """

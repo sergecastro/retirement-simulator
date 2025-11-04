@@ -3,7 +3,7 @@ Medicare IRMAA Calculator - User Interface
 ==========================================
 Streamlit UI for Medicare IRMAA premium calculator with Roth conversion analyzer.
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 22, 2025
 """
 

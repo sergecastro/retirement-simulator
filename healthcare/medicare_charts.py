@@ -4,7 +4,7 @@ Medicare Charts & Visualizations
 Comprehensive charting library for Medicare cost visualizations including
 IRMAA brackets, multi-year projections, state comparisons, and scenario analysis.
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 22, 2025
 """
 

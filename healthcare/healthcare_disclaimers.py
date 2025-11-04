@@ -4,10 +4,10 @@ Healthcare Cost Projector - Legal Disclaimers
 Comprehensive legal disclaimers for healthcare features including Medicare,
 Medigap, Medicare Advantage, and Long-Term Care analysis.
 
-CRITICAL: These disclaimers MUST be displayed to ensure ForeCash complies
+CRITICAL: These disclaimers MUST be displayed to ensure Family Forecast complies
 with healthcare and insurance regulatory requirements.
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 22, 2025
 Legal Review: REQUIRED before production deployment
 """
@@ -23,7 +23,7 @@ from datetime import datetime
 PRIMARY_HEALTHCARE_DISCLAIMER = """
 **🏥 HEALTHCARE COST PROJECTOR - IMPORTANT NOTICE**
 
-ForeCash's Healthcare Cost Projector provides **general educational information** about
+Family Forecast's Healthcare Cost Projector provides **general educational information** about
 healthcare costs, Medicare, insurance options, and long-term care planning for
 **informational and educational purposes only**.
 
@@ -69,7 +69,7 @@ insurance plan data
 - This is educational information only, not medical or insurance advice
 - You will verify all information with official sources and professionals
 - You understand healthcare and insurance decisions require professional guidance
-- ForeCash does not act as an insurance broker, agent, or healthcare advisor
+- Family Forecast does not act as an insurance broker, agent, or healthcare advisor
 
 **Use this tool to ask better questions of your advisors, NOT to replace them.**
 """

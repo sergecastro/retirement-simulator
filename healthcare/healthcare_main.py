@@ -4,7 +4,7 @@ Healthcare Cost Projector - Main Hub
 Main navigation page for all healthcare planning tools including Medicare IRMAA
 calculator, Medigap vs Medicare Advantage comparison, and Long-Term Care analysis.
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 22, 2025
 """
 
@@ -462,7 +462,7 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #666; padding: 20px;'>
-    <p><strong>ForeCash Healthcare Cost Projector</strong></p>
+    <p><strong>Family Forecast Healthcare Cost Projector</strong></p>
     <p>Educational planning tool for retirement healthcare costs</p>
     <p style='font-size: 0.9em;'>Always consult qualified professionals before making healthcare or financial decisions</p>
     </div>

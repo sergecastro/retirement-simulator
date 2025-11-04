@@ -1,5 +1,5 @@
 """
-ForeCash Healthcare Cost Projector
+Family Forecast Healthcare Cost Projector
 ==================================
 
 Medicare premium calculation and healthcare cost projection tools.
@@ -12,7 +12,7 @@ Modules:
 - medicare_charts: Plotly visualization library for Medicare costs
 - healthcare_main: Main navigation hub for healthcare planning tools
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 22, 2025
 """
 
