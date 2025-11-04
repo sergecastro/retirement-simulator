@@ -197,5 +197,5 @@ def setup_sidebar():
 # =============================================================================
 
 if __name__ == "__main__":
-    print("✅ ForeCash Navigation Module")
+    print("✅ Family Forecast Navigation Module")
     print("Functions: mode_selector, feature_toggles, navigation_menu")
