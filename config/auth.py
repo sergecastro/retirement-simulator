@@ -1,9 +1,9 @@
 """
-ForeCash Authentication
+Family Forecast Authentication
 =======================
 User authentication and access control.
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 23, 2025
 """
 
@@ -43,7 +43,7 @@ def show_login_screen():
     Returns:
         bool: True if authenticated, False if still showing login
     """
-    st.title("🏠 ForeCash Family Lifecycle Retirement Planner v3.0")
+    st.title("🏠 Family Forecast Lifecycle Retirement Planner v3.0")
     st.markdown("*Interactive Financial Planning & Simulation Tool*")
 
     # Password protection
@@ -120,6 +120,6 @@ def is_trusted_user():
 # =============================================================================
 
 if __name__ == "__main__":
-    print("✅ ForeCash Authentication Module")
+    print("✅ Family Forecast Authentication Module")
     print(f"Demo password: {DEMO_PASSWORD}")
     print(f"Trusted password: [hidden]")

@@ -1,9 +1,9 @@
 """
-ForeCash Configuration & Settings
+Family Forecast Configuration & Settings
 ==================================
 Application-wide settings, constants, styling, and configuration.
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 22, 2025
 """
 
@@ -19,7 +19,7 @@ import socket
 def setup_page_config():
     """Configure Streamlit page settings"""
     st.set_page_config(
-        page_title="ForeCash Retirement Planner",
+        page_title="Family Forecast Retirement Planner",
         page_icon="🏠",
         layout="wide",
         initial_sidebar_state="expanded"
@@ -177,7 +177,7 @@ def get_feature_flags(is_trusted_user=False):
 # =============================================================================
 
 APP_VERSION = "3.0"
-APP_NAME = "ForeCash Family Lifecycle Retirement Planner"
+APP_NAME = "Family Forecast Lifecycle Retirement Planner"
 APP_TAGLINE = "Interactive Financial Planning & Simulation Tool"
 
 
@@ -218,5 +218,5 @@ def initialize_app():
 
 
 if __name__ == "__main__":
-    print("✅ ForeCash Configuration Module")
+    print("✅ Family Forecast Configuration Module")
     print(f"App: {APP_NAME} v{APP_VERSION}")
