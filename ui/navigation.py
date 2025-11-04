@@ -1,9 +1,9 @@
 """
-ForeCash Navigation & Mode Selection
+Family Forecast Navigation & Mode Selection
 =====================================
 Handles navigation between different modes and features of the application.
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 22, 2025
 """
 
@@ -145,7 +145,7 @@ def get_navigation_state():
 def show_sidebar_header():
     """Display sidebar header with app info"""
     with st.sidebar:
-        st.title("🏠 ForeCash")
+        st.title("🏠 Family Forecast")
         st.markdown("*Retirement Planning Suite*")
         st.markdown("---")
 
@@ -169,7 +169,7 @@ def show_sidebar_footer(is_trusted):
         else:
             st.info("👤 Demo Access")
 
-        st.caption("ForeCash v3.0")
+        st.caption("Family Forecast v3.0")
 
 
 # =============================================================================
