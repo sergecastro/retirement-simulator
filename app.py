@@ -1,9 +1,9 @@
 """
-ForeCash - Retirement Planning Tool
+Family Forecast - Retirement Planning Tool
 ====================================
 Main application entry point and navigation.
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: November 3, 2025
 Version: 3.0 (Refactored - Modular Architecture)
 """
@@ -245,7 +245,7 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
         is_trusted: Whether user has trusted access
     """
     # Welcome header
-    st.title("🏠 Welcome to ForeCash!")
+    st.title("🏠 Welcome to Family Forecast!")
     st.markdown("## *Family Lifecycle Retirement Planner*")
 
     # Welcome message box
@@ -253,7 +253,7 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     <div style='background-color: #E8E6E0; padding: 20px; border-radius: 10px; border-left: 5px solid #E8B541;'>
         <h3 style='margin-top: 0; color: #003D5B;'>👋 Welcome!</h3>
         <p style='font-size: 16px; color: #555B66;'>
-            ForeCash is your comprehensive retirement planning companion. We help you visualize your
+            Family Forecast is your comprehensive retirement planning companion. We help you visualize your
             financial future with interactive simulations, AI-powered insights, and detailed projections.
         </p>
         <p style='font-size: 16px; color: #555B66; margin-bottom: 0;'>
@@ -330,7 +330,7 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
         ### Making Your Choice
 
         **Choose INTAKE Mode if:**
-        - 🆕 This is your first time using ForeCash
+        - 🆕 This is your first time using Family Forecast
         - 📝 You want guided, step-by-step data collection
         - 🔄 You want to update or review your profile information
         - 🤔 You're not sure what information you need
