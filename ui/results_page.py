@@ -1,10 +1,10 @@
 """
-ForeCash Results Display Page
+Family Forecast Results Display Page
 ==============================
 Complete results display for Analysis mode including all charts, metrics,
 and analysis features.
 
-Author: ForeCash Development Team
+Author: Family Forecast Development Team
 Last Updated: October 22, 2025
 """
 
@@ -429,5 +429,5 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
 # =============================================================================
 
 if __name__ == "__main__":
-    print("✅ ForeCash Results Page Module")
+    print("✅ Family Forecast Results Page Module")
     print("Functions: show_results_page")
