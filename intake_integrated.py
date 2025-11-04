@@ -22,11 +22,17 @@ SCROLL_TO_TOP_JS = """
 
 # ========== HELPER FUNCTIONS ==========
 def get_shared_path():
-    """Get path to shared intake payload file"""
+    """Get path to shared intake payload file (same logic as app.py)"""
     current_dir = os.getcwd()
-    root_dir = Path(current_dir).parent
-    shared_dir = root_dir / "SHARED"
-    shared_dir.mkdir(exist_ok=True)
+
+    # Check if we're on Render (production) or local
+    if os.path.exists("/opt/render"):
+        shared_dir = Path("/opt/render/project/SHARED")
+    else:
+        root_dir = Path(current_dir).parent
+        shared_dir = root_dir / "SHARED"
+
+    shared_dir.mkdir(parents=True, exist_ok=True)
     return str(shared_dir / "intake_payload.json")
 
 def load_template_data():
@@ -117,18 +123,25 @@ def load_existing_payload():
     """Load previous intake data if exists, or template for first-time users"""
     shared_path = get_shared_path()
 
+    # DEBUG: Show what we're checking
+    st.warning(f"🔍 Looking for saved data at: {shared_path}")
+    st.warning(f"🔍 File exists: {os.path.exists(shared_path)}")
+
     if os.path.exists(shared_path):
         # RETURNING USER - load their data
         try:
             with open(shared_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             st.session_state['intake_is_returning_user'] = True
+            st.success(f"✅ Loading YOUR saved data: {data.get('input_user_name', 'Unknown')}")
             return data
-        except Exception:
+        except Exception as e:
+            st.error(f"❌ Error loading saved data: {e}")
             pass
 
     # FIRST-TIME USER - load template scenario
     st.session_state['intake_is_returning_user'] = False
+    st.info("ℹ️ No saved data found - loading demo template")
     return load_template_data()
 
 def save_payload(data):
