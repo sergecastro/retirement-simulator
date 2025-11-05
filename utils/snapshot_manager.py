@@ -137,15 +137,25 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
 
     # Save snapshot data to localStorage (encrypted)
     snapshot_key = f"family_forecast_snapshot_{snapshot_id}"
+
+    # DEBUG: Print what we're saving
+    print(f"DEBUG: Saving snapshot '{snapshot_name}' with ID {snapshot_id}")
+
     success = save_to_local_storage_encrypted(snapshot_key, data)
 
     if not success:
+        print(f"DEBUG: FAILED to save snapshot data for {snapshot_id}")
         return None
 
     # Update snapshots index
     index = get_snapshots_index()
+    print(f"DEBUG: Current index before update: {len(index.get('snapshots', []))} snapshots")
+
     index["current_snapshot_id"] = snapshot_id
     index["snapshots"].append(snapshot)
+
+    print(f"DEBUG: Updated index: {len(index['snapshots'])} snapshots")
+
     save_snapshots_index(index)
 
     return snapshot_id
