@@ -11,6 +11,9 @@ from intake_validation import (validate_age, validate_age_gap, validate_total_in
                                 validate_income_vs_expenses, show_validation_message)
 from intake_review import show_assets_page, show_liabilities_page, show_family_page, show_review_page
 
+# NEW: localStorage functions for privacy-safe storage
+from utils.local_storage import save_to_local_storage_encrypted, load_from_local_storage_encrypted
+
 # ========== SCROLL TO TOP FIX ==========
 # JavaScript to force page scroll to top BEFORE content renders
 SCROLL_TO_TOP_JS = """
@@ -120,35 +123,70 @@ def load_template_data():
     return template
 
 def load_existing_payload():
-    """Load previous intake data if exists, or template for first-time users"""
-    shared_path = get_shared_path()
+    """
+    Load previous intake data from localStorage, or template for first-time users
 
-    if os.path.exists(shared_path):
-        # RETURNING USER - load their data
-        try:
-            with open(shared_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            st.session_state['intake_is_returning_user'] = True
-            user_name = data.get('input_user_name', '')
-            if user_name:
-                st.success(f"👋 Welcome back, {user_name}! Your previous data has been loaded.")
-            else:
-                st.success("👋 Welcome back! Your previous data has been loaded.")
-            return data
-        except Exception as e:
-            st.error(f"❌ Error loading saved data: {e}")
-            pass
+    PRIVACY FIX: Now loads from USER'S BROWSER localStorage (not shared file)
+    """
+    # NEW: Try to load from localStorage (browser-side storage)
+    data = load_from_local_storage_encrypted('family_forecast_intake_data')
 
-    # FIRST-TIME USER - load template scenario
+    if data:
+        # RETURNING USER - found encrypted data in their browser
+        st.session_state['intake_is_returning_user'] = True
+        user_name = data.get('input_user_name', '')
+        if user_name:
+            st.success(f"👋 Welcome back, {user_name}! Your previous data has been loaded.")
+        else:
+            st.success("👋 Welcome back! Your previous data has been loaded.")
+        return data
+
+    # FIRST-TIME USER - no data in localStorage, load template scenario
     st.session_state['intake_is_returning_user'] = False
     st.info("ℹ️ No saved data found - starting with a sample scenario to guide you.")
     return load_template_data()
 
+    # OLD CODE (KEPT FOR ROLLBACK - DO NOT DELETE):
+    # shared_path = get_shared_path()
+    # if os.path.exists(shared_path):
+    #     # RETURNING USER - load their data
+    #     try:
+    #         with open(shared_path, "r", encoding="utf-8") as f:
+    #             data = json.load(f)
+    #         st.session_state['intake_is_returning_user'] = True
+    #         user_name = data.get('input_user_name', '')
+    #         if user_name:
+    #             st.success(f"👋 Welcome back, {user_name}! Your previous data has been loaded.")
+    #         else:
+    #             st.success("👋 Welcome back! Your previous data has been loaded.")
+    #         return data
+    #     except Exception as e:
+    #         st.error(f"❌ Error loading saved data: {e}")
+    #         pass
+
 def save_payload(data):
-    """Save intake data to shared JSON file"""
-    shared_path = get_shared_path()
-    with open(shared_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    """
+    Save intake data to browser localStorage (ENCRYPTED)
+
+    PRIVACY FIX: Data now saves to USER'S BROWSER, not shared server file!
+    - Each user's data stays in their own browser
+    - Data is encrypted before storage
+    - No more multi-user data overwriting bug!
+    """
+    # NEW: Save encrypted to localStorage (browser-side storage)
+    success = save_to_local_storage_encrypted('family_forecast_intake_data', data)
+
+    if success:
+        # Also save to session state for immediate use
+        st.session_state['intake_data_saved'] = True
+        st.session_state['intake_data_timestamp'] = time.time()
+
+    return success
+
+    # OLD CODE (KEPT FOR ROLLBACK - DO NOT DELETE):
+    # shared_path = get_shared_path()  # ❌ BROKEN: Same file for all users!
+    # with open(shared_path, "w", encoding="utf-8") as f:
+    #     json.dump(data, f, indent=2)
 
 def go_to_page(page_name):
     """Navigate to a different intake page"""
@@ -923,7 +961,7 @@ def show_intake_questionnaire():
         # Final Completion Section
         st.divider()
         st.success("✅ **All sections complete! Review the summary above.**")
-        st.info(f"💾 Your data is automatically saved to: `{get_shared_path()}`")
+        st.info("💾 **Your data is automatically saved to your browser's localStorage (encrypted)**")
 
         # Download button for data
         try:
@@ -978,4 +1016,4 @@ def show_intake_questionnaire():
 
     # Footer
     st.divider()
-    st.caption(f"📁 Data location: `{get_shared_path()}`")
+    st.caption("📁 **Data location:** Your browser's localStorage (encrypted, private)")
