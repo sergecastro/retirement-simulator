@@ -2,11 +2,14 @@
 """
 Provides localStorage persistence for scenarios and draft data.
 Uses JavaScript via st.components to interact with browser's localStorage.
+
+NEW: Encrypted storage functions for sensitive user data (INTAKE, financial info)
 """
 
 import streamlit as st
 import json
 from typing import Dict, Any, Optional
+from utils.encryption import encrypt_data, decrypt_data
 
 def inject_local_storage_script():
     """
@@ -100,6 +103,156 @@ def save_to_local_storage(key: str, data: Dict[str, Any]) -> bool:
     except Exception as e:
         st.error(f"Failed to save to localStorage: {e}")
         return False
+
+
+# ==============================================================================
+# ENCRYPTED STORAGE FUNCTIONS (NEW - For sensitive user data)
+# ==============================================================================
+
+def save_to_local_storage_encrypted(key: str, data: Dict[str, Any]) -> bool:
+    """
+    Save ENCRYPTED data to browser's localStorage.
+
+    Uses session-specific encryption key to protect sensitive financial data.
+    Data is encrypted before storing in browser localStorage.
+
+    SECURITY:
+    - Data encrypted with session-generated key (unique per user session)
+    - Key stored in st.session_state (cleared when browser closes)
+    - Even if attacker reads localStorage, data is encrypted
+
+    Args:
+        key: Storage key (e.g., 'family_forecast_intake_data')
+        data: Dictionary to encrypt and save (user's financial data)
+
+    Returns:
+        True if successful, False otherwise
+
+    Example:
+        >>> user_data = {"input_user_name": "John", "input_ira_balance": 500000}
+        >>> save_to_local_storage_encrypted('intake_data', user_data)
+        True
+        # Data is now encrypted in localStorage!
+    """
+    try:
+        # Step 1: Encrypt the data (returns base64 string)
+        encrypted_string = encrypt_data(data)
+
+        # Step 2: Store encrypted string in localStorage
+        # We store the encrypted string as a simple string (not JSON object)
+        js_save = f"""
+        <script>
+        (function() {{
+            try {{
+                // Save encrypted string directly to localStorage
+                localStorage.setItem('{key}', '{encrypted_string}');
+                console.log('Saved ENCRYPTED data to localStorage:', '{key}');
+                console.log('  Data is protected with session-specific encryption key');
+            }} catch (e) {{
+                console.error('localStorage save error:', e);
+            }}
+        }})();
+        </script>
+        """
+        st.components.v1.html(js_save, height=0)
+
+        # Mark in session state that data was saved
+        st.session_state[f'_ls_saved_{key}'] = True
+
+        return True
+
+    except Exception as e:
+        print(f"Failed to save encrypted data to localStorage: {e}")
+        return False
+
+
+def load_from_local_storage_encrypted(key: str) -> Optional[Dict[str, Any]]:
+    """
+    Load and DECRYPT data from browser's localStorage.
+
+    Retrieves encrypted data from localStorage and decrypts it using
+    the current session's encryption key.
+
+    IMPORTANT: Can only decrypt data that was encrypted in the SAME session!
+    If user closed browser and reopened, session key is lost and data cannot
+    be decrypted (this is intentional for session-only security).
+
+    Args:
+        key: Storage key (e.g., 'family_forecast_intake_data')
+
+    Returns:
+        Decrypted dictionary, or None if not found or decryption failed
+
+    Example:
+        >>> data = load_from_local_storage_encrypted('intake_data')
+        >>> if data:
+        >>>     print(f"Welcome back, {data['input_user_name']}!")
+    """
+    try:
+        # Create a unique component key for this load operation
+        import time
+        component_key = f"load_encrypted_{key}_{int(time.time() * 1000)}"
+
+        # JavaScript to load encrypted string from localStorage
+        js_load = f"""
+        <script>
+        (function() {{
+            try {{
+                const encryptedData = localStorage.getItem('{key}');
+
+                if (encryptedData) {{
+                    console.log('Loaded ENCRYPTED data from localStorage:', '{key}');
+
+                    // Send encrypted string back to Streamlit via session state
+                    // We'll use a hidden div to communicate
+                    const div = document.createElement('div');
+                    div.id = 'encrypted_data_{component_key}';
+                    div.setAttribute('data-encrypted', encryptedData);
+                    div.style.display = 'none';
+                    document.body.appendChild(div);
+
+                    // Also store in Streamlit component value
+                    window.parent.postMessage({{
+                        type: 'streamlit:setComponentValue',
+                        value: encryptedData
+                    }}, '*');
+                }} else {{
+                    console.log('No data found in localStorage for key:', '{key}');
+                    window.parent.postMessage({{
+                        type: 'streamlit:setComponentValue',
+                        value: null
+                    }}, '*');
+                }}
+            }} catch (e) {{
+                console.error('localStorage load error:', e);
+            }}
+        }})();
+        </script>
+        """
+
+        # Execute JavaScript and get encrypted string
+        result = st.components.v1.html(js_load, height=0)
+
+        # Check if we have encrypted data in session state (from previous load)
+        session_key = f'_ls_encrypted_{key}'
+        if session_key in st.session_state:
+            encrypted_string = st.session_state[session_key]
+
+            # Decrypt the data
+            decrypted_data = decrypt_data(encrypted_string)
+
+            if decrypted_data:
+                return decrypted_data
+            else:
+                print(f"Failed to decrypt data for key: {key}")
+                return None
+
+        # Data not in session state yet - return None (will be loaded on next rerun)
+        return None
+
+    except Exception as e:
+        print(f"Failed to load encrypted data from localStorage: {e}")
+        return None
 
 
 def load_from_local_storage_component(key: str) -> None:
