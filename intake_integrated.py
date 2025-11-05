@@ -995,15 +995,18 @@ def show_intake_questionnaire():
         st.success("✅ **All sections complete! Review the summary above.**")
         st.info("💾 **Your data is automatically saved to your browser's localStorage (encrypted)**")
 
-        # Snapshot Management Section
+        # ═══════════════════════════════════════════════════════════════
+        # 💾 SAVE YOUR PLAN - PROMINENT SECTION
+        # ═══════════════════════════════════════════════════════════════
         st.divider()
-        st.markdown("### 📁 Save & Manage Your Plans")
+        st.markdown("## 💾 SAVE YOUR RETIREMENT PLAN")
+        st.markdown("**⚠️ IMPORTANT:** Save your plan to keep it safe!")
 
         # Snapshot name input
         col1, col2 = st.columns([3, 1])
         with col1:
             snapshot_name = st.text_input(
-                "Plan Name (optional):",
+                "**Plan Name (optional):**",
                 value="",
                 placeholder="e.g., 'Conservative Retirement' or 'After Selling House'",
                 help="Give this plan a custom name, or leave blank for auto-generated name",
@@ -1012,7 +1015,7 @@ def show_intake_questionnaire():
         with col2:
             st.write("")  # Spacer
             st.write("")  # Spacer
-            if st.button("💾 Save Plan", use_container_width=True, key="save_snapshot_btn"):
+            if st.button("💾 **SAVE PLAN**", type="primary", use_container_width=True, key="save_snapshot_btn"):
                 data = load_existing_payload()
                 name = snapshot_name if snapshot_name else None
                 success = save_payload(data, snapshot_name=name)
@@ -1027,15 +1030,16 @@ def show_intake_questionnaire():
             st.success(st.session_state['snapshot_save_message'])
             del st.session_state['snapshot_save_message']  # Clear after showing
 
-        # List existing snapshots
+        # List existing snapshots (SHOW ALL, not just last 5!)
         snapshots = list_snapshots()
         if snapshots:
-            st.markdown(f"**Your Saved Plans ({len(snapshots)}):**")
+            st.markdown(f"### 📋 Your Saved Plans ({len(snapshots)} total)")
             if len(snapshots) >= 10:
                 st.warning("⚠️ You have 10+ saved plans. Consider deleting old ones to save space.")
 
-            for snap in snapshots[-5:]:  # Show last 5
-                st.caption(f"• {snap['name']} - {snap['created'][:10]}")
+            # Show ALL snapshots (reversed so newest first)
+            for snap in reversed(snapshots):
+                st.caption(f"• **{snap['name']}** - Created: {snap['created'][:16]}")
 
         # Export/Import Section
         st.divider()
@@ -1103,13 +1107,14 @@ def show_intake_questionnaire():
                 use_container_width=True,
                 key="complete_intake_btn"
             ):
-                # RE-SAVE file to update timestamp (ensures "fresh" detection works)
+                # AUTO-SAVE before completing (ensures data is saved!)
                 data = load_existing_payload()
-                save_payload(data)
+                auto_save_name = f"Auto-saved - {datetime.now().strftime('%b %d, %Y %I:%M %p')}"
+                save_payload(data, snapshot_name=auto_save_name)
 
                 # Show celebration
                 st.balloons()
-                st.success("✅ INTAKE completed successfully! Switching to Analysis mode...")
+                st.success("✅ Plan auto-saved! Switching to Analysis mode...")
 
                 # Set mode flags
                 st.session_state.current_mode = 'Analysis'
