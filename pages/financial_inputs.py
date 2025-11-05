@@ -15,13 +15,18 @@ def collect_financial_data():
     
     # Income section
     st.header("💰 Monthly Income")
+
+    # Prominent note about before-tax income
+    st.info("📝 **Important:** Enter all income amounts **BEFORE TAXES**. The app will calculate federal and state taxes for you.")
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         salary_wages = st.number_input(
-            "Salary/Wages:", 
+            "Annual Salary (Gross, Before Taxes):",
             value=float(st.session_state.get('input_salary_wages', 0.0)),
-            key="input_salary_wages"
+            key="input_salary_wages",
+            help="Enter your total salary before any deductions"
         )
         self_employment = st.number_input(
             "Self-Employment:", 
@@ -34,21 +39,24 @@ def collect_financial_data():
             key="input_rental_income"
         )
         investment_income = st.number_input(
-            "Investment Income:", 
+            "Annual Investment Income (Before Taxes):",
             value=float(st.session_state.get('input_investment_income', 0.0)),
-            key="input_investment_income"
+            key="input_investment_income",
+            help="Include dividends, interest, capital gains"
         )
-    
+
     with col2:
         social_security = st.number_input(
-            "Social Security:", 
+            "Expected Social Security (Before Taxes):",
             value=float(st.session_state.get('input_social_security_income', 0.0)),
-            key="input_social_security_income"
+            key="input_social_security_income",
+            help="Enter your estimated monthly benefit × 12"
         )
         pension_income = st.number_input(
-            "Pension Income:", 
+            "Annual Pension (Before Taxes):",
             value=float(st.session_state.get('input_pension_income', 0.0)),
-            key="input_pension_income"
+            key="input_pension_income",
+            help="Enter the annual amount before taxes"
         )
         other_income = st.number_input(
             "Other Income:", 
