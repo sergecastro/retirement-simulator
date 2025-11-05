@@ -103,8 +103,8 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             base_private=60000,
             ira_balance=financial_data.get('ira_balance', 0),
             four01k_403b_balance=financial_data.get('four01k_403b_balance', 0),
-            partner_ira_balance=0,
-            partner_four01k_403b_balance=0,
+            partner_ira_balance=financial_data.get('partner_ira_balance', 0),
+            partner_four01k_403b_balance=financial_data.get('partner_four01k_403b_balance', 0),
             monthly_surplus=financial_data.get('monthly_surplus', 0),
             combined_total_liabilities=financial_data['total_liabilities']
         )
@@ -329,8 +329,8 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                             base_private=60000,
                             ira_balance=adjusted_financial_data.get('ira_balance', 0),
                             four01k_403b_balance=adjusted_financial_data.get('four01k_403b_balance', 0),
-                            partner_ira_balance=0,
-                            partner_four01k_403b_balance=0,
+                            partner_ira_balance=adjusted_financial_data.get('partner_ira_balance', 0),
+                            partner_four01k_403b_balance=adjusted_financial_data.get('partner_four01k_403b_balance', 0),
                             monthly_surplus=adjusted_financial_data.get('monthly_surplus', 0),
                             combined_total_liabilities=adjusted_financial_data['total_liabilities']
                         )
