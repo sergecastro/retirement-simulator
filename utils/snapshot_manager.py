@@ -57,27 +57,25 @@ def create_snapshot_id() -> str:
 
 def get_snapshots_index() -> Dict[str, Any]:
     """
-    Get snapshots index from localStorage.
+    Get snapshots index from session_state (TEMPORARY FIX).
 
     Returns:
         Index dict with current_snapshot_id and snapshots list
     """
-    # Try to load from localStorage
-    index = load_from_local_storage_encrypted('family_forecast_snapshots_index')
+    # TEMPORARY: Use session_state instead of localStorage
+    # (localStorage retrieval has JavaScript async issues)
+    if 'snapshots_index' not in st.session_state:
+        st.session_state.snapshots_index = {
+            "current_snapshot_id": None,
+            "snapshots": []
+        }
 
-    if index:
-        return index
-
-    # Return empty index if not found
-    return {
-        "current_snapshot_id": None,
-        "snapshots": []
-    }
+    return st.session_state.snapshots_index
 
 
 def save_snapshots_index(index: Dict[str, Any]) -> bool:
     """
-    Save snapshots index to localStorage.
+    Save snapshots index to session_state (TEMPORARY FIX).
 
     Args:
         index: Index dict with current_snapshot_id and snapshots list
@@ -85,7 +83,9 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
     Returns:
         True if successful
     """
-    return save_to_local_storage_encrypted('family_forecast_snapshots_index', index)
+    # TEMPORARY: Use session_state instead of localStorage
+    st.session_state.snapshots_index = index
+    return True
 
 
 # =============================================================================
