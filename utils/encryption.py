@@ -28,24 +28,67 @@ import streamlit as st
 from typing import Dict, Any, Optional
 
 
-def _get_or_create_session_key() -> str:
+def _get_storage_preference() -> str:
     """
-    Get or create a unique encryption key for this session.
-
-    Key is stored in st.session_state and persists only during the active session.
-    When browser closes, session ends and key is lost (true session-only security!).
+    Get user's storage preference (persistent vs session-only).
 
     Returns:
-        Session-specific encryption key (32 characters)
+        'persistent' or 'session_only'
     """
-    if 'encryption_key' not in st.session_state:
-        # Generate cryptographically secure random key
-        # Using secrets module (recommended by Python security docs)
-        random_bytes = secrets.token_bytes(32)
-        # Convert to base64 string for easy storage
-        st.session_state.encryption_key = base64.b64encode(random_bytes).decode('ascii')
+    # Check if preference is already set in session state
+    if 'storage_preference' in st.session_state:
+        return st.session_state.storage_preference
 
-    return st.session_state.encryption_key
+    # Check localStorage for saved preference (via JavaScript)
+    # For now, default to 'persistent' (will add UI choice later)
+    return 'persistent'
+
+
+def _get_or_create_encryption_key() -> str:
+    """
+    Get or create encryption key based on user's storage preference.
+
+    USER CHOICE:
+    - "Remember my data" → Key stored in localStorage (persistent)
+    - "Session only" → Key stored in st.session_state (cleared on close)
+
+    Returns:
+        Encryption key (base64 string, 44 characters)
+    """
+    storage_pref = _get_storage_preference()
+
+    if storage_pref == 'persistent':
+        # PERSISTENT MODE: Check if key exists in session state first (fast path)
+        if 'encryption_key_persistent' in st.session_state:
+            return st.session_state.encryption_key_persistent
+
+        # Try to load from localStorage (will be implemented via JavaScript bridge)
+        # For now, check session state as fallback
+        if 'encryption_key' in st.session_state:
+            key = st.session_state.encryption_key
+            st.session_state.encryption_key_persistent = key
+            return key
+
+        # Generate new key
+        random_bytes = secrets.token_bytes(32)
+        key = base64.b64encode(random_bytes).decode('ascii')
+
+        # Store in session state for this session
+        st.session_state.encryption_key = key
+        st.session_state.encryption_key_persistent = key
+
+        # TODO: Save to localStorage via JavaScript (Phase 3B)
+        # save_key_to_local_storage(key)
+
+        return key
+
+    else:
+        # SESSION-ONLY MODE: Store only in session state
+        if 'encryption_key' not in st.session_state:
+            random_bytes = secrets.token_bytes(32)
+            st.session_state.encryption_key = base64.b64encode(random_bytes).decode('ascii')
+
+        return st.session_state.encryption_key
 
 
 def _xor_encrypt_decrypt(data: str, key: str) -> str:
@@ -89,8 +132,8 @@ def encrypt_data(data: Dict[str, Any]) -> str:
         >>> print(encrypted)  # Returns base64 string (unique each session!)
     """
     try:
-        # Get session-specific encryption key (never hardcoded!)
-        cipher_key = _get_or_create_session_key()
+        # Get encryption key (persistent or session-only based on user preference)
+        cipher_key = _get_or_create_encryption_key()
 
         # Convert dict to JSON string
         json_str = json.dumps(data, ensure_ascii=False)
@@ -130,8 +173,8 @@ def decrypt_data(encrypted_str: str) -> Optional[Dict[str, Any]]:
         This is intentional for session-only security!
     """
     try:
-        # Get session-specific encryption key
-        cipher_key = _get_or_create_session_key()
+        # Get encryption key (persistent or session-only based on user preference)
+        cipher_key = _get_or_create_encryption_key()
 
         # Base64 decode
         decoded = base64.b64decode(encrypted_str.encode('ascii')).decode('latin-1')
