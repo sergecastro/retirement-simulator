@@ -14,6 +14,13 @@ from intake_review import show_assets_page, show_liabilities_page, show_family_p
 # NEW: localStorage functions for privacy-safe storage
 from utils.local_storage import save_to_local_storage_encrypted, load_from_local_storage_encrypted
 
+# NEW: Snapshot versioning system
+from utils.snapshot_manager import (
+    save_snapshot, load_snapshot, list_snapshots,
+    delete_snapshot, rename_snapshot, get_current_snapshot,
+    export_all_snapshots, import_snapshots
+)
+
 # ========== SCROLL TO TOP FIX ==========
 # JavaScript to force page scroll to top BEFORE content renders
 SCROLL_TO_TOP_JS = """
@@ -124,24 +131,40 @@ def load_template_data():
 
 def load_existing_payload():
     """
-    Load previous intake data from localStorage, or template for first-time users
+    Load previous intake data from snapshots or localStorage.
 
-    PRIVACY FIX: Now loads from USER'S BROWSER localStorage (not shared file)
+    PRIORITY:
+    1. Try current snapshot (newest versioned data)
+    2. Try legacy localStorage (old single-version data)
+    3. Load template (first-time user)
     """
-    # NEW: Try to load from localStorage (browser-side storage)
-    data = load_from_local_storage_encrypted('family_forecast_intake_data')
+    # NEW: Try to load from current snapshot first (versioned storage)
+    data = get_current_snapshot()
 
     if data:
-        # RETURNING USER - found encrypted data in their browser
+        # RETURNING USER - found snapshot
         st.session_state['intake_is_returning_user'] = True
         user_name = data.get('input_user_name', '')
         if user_name:
-            st.success(f"👋 Welcome back, {user_name}! Your previous data has been loaded.")
+            st.success(f"👋 Welcome back, {user_name}! Your saved plan has been loaded.")
         else:
-            st.success("👋 Welcome back! Your previous data has been loaded.")
+            st.success("👋 Welcome back! Your saved plan has been loaded.")
         return data
 
-    # FIRST-TIME USER - no data in localStorage, load template scenario
+    # Fallback: Try legacy localStorage (for backward compatibility)
+    data = load_from_local_storage_encrypted('family_forecast_intake_data')
+
+    if data:
+        # RETURNING USER - found legacy data, migrate to snapshot
+        st.session_state['intake_is_returning_user'] = True
+        user_name = data.get('input_user_name', '')
+        if user_name:
+            st.info(f"👋 Welcome back, {user_name}! Your data has been loaded.")
+        else:
+            st.info("👋 Welcome back! Your data has been loaded.")
+        return data
+
+    # FIRST-TIME USER - no data found, load template scenario
     st.session_state['intake_is_returning_user'] = False
     st.info("ℹ️ No saved data found - starting with a sample scenario to guide you.")
     return load_template_data()
@@ -164,26 +187,34 @@ def load_existing_payload():
     #         st.error(f"❌ Error loading saved data: {e}")
     #         pass
 
-def save_payload(data):
+def save_payload(data, snapshot_name=None):
     """
-    Save intake data to browser localStorage (ENCRYPTED)
+    Save intake data as versioned snapshot (ENCRYPTED)
 
-    PRIVACY FIX: Data now saves to USER'S BROWSER, not shared server file!
-    - Each user's data stays in their own browser
+    PRIVACY FIX + VERSIONING:
+    - Data saves to USER'S BROWSER as versioned snapshot
+    - Each save creates new version (no overwriting)
     - Data is encrypted before storage
-    - No more multi-user data overwriting bug!
-    """
-    # NEW: Save encrypted to localStorage (browser-side storage)
-    success = save_to_local_storage_encrypted('family_forecast_intake_data', data)
+    - User can have multiple saved plans
 
-    if success:
-        # Also save to session state for immediate use
+    Args:
+        data: Full INTAKE data dictionary
+        snapshot_name: Optional custom name for this version
+    """
+    # NEW: Save as versioned snapshot
+    snapshot_id = save_snapshot(data, snapshot_name)
+
+    if snapshot_id:
+        # Mark as saved
         st.session_state['intake_data_saved'] = True
         st.session_state['intake_data_timestamp'] = time.time()
+        st.session_state['last_snapshot_id'] = snapshot_id
+        return True
 
-    return success
+    return False
 
     # OLD CODE (KEPT FOR ROLLBACK - DO NOT DELETE):
+    # success = save_to_local_storage_encrypted('family_forecast_intake_data', data)
     # shared_path = get_shared_path()  # ❌ BROKEN: Same file for all users!
     # with open(shared_path, "w", encoding="utf-8") as f:
     #     json.dump(data, f, indent=2)
@@ -963,23 +994,91 @@ def show_intake_questionnaire():
         st.success("✅ **All sections complete! Review the summary above.**")
         st.info("💾 **Your data is automatically saved to your browser's localStorage (encrypted)**")
 
-        # Download button for data
-        try:
-            import json
-            data = load_existing_payload()
-            if data:
-                json_str = json.dumps(data, indent=2)
-                st.download_button(
-                    label="📥 Download My Data (JSON)",
-                    data=json_str,
-                    file_name=f"intake_data_{data.get('input_user_name', 'user').replace(' ', '_')}.json",
-                    mime="application/json",
-                    help="Download your intake data as a JSON file",
-                    use_container_width=True
-                )
-        except Exception as e:
-            st.error(f"Download error: {e}")
+        # Snapshot Management Section
+        st.divider()
+        st.markdown("### 📁 Save & Manage Your Plans")
 
+        # Snapshot name input
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            snapshot_name = st.text_input(
+                "Plan Name (optional):",
+                value="",
+                placeholder="e.g., 'Conservative Retirement' or 'After Selling House'",
+                help="Give this plan a custom name, or leave blank for auto-generated name",
+                key="snapshot_name_input"
+            )
+        with col2:
+            st.write("")  # Spacer
+            st.write("")  # Spacer
+            if st.button("💾 Save Plan", use_container_width=True, key="save_snapshot_btn"):
+                data = load_existing_payload()
+                name = snapshot_name if snapshot_name else None
+                success = save_payload(data, snapshot_name=name)
+                if success:
+                    st.success(f"✅ Saved: {snapshot_name if snapshot_name else 'Plan - ' + datetime.now().strftime('%b %d, %Y')}")
+                    st.rerun()
+
+        # List existing snapshots
+        snapshots = list_snapshots()
+        if snapshots:
+            st.markdown(f"**Your Saved Plans ({len(snapshots)}):**")
+            if len(snapshots) >= 10:
+                st.warning("⚠️ You have 10+ saved plans. Consider deleting old ones to save space.")
+
+            for snap in snapshots[-5:]:  # Show last 5
+                st.caption(f"• {snap['name']} - {snap['created'][:10]}")
+
+        # Export/Import Section
+        st.divider()
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**📤 Export All Plans**")
+            if st.button("📤 Export Backup (.ffb)", use_container_width=True, key="export_btn"):
+                try:
+                    backup = export_all_snapshots()
+                    backup_json = json.dumps(backup, indent=2)
+                    st.download_button(
+                        label="📥 Download Backup File",
+                        data=backup_json,
+                        file_name=f"family_forecast_backup_{datetime.now().strftime('%Y%m%d')}.ffb",
+                        mime="application/json",
+                        help="Encrypted backup of all your saved plans",
+                        use_container_width=True,
+                        key="download_backup_btn"
+                    )
+                    st.success("✅ Backup created! Click Download button above.")
+                except Exception as e:
+                    st.error(f"❌ Export failed: {e}")
+
+        with col2:
+            st.markdown("**📥 Import Plans**")
+            uploaded_file = st.file_uploader(
+                "Choose backup file (.ffb)",
+                type=['ffb', 'json'],
+                key="import_uploader",
+                help="Import previously exported backup file"
+            )
+            if uploaded_file:
+                try:
+                    backup = json.loads(uploaded_file.read())
+                    merge_mode = st.radio(
+                        "Import mode:",
+                        ["merge", "replace"],
+                        index=0,
+                        help="Merge: Add to existing plans | Replace: Delete all and import",
+                        key="import_mode_radio"
+                    )
+                    if st.button("📥 Import", use_container_width=True, key="import_btn"):
+                        success = import_snapshots(backup, merge_mode=merge_mode)
+                        if success:
+                            st.success("✅ Plans imported successfully!")
+                            st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Import failed: {e}")
+
+        st.divider()
         st.markdown("### 🎉 Ready to Continue?")
         st.markdown("**Choose what to do next:**")
 
