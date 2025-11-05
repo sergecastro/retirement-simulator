@@ -5,6 +5,7 @@ import json
 import time
 import streamlit as st
 from pathlib import Path
+from datetime import datetime
 from intake_validation import (validate_age, validate_age_gap, validate_total_income,
                                 validate_social_security, validate_income_mix,
                                 validate_total_expenses, validate_housing_ratio,
@@ -1016,8 +1017,15 @@ def show_intake_questionnaire():
                 name = snapshot_name if snapshot_name else None
                 success = save_payload(data, snapshot_name=name)
                 if success:
-                    st.success(f"✅ Saved: {snapshot_name if snapshot_name else 'Plan - ' + datetime.now().strftime('%b %d, %Y')}")
+                    # Store message in session state to show AFTER rerun
+                    saved_name = snapshot_name if snapshot_name else f"Plan - {datetime.now().strftime('%b %d, %Y')}"
+                    st.session_state['snapshot_save_message'] = f"✅ Saved: {saved_name}"
                     st.rerun()
+
+        # Show save success message if exists
+        if 'snapshot_save_message' in st.session_state:
+            st.success(st.session_state['snapshot_save_message'])
+            del st.session_state['snapshot_save_message']  # Clear after showing
 
         # List existing snapshots
         snapshots = list_snapshots()
