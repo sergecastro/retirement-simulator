@@ -386,14 +386,17 @@ def show_intake_questionnaire():
         st.header("💰 Monthly Income")
         st.markdown("*Enter your typical monthly income from all sources. Enter 0 if not applicable.*")
 
+        # Prominent note about before-tax income
+        st.info("📝 **Important:** Enter all income amounts **BEFORE TAXES**. The app will calculate federal and state taxes for you.")
+
         # Income fields with defaults from existing data
         salary = st.number_input(
-            "Salary/Wages (monthly)",
+            "Salary/Wages (monthly, before taxes)",
             min_value=0.0,
             max_value=1000000.0,
             value=float(existing.get("input_salary_wages", 0.0)),
             step=100.0,
-            help="Your regular employment income (before taxes)"
+            help="Your regular employment income before any deductions"
         )
 
         self_employment = st.number_input(
@@ -415,30 +418,30 @@ def show_intake_questionnaire():
         )
 
         investment = st.number_input(
-            "Investment Income (monthly)",
+            "Investment Income (monthly, before taxes)",
             min_value=0.0,
             max_value=100000.0,
             value=float(existing.get("input_investment_income", 0.0)),
             step=50.0,
-            help="Dividends, interest, capital gains (average monthly)"
+            help="Dividends, interest, capital gains (average monthly, before taxes)"
         )
 
         social_security = st.number_input(
-            "Social Security (monthly)",
+            "Social Security (monthly, before taxes)",
             min_value=0.0,
             max_value=10000.0,
             value=float(existing.get("input_social_security_income", 0.0)),
             step=50.0,
-            help="Your monthly Social Security benefit"
+            help="Your monthly Social Security benefit before any tax withholding"
         )
 
         pension = st.number_input(
-            "Pension Income (monthly)",
+            "Pension Income (monthly, before taxes)",
             min_value=0.0,
             max_value=50000.0,
             value=float(existing.get("input_pension_income", 0.0)),
             step=50.0,
-            help="Monthly pension from employer or government"
+            help="Monthly pension from employer or government, before taxes"
         )
 
         other_income = st.number_input(
