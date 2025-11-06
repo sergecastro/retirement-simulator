@@ -411,7 +411,8 @@ def show_intake_questionnaire():
                     else:
                         data.pop("input_partner_name", None)
                         data.pop("input_partner_age", None)
-                    save_payload(data)
+                    # REMOVED: Auto-save on navigation (user must explicitly save)
+                    # save_payload(data)
                     st.session_state.intake_from_review = False  # Reset flag
                     go_to_page('review')
             with col2:
@@ -428,7 +429,8 @@ def show_intake_questionnaire():
                     else:
                         data.pop("input_partner_name", None)
                         data.pop("input_partner_age", None)
-                    save_payload(data)
+                    # REMOVED: Auto-save on navigation (user must explicitly save)
+                    # save_payload(data)
                     st.session_state.intake_from_review = False  # Reset flag when going forward
                     go_to_page('income')
         else:
@@ -446,7 +448,8 @@ def show_intake_questionnaire():
                 else:
                     data.pop("input_partner_name", None)
                     data.pop("input_partner_age", None)
-                save_payload(data)
+                # REMOVED: Auto-save on navigation (user must explicitly save)
+                # save_payload(data)
                 go_to_page('income')
 
     # ===== PAGE 2: INCOME =====
@@ -555,7 +558,8 @@ def show_intake_questionnaire():
             data["input_pension_income"] = float(pension)
             data["input_other_income"] = float(other_income)
             data["input_total_income"] = float(total_income)
-            save_payload(data)
+            # REMOVED: Auto-save on navigation (user must explicitly save)
+            # save_payload(data)
             go_to_page('expenses')
 
     # ===== PAGE 3: EXPENSES =====
@@ -754,7 +758,8 @@ def show_intake_questionnaire():
             data["input_miscellaneous_expenses"] = float(miscellaneous)
             data["input_other_expenses"] = float(other_expenses)
             data["input_total_expenses"] = float(total_expenses)
-            save_payload(data)
+            # REMOVED: Auto-save on navigation (user must explicitly save)
+            # save_payload(data)
             go_to_page('custom_expenses')
 
     # ===== PAGE 3.5: CUSTOM MONTHLY EXPENSES =====
@@ -842,7 +847,8 @@ def show_intake_questionnaire():
             data = existing.copy()
             data["custom_expenses"] = st.session_state['custom_expenses_list']
             data["custom_expenses_list"] = st.session_state['custom_expenses_list']  # Also save as _list for compatibility
-            save_payload(data)
+            # REMOVED: Auto-save on navigation (user must explicitly save)
+            # save_payload(data)
             go_to_page('assets')
 
     # ===== PAGES 4-6: ASSETS, LIABILITIES, FAMILY =====
@@ -1016,6 +1022,7 @@ def show_intake_questionnaire():
             st.write("")  # Spacer
             st.write("")  # Spacer
             if st.button("💾 **SAVE PLAN**", type="primary", use_container_width=True, key="save_snapshot_btn"):
+                print("DEBUG: SAVE PLAN button clicked!")
                 data = load_existing_payload()
                 name = snapshot_name if snapshot_name else None
                 success = save_payload(data, snapshot_name=name)

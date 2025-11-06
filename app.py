@@ -81,50 +81,33 @@ SCROLL_TO_TOP_JS = """
 # =============================================================================
 
 def load_intake_data_to_session():
-    """Load INTAKE data from intake_payload.json into session state for Analysis mode"""
-    import os
-    import time
-    from pathlib import Path
+    """Load INTAKE data from current snapshot into session state for Analysis mode"""
+    # NEW: Load from snapshot system instead of OLD file
+    from utils.snapshot_manager import get_current_snapshot
 
-    # Get the correct path
-    current_dir = os.getcwd()
-
-    if os.path.exists("/opt/render"):
-        shared_dir = Path("/opt/render/project/SHARED")
-    else:
-        root_dir = Path(current_dir).parent
-        shared_dir = root_dir / "SHARED"
-
-    shared_dir.mkdir(parents=True, exist_ok=True)
-    intake_file = shared_dir / "intake_payload.json"
-
-    if not os.path.exists(intake_file):
-        return
-
-    # CHECK: Was the file modified recently? (within last 30 seconds)
-    file_modified_time = os.path.getmtime(intake_file)
-    current_time = time.time()
-    seconds_since_modified = current_time - file_modified_time
-
-    # If file was modified recently, user just completed INTAKE - MUST reload!
-    # Using 30 seconds to be safe (covers Complete button → balloons → sleep → rerun → Analysis load)
-    file_is_fresh = seconds_since_modified < 30
     already_loaded = 'intake_data_loaded' in st.session_state
 
-    # LOAD IF: File is fresh OR never loaded before
-    if file_is_fresh or not already_loaded:
+    # Only load if not already loaded in this session
+    if not already_loaded:
         try:
-            with open(intake_file, "r", encoding="utf-8") as f:
-                intake_data = json.load(f)
+            # Try to get current snapshot
+            intake_data = get_current_snapshot()
 
-            # Load all data into session state
-            for key, value in intake_data.items():
-                st.session_state[key] = value
+            if intake_data:
+                # Load snapshot data into session state
+                for key, value in intake_data.items():
+                    st.session_state[key] = value
 
-            st.session_state.intake_data_loaded = True
+                st.session_state.intake_data_loaded = True
+
+                # Show welcome message
+                user_name = intake_data.get('input_user_name', '')
+                if user_name:
+                    st.success(f"✅ Loaded data for: {user_name}")
 
         except Exception as e:
             # Silently fail - user will use sidebar inputs
+            print(f"DEBUG: Could not load snapshot: {e}")
             pass
 
 
@@ -158,8 +141,8 @@ def main():
         st.session_state.mode_selected = False
 
     # Check if user has completed INTAKE data
-    import os
-    has_intake_data = os.path.exists('SHARED/intake_payload.json')
+    from utils.snapshot_manager import list_snapshots
+    has_intake_data = len(list_snapshots()) > 0
 
     # Get user type
     is_trusted = is_trusted_user()

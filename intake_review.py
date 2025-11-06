@@ -236,7 +236,8 @@ def show_assets_page(existing, save_payload, go_to_page):
             data["input_business_ownership_value"] = float(business)
             data["input_cryptocurrency_holdings"] = float(crypto)
             data["input_other_assets"] = float(other_assets)
-            save_payload(data)
+            # REMOVED: Auto-save on navigation (user must explicitly save)
+            # save_payload(data)
             go_to_page('liabilities')
 
 
@@ -332,7 +333,8 @@ def show_liabilities_page(existing, save_payload, go_to_page):
             data["input_student_loan_balance"] = float(student_loan)
             data["input_credit_card_debt"] = float(credit_card)
             data["input_other_liabilities"] = float(other_debt)
-            save_payload(data)
+            # REMOVED: Auto-save on navigation (user must explicitly save)
+            # save_payload(data)
             go_to_page('family')
 
 
@@ -553,7 +555,8 @@ def show_family_page(existing, save_payload, go_to_page):
             data["goals_data"] = data["goals_list"]
             data["custom_expenses_list"] = data["custom_expenses"]
 
-            save_payload(data)
+            # REMOVED: Auto-save on navigation (user must explicitly save)
+            # save_payload(data)
             go_to_page('review')
         
         
