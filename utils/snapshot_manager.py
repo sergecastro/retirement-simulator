@@ -57,13 +57,14 @@ def create_snapshot_id() -> str:
 
 def get_snapshots_index() -> Dict[str, Any]:
     """
-    Get snapshots index from session_state (TEMPORARY FIX).
+    Get snapshots index from session_state.
+
+    NOTE: Snapshots are session-only by design (for now).
+    User can export/import for persistence across sessions.
 
     Returns:
         Index dict with current_snapshot_id and snapshots list
     """
-    # TEMPORARY: Use session_state instead of localStorage
-    # (localStorage retrieval has JavaScript async issues)
     if 'snapshots_index' not in st.session_state:
         st.session_state.snapshots_index = {
             "current_snapshot_id": None,
@@ -135,17 +136,19 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
         "metadata": metadata
     }
 
-    # Save snapshot data to localStorage (encrypted)
-    snapshot_key = f"family_forecast_snapshot_{snapshot_id}"
+    # Save snapshot data to session_state (session-only storage)
+    snapshot_data_key = f"snapshot_data_{snapshot_id}"
 
     # DEBUG: Print what we're saving
     print(f"DEBUG: Saving snapshot '{snapshot_name}' with ID {snapshot_id}")
 
-    success = save_to_local_storage_encrypted(snapshot_key, data)
+    # Store full data in session_state
+    if 'snapshots_data' not in st.session_state:
+        st.session_state.snapshots_data = {}
 
-    if not success:
-        print(f"DEBUG: FAILED to save snapshot data for {snapshot_id}")
-        return None
+    st.session_state.snapshots_data[snapshot_id] = data
+
+    print(f"DEBUG: Saved snapshot data to session_state")
 
     # Update snapshots index
     index = get_snapshots_index()
@@ -163,7 +166,7 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
 
 def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
     """
-    Load snapshot data by ID.
+    Load snapshot data by ID from session_state.
 
     Args:
         snapshot_id: Snapshot ID (e.g., "20251106_0230")
@@ -176,8 +179,10 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
         >>> if data:
         >>>     print(f"User: {data['input_user_name']}")
     """
-    snapshot_key = f"family_forecast_snapshot_{snapshot_id}"
-    return load_from_local_storage_encrypted(snapshot_key)
+    if 'snapshots_data' not in st.session_state:
+        return None
+
+    return st.session_state.snapshots_data.get(snapshot_id, None)
 
 
 def list_snapshots() -> List[Dict[str, Any]]:
@@ -285,14 +290,10 @@ def get_current_snapshot() -> Optional[Dict[str, Any]]:
 
 def export_all_snapshots() -> Dict[str, Any]:
     """
-    Export all snapshots to a single encrypted backup object.
+    Export all snapshots to a single backup object.
 
     Returns:
-        Backup object containing:
-        - All snapshot metadata
-        - All snapshot data (encrypted)
-        - Export timestamp
-        - Version info
+        Backup object containing all snapshot metadata and data
 
     Example:
         >>> backup = export_all_snapshots()
@@ -302,7 +303,7 @@ def export_all_snapshots() -> Dict[str, Any]:
     index = get_snapshots_index()
     snapshots_data = []
 
-    # Load full data for each snapshot
+    # Get full data for each snapshot from session_state
     for snapshot in index["snapshots"]:
         snapshot_id = snapshot["id"]
         data = load_snapshot(snapshot_id)
@@ -312,6 +313,8 @@ def export_all_snapshots() -> Dict[str, Any]:
                 "metadata": snapshot,
                 "data": data
             })
+        else:
+            print(f"WARNING: Could not load data for snapshot {snapshot_id}")
 
     # Create backup object
     backup = {
@@ -323,12 +326,14 @@ def export_all_snapshots() -> Dict[str, Any]:
         "snapshots": snapshots_data
     }
 
+    print(f"DEBUG: Exported {len(snapshots_data)} snapshots")
+
     return backup
 
 
 def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
     """
-    Import snapshots from backup object.
+    Import snapshots from backup object into session_state.
 
     Args:
         backup: Backup object from export_all_snapshots()
@@ -351,26 +356,32 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
         # Get current index
         index = get_snapshots_index()
 
+        # Initialize snapshots_data if needed
+        if 'snapshots_data' not in st.session_state:
+            st.session_state.snapshots_data = {}
+
         if merge_mode == "replace":
             # Clear existing snapshots
             index = {
                 "current_snapshot_id": None,
                 "snapshots": []
             }
+            st.session_state.snapshots_data = {}
 
         # Import each snapshot
+        imported_count = 0
         for snapshot_obj in backup.get("snapshots", []):
             metadata = snapshot_obj["metadata"]
             data = snapshot_obj["data"]
             snapshot_id = metadata["id"]
 
-            # Save snapshot data
-            snapshot_key = f"family_forecast_snapshot_{snapshot_id}"
-            save_to_local_storage_encrypted(snapshot_key, data)
+            # Save snapshot data to session_state
+            st.session_state.snapshots_data[snapshot_id] = data
 
             # Add to index (avoid duplicates)
             if not any(s["id"] == snapshot_id for s in index["snapshots"]):
                 index["snapshots"].append(metadata)
+                imported_count += 1
 
         # Set current snapshot if provided
         if backup.get("current_snapshot_id"):
@@ -379,10 +390,13 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
         # Save updated index
         save_snapshots_index(index)
 
+        print(f"DEBUG: Imported {imported_count} snapshots successfully")
+
         return True
 
     except Exception as e:
         st.error(f"❌ Import failed: {e}")
+        print(f"DEBUG: Import error: {e}")
         return False
 
 
