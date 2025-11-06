@@ -10,6 +10,12 @@ FEATURES:
 - Compare snapshots side-by-side (future)
 - Historical tracking for AI analysis (future)
 
+STORAGE:
+- Uses TRUE browser localStorage (data stays on user's computer)
+- AES-256-GCM encryption for all snapshot data
+- Persistent encryption key stored in localStorage
+- Perfect for cloud deployment (Render, etc.) - no server storage!
+
 SNAPSHOT STRUCTURE:
 {
     "id": "20251106_0230",
@@ -30,7 +36,6 @@ import json
 import streamlit as st
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from utils.local_storage import save_to_local_storage_encrypted, load_from_local_storage_encrypted
 from utils.encryption import encrypt_data, decrypt_data
 
 
@@ -55,28 +60,48 @@ def create_snapshot_id() -> str:
 # SNAPSHOT INDEX MANAGEMENT
 # =============================================================================
 
+def _get_local_storage():
+    """Get or create LocalStorage instance (cached in session state)."""
+    if 'localS' not in st.session_state:
+        from streamlit_local_storage import LocalStorage
+        st.session_state.localS = LocalStorage()
+    return st.session_state.localS
+
+
 def get_snapshots_index() -> Dict[str, Any]:
     """
-    Get snapshots index from session_state.
+    Get snapshots index from browser localStorage (ENCRYPTED).
 
-    NOTE: Snapshots are session-only by design (for now).
-    User can export/import for persistence across sessions.
+    Snapshots persist after browser close! 🎉
 
     Returns:
         Index dict with current_snapshot_id and snapshots list
     """
-    if 'snapshots_index' not in st.session_state:
-        st.session_state.snapshots_index = {
-            "current_snapshot_id": None,
-            "snapshots": []
-        }
+    # Get LocalStorage instance
+    localS = _get_local_storage()
 
-    return st.session_state.snapshots_index
+    # Try to load from browser localStorage
+    try:
+        encrypted_str = localS.getItem('ff_snapshots_index')
+        if encrypted_str:
+            index = decrypt_data(encrypted_str, localS)
+            if index:
+                print(f"✨ SNAPSHOT SYSTEM: Loaded {len(index.get('snapshots', []))} snapshots from browser localStorage")
+                return index
+    except Exception as e:
+        print(f"[WARN] Could not load snapshots index: {e}")
+
+    # Initialize empty index if not found
+    print("✨ SNAPSHOT SYSTEM: Initialized (empty)")
+    return {
+        "current_snapshot_id": None,
+        "snapshots": []
+    }
 
 
 def save_snapshots_index(index: Dict[str, Any]) -> bool:
     """
-    Save snapshots index to session_state (TEMPORARY FIX).
+    Save snapshots index to browser localStorage (ENCRYPTED).
 
     Args:
         index: Index dict with current_snapshot_id and snapshots list
@@ -84,9 +109,30 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
     Returns:
         True if successful
     """
-    # TEMPORARY: Use session_state instead of localStorage
-    st.session_state.snapshots_index = index
-    return True
+    try:
+        # Get LocalStorage instance
+        localS = _get_local_storage()
+
+        # Encrypt and save
+        encrypted_str = encrypt_data(index, localS)
+
+        # Save encryption key if it's new (to avoid duplicate key error)
+        if st.session_state.get('encryption_key_needs_save', False):
+            localS.setItem('ff_encryption_key', st.session_state.encryption_key_b64)
+            st.session_state.encryption_key_needs_save = False
+            print("[OK] Saved encryption key to browser localStorage")
+
+        # Save encrypted index
+        localS.setItem('ff_snapshots_index', encrypted_str)
+
+        print(f"[OK] Saved snapshots index to browser localStorage ({len(index.get('snapshots', []))} snapshots)")
+        return True
+
+    except Exception as e:
+        print(f"[ERROR] Failed to save snapshots index: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 
 # =============================================================================
@@ -136,28 +182,40 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
         "metadata": metadata
     }
 
-    # Save snapshot data to session_state (session-only storage)
-    snapshot_data_key = f"snapshot_data_{snapshot_id}"
+    # Print save confirmation
+    print(f"💾 SAVING: '{snapshot_name}' (ID: {snapshot_id})")
 
-    # DEBUG: Print what we're saving
-    print(f"DEBUG: Saving snapshot '{snapshot_name}' with ID {snapshot_id}")
+    # Save snapshot data to browser localStorage (ENCRYPTED)
+    try:
+        localS = _get_local_storage()
+        snapshot_key = f"ff_snapshot_{snapshot_id}"
 
-    # Store full data in session_state
-    if 'snapshots_data' not in st.session_state:
-        st.session_state.snapshots_data = {}
+        # Encrypt and save snapshot data
+        encrypted_str = encrypt_data(data, localS)
 
-    st.session_state.snapshots_data[snapshot_id] = data
+        # Save encryption key if it's new (to avoid duplicate key error)
+        if st.session_state.get('encryption_key_needs_save', False):
+            localS.setItem('ff_encryption_key', st.session_state.encryption_key_b64)
+            st.session_state.encryption_key_needs_save = False
+            print("[OK] Saved encryption key to browser localStorage")
 
-    print(f"DEBUG: Saved snapshot data to session_state")
+        # Save encrypted snapshot data
+        localS.setItem(snapshot_key, encrypted_str)
+
+        print(f"[OK] Saved snapshot data to browser localStorage: {snapshot_key}")
+
+    except Exception as e:
+        print(f"[ERROR] Failed to save snapshot data: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
     # Update snapshots index
     index = get_snapshots_index()
-    print(f"DEBUG: Current index before update: {len(index.get('snapshots', []))} snapshots")
-
     index["current_snapshot_id"] = snapshot_id
     index["snapshots"].append(snapshot)
 
-    print(f"DEBUG: Updated index: {len(index['snapshots'])} snapshots")
+    print(f"✅ SAVED: Total snapshots in browser localStorage: {len(index['snapshots'])}")
 
     save_snapshots_index(index)
 
@@ -166,7 +224,7 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
 
 def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
     """
-    Load snapshot data by ID from session_state.
+    Load snapshot data by ID from browser localStorage (ENCRYPTED).
 
     Args:
         snapshot_id: Snapshot ID (e.g., "20251106_0230")
@@ -179,10 +237,29 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
         >>> if data:
         >>>     print(f"User: {data['input_user_name']}")
     """
-    if 'snapshots_data' not in st.session_state:
-        return None
+    try:
+        localS = _get_local_storage()
+        snapshot_key = f"ff_snapshot_{snapshot_id}"
 
-    return st.session_state.snapshots_data.get(snapshot_id, None)
+        # Load and decrypt snapshot data
+        encrypted_str = localS.getItem(snapshot_key)
+        if encrypted_str:
+            data = decrypt_data(encrypted_str, localS)
+            if data:
+                print(f"[OK] Loaded snapshot from browser localStorage: {snapshot_key}")
+                return data
+            else:
+                print(f"[WARN] Decryption failed for snapshot: {snapshot_key}")
+                return None
+        else:
+            print(f"[INFO] No snapshot found in browser localStorage: {snapshot_key}")
+            return None
+
+    except Exception as e:
+        print(f"[ERROR] Failed to load snapshot: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 
 def list_snapshots() -> List[Dict[str, Any]]:
@@ -203,7 +280,7 @@ def list_snapshots() -> List[Dict[str, Any]]:
 
 def delete_snapshot(snapshot_id: str) -> bool:
     """
-    Delete a snapshot by ID.
+    Delete a snapshot by ID from browser localStorage.
 
     Args:
         snapshot_id: Snapshot ID to delete
@@ -214,21 +291,27 @@ def delete_snapshot(snapshot_id: str) -> bool:
     Example:
         >>> delete_snapshot("20251106_0230")
     """
-    # Remove from localStorage
-    snapshot_key = f"family_forecast_snapshot_{snapshot_id}"
-    # TODO: Implement delete from localStorage
-    # For now, just update index
+    try:
+        # Remove from browser localStorage
+        localS = _get_local_storage()
+        snapshot_key = f"ff_snapshot_{snapshot_id}"
+        localS.deleteItem(snapshot_key)
+        print(f"[OK] Deleted snapshot from browser localStorage: {snapshot_key}")
 
-    # Update index
-    index = get_snapshots_index()
-    index["snapshots"] = [s for s in index["snapshots"] if s["id"] != snapshot_id]
+        # Update index
+        index = get_snapshots_index()
+        index["snapshots"] = [s for s in index["snapshots"] if s["id"] != snapshot_id]
 
-    # If we deleted current snapshot, clear current_snapshot_id
-    if index["current_snapshot_id"] == snapshot_id:
-        index["current_snapshot_id"] = None
+        # If we deleted current snapshot, clear current_snapshot_id
+        if index["current_snapshot_id"] == snapshot_id:
+            index["current_snapshot_id"] = None
 
-    save_snapshots_index(index)
-    return True
+        save_snapshots_index(index)
+        return True
+
+    except Exception as e:
+        print(f"[ERROR] Failed to delete snapshot: {e}")
+        return False
 
 
 def rename_snapshot(snapshot_id: str, new_name: str) -> bool:
@@ -333,7 +416,7 @@ def export_all_snapshots() -> Dict[str, Any]:
 
 def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
     """
-    Import snapshots from backup object into session_state.
+    Import snapshots from backup object into browser localStorage.
 
     Args:
         backup: Backup object from export_all_snapshots()
@@ -355,18 +438,20 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
 
         # Get current index
         index = get_snapshots_index()
-
-        # Initialize snapshots_data if needed
-        if 'snapshots_data' not in st.session_state:
-            st.session_state.snapshots_data = {}
+        localS = _get_local_storage()
 
         if merge_mode == "replace":
-            # Clear existing snapshots
+            # Clear existing snapshots from browser localStorage
+            for snapshot in index.get("snapshots", []):
+                snapshot_key = f"ff_snapshot_{snapshot['id']}"
+                localS.deleteItem(snapshot_key)
+                print(f"[OK] Deleted snapshot during replace: {snapshot_key}")
+
+            # Clear index
             index = {
                 "current_snapshot_id": None,
                 "snapshots": []
             }
-            st.session_state.snapshots_data = {}
 
         # Import each snapshot
         imported_count = 0
@@ -375,8 +460,18 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
             data = snapshot_obj["data"]
             snapshot_id = metadata["id"]
 
-            # Save snapshot data to session_state
-            st.session_state.snapshots_data[snapshot_id] = data
+            # Save snapshot data to browser localStorage (ENCRYPTED)
+            snapshot_key = f"ff_snapshot_{snapshot_id}"
+            encrypted_str = encrypt_data(data, localS)
+
+            # Save encryption key if it's new (to avoid duplicate key error)
+            if st.session_state.get('encryption_key_needs_save', False):
+                localS.setItem('ff_encryption_key', st.session_state.encryption_key_b64)
+                st.session_state.encryption_key_needs_save = False
+                print("[OK] Saved encryption key to browser localStorage")
+
+            localS.setItem(snapshot_key, encrypted_str)
+            print(f"[OK] Imported snapshot to browser localStorage: {snapshot_key}")
 
             # Add to index (avoid duplicates)
             if not any(s["id"] == snapshot_id for s in index["snapshots"]):
@@ -390,13 +485,15 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
         # Save updated index
         save_snapshots_index(index)
 
-        print(f"DEBUG: Imported {imported_count} snapshots successfully")
+        print(f"✅ Imported {imported_count} snapshots to browser localStorage")
 
         return True
 
     except Exception as e:
         st.error(f"❌ Import failed: {e}")
-        print(f"DEBUG: Import error: {e}")
+        print(f"[ERROR] Import error: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
