@@ -55,6 +55,9 @@ from data_manager_cloud import manage_scenarios_cloud as manage_scenarios
 # Import INTAKE module
 from intake_integrated import show_intake_questionnaire
 
+# Import Healthcare module
+from healthcare.healthcare_main import main as healthcare_main
+
 # Import disclaimers
 import disclaimers
 
@@ -165,6 +168,10 @@ def main():
         show_sidebar_footer(is_trusted)
         show_intake_mode()
 
+    elif st.session_state.current_mode == "Healthcare":
+        show_sidebar_footer(is_trusted)
+        show_healthcare_mode()
+
     elif st.session_state.current_mode == "Analysis":
         # ✅ FIXED: Load INTAKE data into session state if available
         load_intake_data_to_session()
@@ -182,15 +189,19 @@ def main():
             st.markdown("### 🎯 Quick Mode Switch")
 
             # Determine smart default based on current mode
-            default_index = 0 if st.session_state.current_mode == "INTAKE" else 1
+            mode_options = ["INTAKE", "Analysis", "Healthcare"]
+            if st.session_state.current_mode in mode_options:
+                default_index = mode_options.index(st.session_state.current_mode)
+            else:
+                default_index = 1  # Default to Analysis
 
             # Mode selector radio buttons
             mode = st.radio(
                 "Choose mode:",
-                options=["INTAKE", "Analysis"],
+                options=mode_options,
                 index=default_index,
                 key="mode_selector_analysis",
-                help="INTAKE: Guided questionnaire | Analysis: Advanced simulation"
+                help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Healthcare: Cost planning"
             )
 
             # Sync radio button with session state
@@ -258,8 +269,8 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     # Mode selection header
     st.markdown("### 🎯 Choose Your Starting Point")
 
-    # Two big buttons for mode selection
-    col1, col2 = st.columns(2)
+    # Three big buttons for mode selection
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         st.markdown("""
@@ -305,6 +316,28 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
             st.session_state.current_mode = "Analysis"
             st.rerun()
 
+    with col3:
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #D85140 0%, #E86850 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
+            <h3 style='color: #FFFFFF; margin-top: 0;'>🏥 Healthcare Mode</h3>
+            <p style='color: #FFFFFF;'><strong>Medicare & Healthcare Cost Projector</strong></p>
+            <ul style='color: #FFFFFF;'>
+                <li>Medicare IRMAA calculator</li>
+                <li>Healthcare cost projections</li>
+                <li>Roth conversion impacts</li>
+                <li>Long-term care planning</li>
+            </ul>
+            <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Healthcare planning & Medicare costs</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("")  # Spacing
+
+        if st.button("🚀 Open Healthcare Hub", type="primary", use_container_width=True, key="btn_healthcare"):
+            st.session_state.mode_selected = True
+            st.session_state.current_mode = "Healthcare"
+            st.rerun()
+
     st.markdown("---")
 
     # Help section
@@ -323,6 +356,12 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
         - 💼 You have your financial data ready to input manually
         - 🎯 You want to jump straight to retirement simulations
         - ⚡ You're familiar with financial planning tools
+
+        **Choose Healthcare Mode if:**
+        - 🏥 You want to calculate Medicare IRMAA surcharges
+        - 💰 You need to project healthcare costs in retirement
+        - 💊 You're planning Roth conversions and want to see Medicare impacts
+        - 🩺 You want to explore long-term care planning options
 
         **💡 Pro Tip:** You can always switch between modes later using the sidebar button!
         """)
@@ -360,6 +399,41 @@ def show_intake_mode():
     except Exception as e:
         st.error(f"INTAKE error: {str(e)}")
         st.info("💡 Try switching to Analysis mode if you encounter issues.")
+
+
+# =============================================================================
+# HEALTHCARE MODE
+# =============================================================================
+
+def show_healthcare_mode():
+    """Display Healthcare Cost Projector module"""
+    st.components.v1.html(SCROLL_TO_TOP_JS, height=0)
+
+    # Add mode selector to sidebar
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 🎯 Quick Mode Switch")
+
+        mode = st.radio(
+            "Choose mode:",
+            options=["INTAKE", "Analysis", "Healthcare"],
+            index=2,  # Healthcare is index 2
+            key="mode_selector_healthcare",
+            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Healthcare: Cost planning"
+        )
+
+        if mode != st.session_state.current_mode:
+            st.session_state.current_mode = mode
+            st.session_state.mode_selected = True
+            st.rerun()
+
+    # Display Healthcare module
+    try:
+        healthcare_main()
+    except Exception as e:
+        st.error(f"Error loading Healthcare module: {e}")
+        import traceback
+        st.code(traceback.format_exc())
 
 
 # =============================================================================

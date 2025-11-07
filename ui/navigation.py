@@ -89,7 +89,7 @@ def show_navigation_menu():
         pages = [
             "🏠 Home",
             "📊 Analysis",
-            # "🏥 Healthcare",  # ⚠️ HEALTHCARE MODULE DISABLED - Uncomment when ready to deploy
+            "🏥 Healthcare",  # ✅ RE-ENABLED: Healthcare Cost Projector module
             "🤖 AI Advisor",
             "ℹ️ About"
         ]
