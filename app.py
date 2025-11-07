@@ -55,8 +55,14 @@ from data_manager_cloud import manage_scenarios_cloud as manage_scenarios
 # Import INTAKE module
 from intake_integrated import show_intake_questionnaire
 
-# Import Healthcare module
-from healthcare.healthcare_main import main as healthcare_main
+# Import Healthcare module (with error handling for debugging)
+try:
+    from healthcare.healthcare_main import main as healthcare_main
+    HEALTHCARE_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Healthcare module failed to import: {e}")
+    HEALTHCARE_AVAILABLE = False
+    healthcare_main = None
 
 # Import disclaimers
 import disclaimers
@@ -269,8 +275,12 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     # Mode selection header
     st.markdown("### 🎯 Choose Your Starting Point")
 
-    # Three big buttons for mode selection
-    col1, col2, col3 = st.columns(3)
+    # Three big buttons for mode selection (or 2 if Healthcare unavailable)
+    if HEALTHCARE_AVAILABLE:
+        col1, col2, col3 = st.columns(3)
+    else:
+        col1, col2 = st.columns(2)
+        st.warning("⚠️ Healthcare module temporarily unavailable")
 
     with col1:
         st.markdown("""
@@ -316,27 +326,28 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
             st.session_state.current_mode = "Analysis"
             st.rerun()
 
-    with col3:
-        st.markdown("""
-        <div style='background: linear-gradient(135deg, #D85140 0%, #E86850 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
-            <h3 style='color: #FFFFFF; margin-top: 0;'>🏥 Healthcare Mode</h3>
-            <p style='color: #FFFFFF;'><strong>Medicare & Healthcare Cost Projector</strong></p>
-            <ul style='color: #FFFFFF;'>
-                <li>Medicare IRMAA calculator</li>
-                <li>Healthcare cost projections</li>
-                <li>Roth conversion impacts</li>
-                <li>Long-term care planning</li>
-            </ul>
-            <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Healthcare planning & Medicare costs</p>
-        </div>
-        """, unsafe_allow_html=True)
+    if HEALTHCARE_AVAILABLE:
+        with col3:
+            st.markdown("""
+            <div style='background: linear-gradient(135deg, #D85140 0%, #E86850 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
+                <h3 style='color: #FFFFFF; margin-top: 0;'>🏥 Healthcare Mode</h3>
+                <p style='color: #FFFFFF;'><strong>Medicare & Healthcare Cost Projector</strong></p>
+                <ul style='color: #FFFFFF;'>
+                    <li>Medicare IRMAA calculator</li>
+                    <li>Healthcare cost projections</li>
+                    <li>Roth conversion impacts</li>
+                    <li>Long-term care planning</li>
+                </ul>
+                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Healthcare planning & Medicare costs</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown("")  # Spacing
+            st.markdown("")  # Spacing
 
-        if st.button("🚀 Open Healthcare Hub", type="primary", use_container_width=True, key="btn_healthcare"):
-            st.session_state.mode_selected = True
-            st.session_state.current_mode = "Healthcare"
-            st.rerun()
+            if st.button("🚀 Open Healthcare Hub", type="primary", use_container_width=True, key="btn_healthcare"):
+                st.session_state.mode_selected = True
+                st.session_state.current_mode = "Healthcare"
+                st.rerun()
 
     st.markdown("---")
 
