@@ -500,8 +500,9 @@ def show_intake_questionnaire():
                     else:
                         data.pop("input_partner_name", None)
                         data.pop("input_partner_age", None)
-                    # REMOVED: Auto-save on navigation (user must explicitly save)
-                    # save_payload(data)
+                    # CRITICAL FIX: Save to session_state so data persists across pages
+                    for key, value in data.items():
+                        st.session_state[key] = value
                     st.session_state.intake_from_review = False  # Reset flag
                     go_to_page('review')
             with col2:
@@ -518,8 +519,9 @@ def show_intake_questionnaire():
                     else:
                         data.pop("input_partner_name", None)
                         data.pop("input_partner_age", None)
-                    # REMOVED: Auto-save on navigation (user must explicitly save)
-                    # save_payload(data)
+                    # CRITICAL FIX: Save to session_state so data persists across pages
+                    for key, value in data.items():
+                        st.session_state[key] = value
                     st.session_state.intake_from_review = False  # Reset flag when going forward
                     go_to_page('income')
         else:
@@ -537,8 +539,9 @@ def show_intake_questionnaire():
                 else:
                     data.pop("input_partner_name", None)
                     data.pop("input_partner_age", None)
-                # REMOVED: Auto-save on navigation (user must explicitly save)
-                # save_payload(data)
+                # CRITICAL FIX: Save to session_state so data persists across pages
+                for key, value in data.items():
+                    st.session_state[key] = value
                 go_to_page('income')
 
     # ===== PAGE 2: INCOME =====
@@ -647,6 +650,9 @@ def show_intake_questionnaire():
             data["input_pension_income"] = float(pension)
             data["input_other_income"] = float(other_income)
             data["input_total_income"] = float(total_income)
+            # CRITICAL FIX: Save to session_state so data persists across pages
+            for key, value in data.items():
+                st.session_state[key] = value
             # REMOVED: Auto-save on navigation (user must explicitly save)
             # save_payload(data)
             go_to_page('expenses')
@@ -847,6 +853,9 @@ def show_intake_questionnaire():
             data["input_miscellaneous_expenses"] = float(miscellaneous)
             data["input_other_expenses"] = float(other_expenses)
             data["input_total_expenses"] = float(total_expenses)
+            # CRITICAL FIX: Save to session_state so data persists across pages
+            for key, value in data.items():
+                st.session_state[key] = value
             # REMOVED: Auto-save on navigation (user must explicitly save)
             # save_payload(data)
             go_to_page('custom_expenses')
@@ -936,6 +945,9 @@ def show_intake_questionnaire():
             data = existing.copy()
             data["custom_expenses"] = st.session_state['custom_expenses_list']
             data["custom_expenses_list"] = st.session_state['custom_expenses_list']  # Also save as _list for compatibility
+            # CRITICAL FIX: Save to session_state so data persists across pages
+            for key, value in data.items():
+                st.session_state[key] = value
             # REMOVED: Auto-save on navigation (user must explicitly save)
             # save_payload(data)
             go_to_page('assets')
