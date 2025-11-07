@@ -387,6 +387,57 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             st.error(f"Scenario comparison error: {str(e)}")
 
     # =============================================================================
+    # COMPARE SAVED PLANS
+    # =============================================================================
+
+    st.markdown("---")
+    st.subheader("📊 Compare Saved Plans")
+    st.caption("Compare your saved retirement plans to see which strategy works best.")
+
+    try:
+        from utils.snapshot_manager import get_snapshots_index, compare_snapshots, display_snapshot_comparison
+
+        # Get available snapshots
+        index = get_snapshots_index()
+        snapshots = index.get("snapshots", [])
+
+        if len(snapshots) == 0:
+            st.info("💡 You haven't saved any plans yet. Complete INTAKE and save a scenario first.")
+        elif len(snapshots) == 1:
+            st.warning("⚠️ Save at least 2 plans to use comparison. You currently have 1 saved plan.")
+        else:
+            # Create snapshot options for dropdown
+            snapshot_options = {f"{s['name']} ({s['id']})": s['id'] for s in snapshots}
+
+            # Let user select 2-3 snapshots
+            st.markdown("**Select 2-3 plans to compare:**")
+            selected_labels = st.multiselect(
+                "Choose plans",
+                options=list(snapshot_options.keys()),
+                max_selections=3,
+                help="Pick 2-3 saved plans to compare side-by-side"
+            )
+
+            # Convert labels back to IDs
+            selected_ids = [snapshot_options[label] for label in selected_labels]
+
+            if len(selected_ids) >= 2:
+                if st.button("🔍 Compare Selected Plans", type="primary", use_container_width=True):
+                    with st.spinner("Comparing plans..."):
+                        comparison = compare_snapshots(selected_ids)
+                        if comparison:
+                            display_snapshot_comparison(comparison)
+                        else:
+                            st.error("❌ Comparison failed. Please try again.")
+            elif len(selected_ids) == 1:
+                st.info("👆 Select at least one more plan to compare.")
+            else:
+                st.info("👆 Select 2-3 plans from the dropdown above to start comparing.")
+
+    except Exception as e:
+        st.error(f"Saved plans comparison error: {str(e)}")
+
+    # =============================================================================
     # AI ADVISOR
     # =============================================================================
 
