@@ -50,7 +50,9 @@ from pages.financial_inputs import collect_financial_data
 from pages.family_inputs import collect_family_events
 
 # Import data management
-from data_manager_cloud import manage_scenarios_cloud as manage_scenarios
+# OLD: from data_manager_cloud import manage_scenarios_cloud as manage_scenarios
+# NEW: Encrypted snapshot system
+from sidebar_snapshot_manager import manage_snapshots_sidebar as manage_scenarios
 
 # Import INTAKE module
 from intake_integrated import show_intake_questionnaire
@@ -467,7 +469,9 @@ def show_analysis_mode(nav_state):
         scenario_data = st.session_state.get('_pending_scenario_data', {})
 
         # Import the apply function here to avoid circular import at module level
-        from data_manager_cloud import apply_scenario_data_safe
+        # OLD: from data_manager_cloud import apply_scenario_data_safe
+        # NEW: Use sidebar_snapshot_manager version
+        from sidebar_snapshot_manager import apply_scenario_data_safe
 
         # Apply the scenario data (this clears old keys and sets new values)
         apply_scenario_data_safe(scenario_data)
