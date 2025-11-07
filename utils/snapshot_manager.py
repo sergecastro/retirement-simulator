@@ -96,10 +96,15 @@ def get_snapshots_index() -> Dict[str, Any]:
             try:
                 index = json.loads(data_str)
                 # Filter out demo scenarios
-                snapshots = [s for s in index.get('snapshots', [])
+                all_snapshots = index.get('snapshots', [])
+                print(f"[DEBUG] Before filter: {len(all_snapshots)} snapshots")
+                for s in all_snapshots:
+                    print(f"  - '{s.get('name')}' starts with 'Original'? {s.get('name', '').startswith('Original')}")
+
+                snapshots = [s for s in all_snapshots
                            if not s.get('name', '').startswith('Original')]
                 index['snapshots'] = snapshots
-                print(f"[SNAPSHOT] Loaded {len(snapshots)} snapshots (PLAIN JSON, filtered)")
+                print(f"[SNAPSHOT] After filter: {len(snapshots)} snapshots (PLAIN JSON)")
                 return index
             except json.JSONDecodeError:
                 # Not plain JSON, try to decrypt
