@@ -80,14 +80,29 @@ def get_snapshots_index() -> Dict[str, Any]:
     # Get LocalStorage instance
     localS = _get_local_storage()
 
+    # CRITICAL FIX: Refresh from browser to get latest data
+    # This is needed because streamlit-local-storage caches on init
+    # and won't see changes made by JavaScript until we refresh
+    try:
+        localS.refreshItems()
+    except Exception as e:
+        print(f"[WARN] Could not refresh localStorage: {e}")
+
     # Try to load from browser localStorage
     try:
-        encrypted_str = localS.getItem('ff_snapshots_index')
-        if encrypted_str:
-            index = decrypt_data(encrypted_str, localS)
-            if index:
-                print(f"[SNAPSHOT] Loaded {len(index.get('snapshots', []))} snapshots from browser localStorage")
+        data_str = localS.getItem('ff_snapshots_index')
+        if data_str:
+            # Try to parse as JSON first (in case JavaScript wrote it)
+            try:
+                index = json.loads(data_str)
+                print(f"[SNAPSHOT] Loaded {len(index.get('snapshots', []))} snapshots (PLAIN JSON)")
                 return index
+            except json.JSONDecodeError:
+                # Not plain JSON, try to decrypt
+                index = decrypt_data(data_str, localS)
+                if index:
+                    print(f"[SNAPSHOT] Loaded {len(index.get('snapshots', []))} snapshots (ENCRYPTED)")
+                    return index
     except Exception as e:
         print(f"[WARN] Could not load snapshots index: {e}")
 
