@@ -4,8 +4,8 @@ Family Forecast - Retirement Planning Tool
 Main application entry point and navigation.
 
 Author: Family Forecast Development Team
-Last Updated: November 6, 2025
-Version: 3.1 (Healthcare Hub + Modular Architecture)
+Last Updated: November 6, 2025 - 7:30 PM EST
+Version: 3.1.1 (Healthcare Hub + Diagnostic Mode)
 """
 
 # =============================================================================
@@ -247,6 +247,9 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     # Welcome header
     st.title("🏠 Welcome to Family Forecast!")
     st.markdown("## *Family Lifecycle Retirement Planner*")
+
+    # DEBUG: Show version to confirm deployment
+    st.caption(f"🔧 Debug: Version 3.1.1 | Healthcare Module: {'Available' if HEALTHCARE_AVAILABLE else 'UNAVAILABLE'} | Deployed: Nov 6, 7:30 PM")
 
     # Welcome message box
     st.markdown("""
