@@ -174,10 +174,11 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
         display_name = f"{snapshot['name']}"
         snapshot_options[display_name] = ('snapshot', snapshot['id'])
 
-    # Add embedded options
-    if is_trusted_user:
-        snapshot_options['70+ Retirement (Private - Trusted)'] = ('embedded', 'private')
-    snapshot_options['Original 70+ Retirement (Demo)'] = ('embedded', 'demo')
+    # Add embedded options ONLY if no user snapshots exist
+    if len(snapshots) == 0:
+        if is_trusted_user:
+            snapshot_options['70+ Retirement (Private - Trusted)'] = ('embedded', 'private')
+        snapshot_options['Original 70+ Retirement (Demo)'] = ('embedded', 'demo')
 
     # Dropdown selector
     if snapshot_options:
