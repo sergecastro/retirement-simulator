@@ -284,6 +284,8 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
         >>> if data:
         >>>     print(f"User: {data['input_user_name']}")
     """
+    print(f"[DEBUG load_snapshot] Attempting to load snapshot: {snapshot_id}")
+
     # Check if this is a demo scenario (by ID or name from index)
     index = get_snapshots_index()
     for snapshot in index.get('snapshots', []):
@@ -291,24 +293,30 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
             if snapshot.get('name', '').startswith('Original'):
                 print(f"[INFO] Skipping demo scenario: {snapshot['name']}")
                 return None
+            print(f"[DEBUG load_snapshot] Found in index: '{snapshot.get('name')}'")
             break
 
     try:
         localS = _get_local_storage()
         snapshot_key = f"ff_snapshot_{snapshot_id}"
 
+        print(f"[DEBUG load_snapshot] Looking for localStorage key: {snapshot_key}")
+
         # Load and decrypt snapshot data
         encrypted_str = localS.getItem(snapshot_key)
         if encrypted_str:
+            print(f"[DEBUG load_snapshot] Found encrypted data ({len(str(encrypted_str))} chars)")
             data = decrypt_data(encrypted_str, localS)
             if data:
                 print(f"[OK] Loaded snapshot from browser localStorage: {snapshot_key}")
+                print(f"[DEBUG load_snapshot] Decrypted data has {len(data.keys())} keys")
+                print(f"[DEBUG load_snapshot] User name in data: {data.get('input_user_name', 'NOT FOUND')}")
                 return data
             else:
                 print(f"[WARN] Decryption failed for snapshot: {snapshot_key}")
                 return None
         else:
-            print(f"[INFO] No snapshot found in browser localStorage: {snapshot_key}")
+            print(f"[ERROR] ❌ No data found in localStorage for key: {snapshot_key}")
             return None
 
     except Exception as e:
@@ -414,12 +422,24 @@ def get_current_snapshot() -> Optional[Dict[str, Any]]:
     Returns:
         Snapshot data dict, or None if no current snapshot
     """
+    print("[DEBUG get_current_snapshot] Getting snapshots index...")
     index = get_snapshots_index()
     current_id = index.get("current_snapshot_id")
 
-    if current_id:
-        return load_snapshot(current_id)
+    print(f"[DEBUG get_current_snapshot] current_snapshot_id = {current_id}")
+    print(f"[DEBUG get_current_snapshot] Total snapshots in index: {len(index.get('snapshots', []))}")
 
+    if current_id:
+        print(f"[DEBUG get_current_snapshot] Loading snapshot: {current_id}")
+        data = load_snapshot(current_id)
+        if data:
+            print(f"[DEBUG get_current_snapshot] ✅ Successfully loaded snapshot {current_id}")
+            print(f"[DEBUG get_current_snapshot] User name: {data.get('input_user_name', 'NOT FOUND')}")
+        else:
+            print(f"[DEBUG get_current_snapshot] ❌ Failed to load snapshot {current_id}")
+        return data
+
+    print(f"[DEBUG get_current_snapshot] ⚠️  No current_snapshot_id set!")
     return None
 
 

@@ -228,36 +228,62 @@ def load_existing_payload():
     2. Try legacy localStorage (old single-version data)
     3. Load template (first-time user)
     """
+    print("=" * 70)
+    print("[DEBUG INTAKE STARTUP] Loading data for INTAKE...")
+    print("=" * 70)
+
     # NEW: Try to load from current snapshot first (versioned storage)
+    print("[DEBUG] Step 1: Calling get_current_snapshot()...")
     data = get_current_snapshot()
 
     if data:
         # RETURNING USER - found snapshot
+        print(f"[DEBUG] ✅ Found snapshot data!")
+        print(f"[DEBUG] User name in snapshot: {data.get('input_user_name', 'NOT FOUND')}")
+        print(f"[DEBUG] User age in snapshot: {data.get('input_age', 'NOT FOUND')}")
+        print(f"[DEBUG] Total keys in snapshot: {len(data.keys())}")
+        print(f"[DEBUG] Sample keys: {list(data.keys())[:10]}")
+
         st.session_state['intake_is_returning_user'] = True
         user_name = data.get('input_user_name', '')
         if user_name:
             st.success(f"👋 Welcome back, {user_name}! Your saved plan has been loaded.")
         else:
             st.success("👋 Welcome back! Your saved plan has been loaded.")
+
+        print(f"[DEBUG] Returning snapshot data with {len(data.keys())} keys")
+        print("=" * 70)
         return data
 
     # Fallback: Try legacy localStorage (for backward compatibility)
+    print("[DEBUG] Step 2: No current snapshot, trying legacy localStorage...")
     data = load_from_local_storage_encrypted('family_forecast_intake_data')
 
     if data:
         # RETURNING USER - found legacy data, migrate to snapshot
+        print(f"[DEBUG] ✅ Found legacy localStorage data!")
+        print(f"[DEBUG] User name: {data.get('input_user_name', 'NOT FOUND')}")
+
         st.session_state['intake_is_returning_user'] = True
         user_name = data.get('input_user_name', '')
         if user_name:
             st.info(f"👋 Welcome back, {user_name}! Your data has been loaded.")
         else:
             st.info("👋 Welcome back! Your data has been loaded.")
+
+        print(f"[DEBUG] Returning legacy data with {len(data.keys())} keys")
+        print("=" * 70)
         return data
 
     # FIRST-TIME USER - no data found, load template scenario
+    print("[DEBUG] Step 3: No saved data found, loading DEMO template...")
     st.session_state['intake_is_returning_user'] = False
     st.info("ℹ️ No saved data found - starting with a sample scenario to guide you.")
-    return load_template_data()
+
+    template = load_template_data()
+    print(f"[DEBUG] ⚠️  Loading DEMO data with user: {template.get('input_user_name', 'NOT FOUND')}")
+    print("=" * 70)
+    return template
 
     # OLD CODE (KEPT FOR ROLLBACK - DO NOT DELETE):
     # shared_path = get_shared_path()
