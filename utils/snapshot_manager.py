@@ -90,11 +90,27 @@ def get_snapshots_index() -> Dict[str, Any]:
 
     # Try to load from browser localStorage
     try:
-        data_str = localS.getItem('ff_snapshots_index')
-        if data_str:
-            # Try to parse as JSON first (in case JavaScript wrote it)
-            try:
-                index = json.loads(data_str)
+        data = localS.getItem('ff_snapshots_index')
+        if data:
+            # streamlit-local-storage returns dict, not string!
+            if isinstance(data, dict):
+                # Already parsed - use directly
+                index = data
+                print(f"[DEBUG] Got dict from localStorage (already parsed)")
+            elif isinstance(data, str):
+                # String - try to parse as JSON first
+                try:
+                    index = json.loads(data)
+                    print(f"[DEBUG] Parsed JSON string")
+                except json.JSONDecodeError:
+                    # Not plain JSON, try to decrypt
+                    index = decrypt_data(data, localS)
+                    print(f"[DEBUG] Decrypted data")
+            else:
+                print(f"[WARN] Unexpected data type: {type(data)}")
+                index = None
+
+            if index:
                 # Filter out demo scenarios
                 all_snapshots = index.get('snapshots', [])
                 print(f"[DEBUG] Before filter: {len(all_snapshots)} snapshots")
@@ -104,20 +120,12 @@ def get_snapshots_index() -> Dict[str, Any]:
                 snapshots = [s for s in all_snapshots
                            if not s.get('name', '').startswith('Original')]
                 index['snapshots'] = snapshots
-                print(f"[SNAPSHOT] After filter: {len(snapshots)} snapshots (PLAIN JSON)")
+                print(f"[SNAPSHOT] After filter: {len(snapshots)} snapshots")
                 return index
-            except json.JSONDecodeError:
-                # Not plain JSON, try to decrypt
-                index = decrypt_data(data_str, localS)
-                if index:
-                    # Filter out demo scenarios
-                    snapshots = [s for s in index.get('snapshots', [])
-                               if not s.get('name', '').startswith('Original')]
-                    index['snapshots'] = snapshots
-                    print(f"[SNAPSHOT] Loaded {len(snapshots)} snapshots (ENCRYPTED, filtered)")
-                    return index
     except Exception as e:
         print(f"[WARN] Could not load snapshots index: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Initialize empty index if not found
     print("[SNAPSHOT] Initialized (empty)")
