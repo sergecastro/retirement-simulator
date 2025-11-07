@@ -120,8 +120,17 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
         index = get_snapshots_index()
         snapshots = index.get("snapshots", [])
         current_snapshot_id = index.get("current_snapshot_id")
+
+        # DEBUG: Show what we found
+        print(f"[DEBUG SIDEBAR] Loaded {len(snapshots)} snapshots from localStorage")
+        for s in snapshots:
+            print(f"  - {s.get('name')} (ID: {s.get('id')})")
+
     except Exception as e:
         print(f"[ERROR] Failed to get snapshots: {e}")
+        import traceback
+        traceback.print_exc()
+        st.sidebar.error(f"⚠️ Error loading saved plans: {e}")
         snapshots = []
         current_snapshot_id = None
 
@@ -145,6 +154,12 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
     current_name = st.session_state.get('current_scenario', 'Original 70+ Retirement (Demo)')
 
     st.sidebar.info(f"📋 **Currently:** {current_name}")
+
+    # DEBUG: Show snapshot count to user
+    if snapshots:
+        st.sidebar.caption(f"✅ Found {len(snapshots)} saved plan(s) in localStorage")
+    else:
+        st.sidebar.caption(f"ℹ️ No saved plans found yet")
 
     # ============================================
     # LOAD SECTION
