@@ -95,13 +95,21 @@ def get_snapshots_index() -> Dict[str, Any]:
             # Try to parse as JSON first (in case JavaScript wrote it)
             try:
                 index = json.loads(data_str)
-                print(f"[SNAPSHOT] Loaded {len(index.get('snapshots', []))} snapshots (PLAIN JSON)")
+                # Filter out demo scenarios
+                snapshots = [s for s in index.get('snapshots', [])
+                           if not s.get('name', '').startswith('Original')]
+                index['snapshots'] = snapshots
+                print(f"[SNAPSHOT] Loaded {len(snapshots)} snapshots (PLAIN JSON, filtered)")
                 return index
             except json.JSONDecodeError:
                 # Not plain JSON, try to decrypt
                 index = decrypt_data(data_str, localS)
                 if index:
-                    print(f"[SNAPSHOT] Loaded {len(index.get('snapshots', []))} snapshots (ENCRYPTED)")
+                    # Filter out demo scenarios
+                    snapshots = [s for s in index.get('snapshots', [])
+                               if not s.get('name', '').startswith('Original')]
+                    index['snapshots'] = snapshots
+                    print(f"[SNAPSHOT] Loaded {len(snapshots)} snapshots (ENCRYPTED, filtered)")
                     return index
     except Exception as e:
         print(f"[WARN] Could not load snapshots index: {e}")
@@ -252,6 +260,15 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
         >>> if data:
         >>>     print(f"User: {data['input_user_name']}")
     """
+    # Check if this is a demo scenario (by ID or name from index)
+    index = get_snapshots_index()
+    for snapshot in index.get('snapshots', []):
+        if snapshot['id'] == snapshot_id:
+            if snapshot.get('name', '').startswith('Original'):
+                print(f"[INFO] Skipping demo scenario: {snapshot['name']}")
+                return None
+            break
+
     try:
         localS = _get_local_storage()
         snapshot_key = f"ff_snapshot_{snapshot_id}"
