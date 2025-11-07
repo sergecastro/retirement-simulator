@@ -12,9 +12,6 @@ from intake_validation import (validate_age, validate_age_gap, validate_total_in
                                 validate_income_vs_expenses, show_validation_message)
 from intake_review import show_assets_page, show_liabilities_page, show_family_page, show_review_page
 
-# NEW: localStorage functions for privacy-safe storage
-from utils.local_storage import save_to_local_storage_encrypted, load_from_local_storage_encrypted
-
 # NEW: Snapshot versioning system
 from utils.snapshot_manager import (
     save_snapshot, load_snapshot, list_snapshots,

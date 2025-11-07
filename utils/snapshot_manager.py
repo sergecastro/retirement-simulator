@@ -86,13 +86,13 @@ def get_snapshots_index() -> Dict[str, Any]:
         if encrypted_str:
             index = decrypt_data(encrypted_str, localS)
             if index:
-                print(f"✨ SNAPSHOT SYSTEM: Loaded {len(index.get('snapshots', []))} snapshots from browser localStorage")
+                print(f"[SNAPSHOT] Loaded {len(index.get('snapshots', []))} snapshots from browser localStorage")
                 return index
     except Exception as e:
         print(f"[WARN] Could not load snapshots index: {e}")
 
     # Initialize empty index if not found
-    print("✨ SNAPSHOT SYSTEM: Initialized (empty)")
+    print("[SNAPSHOT] Initialized (empty)")
     return {
         "current_snapshot_id": None,
         "snapshots": []
@@ -183,7 +183,7 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
     }
 
     # Print save confirmation
-    print(f"💾 SAVING: '{snapshot_name}' (ID: {snapshot_id})")
+    print(f"[SAVE] Saving: '{snapshot_name}' (ID: {snapshot_id})")
 
     # Save snapshot data to browser localStorage (ENCRYPTED)
     try:
@@ -215,7 +215,7 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
     index["current_snapshot_id"] = snapshot_id
     index["snapshots"].append(snapshot)
 
-    print(f"✅ SAVED: Total snapshots in browser localStorage: {len(index['snapshots'])}")
+    print(f"[OK] Saved: Total snapshots in browser localStorage: {len(index['snapshots'])}")
 
     save_snapshots_index(index)
 
@@ -485,7 +485,7 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
         # Save updated index
         save_snapshots_index(index)
 
-        print(f"✅ Imported {imported_count} snapshots to browser localStorage")
+        print(f"[OK] Imported {imported_count} snapshots to browser localStorage")
 
         return True
 
