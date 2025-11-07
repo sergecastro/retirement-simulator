@@ -537,3 +537,206 @@ def _calculate_monthly_surplus(data: Dict[str, Any]) -> float:
     income = data.get("input_total_income", 0)
     expenses = data.get("input_total_expenses", 0)
     return income - expenses
+
+
+# =============================================================================
+# SNAPSHOT COMPARISON
+# =============================================================================
+
+def compare_snapshots(snapshot_ids: List[str]) -> Optional[Dict[str, Any]]:
+    """
+    Compare 2-3 snapshots side-by-side.
+
+    Args:
+        snapshot_ids: List of 2-3 snapshot IDs to compare (e.g., ["20251106_0230", "20251107_1445"])
+
+    Returns:
+        Comparison data dict with metrics for each snapshot, or None if error
+
+    Structure:
+        {
+            "snapshots": [
+                {
+                    "id": "20251106_0230",
+                    "name": "Conservative Plan",
+                    "created": "2025-11-06T02:30:00",
+                    "metrics": {
+                        "net_worth": 850000,
+                        "monthly_surplus": 350,
+                        "user_age": 65,
+                        "partner_age": 63,
+                        "total_income": 8500,
+                        "total_expenses": 8150
+                    }
+                },
+                {...}
+            ],
+            "differences": {
+                "net_worth": [850000, 920000, 70000, 8.2],  # [val1, val2, diff, pct]
+                "monthly_surplus": [350, 500, 150, 42.9],
+                ...
+            }
+        }
+    """
+    # Validate input
+    if not snapshot_ids or len(snapshot_ids) < 2 or len(snapshot_ids) > 3:
+        print("[ERROR] compare_snapshots requires 2-3 snapshot IDs")
+        return None
+
+    # Load each snapshot
+    snapshots_data = []
+    for snapshot_id in snapshot_ids:
+        # Get metadata from index
+        index = get_snapshots_index()
+        metadata = None
+        for s in index.get("snapshots", []):
+            if s["id"] == snapshot_id:
+                metadata = s
+                break
+
+        if not metadata:
+            print(f"[ERROR] Snapshot {snapshot_id} not found in index")
+            return None
+
+        # Load full data
+        data = load_snapshot(snapshot_id)
+        if not data:
+            print(f"[ERROR] Could not load data for snapshot {snapshot_id}")
+            return None
+
+        # Calculate metrics
+        metrics = {
+            "net_worth": _calculate_net_worth(data),
+            "monthly_surplus": _calculate_monthly_surplus(data),
+            "user_age": data.get("input_age", 0),
+            "partner_age": data.get("input_partner_age", 0),
+            "total_income": data.get("input_total_income", 0),
+            "total_expenses": data.get("input_total_expenses", 0),
+            "retirement_age": data.get("input_retirement_age", 0),
+            "partner_retirement_age": data.get("input_partner_retirement_age", 0)
+        }
+
+        snapshots_data.append({
+            "id": snapshot_id,
+            "name": metadata.get("name", snapshot_id),
+            "created": metadata.get("created", ""),
+            "metrics": metrics
+        })
+
+    # Calculate differences (comparing first snapshot to others)
+    base = snapshots_data[0]["metrics"]
+    differences = {}
+
+    for key in base.keys():
+        if len(snapshots_data) == 2:
+            # 2-snapshot comparison
+            val1 = base[key]
+            val2 = snapshots_data[1]["metrics"][key]
+            diff = val2 - val1
+            pct = (diff / val1 * 100) if val1 != 0 else 0
+            differences[key] = [val1, val2, diff, pct]
+        else:
+            # 3-snapshot comparison
+            val1 = base[key]
+            val2 = snapshots_data[1]["metrics"][key]
+            val3 = snapshots_data[2]["metrics"][key]
+            diff_2 = val2 - val1
+            diff_3 = val3 - val1
+            pct_2 = (diff_2 / val1 * 100) if val1 != 0 else 0
+            pct_3 = (diff_3 / val1 * 100) if val1 != 0 else 0
+            differences[key] = [val1, val2, val3, diff_2, diff_3, pct_2, pct_3]
+
+    print(f"[OK] Compared {len(snapshots_data)} snapshots successfully")
+
+    return {
+        "snapshots": snapshots_data,
+        "differences": differences
+    }
+
+
+def display_snapshot_comparison(comparison: Dict[str, Any]) -> None:
+    """
+    Display snapshot comparison in Streamlit UI.
+
+    Args:
+        comparison: Output from compare_snapshots()
+
+    Shows:
+        - Side-by-side metrics table
+        - Differences with % change
+        - Color coding (green=better, red=worse)
+    """
+    if not comparison:
+        st.warning("⚠️ No comparison data available")
+        return
+
+    snapshots = comparison["snapshots"]
+    differences = comparison["differences"]
+    num_snapshots = len(snapshots)
+
+    # Display header
+    st.subheader("📊 Snapshot Comparison")
+
+    # Create columns for side-by-side display
+    cols = st.columns(num_snapshots)
+
+    # Display each snapshot's basic info
+    for idx, snapshot in enumerate(snapshots):
+        with cols[idx]:
+            st.markdown(f"**{snapshot['name']}**")
+            st.caption(f"ID: {snapshot['id']}")
+            st.caption(f"Created: {snapshot['created'][:10]}")
+
+    st.markdown("---")
+
+    # Display metrics comparison
+    metric_labels = {
+        "net_worth": "💰 Net Worth",
+        "monthly_surplus": "💵 Monthly Surplus",
+        "user_age": "👤 Your Age",
+        "partner_age": "👥 Partner Age",
+        "total_income": "📈 Total Income",
+        "total_expenses": "📉 Total Expenses",
+        "retirement_age": "🎯 Your Retirement Age",
+        "partner_retirement_age": "🎯 Partner Retirement Age"
+    }
+
+    for key, label in metric_labels.items():
+        st.markdown(f"**{label}**")
+        cols = st.columns(num_snapshots)
+
+        diff_data = differences.get(key, [])
+
+        for idx, snapshot in enumerate(snapshots):
+            with cols[idx]:
+                value = snapshot["metrics"][key]
+
+                # Format value
+                if key in ["net_worth", "total_income", "total_expenses"]:
+                    formatted = f"${value:,.0f}"
+                elif key in ["monthly_surplus"]:
+                    formatted = f"${value:,.0f}" if value >= 0 else f"-${abs(value):,.0f}"
+                else:
+                    formatted = f"{value:.0f}"
+
+                # Show difference for snapshots 2 and 3
+                if idx == 0:
+                    st.metric(label="Base", value=formatted)
+                elif idx == 1 and len(diff_data) >= 4:
+                    diff = diff_data[2]
+                    pct = diff_data[3]
+                    st.metric(
+                        label="vs Base",
+                        value=formatted,
+                        delta=f"{diff:+,.0f} ({pct:+.1f}%)"
+                    )
+                elif idx == 2 and len(diff_data) >= 7:
+                    diff = diff_data[4]
+                    pct = diff_data[6]
+                    st.metric(
+                        label="vs Base",
+                        value=formatted,
+                        delta=f"{diff:+,.0f} ({pct:+.1f}%)"
+                    )
+
+        st.markdown("---")
