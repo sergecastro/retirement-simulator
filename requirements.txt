@@ -18,6 +18,9 @@ anthropic==0.69.0
 # Configuration
 python-dotenv==1.1.0
 
+# Encryption (for snapshot storage)
+cryptography==44.0.0
+
 # HTTP requests for health checks
 requests==2.31.0
 
