@@ -4,8 +4,8 @@ Family Forecast - Retirement Planning Tool
 Main application entry point and navigation.
 
 Author: Family Forecast Development Team
-Last Updated: November 3, 2025
-Version: 3.0 (Refactored - Modular Architecture)
+Last Updated: November 6, 2025
+Version: 3.1 (Healthcare Hub + Modular Architecture)
 """
 
 # =============================================================================
