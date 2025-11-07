@@ -218,6 +218,17 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
         "metadata": metadata
     }
 
+    # DEBUG: Print what we're saving
+    print(f"[DEBUG SAVE] ==========================================")
+    print(f"[DEBUG SAVE] Snapshot name: {snapshot_name}")
+    print(f"[DEBUG SAVE] Snapshot ID: {snapshot_id}")
+    print(f"[DEBUG SAVE] User name in data: {data.get('input_user_name', 'NOT FOUND')}")
+    print(f"[DEBUG SAVE] User age in data: {data.get('input_age', 'NOT FOUND')}")
+    print(f"[DEBUG SAVE] Total data keys: {len(data.keys())}")
+    print(f"[DEBUG SAVE] Sample keys: {list(data.keys())[:10]}")
+    print(f"[DEBUG SAVE] Metadata extracted: {metadata}")
+    print(f"[DEBUG SAVE] ==========================================")
+
     # Print save confirmation
     print(f"[SAVE] Saving: '{snapshot_name}' (ID: {snapshot_id})")
 
