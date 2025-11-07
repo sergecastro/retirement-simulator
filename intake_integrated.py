@@ -130,6 +130,95 @@ def load_template_data():
 
     return template
 
+def collect_current_form_data():
+    """
+    Collect CURRENT form data from st.session_state (what user just entered).
+
+    This is used when SAVING - we want to capture what's currently in the form,
+    NOT load old saved data.
+    """
+    data = {
+        "schema_version": "1.0",
+
+        # Profile
+        "input_user_name": st.session_state.get("input_user_name", ""),
+        "input_age": st.session_state.get("input_age", 70),
+        "input_age_group": st.session_state.get("input_age_group", "70+"),
+        "input_partner_exists": st.session_state.get("input_partner_exists", False),
+        "input_partner_name": st.session_state.get("input_partner_name", ""),
+        "input_partner_age": st.session_state.get("input_partner_age", 68),
+
+        # Income
+        "input_salary_wages": st.session_state.get("input_salary_wages", 0.0),
+        "input_self_employment_income": st.session_state.get("input_self_employment_income", 0.0),
+        "input_rental_income": st.session_state.get("input_rental_income", 0.0),
+        "input_investment_income": st.session_state.get("input_investment_income", 0.0),
+        "input_social_security_income": st.session_state.get("input_social_security_income", 0.0),
+        "input_pension_income": st.session_state.get("input_pension_income", 0.0),
+        "input_other_income": st.session_state.get("input_other_income", 0.0),
+        "input_total_income": st.session_state.get("input_total_income", 0.0),
+
+        # Expenses
+        "input_housing_expenses": st.session_state.get("input_housing_expenses", 0.0),
+        "input_utilities_expenses": st.session_state.get("input_utilities_expenses", 0.0),
+        "input_groceries_expenses": st.session_state.get("input_groceries_expenses", 0.0),
+        "input_transportation_expenses": st.session_state.get("input_transportation_expenses", 0.0),
+        "input_healthcare_expenses": st.session_state.get("input_healthcare_expenses", 0.0),
+        "input_insurance_expenses": st.session_state.get("input_insurance_expenses", 0.0),
+        "input_property_tax_expenses": st.session_state.get("input_property_tax_expenses", 0.0),
+        "input_entertainment_expenses": st.session_state.get("input_entertainment_expenses", 0.0),
+        "input_restaurant_expenses": st.session_state.get("input_restaurant_expenses", 0.0),
+        "input_travel_expenses": st.session_state.get("input_travel_expenses", 0.0),
+        "input_education_expenses": st.session_state.get("input_education_expenses", 0.0),
+        "input_childcare_expenses": st.session_state.get("input_childcare_expenses", 0.0),
+        "input_clothing_expenses": st.session_state.get("input_clothing_expenses", 0.0),
+        "input_charitable_donations": st.session_state.get("input_charitable_donations", 0.0),
+        "input_miscellaneous_expenses": st.session_state.get("input_miscellaneous_expenses", 0.0),
+        "input_other_expenses": st.session_state.get("input_other_expenses", 0.0),
+        "input_total_expenses": st.session_state.get("input_total_expenses", 0.0),
+
+        # Assets
+        "input_ira_balance": st.session_state.get("input_ira_balance", 0.0),
+        "input_four01k_403b_balance": st.session_state.get("input_four01k_403b_balance", 0.0),
+        "input_pension_fund_value": st.session_state.get("input_pension_fund_value", 0.0),
+        "input_partner_ira_balance": st.session_state.get("input_partner_ira_balance", 0.0),
+        "input_partner_four01k_403b_balance": st.session_state.get("input_partner_four01k_403b_balance", 0.0),
+        "input_taxable_investment_accounts": st.session_state.get("input_taxable_investment_accounts", 0.0),
+        "input_high_yield_savings_account": st.session_state.get("input_high_yield_savings_account", 0.0),
+        "input_hsa_balance": st.session_state.get("input_hsa_balance", 0.0),
+        "input_five29_plan_balance": st.session_state.get("input_five29_plan_balance", 0.0),
+        "input_primary_residence_value": st.session_state.get("input_primary_residence_value", 0.0),
+        "input_secondary_residence_value": st.session_state.get("input_secondary_residence_value", 0.0),
+        "input_vehicles_value": st.session_state.get("input_vehicles_value", 0.0),
+        "input_jewelry_collectibles_value": st.session_state.get("input_jewelry_collectibles_value", 0.0),
+        "input_business_ownership_value": st.session_state.get("input_business_ownership_value", 0.0),
+        "input_cryptocurrency_holdings": st.session_state.get("input_cryptocurrency_holdings", 0.0),
+        "input_other_assets": st.session_state.get("input_other_assets", 0.0),
+
+        # Liabilities
+        "input_mortgage_balance": st.session_state.get("input_mortgage_balance", 0.0),
+        "input_secondary_mortgage_balance": st.session_state.get("input_secondary_mortgage_balance", 0.0),
+        "input_auto_loan_balance": st.session_state.get("input_auto_loan_balance", 0.0),
+        "input_student_loan_balance": st.session_state.get("input_student_loan_balance", 0.0),
+        "input_credit_card_debt": st.session_state.get("input_credit_card_debt", 0.0),
+        "input_personal_loans": st.session_state.get("input_personal_loans", 0.0),
+        "input_other_liabilities": st.session_state.get("input_other_liabilities", 0.0),
+
+        # Family data
+        "children_list": st.session_state.get("children_list", []),
+        "children_rows": st.session_state.get("children_rows", []),
+        "inheritance_list": st.session_state.get("inheritance_list", []),
+        "inherit_rows": st.session_state.get("inherit_rows", []),
+        "goals_list": st.session_state.get("goals_list", []),
+        "goals_data": st.session_state.get("goals_data", []),
+        "custom_expenses": st.session_state.get("custom_expenses", []),
+        "custom_expenses_list": st.session_state.get("custom_expenses_list", [])
+    }
+
+    print(f"[DEBUG] Collected current form data: {data.get('input_user_name', 'NO NAME')} age {data.get('input_age', 'NO AGE')}")
+    return data
+
+
 def load_existing_payload():
     """
     Load previous intake data from snapshots or localStorage.
@@ -1023,7 +1112,8 @@ def show_intake_questionnaire():
             st.write("")  # Spacer
             if st.button("💾 **SAVE PLAN**", type="primary", use_container_width=True, key="save_snapshot_btn"):
                 print("DEBUG: SAVE PLAN button clicked!")
-                data = load_existing_payload()
+                # CRITICAL FIX: Collect CURRENT form data, not old snapshot!
+                data = collect_current_form_data()
                 name = snapshot_name if snapshot_name else None
                 success = save_payload(data, snapshot_name=name)
                 if success:
