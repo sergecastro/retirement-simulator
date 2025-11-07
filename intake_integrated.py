@@ -19,6 +19,9 @@ from utils.snapshot_manager import (
     export_all_snapshots, import_snapshots
 )
 
+# Legacy localStorage support (for backward compatibility)
+from utils.local_storage_browser import load_from_local_storage_encrypted
+
 # ========== SCROLL TO TOP FIX ==========
 # JavaScript to force page scroll to top BEFORE content renders
 SCROLL_TO_TOP_JS = """
