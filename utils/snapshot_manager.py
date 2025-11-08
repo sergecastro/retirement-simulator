@@ -37,6 +37,7 @@ import streamlit as st
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from utils.encryption import encrypt_data, decrypt_data
+import traceback
 
 
 # =============================================================================
@@ -62,9 +63,18 @@ def create_snapshot_id() -> str:
 
 def _get_local_storage():
     """Get or create LocalStorage instance (cached in session state)."""
+    print(f"[DEBUG _get_local_storage] Function called!")
+    print(f"[DEBUG _get_local_storage] 'localS' in session_state? {'localS' in st.session_state}")
+    print(f"[DEBUG _get_local_storage] Caller:")
+    traceback.print_stack(limit=5)
+
     if 'localS' not in st.session_state:
+        print(f"[DEBUG _get_local_storage] CREATING NEW LocalStorage() instance!")
         from streamlit_local_storage import LocalStorage
         st.session_state.localS = LocalStorage()
+    else:
+        print(f"[DEBUG _get_local_storage] Using EXISTING LocalStorage() instance")
+
     return st.session_state.localS
 
 
@@ -121,6 +131,28 @@ def get_snapshots_index() -> Dict[str, Any]:
                            if not s.get('name', '').startswith('Original')]
                 index['snapshots'] = snapshots
                 print(f"[SNAPSHOT] After filter: {len(snapshots)} snapshots")
+
+                # CRITICAL FIX: Ensure current_snapshot_id is valid
+                current_id = index.get('current_snapshot_id')
+
+                if current_id:
+                    # Check if current_id is in the filtered list
+                    current_exists = any(s['id'] == current_id for s in snapshots)
+                    if not current_exists:
+                        print(f"[WARN] current_snapshot_id '{current_id}' was filtered out (demo scenario)")
+                        # Set to most recent non-demo snapshot
+                        if snapshots:
+                            index['current_snapshot_id'] = snapshots[-1]['id']
+                            print(f"[FIX] Set current_snapshot_id to most recent: {snapshots[-1]['id']}")
+                        else:
+                            index['current_snapshot_id'] = None
+                            print(f"[WARN] No non-demo snapshots found, clearing current_snapshot_id")
+                else:
+                    # No current_snapshot_id set at all - use most recent snapshot
+                    if snapshots:
+                        index['current_snapshot_id'] = snapshots[-1]['id']
+                        print(f"[FIX] No current_snapshot_id was set, using most recent: {snapshots[-1]['id']}")
+
                 return index
     except Exception as e:
         print(f"[WARN] Could not load snapshots index: {e}")
