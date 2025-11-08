@@ -63,10 +63,15 @@ def create_snapshot_id() -> str:
 
 @st.cache_resource
 def _get_local_storage():
-    """Get or create LocalStorageManager instance (singleton-cached at app level)."""
-    print("[DEBUG] Creating new LocalStorageManager instance via singleton")
-    from streamlit_ws_localstorage import LocalStorageManager
-    return LocalStorageManager()
+    """Get or create WebSocket localStorage connection (singleton-cached at app level)."""
+    print("[DEBUG] Creating new WebSocket localStorage connection via singleton")
+    from streamlit_ws_localstorage import injectWebsocketCode
+    import uuid
+    conn = injectWebsocketCode(
+        hostPort='localhost:8501',  # Local development
+        uid=str(uuid.uuid4())
+    )
+    return conn
 
 
 def get_snapshots_index() -> Dict[str, Any]:
@@ -83,7 +88,7 @@ def get_snapshots_index() -> Dict[str, Any]:
 
     # Try to load from browser localStorage
     try:
-        data = localS.get('ff_snapshots_index')
+        data = localS.getLocalStorageVal('ff_snapshots_index')
         if data:
             # streamlit-local-storage returns dict, not string!
             if isinstance(data, dict):
@@ -169,12 +174,12 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
 
         # Save encryption key if it's new (to avoid duplicate key error)
         if st.session_state.get('encryption_key_needs_save', False):
-            localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
+            localS.setLocalStorageVal('ff_encryption_key', st.session_state.encryption_key_b64)
             st.session_state.encryption_key_needs_save = False
             print("[OK] Saved encryption key to browser localStorage")
 
         # Save encrypted index
-        localS.set('ff_snapshots_index', encrypted_str)
+        localS.setLocalStorageVal('ff_snapshots_index', encrypted_str)
 
         print(f"[OK] Saved snapshots index to browser localStorage ({len(index.get('snapshots', []))} snapshots)")
         return True
@@ -257,12 +262,12 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
 
         # Save encryption key if it's new (to avoid duplicate key error)
         if st.session_state.get('encryption_key_needs_save', False):
-            localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
+            localS.setLocalStorageVal('ff_encryption_key', st.session_state.encryption_key_b64)
             st.session_state.encryption_key_needs_save = False
             print("[OK] Saved encryption key to browser localStorage")
 
         # Save encrypted snapshot data
-        localS.set(snapshot_key, encrypted_str)
+        localS.setLocalStorageVal(snapshot_key, encrypted_str)
 
         print(f"[OK] Saved snapshot data to browser localStorage: {snapshot_key}")
 
@@ -318,7 +323,7 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
         print(f"[DEBUG load_snapshot] Looking for localStorage key: {snapshot_key}")
 
         # Load and decrypt snapshot data
-        encrypted_str = localS.get(snapshot_key)
+        encrypted_str = localS.getLocalStorageVal(snapshot_key)
         if encrypted_str:
             print(f"[DEBUG load_snapshot] Found encrypted data ({len(str(encrypted_str))} chars)")
             data = decrypt_data(encrypted_str, localS)
@@ -374,7 +379,7 @@ def delete_snapshot(snapshot_id: str) -> bool:
         # Remove from browser localStorage
         localS = _get_local_storage()
         snapshot_key = f"ff_snapshot_{snapshot_id}"
-        localS.delete(snapshot_key)
+        localS.deleteLocalStorageVal(snapshot_key)
         print(f"[OK] Deleted snapshot from browser localStorage: {snapshot_key}")
 
         # Update index
@@ -535,7 +540,7 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
             # Clear existing snapshots from browser localStorage
             for snapshot in index.get("snapshots", []):
                 snapshot_key = f"ff_snapshot_{snapshot['id']}"
-                localS.delete(snapshot_key)
+                localS.deleteLocalStorageVal(snapshot_key)
                 print(f"[OK] Deleted snapshot during replace: {snapshot_key}")
 
             # Clear index
@@ -557,11 +562,11 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
 
             # Save encryption key if it's new (to avoid duplicate key error)
             if st.session_state.get('encryption_key_needs_save', False):
-                localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
+                localS.setLocalStorageVal('ff_encryption_key', st.session_state.encryption_key_b64)
                 st.session_state.encryption_key_needs_save = False
                 print("[OK] Saved encryption key to browser localStorage")
 
-            localS.set(snapshot_key, encrypted_str)
+            localS.setLocalStorageVal(snapshot_key, encrypted_str)
             print(f"[OK] Imported snapshot to browser localStorage: {snapshot_key}")
 
             # Add to index (avoid duplicates)
