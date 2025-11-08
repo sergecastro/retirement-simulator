@@ -63,17 +63,16 @@ def create_snapshot_id() -> str:
 
 def _get_local_storage():
     """Get or create LocalStorage instance (cached in session state)."""
-    print(f"[DEBUG _get_local_storage] Function called!")
-    print(f"[DEBUG _get_local_storage] 'localS' in session_state? {'localS' in st.session_state}")
-    print(f"[DEBUG _get_local_storage] Caller:")
-    traceback.print_stack(limit=5)
-
-    if 'localS' not in st.session_state:
-        print(f"[DEBUG _get_local_storage] CREATING NEW LocalStorage() instance!")
+    # Check if LocalStorage has EVER been initialized by checking the library's own key
+    if 'storage_init' not in st.session_state:
+        print(f"[DEBUG] First-time initialization of LocalStorage")
         from streamlit_local_storage import LocalStorage
         st.session_state.localS = LocalStorage()
-    else:
-        print(f"[DEBUG _get_local_storage] Using EXISTING LocalStorage() instance")
+    elif 'localS' not in st.session_state:
+        # storage_init exists but localS doesn't - this shouldn't happen
+        print(f"[ERROR] Inconsistent state - storage_init exists but localS doesn't!")
+        from streamlit_local_storage import LocalStorage
+        st.session_state.localS = LocalStorage()
 
     return st.session_state.localS
 
