@@ -103,7 +103,7 @@ def delete_from_local_storage(key: str) -> bool:
         # Get localStorage instance
         localS = _get_local_storage()
 
-        localS.delete(key)
+        localS.deleteItem(key)
         print(f"[OK] Deleted from browser localStorage: {key}")
         return True
 

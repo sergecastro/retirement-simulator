@@ -38,7 +38,7 @@ def save_to_local_storage_encrypted(key: str, data: Dict[str, Any]) -> bool:
         localS = _get_local_storage()
 
         # Save to browser localStorage
-        localS.set(key, encrypted_string)
+        localS.setItem(key, encrypted_string)
 
         print(f"[OK] Saved to browser localStorage: {key}")
         return True
@@ -65,7 +65,7 @@ def load_from_local_storage_encrypted(key: str) -> Optional[Dict[str, Any]]:
         localS = _get_local_storage()
 
         # Load from browser localStorage
-        encrypted_string = localS.get(key)
+        encrypted_string = localS.getItem(key)
 
         if not encrypted_string:
             print(f"[INFO] No data in browser localStorage for: {key}")
@@ -103,7 +103,7 @@ def delete_from_local_storage(key: str) -> bool:
         # Get localStorage instance
         localS = _get_local_storage()
 
-        localS.delete(key)
+        localS.deleteItem(key)
         print(f"[OK] Deleted from browser localStorage: {key}")
         return True
 

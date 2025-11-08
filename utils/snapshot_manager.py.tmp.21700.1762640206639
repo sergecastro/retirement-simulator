@@ -63,10 +63,10 @@ def create_snapshot_id() -> str:
 
 @st.cache_resource
 def _get_local_storage():
-    """Get or create LocalStorage instance with unique key (singleton-cached at app level)."""
-    print("[DEBUG] Creating new LocalStorage instance with unique key")
-    from streamlit_browser_storage import LocalStorage
-    return LocalStorage(key="forecash_local_storage")  # UNIQUE KEY - no duplicates!
+    """Get or create LocalStorageManager instance (singleton-cached at app level)."""
+    print("[DEBUG] Creating new LocalStorageManager instance via singleton")
+    from streamlit_ws_localstorage import LocalStorageManager
+    return LocalStorageManager()
 
 
 def get_snapshots_index() -> Dict[str, Any]:
