@@ -63,16 +63,27 @@ def create_snapshot_id() -> str:
 
 def _get_local_storage():
     """Get or create LocalStorage instance (cached in session state)."""
-    # Check if LocalStorage has EVER been initialized by checking the library's own key
-    if 'storage_init' not in st.session_state:
-        print(f"[DEBUG] First-time initialization of LocalStorage")
+
+    # If we already have localS, return it
+    if 'localS' in st.session_state:
+        return st.session_state.localS
+
+    # Try to create LocalStorage, but catch the error if storage_init already exists
+    try:
         from streamlit_local_storage import LocalStorage
         st.session_state.localS = LocalStorage()
-    elif 'localS' not in st.session_state:
-        # storage_init exists but localS doesn't - this shouldn't happen
-        print(f"[ERROR] Inconsistent state - storage_init exists but localS doesn't!")
-        from streamlit_local_storage import LocalStorage
-        st.session_state.localS = LocalStorage()
+        print(f"[DEBUG] Created new LocalStorage instance")
+    except Exception as e:
+        if 'storage_init' in str(e):
+            # The widget already exists, just return None or handle gracefully
+            print(f"[WARN] LocalStorage widget already exists, using existing instance")
+            # Try to get existing instance
+            if 'localS' in st.session_state:
+                return st.session_state.localS
+            else:
+                raise RuntimeError("LocalStorage widget exists but localS not in session_state")
+        else:
+            raise
 
     return st.session_state.localS
 
