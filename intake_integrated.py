@@ -56,6 +56,7 @@ def load_template_data():
     # Map scenario fields to intake field names
     template = {
         "schema_version": "1.0",
+        "is_demo": True,  # CRITICAL: Flag to identify demo data
 
         # Profile
         "input_user_name": scenario.get("user_name", ""),
@@ -245,11 +246,8 @@ def load_existing_payload():
         print(f"[DEBUG] Sample keys: {list(data.keys())[:10]}")
 
         st.session_state['intake_is_returning_user'] = True
-        user_name = data.get('input_user_name', '')
-        if user_name:
-            st.success(f"👋 Welcome back, {user_name}! Your saved plan has been loaded.")
-        else:
-            st.success("👋 Welcome back! Your saved plan has been loaded.")
+        # DO NOT show welcome message here - it will show on EVERY page render!
+        # Welcome message should only show ONCE on Profile page
 
         print(f"[DEBUG] Returning snapshot data with {len(data.keys())} keys")
         print("=" * 70)
@@ -265,11 +263,7 @@ def load_existing_payload():
         print(f"[DEBUG] User name: {data.get('input_user_name', 'NOT FOUND')}")
 
         st.session_state['intake_is_returning_user'] = True
-        user_name = data.get('input_user_name', '')
-        if user_name:
-            st.info(f"👋 Welcome back, {user_name}! Your data has been loaded.")
-        else:
-            st.info("👋 Welcome back! Your data has been loaded.")
+        # DO NOT show welcome message here - it will show on EVERY page render!
 
         print(f"[DEBUG] Returning legacy data with {len(data.keys())} keys")
         print("=" * 70)
@@ -278,9 +272,10 @@ def load_existing_payload():
     # FIRST-TIME USER - no data found, load template scenario
     print("[DEBUG] Step 3: No saved data found, loading DEMO template...")
     st.session_state['intake_is_returning_user'] = False
-    st.info("ℹ️ No saved data found - starting with a sample scenario to guide you.")
+    # DO NOT show info message here - it will show on EVERY page render!
 
     template = load_template_data()
+
     print(f"[DEBUG] ⚠️  Loading DEMO data with user: {template.get('input_user_name', 'NOT FOUND')}")
     print("=" * 70)
     return template
@@ -423,14 +418,25 @@ def show_intake_questionnaire():
 
         st.header("👤 Your Profile")
 
-        # Smart detection: First-time vs Returning user messaging
-        is_returning = st.session_state.get('intake_is_returning_user', False)
+        # Smart detection: Check if user has any NON-DEMO snapshots
+        from utils.snapshot_manager import list_snapshots, load_snapshot
+        snapshots = list_snapshots()
 
-        if is_returning:
-            # RETURNING USER
-            st.info("👋 **Welcome back!** Your previous data has been loaded. Update any fields below and continue through the questionnaire.")
+        # Count REAL snapshots (check is_demo flag in actual data)
+        real_count = 0
+        for snap in snapshots:
+            snap_data = load_snapshot(snap['id'])
+            if snap_data and not snap_data.get('is_demo', False):
+                real_count += 1
+
+        # If ANY real (non-demo) snapshots exist → REPEAT USER
+        has_real_data = (real_count > 0)
+
+        if has_real_data:
+            # RETURNING USER - has saved at least one non-demo snapshot
+            st.info(f"👋 **Welcome back!** Your previous data has been loaded. Update any fields below and continue through the questionnaire.")
         else:
-            # FIRST-TIME USER
+            # FIRST-TIME USER - only demo snapshots exist
             st.success("🎉 **Welcome to the Ultimate Retirement Planning Tool!**")
             st.info("""
             **First time here?** We've pre-filled example data from our demo scenario to guide you.
@@ -451,48 +457,61 @@ def show_intake_questionnaire():
         st.divider()
         st.markdown("*Please enter your basic information. You can enter 0 or leave fields empty if not applicable.*")
 
-        # User name
+        # Initialize session state from existing data (ONLY if not already set by widget)
+        if "input_user_name" not in st.session_state:
+            st.session_state["input_user_name"] = existing.get("input_user_name", "")
+        if "input_age" not in st.session_state:
+            st.session_state["input_age"] = int(existing.get("input_age", 70))
+        if "input_partner_name" not in st.session_state:
+            st.session_state["input_partner_name"] = existing.get("input_partner_name", "")
+        if "input_partner_age" not in st.session_state:
+            st.session_state["input_partner_age"] = int(existing.get("input_partner_age", 68))
+
+        # User name - widget automatically reads from and writes to session_state via key=
         user_name = st.text_input(
             "Your name",
-            value=existing.get("input_user_name", ""),
             placeholder="Enter your name",
-            help="Your full name"
+            help="Your full name",
+            key="input_user_name"
         )
 
         # Single or Couple
         default_mode_is_couple = bool(existing.get("input_partner_exists", True))
+
         mode = st.radio(
             "Are you planning as:",
             ["Single", "Couple"],
             index=1 if default_mode_is_couple else 0
         )
+        # Store the partner_exists value (but don't use key= to avoid conflicts)
+        partner_exists = (mode == "Couple")
+        # Manually set this one since radio button doesn't use key=
+        if 'input_partner_exists' not in st.session_state or st.session_state.get('input_partner_exists') != partner_exists:
+            st.session_state.input_partner_exists = partner_exists
 
-        # Your age
-        your_age_default = int(existing.get("input_age", 70))
+        # Your age - widget reads from session_state via key=
         your_age = st.number_input(
             "Your age",
             min_value=18,
             max_value=100,
-            value=your_age_default,
             step=1,
-            help="Your current age"
+            help="Your current age",
+            key="input_age"
         )
 
-        # Partner fields (if couple)
-        partner_name = existing.get("input_partner_name", "")
-        partner_age_default = int(existing.get("input_partner_age", 68)) if "input_partner_age" in existing else 68
-
-        # Always initialize partner_age (FIX for saving issue)
+        # Partner fields (if couple) - widgets read from session_state via key=
         partner_age = None
         if mode == "Couple":
-            partner_name = st.text_input("Partner name", value=partner_name)
+            partner_name = st.text_input("Partner name", key="input_partner_name")
             partner_age = st.number_input(
                 "Partner age",
                 min_value=18,
                 max_value=100,
-                value=partner_age_default,
-                step=1
+                step=1,
+                key="input_partner_age"
             )
+        else:
+            partner_name = None
 
         # Intelligent validation
         level, message = validate_age(your_age, is_partner=False)
@@ -514,60 +533,18 @@ def show_intake_questionnaire():
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("← Back to Review", use_container_width=True):
-                    # Save profile data first
-                    data = existing.copy()
-                    data["schema_version"] = "1.0"
-                    data["input_user_name"] = user_name
-                    data["input_age"] = int(your_age)
-                    data["input_partner_exists"] = (mode == "Couple")
-                    if data["input_partner_exists"] and partner_age is not None:
-                        data["input_partner_name"] = partner_name
-                        data["input_partner_age"] = int(partner_age)
-                    else:
-                        data.pop("input_partner_name", None)
-                        data.pop("input_partner_age", None)
-                    # CRITICAL FIX: Save to session_state so data persists across pages
-                    for key, value in data.items():
-                        st.session_state[key] = value
+                    # Data is already in session_state via widget key= parameters
                     st.session_state.intake_from_review = False  # Reset flag
                     go_to_page('review')
             with col2:
                 if st.button("Next: Income →", type="primary", use_container_width=True):
-                    # Save profile data
-                    data = existing.copy()
-                    data["schema_version"] = "1.0"
-                    data["input_user_name"] = user_name
-                    data["input_age"] = int(your_age)
-                    data["input_partner_exists"] = (mode == "Couple")
-                    if data["input_partner_exists"] and partner_age is not None:
-                        data["input_partner_name"] = partner_name
-                        data["input_partner_age"] = int(partner_age)
-                    else:
-                        data.pop("input_partner_name", None)
-                        data.pop("input_partner_age", None)
-                    # CRITICAL FIX: Save to session_state so data persists across pages
-                    for key, value in data.items():
-                        st.session_state[key] = value
+                    # Data is already in session_state via widget key= parameters
                     st.session_state.intake_from_review = False  # Reset flag when going forward
                     go_to_page('income')
         else:
             # Normal flow: just show Next button
             if st.button("Next: Income →", type="primary", use_container_width=True):
-                # Save profile data
-                data = existing.copy()
-                data["schema_version"] = "1.0"
-                data["input_user_name"] = user_name
-                data["input_age"] = int(your_age)
-                data["input_partner_exists"] = (mode == "Couple")
-                if data["input_partner_exists"] and partner_age is not None:
-                    data["input_partner_name"] = partner_name
-                    data["input_partner_age"] = int(partner_age)
-                else:
-                    data.pop("input_partner_name", None)
-                    data.pop("input_partner_age", None)
-                # CRITICAL FIX: Save to session_state so data persists across pages
-                for key, value in data.items():
-                    st.session_state[key] = value
+                # Just navigate - NO auto-save (save only on Review page)
                 go_to_page('income')
 
     # ===== PAGE 2: INCOME =====
@@ -587,7 +564,8 @@ def show_intake_questionnaire():
             max_value=1000000.0,
             value=float(existing.get("input_salary_wages", 0.0)),
             step=100.0,
-            help="Your regular employment income before any deductions"
+            help="Your regular employment income before any deductions",
+            key="input_salary_wages"
         )
 
         self_employment = st.number_input(
@@ -596,7 +574,8 @@ def show_intake_questionnaire():
             max_value=1000000.0,
             value=float(existing.get("input_self_employment_income", 0.0)),
             step=100.0,
-            help="Net income from business or freelance work"
+            help="Net income from business or freelance work",
+            key="input_self_employment_income"
         )
 
         rental = st.number_input(
@@ -605,7 +584,8 @@ def show_intake_questionnaire():
             max_value=100000.0,
             value=float(existing.get("input_rental_income", 0.0)),
             step=100.0,
-            help="Net rental income after expenses"
+            help="Net rental income after expenses",
+            key="input_rental_income"
         )
 
         investment = st.number_input(
@@ -614,7 +594,8 @@ def show_intake_questionnaire():
             max_value=100000.0,
             value=float(existing.get("input_investment_income", 0.0)),
             step=50.0,
-            help="Dividends, interest, capital gains (average monthly, before taxes)"
+            help="Dividends, interest, capital gains (average monthly, before taxes)",
+            key="input_investment_income"
         )
 
         social_security = st.number_input(
@@ -623,7 +604,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_social_security_income", 0.0)),
             step=50.0,
-            help="Your monthly Social Security benefit before any tax withholding"
+            help="Your monthly Social Security benefit before any tax withholding",
+            key="input_social_security_income"
         )
 
         pension = st.number_input(
@@ -632,7 +614,8 @@ def show_intake_questionnaire():
             max_value=50000.0,
             value=float(existing.get("input_pension_income", 0.0)),
             step=50.0,
-            help="Monthly pension from employer or government, before taxes"
+            help="Monthly pension from employer or government, before taxes",
+            key="input_pension_income"
         )
 
         other_income = st.number_input(
@@ -641,11 +624,14 @@ def show_intake_questionnaire():
             max_value=100000.0,
             value=float(existing.get("input_other_income", 0.0)),
             step=50.0,
-            help="Alimony, royalties, or other regular income"
+            help="Alimony, royalties, or other regular income",
+            key="input_other_income"
         )
 
         # Calculate total
         total_income = salary + self_employment + rental + investment + social_security + pension + other_income
+        # Store total in session state
+        st.session_state.input_total_income = total_income
 
         # Display total
         st.divider()
@@ -666,21 +652,6 @@ def show_intake_questionnaire():
         # Linear navigation - ONLY forward
         st.divider()
         if st.button("Next: Expenses →", type="primary", use_container_width=True):
-            # Save income data
-            data = existing.copy()
-            data["input_salary_wages"] = float(salary)
-            data["input_self_employment_income"] = float(self_employment)
-            data["input_rental_income"] = float(rental)
-            data["input_investment_income"] = float(investment)
-            data["input_social_security_income"] = float(social_security)
-            data["input_pension_income"] = float(pension)
-            data["input_other_income"] = float(other_income)
-            data["input_total_income"] = float(total_income)
-            # CRITICAL FIX: Save to session_state so data persists across pages
-            for key, value in data.items():
-                st.session_state[key] = value
-            # REMOVED: Auto-save on navigation (user must explicitly save)
-            # save_payload(data)
             go_to_page('expenses')
 
     # ===== PAGE 3: EXPENSES =====
@@ -698,7 +669,8 @@ def show_intake_questionnaire():
             max_value=100000.0,
             value=float(existing.get("input_housing_expenses", 0.0)),
             step=100.0,
-            help="Monthly rent or mortgage payment"
+            help="Monthly rent or mortgage payment",
+            key="input_housing_expenses"
         )
 
         utilities = st.number_input(
@@ -707,7 +679,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_utilities_expenses", 0.0)),
             step=10.0,
-            help="Electric, gas, water, internet, phone"
+            help="Electric, gas, water, internet, phone",
+            key="input_utilities_expenses"
         )
 
         groceries = st.number_input(
@@ -716,7 +689,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_groceries_expenses", 0.0)),
             step=50.0,
-            help="Food and household supplies"
+            help="Food and household supplies",
+            key="input_groceries_expenses"
         )
 
         transportation = st.number_input(
@@ -725,7 +699,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_transportation_expenses", 0.0)),
             step=50.0,
-            help="Gas, car payments, insurance, public transit"
+            help="Gas, car payments, insurance, public transit",
+            key="input_transportation_expenses"
         )
 
         healthcare = st.number_input(
@@ -734,7 +709,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_healthcare_expenses", 0.0)),
             step=50.0,
-            help="Medical, dental, prescriptions, copays"
+            help="Medical, dental, prescriptions, copays",
+            key="input_healthcare_expenses"
         )
 
         insurance = st.number_input(
@@ -743,7 +719,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_insurance_expenses", 0.0)),
             step=25.0,
-            help="Life, home, auto insurance (if not included elsewhere)"
+            help="Life, home, auto insurance (if not included elsewhere)",
+            key="input_insurance_expenses"
         )
 
         property_tax = st.number_input(
@@ -752,7 +729,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_property_tax_expenses", 0.0)),
             step=50.0,
-            help="Monthly property tax (if not in mortgage)"
+            help="Monthly property tax (if not in mortgage)",
+            key="input_property_tax_expenses"
         )
 
         entertainment = st.number_input(
@@ -761,7 +739,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_entertainment_expenses", 0.0)),
             step=25.0,
-            help="Streaming, hobbies, sports, activities"
+            help="Streaming, hobbies, sports, activities",
+            key="input_entertainment_expenses"
         )
 
         restaurants = st.number_input(
@@ -770,7 +749,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_restaurant_expenses", 0.0)),
             step=25.0,
-            help="Meals at restaurants, takeout, delivery"
+            help="Meals at restaurants, takeout, delivery",
+            key="input_restaurant_expenses"
         )
 
         travel = st.number_input(
@@ -779,7 +759,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_travel_expenses", 0.0)),
             step=50.0,
-            help="Average monthly amount for travel/vacations"
+            help="Average monthly amount for travel/vacations",
+            key="input_travel_expenses"
         )
 
         education = st.number_input(
@@ -788,7 +769,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_education_expenses", 0.0)),
             step=50.0,
-            help="Tuition, courses, student loans"
+            help="Tuition, courses, student loans",
+            key="input_education_expenses"
         )
 
         childcare = st.number_input(
@@ -797,7 +779,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_childcare_expenses", 0.0)),
             step=50.0,
-            help="Daycare, babysitting, child support"
+            help="Daycare, babysitting, child support",
+            key="input_childcare_expenses"
         )
 
         clothing = st.number_input(
@@ -806,7 +789,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_clothing_expenses", 0.0)),
             step=25.0,
-            help="Clothing and personal care items"
+            help="Clothing and personal care items",
+            key="input_clothing_expenses"
         )
 
         charitable = st.number_input(
@@ -815,7 +799,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_charitable_donations", 0.0)),
             step=25.0,
-            help="Regular charitable giving"
+            help="Regular charitable giving",
+            key="input_charitable_donations"
         )
 
         miscellaneous = st.number_input(
@@ -824,7 +809,8 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_miscellaneous_expenses", 0.0)),
             step=25.0,
-            help="Pet care, gifts, subscriptions, other"
+            help="Pet care, gifts, subscriptions, other",
+            key="input_miscellaneous_expenses"
         )
 
         other_expenses = st.number_input(
@@ -833,13 +819,16 @@ def show_intake_questionnaire():
             max_value=10000.0,
             value=float(existing.get("input_other_expenses", 0.0)),
             step=25.0,
-            help="Any other regular monthly expenses"
+            help="Any other regular monthly expenses",
+            key="input_other_expenses"
         )
 
         # Calculate total
         total_expenses = (housing + utilities + groceries + transportation + healthcare +
                          insurance + property_tax + entertainment + restaurants + travel +
                          education + childcare + clothing + charitable + miscellaneous + other_expenses)
+        # Store total in session state
+        st.session_state.input_total_expenses = total_expenses
 
         # Display total
         st.divider()
@@ -860,30 +849,6 @@ def show_intake_questionnaire():
         # Linear navigation - ONLY forward
         st.divider()
         if st.button("Next: Custom Expenses →", type="primary", use_container_width=True):
-            # Save expense data
-            data = existing.copy()
-            data["input_housing_expenses"] = float(housing)
-            data["input_utilities_expenses"] = float(utilities)
-            data["input_groceries_expenses"] = float(groceries)
-            data["input_transportation_expenses"] = float(transportation)
-            data["input_healthcare_expenses"] = float(healthcare)
-            data["input_insurance_expenses"] = float(insurance)
-            data["input_property_tax_expenses"] = float(property_tax)
-            data["input_entertainment_expenses"] = float(entertainment)
-            data["input_restaurant_expenses"] = float(restaurants)
-            data["input_travel_expenses"] = float(travel)
-            data["input_education_expenses"] = float(education)
-            data["input_childcare_expenses"] = float(childcare)
-            data["input_clothing_expenses"] = float(clothing)
-            data["input_charitable_donations"] = float(charitable)
-            data["input_miscellaneous_expenses"] = float(miscellaneous)
-            data["input_other_expenses"] = float(other_expenses)
-            data["input_total_expenses"] = float(total_expenses)
-            # CRITICAL FIX: Save to session_state so data persists across pages
-            for key, value in data.items():
-                st.session_state[key] = value
-            # REMOVED: Auto-save on navigation (user must explicitly save)
-            # save_payload(data)
             go_to_page('custom_expenses')
 
     # ===== PAGE 3.5: CUSTOM MONTHLY EXPENSES =====
@@ -967,15 +932,7 @@ def show_intake_questionnaire():
         # Linear navigation
         st.divider()
         if st.button("Next: Assets →", type="primary", use_container_width=True):
-            # Save custom expenses data
-            data = existing.copy()
-            data["custom_expenses"] = st.session_state['custom_expenses_list']
-            data["custom_expenses_list"] = st.session_state['custom_expenses_list']  # Also save as _list for compatibility
-            # CRITICAL FIX: Save to session_state so data persists across pages
-            for key, value in data.items():
-                st.session_state[key] = value
-            # REMOVED: Auto-save on navigation (user must explicitly save)
-            # save_payload(data)
+            st.session_state['custom_expenses'] = st.session_state.get('custom_expenses_list', [])
             go_to_page('assets')
 
     # ===== PAGES 4-6: ASSETS, LIABILITIES, FAMILY =====
@@ -997,17 +954,24 @@ def show_intake_questionnaire():
         st.header("📋 Review & Complete Your Intake")
         st.caption("Review all your information before completing - click any section to edit")
 
-        # Profile Summary
+        # Collect data from session_state (what user just typed in forms)
+        review_data = collect_current_form_data()
+
+        # DEBUG
+        st.write("DEBUG: User name from session_state:", st.session_state.get("input_user_name"))
+        st.write("DEBUG: User name from review_data:", review_data.get("input_user_name"))
+
+        # Profile Summary - READ FROM COLLECTED DATA
         st.subheader("👤 Profile")
         col1, col2 = st.columns(2)
         with col1:
-            user_name = existing.get("input_user_name", "Not provided")
+            user_name = review_data.get("input_user_name", "Not provided")
             st.metric("Your Name", user_name)
-            st.metric("Your Age", existing.get("input_age", "N/A"))
+            st.metric("Your Age", review_data.get("input_age", "N/A"))
         with col2:
-            if existing.get("input_partner_exists"):
-                partner_name = existing.get("input_partner_name", "Partner")
-                partner_age = existing.get("input_partner_age", "N/A")
+            if review_data.get("input_partner_exists"):
+                partner_name = review_data.get("input_partner_name", "Partner")
+                partner_age = review_data.get("input_partner_age", "N/A")
                 st.metric(f"Partner", f"{partner_name}, age {partner_age}")
             else:
                 st.metric("Planning Mode", "Single")
@@ -1018,11 +982,11 @@ def show_intake_questionnaire():
 
         st.divider()
 
-        # Income & Expenses Summary
+        # Income & Expenses Summary - READ FROM COLLECTED DATA
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("💰 Monthly Income")
-            total_income = float(existing.get("input_total_income", 0.0))
+            total_income = float(review_data.get("input_total_income", 0.0))
             st.metric("Total Income", f"${total_income:,.2f}")
             if st.button("✏️ Edit Income", key="edit_income", use_container_width=True):
                 st.session_state.intake_from_review = True
@@ -1030,7 +994,7 @@ def show_intake_questionnaire():
 
         with col2:
             st.subheader("🏠 Monthly Expenses")
-            total_expenses = float(existing.get("input_total_expenses", 0.0))
+            total_expenses = float(review_data.get("input_total_expenses", 0.0))
             st.metric("Total Expenses", f"${total_expenses:,.2f}")
             if st.button("✏️ Edit Expenses", key="edit_expenses", use_container_width=True):
                 st.session_state.intake_from_review = True
@@ -1045,8 +1009,8 @@ def show_intake_questionnaire():
 
         st.divider()
 
-        # Custom Expenses
-        custom_expenses = existing.get("custom_expenses", [])
+        # Custom Expenses - READ FROM COLLECTED DATA
+        custom_expenses = review_data.get("custom_expenses", [])
         if custom_expenses:
             st.subheader("📝 Custom Monthly Expenses")
             total_custom = sum(exp.get('Monthly Amount', 0.0) for exp in custom_expenses)
@@ -1059,26 +1023,26 @@ def show_intake_questionnaire():
                 go_to_page('custom_expenses')
             st.divider()
 
-        # Assets & Liabilities Summary
+        # Assets & Liabilities Summary - READ FROM COLLECTED DATA
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("💎 Total Assets")
             total_assets = sum([
-                existing.get("input_ira_balance", 0.0),
-                existing.get("input_four01k_403b_balance", 0.0),
-                existing.get("input_partner_ira_balance", 0.0),
-                existing.get("input_partner_four01k_403b_balance", 0.0),
-                existing.get("input_taxable_investment_accounts", 0.0),
-                existing.get("input_high_yield_savings_account", 0.0),
-                existing.get("input_hsa_balance", 0.0),
-                existing.get("input_five29_plan_balance", 0.0),
-                existing.get("input_primary_residence_value", 0.0),
-                existing.get("input_secondary_residence_value", 0.0),
-                existing.get("input_vehicles_value", 0.0),
-                existing.get("input_jewelry_collectibles_value", 0.0),
-                existing.get("input_business_ownership_value", 0.0),
-                existing.get("input_cryptocurrency_holdings", 0.0),
-                existing.get("input_other_assets", 0.0)
+                review_data.get("input_ira_balance", 0.0),
+                review_data.get("input_four01k_403b_balance", 0.0),
+                review_data.get("input_partner_ira_balance", 0.0),
+                review_data.get("input_partner_four01k_403b_balance", 0.0),
+                review_data.get("input_taxable_investment_accounts", 0.0),
+                review_data.get("input_high_yield_savings_account", 0.0),
+                review_data.get("input_hsa_balance", 0.0),
+                review_data.get("input_five29_plan_balance", 0.0),
+                review_data.get("input_primary_residence_value", 0.0),
+                review_data.get("input_secondary_residence_value", 0.0),
+                review_data.get("input_vehicles_value", 0.0),
+                review_data.get("input_jewelry_collectibles_value", 0.0),
+                review_data.get("input_business_ownership_value", 0.0),
+                review_data.get("input_cryptocurrency_holdings", 0.0),
+                review_data.get("input_other_assets", 0.0)
             ])
             st.metric("Assets", f"${total_assets:,.2f}")
             if st.button("✏️ Edit Assets", key="edit_assets", use_container_width=True):
@@ -1088,11 +1052,11 @@ def show_intake_questionnaire():
         with col2:
             st.subheader("💳 Total Liabilities")
             total_liabilities = sum([
-                existing.get("input_mortgage_balance", 0.0),
-                existing.get("input_auto_loan_balance", 0.0),
-                existing.get("input_student_loan_balance", 0.0),
-                existing.get("input_credit_card_debt", 0.0),
-                existing.get("input_other_liabilities", 0.0)
+                review_data.get("input_mortgage_balance", 0.0),
+                review_data.get("input_auto_loan_balance", 0.0),
+                review_data.get("input_student_loan_balance", 0.0),
+                review_data.get("input_credit_card_debt", 0.0),
+                review_data.get("input_other_liabilities", 0.0)
             ])
             st.metric("Liabilities", f"${total_liabilities:,.2f}")
             if st.button("✏️ Edit Liabilities", key="edit_liabilities", use_container_width=True):
@@ -1105,11 +1069,11 @@ def show_intake_questionnaire():
 
         st.divider()
 
-        # Family Events Summary
+        # Family Events Summary - READ FROM COLLECTED DATA
         st.subheader("👨‍👩‍👧‍👦 Family Events")
-        children_count = len(existing.get("children_rows", existing.get("children_list", [])))
-        inherit_count = len(existing.get("inherit_rows", existing.get("inheritance_list", [])))
-        goals_count = len(existing.get("goals_list", existing.get("goals_data", [])))
+        children_count = len(review_data.get("children_rows", review_data.get("children_list", [])))
+        inherit_count = len(review_data.get("inherit_rows", review_data.get("inheritance_list", [])))
+        goals_count = len(review_data.get("goals_list", review_data.get("goals_data", [])))
 
         col1, col2, col3 = st.columns(3)
         with col1:

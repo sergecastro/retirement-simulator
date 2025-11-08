@@ -151,9 +151,21 @@ def main():
     if st.session_state.current_mode is None:
         st.session_state.mode_selected = False
 
-    # Check if user has completed INTAKE data
-    from utils.snapshot_manager import list_snapshots
-    has_intake_data = len(list_snapshots()) > 0
+    # Check if user has completed INTAKE data (has NON-DEMO snapshots)
+    from utils.snapshot_manager import list_snapshots, load_snapshot
+    snapshots = list_snapshots()
+
+    # Count REAL snapshots (not marked as demo)
+    real_snapshots = []
+    for snap in snapshots:
+        # Load the actual snapshot data to check for is_demo flag
+        snap_data = load_snapshot(snap['id'])
+        if snap_data and not snap_data.get('is_demo', False):
+            real_snapshots.append(snap)
+
+    # If there are ANY real (non-demo) snapshots → REPEAT USER
+    has_intake_data = (len(real_snapshots) > 0)
+    print(f"[DEBUG] Total snapshots: {len(snapshots)}, Real snapshots: {len(real_snapshots)}, Has real intake: {has_intake_data}")
 
     # Get user type
     is_trusted = is_trusted_user()
@@ -271,9 +283,9 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 
     # Show status based on returning user
     if has_intake_data:
-        st.success("✅ **Welcome back!** We found your previous INTAKE data. You can go straight to Analysis or update your information.")
+        st.success("✅ **Welcome back!** It seems that you have already filled out the INTAKE form with your personal encrypted data.\n\n**Your choices are:**\n\n1️⃣ **Go directly to Analysis** to calculate or simulate your financial situation\n\n2️⃣ **Enter INTAKE again** to update or modify data entries as required")
     else:
-        st.info("ℹ️ **First time here?** We recommend starting with INTAKE to collect your financial profile.")
+        st.info("ℹ️ **First time here?** We've pre-filled an example data form to help you get started.\n\n**Please start with INTAKE** to replace the example data with your own information.")
 
     st.markdown("---")
 
