@@ -61,31 +61,12 @@ def create_snapshot_id() -> str:
 # SNAPSHOT INDEX MANAGEMENT
 # =============================================================================
 
+@st.experimental_singleton
 def _get_local_storage():
-    """Get or create LocalStorage instance (cached in session state)."""
-
-    # If we already have localS, return it
-    if 'localS' in st.session_state:
-        return st.session_state.localS
-
-    # Try to create LocalStorage, but catch the error if storage_init already exists
-    try:
-        from streamlit_local_storage import LocalStorage
-        st.session_state.localS = LocalStorage()
-        print(f"[DEBUG] Created new LocalStorage instance")
-    except Exception as e:
-        if 'storage_init' in str(e):
-            # The widget already exists, just return None or handle gracefully
-            print(f"[WARN] LocalStorage widget already exists, using existing instance")
-            # Try to get existing instance
-            if 'localS' in st.session_state:
-                return st.session_state.localS
-            else:
-                raise RuntimeError("LocalStorage widget exists but localS not in session_state")
-        else:
-            raise
-
-    return st.session_state.localS
+    """Get or create LocalStorage instance (singleton-cached at app level)."""
+    print("[DEBUG] Creating new LocalStorage instance via singleton")
+    from streamlit_local_storage import LocalStorage
+    return LocalStorage()
 
 
 def get_snapshots_index() -> Dict[str, Any]:
