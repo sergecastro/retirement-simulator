@@ -15,12 +15,12 @@ from typing import Dict, Any, Optional
 from utils.encryption import encrypt_data, decrypt_data
 
 def _get_local_storage():
-    """Get or create LocalStorage instance (cached in session state)."""
-    # CRITICAL FIX: Use the SAME session_state key as snapshot_manager.py
-    # to avoid creating multiple LocalStorage() instances which causes
+    """Get LocalStorage instance from session state (created by snapshot_manager)."""
+    # CRITICAL FIX: Only snapshot_manager.py creates LocalStorage()
+    # This function just returns the existing instance to avoid
     # "storage_init cannot be modified after widget is instantiated" error
     if 'localS' not in st.session_state:
-        st.session_state.localS = LocalStorage()
+        raise RuntimeError("localStorage not initialized - snapshot_manager must create it first")
     return st.session_state.localS
 
 
