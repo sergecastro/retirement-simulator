@@ -61,7 +61,7 @@ def create_snapshot_id() -> str:
 # SNAPSHOT INDEX MANAGEMENT
 # =============================================================================
 
-@st.experimental_singleton
+@st.cache_resource
 def _get_local_storage():
     """Get or create LocalStorage instance (singleton-cached at app level)."""
     print("[DEBUG] Creating new LocalStorage instance via singleton")
