@@ -16,9 +16,12 @@ from utils.encryption import encrypt_data, decrypt_data
 
 def _get_local_storage():
     """Get or create LocalStorage instance (cached in session state)."""
-    if 'local_storage_instance' not in st.session_state:
-        st.session_state.local_storage_instance = LocalStorage()
-    return st.session_state.local_storage_instance
+    # CRITICAL FIX: Use the SAME session_state key as snapshot_manager.py
+    # to avoid creating multiple LocalStorage() instances which causes
+    # "storage_init cannot be modified after widget is instantiated" error
+    if 'localS' not in st.session_state:
+        st.session_state.localS = LocalStorage()
+    return st.session_state.localS
 
 
 def save_to_local_storage_encrypted(key: str, data: Dict[str, Any]) -> bool:
