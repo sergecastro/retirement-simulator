@@ -77,13 +77,17 @@ class MockLocalStorage:
         return st.session_state.mock_localStorage_data
 
     def get(self, key):
-        return self.data.get(key)
+        result = self.data.get(key)
+        print(f"[MOCK LS] GET '{key}' = {type(result).__name__ if result else 'None'} (storage has {len(self.data)} keys)")
+        return result
 
     def set(self, key, value):
         self.data[key] = value
+        print(f"[MOCK LS] SET '{key}' = {type(value).__name__} (storage now has {len(self.data)} keys)")
 
     def delete(self, key):
         self.data.pop(key, None)
+        print(f"[MOCK LS] DELETE '{key}' (storage now has {len(self.data)} keys)")
 
 
 @st.cache_resource
