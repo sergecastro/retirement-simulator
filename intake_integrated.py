@@ -419,7 +419,7 @@ def show_intake_questionnaire():
         st.header("👤 Your Profile")
 
         # Smart detection: Check if user has any NON-DEMO snapshots
-        from utils.snapshot_manager import list_snapshots, load_snapshot
+        # (list_snapshots and load_snapshot already imported at top of file)
         snapshots = list_snapshots()
 
         # Count REAL snapshots (check is_demo flag in actual data)
