@@ -61,12 +61,30 @@ def create_snapshot_id() -> str:
 # SNAPSHOT INDEX MANAGEMENT
 # =============================================================================
 
+class MockLocalStorage:
+    """Simple dict-based localStorage that works reliably with session_state."""
+
+    def __init__(self):
+        if 'mock_localStorage_data' not in st.session_state:
+            st.session_state.mock_localStorage_data = {}
+            print("[DEBUG] Created mock localStorage (session_state only)")
+        self.data = st.session_state.mock_localStorage_data
+
+    def get(self, key):
+        return self.data.get(key)
+
+    def set(self, key, value):
+        self.data[key] = value
+
+    def delete(self, key):
+        self.data.pop(key, None)
+
+
 @st.cache_resource
 def _get_local_storage():
-    """Get or create LocalStorage instance with unique key (singleton-cached at app level)."""
-    print("[DEBUG] Creating new LocalStorage instance with unique key")
-    from streamlit_browser_storage import LocalStorage
-    return LocalStorage(key="forecash_local_storage")  # UNIQUE KEY - no duplicates!
+    """Get mock localStorage instance (singleton-cached)."""
+    print("[DEBUG] Creating mock localStorage")
+    return MockLocalStorage()
 
 
 def get_snapshots_index() -> Dict[str, Any]:
