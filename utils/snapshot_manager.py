@@ -65,10 +65,16 @@ class MockLocalStorage:
     """Simple dict-based localStorage that works reliably with session_state."""
 
     def __init__(self):
+        # Don't access session_state in __init__ - it breaks caching
+        pass
+
+    @property
+    def data(self):
+        """Lazy access to session_state data."""
         if 'mock_localStorage_data' not in st.session_state:
             st.session_state.mock_localStorage_data = {}
-            print("[DEBUG] Created mock localStorage (session_state only)")
-        self.data = st.session_state.mock_localStorage_data
+            print("[DEBUG] Initialized mock localStorage data")
+        return st.session_state.mock_localStorage_data
 
     def get(self, key):
         return self.data.get(key)
@@ -83,7 +89,7 @@ class MockLocalStorage:
 @st.cache_resource
 def _get_local_storage():
     """Get mock localStorage instance (singleton-cached)."""
-    print("[DEBUG] Creating mock localStorage")
+    print("[DEBUG] Creating mock localStorage singleton")
     return MockLocalStorage()
 
 
