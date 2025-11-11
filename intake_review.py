@@ -72,39 +72,39 @@ def show_assets_page(existing, save_payload, go_to_page):
     st.header("💎 Assets & Accounts")
     st.caption("Enter current balances for all your accounts and assets")
 
-    # Retirement Accounts
+    # Retirement Accounts - widgets WITHOUT key= - we'll manually save on button click
     st.subheader("🏦 Retirement Accounts")
     ira = st.number_input(
         "Your IRA Balance",
         min_value=0.0,
+        value=st.session_state.get("input_ira_balance", 0.0),
         step=1000.0,
-        help="Traditional IRA balance",
-        key="input_ira_balance"
+        help="Traditional IRA balance"
     )
 
     k401 = st.number_input(
         "Your 401k/403b Balance",
         min_value=0.0,
+        value=st.session_state.get("input_four01k_403b_balance", 0.0),
         step=1000.0,
-        help="Current 401k or 403b balance",
-        key="input_four01k_403b_balance"
+        help="Current 401k or 403b balance"
     )
-    
+
     # Partner accounts (if couple)
-    partner_exists = existing.get("input_partner_exists", False)
+    partner_exists = st.session_state.get("input_partner_exists", False)
     if partner_exists:
         st.caption("Partner Retirement Accounts")
         partner_ira = st.number_input(
             "Partner IRA Balance",
             min_value=0.0,
-            step=1000.0,
-            key="input_partner_ira_balance"
+            value=st.session_state.get("input_partner_ira_balance", 0.0),
+            step=1000.0
         )
         partner_k401 = st.number_input(
             "Partner 401k/403b Balance",
             min_value=0.0,
-            step=1000.0,
-            key="input_partner_four01k_403b_balance"
+            value=st.session_state.get("input_partner_four01k_403b_balance", 0.0),
+            step=1000.0
         )
     else:
         partner_ira = 0.0
@@ -115,33 +115,33 @@ def show_assets_page(existing, save_payload, go_to_page):
     taxable = st.number_input(
         "Taxable Investment Accounts",
         min_value=0.0,
+        value=st.session_state.get("input_taxable_investment_accounts", 0.0),
         step=1000.0,
-        help="Brokerage accounts, mutual funds",
-        key="input_taxable_investment_accounts"
+        help="Brokerage accounts, mutual funds"
     )
 
     savings = st.number_input(
         "High-Yield Savings Account",
         min_value=0.0,
+        value=st.session_state.get("input_high_yield_savings_account", 0.0),
         step=1000.0,
-        help="Emergency fund, savings accounts",
-        key="input_high_yield_savings_account"
+        help="Emergency fund, savings accounts"
     )
 
     hsa = st.number_input(
         "HSA Balance",
         min_value=0.0,
+        value=st.session_state.get("input_hsa_balance", 0.0),
         step=500.0,
-        help="Health Savings Account",
-        key="input_hsa_balance"
+        help="Health Savings Account"
     )
 
     plan529 = st.number_input(
         "529 Plan Balance",
         min_value=0.0,
+        value=st.session_state.get("input_five29_plan_balance", 0.0),
         step=500.0,
-        help="Education savings plan",
-        key="input_five29_plan_balance"
+        help="Education savings plan"
     )
 
     # Real Estate
@@ -149,17 +149,17 @@ def show_assets_page(existing, save_payload, go_to_page):
     primary_home = st.number_input(
         "Primary Residence Value",
         min_value=0.0,
+        value=st.session_state.get("input_primary_residence_value", 0.0),
         step=10000.0,
-        help="Current market value of your home",
-        key="input_primary_residence_value"
+        help="Current market value of your home"
     )
 
     secondary_home = st.number_input(
         "Secondary Residence Value",
         min_value=0.0,
+        value=st.session_state.get("input_secondary_residence_value", 0.0),
         step=10000.0,
-        help="Vacation home, rental property value",
-        key="input_secondary_residence_value"
+        help="Vacation home, rental property value"
     )
 
     # Other Assets
@@ -167,41 +167,41 @@ def show_assets_page(existing, save_payload, go_to_page):
     vehicles = st.number_input(
         "Vehicles Value",
         min_value=0.0,
+        value=st.session_state.get("input_vehicles_value", 0.0),
         step=1000.0,
-        help="Cars, boats, RVs - current market value",
-        key="input_vehicles_value"
+        help="Cars, boats, RVs - current market value"
     )
 
     jewelry = st.number_input(
         "Jewelry & Collectibles",
         min_value=0.0,
+        value=st.session_state.get("input_jewelry_collectibles_value", 0.0),
         step=500.0,
-        help="Valuable jewelry, art, collectibles",
-        key="input_jewelry_collectibles_value"
+        help="Valuable jewelry, art, collectibles"
     )
 
     business = st.number_input(
         "Business Ownership Value",
         min_value=0.0,
+        value=st.session_state.get("input_business_ownership_value", 0.0),
         step=5000.0,
-        help="Your stake in a business",
-        key="input_business_ownership_value"
+        help="Your stake in a business"
     )
 
     crypto = st.number_input(
         "Cryptocurrency Holdings",
         min_value=0.0,
+        value=st.session_state.get("input_cryptocurrency_holdings", 0.0),
         step=500.0,
-        help="Bitcoin, Ethereum, etc. - current value",
-        key="input_cryptocurrency_holdings"
+        help="Bitcoin, Ethereum, etc. - current value"
     )
 
     other_assets = st.number_input(
         "Other Assets",
         min_value=0.0,
+        value=st.session_state.get("input_other_assets", 0.0),
         step=500.0,
-        help="Any other valuable assets",
-        key="input_other_assets"
+        help="Any other valuable assets"
     )
     
     # Calculate total
@@ -212,32 +212,29 @@ def show_assets_page(existing, save_payload, go_to_page):
     st.divider()
     st.metric("Total Assets", f"${total_assets:,.2f}")
     
-    # Navigation
-    col1, col2, col3 = st.columns([1, 1, 1])
+    # Navigation with manual save
+    col1, col2 = st.columns([1, 1])
     with col1:
-        if st.button("← Back to Expenses", use_container_width=True):
-            go_to_page('expenses')
-    with col3:
-        if st.button("Next: Liabilities →", type="primary", use_container_width=True):
-            # Save asset data
-            data = existing.copy()
-            data["input_ira_balance"] = float(ira)
-            data["input_four01k_403b_balance"] = float(k401)
-            data["input_partner_ira_balance"] = float(partner_ira)
-            data["input_partner_four01k_403b_balance"] = float(partner_k401)
-            data["input_taxable_investment_accounts"] = float(taxable)
-            data["input_high_yield_savings_account"] = float(savings)
-            data["input_hsa_balance"] = float(hsa)
-            data["input_five29_plan_balance"] = float(plan529)
-            data["input_primary_residence_value"] = float(primary_home)
-            data["input_secondary_residence_value"] = float(secondary_home)
-            data["input_vehicles_value"] = float(vehicles)
-            data["input_jewelry_collectibles_value"] = float(jewelry)
-            data["input_business_ownership_value"] = float(business)
-            data["input_cryptocurrency_holdings"] = float(crypto)
-            data["input_other_assets"] = float(other_assets)
-            # REMOVED: Auto-save on navigation (user must explicitly save)
-            # save_payload(data)
+        if st.button("← BACK to Custom Expenses", use_container_width=True):
+            go_to_page('custom_expenses')
+    with col2:
+        if st.button("NEXT →", type="primary", use_container_width=True):
+            # CRITICAL: Explicitly save to session_state BEFORE navigating
+            st.session_state['input_ira_balance'] = float(ira)
+            st.session_state['input_four01k_403b_balance'] = float(k401)
+            st.session_state['input_partner_ira_balance'] = float(partner_ira)
+            st.session_state['input_partner_four01k_403b_balance'] = float(partner_k401)
+            st.session_state['input_taxable_investment_accounts'] = float(taxable)
+            st.session_state['input_high_yield_savings_account'] = float(savings)
+            st.session_state['input_hsa_balance'] = float(hsa)
+            st.session_state['input_five29_plan_balance'] = float(plan529)
+            st.session_state['input_primary_residence_value'] = float(primary_home)
+            st.session_state['input_secondary_residence_value'] = float(secondary_home)
+            st.session_state['input_vehicles_value'] = float(vehicles)
+            st.session_state['input_jewelry_collectibles_value'] = float(jewelry)
+            st.session_state['input_business_ownership_value'] = float(business)
+            st.session_state['input_cryptocurrency_holdings'] = float(crypto)
+            st.session_state['input_other_assets'] = float(other_assets)
             go_to_page('liabilities')
 
 
@@ -249,44 +246,45 @@ def show_liabilities_page(existing, save_payload, go_to_page):
     st.header("💳 Liabilities & Debts")
     st.caption("Enter outstanding balances (leave at $0 if you don't have these)")
 
+    # Liability fields - widgets WITHOUT key= - we'll manually save on button click
     mortgage = st.number_input(
         "Mortgage Balance",
         min_value=0.0,
+        value=st.session_state.get("input_mortgage_balance", 0.0),
         step=5000.0,
-        help="Remaining mortgage principal",
-        key="input_mortgage_balance"
+        help="Remaining mortgage principal"
     )
 
     auto_loan = st.number_input(
         "Auto Loans",
         min_value=0.0,
+        value=st.session_state.get("input_auto_loan_balance", 0.0),
         step=500.0,
-        help="Car loans, leases",
-        key="input_auto_loan_balance"
+        help="Car loans, leases"
     )
 
     student_loan = st.number_input(
         "Student Loans",
         min_value=0.0,
+        value=st.session_state.get("input_student_loan_balance", 0.0),
         step=500.0,
-        help="Education debt",
-        key="input_student_loan_balance"
+        help="Education debt"
     )
 
     credit_card = st.number_input(
         "Credit Card Debt",
         min_value=0.0,
+        value=st.session_state.get("input_credit_card_debt", 0.0),
         step=100.0,
-        help="Outstanding credit card balances",
-        key="input_credit_card_debt"
+        help="Outstanding credit card balances"
     )
 
     other_debt = st.number_input(
         "Other Liabilities",
         min_value=0.0,
+        value=st.session_state.get("input_other_liabilities", 0.0),
         step=500.0,
-        help="Personal loans, HELOCs, other debts",
-        key="input_other_liabilities"
+        help="Personal loans, HELOCs, other debts"
     )
     
     total_liabilities = mortgage + auto_loan + student_loan + credit_card + other_debt
@@ -319,22 +317,19 @@ def show_liabilities_page(existing, save_payload, go_to_page):
         if net_worth < 0:
             st.warning("⚠️ Your liabilities exceed your assets. This is important to address.")
     
-    # Navigation
-    col1, col2, col3 = st.columns([1, 1, 1])
+    # Navigation with manual save
+    col1, col2 = st.columns([1, 1])
     with col1:
-        if st.button("← Back to Assets", use_container_width=True):
+        if st.button("← BACK to Assets", use_container_width=True):
             go_to_page('assets')
-    with col3:
-        if st.button("Next: Family Events →", type="primary", use_container_width=True):
-            # Save liability data
-            data = existing.copy()
-            data["input_mortgage_balance"] = float(mortgage)
-            data["input_auto_loan_balance"] = float(auto_loan)
-            data["input_student_loan_balance"] = float(student_loan)
-            data["input_credit_card_debt"] = float(credit_card)
-            data["input_other_liabilities"] = float(other_debt)
-            # REMOVED: Auto-save on navigation (user must explicitly save)
-            # save_payload(data)
+    with col2:
+        if st.button("NEXT →", type="primary", use_container_width=True):
+            # CRITICAL: Explicitly save to session_state BEFORE navigating
+            st.session_state['input_mortgage_balance'] = float(mortgage)
+            st.session_state['input_auto_loan_balance'] = float(auto_loan)
+            st.session_state['input_student_loan_balance'] = float(student_loan)
+            st.session_state['input_credit_card_debt'] = float(credit_card)
+            st.session_state['input_other_liabilities'] = float(other_debt)
             go_to_page('family')
 
 
@@ -535,31 +530,26 @@ def show_family_page(existing, save_payload, go_to_page):
 
     st.info("ℹ️ These fields are completely optional. Leave blank if not applicable.")
 
-    # Navigation
-    col1, col2, col3 = st.columns([1, 1, 1])
+    # Navigation with manual save
+    col1, col2 = st.columns([1, 1])
     with col1:
-        if st.button("← Back to Liabilities", use_container_width=True):
+        if st.button("← BACK to Liabilities", use_container_width=True):
             go_to_page('liabilities')
-    with col3:
-        if st.button("Next: Review →", type="primary", use_container_width=True):
-            # Save family data using temp arrays (already up-to-date while typing)
-            data = existing.copy()
-            data["children_list"] = st.session_state.get("temp_children", [])
-            data["inheritance_list"] = st.session_state.get("temp_inherit", [])
-            data["goals_list"] = st.session_state.get("temp_goals", [])
-            data["custom_expenses"] = st.session_state.get("temp_custom_expenses", [])
+    with col2:
+        if st.button("NEXT →", type="primary", use_container_width=True):
+            # CRITICAL: Explicitly save family data to session_state BEFORE navigating
+            # Data editors already update temp_ variables, we just need to save them with proper keys
+            st.session_state['children_list'] = st.session_state.get("temp_children", [])
+            st.session_state['inheritance_list'] = st.session_state.get("temp_inherit", [])
+            st.session_state['goals_list'] = st.session_state.get("temp_goals", [])
+            st.session_state['custom_expenses'] = st.session_state.get("temp_custom_expenses", [])
 
             # Backward compatibility keys
-            data["children_rows"] = data["children_list"]
-            data["inherit_rows"] = data["inheritance_list"]
-            data["goals_data"] = data["goals_list"]
-            data["custom_expenses_list"] = data["custom_expenses"]
+            st.session_state['children_rows'] = st.session_state['children_list']
+            st.session_state['inherit_rows'] = st.session_state['inheritance_list']
+            st.session_state['goals_data'] = st.session_state['goals_list']
+            st.session_state['custom_expenses_list'] = st.session_state['custom_expenses']
 
-            # CRITICAL FIX: Save to session_state so data persists across pages
-            for key, value in data.items():
-                st.session_state[key] = value
-            # REMOVED: Auto-save on navigation (user must explicitly save)
-            # save_payload(data)
             go_to_page('review')
         
         
