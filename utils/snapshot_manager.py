@@ -38,6 +38,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from utils.encryption import encrypt_data, decrypt_data
 import traceback
+from streamlit_browser_storage import LocalStorage
 
 
 # =============================================================================
@@ -61,40 +62,11 @@ def create_snapshot_id() -> str:
 # SNAPSHOT INDEX MANAGEMENT
 # =============================================================================
 
-class MockLocalStorage:
-    """Simple dict-based localStorage that works reliably with session_state."""
-
-    def __init__(self):
-        # Don't access session_state in __init__ - it breaks caching
-        pass
-
-    @property
-    def data(self):
-        """Lazy access to session_state data."""
-        if 'mock_localStorage_data' not in st.session_state:
-            st.session_state.mock_localStorage_data = {}
-            print("[DEBUG] Initialized mock localStorage data")
-        return st.session_state.mock_localStorage_data
-
-    def get(self, key):
-        result = self.data.get(key)
-        print(f"[MOCK LS] GET '{key}' = {type(result).__name__ if result else 'None'} (storage has {len(self.data)} keys)")
-        return result
-
-    def set(self, key, value):
-        self.data[key] = value
-        print(f"[MOCK LS] SET '{key}' = {type(value).__name__} (storage now has {len(self.data)} keys)")
-
-    def delete(self, key):
-        self.data.pop(key, None)
-        print(f"[MOCK LS] DELETE '{key}' (storage now has {len(self.data)} keys)")
-
-
 @st.cache_resource
 def _get_local_storage():
-    """Get mock localStorage instance (singleton-cached)."""
-    print("[DEBUG] Creating mock localStorage singleton")
-    return MockLocalStorage()
+    """Get localStorage instance (singleton-cached)."""
+    print("[DEBUG] Creating localStorage singleton")
+    return LocalStorage(key="forecash_local_storage")
 
 
 def get_snapshots_index() -> Dict[str, Any]:
@@ -113,24 +85,8 @@ def get_snapshots_index() -> Dict[str, Any]:
     try:
         data = localS.get('ff_snapshots_index')
         if data:
-            # streamlit-local-storage returns dict, not string!
-            if isinstance(data, dict):
-                # Already parsed - use directly
-                index = data
-                print(f"[DEBUG] Got dict from localStorage (already parsed)")
-            elif isinstance(data, str):
-                # String - try to parse as JSON first
-                try:
-                    index = json.loads(data)
-                    print(f"[DEBUG] Parsed JSON string")
-                except json.JSONDecodeError:
-                    # Not plain JSON, try to decrypt
-                    index = decrypt_data(data, localS)
-                    print(f"[DEBUG] Decrypted data")
-            else:
-                print(f"[WARN] Unexpected data type: {type(data)}")
-                index = None
-
+            print(f"[LS] GET 'ff_snapshots_index' = {type(data).__name__ if data else 'None'}")
+            index = decrypt_data(data, localS)
             if index:
                 # Filter out demo scenarios
                 all_snapshots = index.get('snapshots', [])
@@ -139,7 +95,7 @@ def get_snapshots_index() -> Dict[str, Any]:
                     print(f"  - '{s.get('name')}' starts with 'Original'? {s.get('name', '').startswith('Original')}")
 
                 snapshots = [s for s in all_snapshots
-                           if not s.get('name', '').startswith('Original')]
+                             if not s.get('name', '').startswith('Original')]
                 index['snapshots'] = snapshots
                 print(f"[SNAPSHOT] After filter: {len(snapshots)} snapshots")
 
@@ -195,7 +151,7 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
         # Encrypt and save
         encrypted_str = encrypt_data(index, localS)
 
-        # Save encryption key if it's new (to avoid duplicate key error)
+        # Save encryption key if it's new
         if st.session_state.get('encryption_key_needs_save', False):
             localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
             st.session_state.encryption_key_needs_save = False
@@ -203,7 +159,6 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
 
         # Save encrypted index
         localS.set('ff_snapshots_index', encrypted_str)
-
         print(f"[OK] Saved snapshots index to browser localStorage ({len(index.get('snapshots', []))} snapshots)")
         return True
 
@@ -283,7 +238,7 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
         # Encrypt and save snapshot data
         encrypted_str = encrypt_data(data, localS)
 
-        # Save encryption key if it's new (to avoid duplicate key error)
+        # Save encryption key if it's new
         if st.session_state.get('encryption_key_needs_save', False):
             localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
             st.session_state.encryption_key_needs_save = False
@@ -583,7 +538,7 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
             snapshot_key = f"ff_snapshot_{snapshot_id}"
             encrypted_str = encrypt_data(data, localS)
 
-            # Save encryption key if it's new (to avoid duplicate key error)
+            # Save encryption key if it's new
             if st.session_state.get('encryption_key_needs_save', False):
                 localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
                 st.session_state.encryption_key_needs_save = False

@@ -31,6 +31,28 @@ SCROLL_TO_TOP_JS = """
 </script>
 """
 
+# ========== EXIT WARNING FOR UNSAVED CHANGES ==========
+UNSAVED_CHANGES_WARNING_JS = """
+<script>
+    // Warn user if they try to leave with unsaved changes
+    window.addEventListener('beforeunload', function (e) {
+        // Check if user has started filling the form
+        // (we check if session has any intake data)
+        var hasData = sessionStorage.getItem('intake_has_data');
+
+        if (hasData === 'true') {
+            // Show browser's default warning dialog
+            e.preventDefault();
+            e.returnValue = ''; // Chrome requires returnValue to be set
+            return ''; // Some browsers show this message
+        }
+    });
+
+    // Mark that user has started filling form
+    sessionStorage.setItem('intake_has_data', 'true');
+</script>
+"""
+
 # ========== HELPER FUNCTIONS ==========
 def get_shared_path():
     """Get path to shared intake payload file (same logic as app.py)"""
@@ -129,6 +151,13 @@ def load_template_data():
         "custom_expenses_list": []
     }
 
+    # CRITICAL FIX: Copy template data into session_state
+    for key, value in template.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+            print(f"[DEMO LOAD] Set {key} = {value}")
+
+    print(f"[DEMO LOAD] ✅ Loaded {len(template)} fields into session_state")
     return template
 
 def collect_current_form_data():
@@ -224,13 +253,21 @@ def load_existing_payload():
     """
     Load previous intake data from snapshots or localStorage.
 
+    CRITICAL FIX: Only load data ONCE per session to avoid overwriting user input!
+
     PRIORITY:
     1. Try current snapshot (newest versioned data)
     2. Try legacy localStorage (old single-version data)
     3. Load template (first-time user)
     """
+    # ✅ CRITICAL: Check if we already loaded data this session
+    if 'intake_data_loaded_once' in st.session_state:
+        print("[DEBUG] Data already loaded this session - returning empty dict to preserve session_state")
+        # Return empty dict - initialization blocks will use session_state values instead
+        return {}
+
     print("=" * 70)
-    print("[DEBUG INTAKE STARTUP] Loading data for INTAKE...")
+    print("[DEBUG INTAKE STARTUP] Loading data for INTAKE (FIRST TIME THIS SESSION)...")
     print("=" * 70)
 
     # NEW: Try to load from current snapshot first (versioned storage)
@@ -246,6 +283,7 @@ def load_existing_payload():
         print(f"[DEBUG] Sample keys: {list(data.keys())[:10]}")
 
         st.session_state['intake_is_returning_user'] = True
+        st.session_state['intake_data_loaded_once'] = True  # Mark as loaded
         # DO NOT show welcome message here - it will show on EVERY page render!
         # Welcome message should only show ONCE on Profile page
 
@@ -263,6 +301,7 @@ def load_existing_payload():
         print(f"[DEBUG] User name: {data.get('input_user_name', 'NOT FOUND')}")
 
         st.session_state['intake_is_returning_user'] = True
+        st.session_state['intake_data_loaded_once'] = True  # Mark as loaded
         # DO NOT show welcome message here - it will show on EVERY page render!
 
         print(f"[DEBUG] Returning legacy data with {len(data.keys())} keys")
@@ -272,6 +311,7 @@ def load_existing_payload():
     # FIRST-TIME USER - no data found, load template scenario
     print("[DEBUG] Step 3: No saved data found, loading DEMO template...")
     st.session_state['intake_is_returning_user'] = False
+    st.session_state['intake_data_loaded_once'] = True  # Mark as loaded
     # DO NOT show info message here - it will show on EVERY page render!
 
     template = load_template_data()
@@ -381,8 +421,11 @@ def show_intake_questionnaire():
     if 'intake_from_review' not in st.session_state:
         st.session_state.intake_from_review = False
 
-    # Load existing data
-    existing = load_existing_payload()
+    # NO AUTO-LOAD: Data stays in session_state only
+    # User fills form, saves at end on Review page
+    if 'intake_initialized' not in st.session_state:
+        st.session_state['intake_initialized'] = True
+        print("[INTAKE] ✅ Session initialized (no auto-load)")
 
     # Progress bar
     pages = ['profile', 'income', 'expenses', 'custom_expenses', 'assets', 'liabilities', 'family', 'review']
@@ -416,33 +459,21 @@ def show_intake_questionnaire():
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
         st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
 
+        # ⚠️  WARN USER ABOUT UNSAVED CHANGES
+        st.markdown(UNSAVED_CHANGES_WARNING_JS, unsafe_allow_html=True)
+
         st.header("👤 Your Profile")
 
-        # Smart detection: Check if user has any NON-DEMO snapshots
-        # (list_snapshots and load_snapshot already imported at top of file)
-        snapshots = list_snapshots()
+        # SIMPLIFIED: Just show a simple welcome message
+        # Check if user has entered their name yet
+        has_user_name = st.session_state.get("input_user_name", "") != ""
 
-        # Count REAL snapshots (check is_demo flag in actual data)
-        real_count = 0
-        for snap in snapshots:
-            snap_data = load_snapshot(snap['id'])
-            if snap_data and not snap_data.get('is_demo', False):
-                real_count += 1
-
-        # If ANY real (non-demo) snapshots exist → REPEAT USER
-        has_real_data = (real_count > 0)
-
-        if has_real_data:
-            # RETURNING USER - has saved at least one non-demo snapshot
-            st.info(f"👋 **Welcome back!** Your previous data has been loaded. Update any fields below and continue through the questionnaire.")
+        if has_user_name:
+            # RETURNING USER or continuing session
+            st.info(f"👋 **Welcome!** Update any fields below and click SAVE & NEXT to continue.")
         else:
-            # FIRST-TIME USER - only demo snapshots exist
+            # FIRST-TIME USER
             st.success("🎉 **Welcome to the Ultimate Retirement Planning Tool!**")
-            st.info("""
-            **First time here?** We've pre-filled example data from our demo scenario to guide you.
-
-            **Simply replace each field with YOUR actual information** as you go through the questionnaire.
-            """)
             st.markdown("""
             This step-by-step questionnaire will guide you through:
             - Your profile and family information
@@ -457,15 +488,17 @@ def show_intake_questionnaire():
         st.divider()
         st.markdown("*Please enter your basic information. You can enter 0 or leave fields empty if not applicable.*")
 
-        # Initialize session state from existing data (ONLY if not already set by widget)
+        # Initialize session state with defaults (ONLY if not already set)
         if "input_user_name" not in st.session_state:
-            st.session_state["input_user_name"] = existing.get("input_user_name", "")
+            st.session_state["input_user_name"] = ""
         if "input_age" not in st.session_state:
-            st.session_state["input_age"] = int(existing.get("input_age", 70))
+            st.session_state["input_age"] = 70
         if "input_partner_name" not in st.session_state:
-            st.session_state["input_partner_name"] = existing.get("input_partner_name", "")
+            st.session_state["input_partner_name"] = ""
         if "input_partner_age" not in st.session_state:
-            st.session_state["input_partner_age"] = int(existing.get("input_partner_age", 68))
+            st.session_state["input_partner_age"] = 68
+        if "input_partner_exists" not in st.session_state:
+            st.session_state["input_partner_exists"] = False
 
         # User name - widget automatically reads from and writes to session_state via key=
         user_name = st.text_input(
@@ -476,7 +509,7 @@ def show_intake_questionnaire():
         )
 
         # Single or Couple
-        default_mode_is_couple = bool(existing.get("input_partner_exists", True))
+        default_mode_is_couple = bool(st.session_state.get("input_partner_exists", False))
 
         mode = st.radio(
             "Are you planning as:",
@@ -525,26 +558,20 @@ def show_intake_questionnaire():
             level, message = validate_age_gap(your_age, partner_age)
             show_validation_message(level, message)
 
-        # Save and continue
+        # Navigation buttons
         st.divider()
 
-        # Show "Back to Review" button if came from review page
-        if st.session_state.intake_from_review:
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("← Back to Review", use_container_width=True):
-                    # Data is already in session_state via widget key= parameters
-                    st.session_state.intake_from_review = False  # Reset flag
-                    go_to_page('review')
-            with col2:
-                if st.button("Next: Income →", type="primary", use_container_width=True):
-                    # Data is already in session_state via widget key= parameters
-                    st.session_state.intake_from_review = False  # Reset flag when going forward
-                    go_to_page('income')
-        else:
-            # Normal flow: just show Next button
-            if st.button("Next: Income →", type="primary", use_container_width=True):
-                # Just navigate - NO auto-save (save only on Review page)
+        col1, col2 = st.columns(2)
+
+        with col1:
+            # BACK button (disabled on Page 1)
+            st.button("← BACK", disabled=True, use_container_width=True)
+
+        with col2:
+            # NEXT button (no save - data already in session_state)
+            if st.button("NEXT →", type="primary", use_container_width=True):
+                # Data already in session_state via widget key= parameters
+                # Just navigate to next page
                 go_to_page('income')
 
     # ===== PAGE 2: INCOME =====
@@ -557,12 +584,27 @@ def show_intake_questionnaire():
         # Prominent note about before-tax income
         st.info("📝 **Important:** Enter all income amounts **BEFORE TAXES**. The app will calculate federal and state taxes for you.")
 
-        # Income fields with defaults from existing data
+        # Initialize income fields from existing data (ONLY if not already in session_state)
+        if "input_salary_wages" not in st.session_state:
+            st.session_state["input_salary_wages"] = float(0.0)
+        if "input_self_employment_income" not in st.session_state:
+            st.session_state["input_self_employment_income"] = float(0.0)
+        if "input_rental_income" not in st.session_state:
+            st.session_state["input_rental_income"] = float(0.0)
+        if "input_investment_income" not in st.session_state:
+            st.session_state["input_investment_income"] = float(0.0)
+        if "input_social_security_income" not in st.session_state:
+            st.session_state["input_social_security_income"] = float(0.0)
+        if "input_pension_income" not in st.session_state:
+            st.session_state["input_pension_income"] = float(0.0)
+        if "input_other_income" not in st.session_state:
+            st.session_state["input_other_income"] = float(0.0)
+
+        # Income fields - widgets automatically read from and write to session_state via key=
         salary = st.number_input(
             "Salary/Wages (monthly, before taxes)",
             min_value=0.0,
             max_value=1000000.0,
-            value=float(existing.get("input_salary_wages", 0.0)),
             step=100.0,
             help="Your regular employment income before any deductions",
             key="input_salary_wages"
@@ -572,7 +614,6 @@ def show_intake_questionnaire():
             "Self-Employment Income (monthly)",
             min_value=0.0,
             max_value=1000000.0,
-            value=float(existing.get("input_self_employment_income", 0.0)),
             step=100.0,
             help="Net income from business or freelance work",
             key="input_self_employment_income"
@@ -582,7 +623,6 @@ def show_intake_questionnaire():
             "Rental Income (monthly)",
             min_value=0.0,
             max_value=100000.0,
-            value=float(existing.get("input_rental_income", 0.0)),
             step=100.0,
             help="Net rental income after expenses",
             key="input_rental_income"
@@ -592,7 +632,6 @@ def show_intake_questionnaire():
             "Investment Income (monthly, before taxes)",
             min_value=0.0,
             max_value=100000.0,
-            value=float(existing.get("input_investment_income", 0.0)),
             step=50.0,
             help="Dividends, interest, capital gains (average monthly, before taxes)",
             key="input_investment_income"
@@ -602,7 +641,6 @@ def show_intake_questionnaire():
             "Social Security (monthly, before taxes)",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_social_security_income", 0.0)),
             step=50.0,
             help="Your monthly Social Security benefit before any tax withholding",
             key="input_social_security_income"
@@ -612,7 +650,6 @@ def show_intake_questionnaire():
             "Pension Income (monthly, before taxes)",
             min_value=0.0,
             max_value=50000.0,
-            value=float(existing.get("input_pension_income", 0.0)),
             step=50.0,
             help="Monthly pension from employer or government, before taxes",
             key="input_pension_income"
@@ -622,7 +659,6 @@ def show_intake_questionnaire():
             "Other Income (monthly)",
             min_value=0.0,
             max_value=100000.0,
-            value=float(existing.get("input_other_income", 0.0)),
             step=50.0,
             help="Alimony, royalties, or other regular income",
             key="input_other_income"
@@ -638,7 +674,7 @@ def show_intake_questionnaire():
         st.metric("Total Monthly Income", f"${total_income:,.2f}")
 
         # Intelligent validation (GENIUS DESIGN - KEEP ALL!)
-        user_age = int(existing.get("input_age", 65))
+        user_age = int(65)
 
         level, message = validate_total_income(total_income, user_age)
         show_validation_message(level, message)
@@ -649,10 +685,21 @@ def show_intake_questionnaire():
         level, message = validate_income_mix(salary + self_employment, pension, social_security, total_income, user_age)
         show_validation_message(level, message)
 
-        # Linear navigation - ONLY forward
+        # Navigation buttons
         st.divider()
-        if st.button("Next: Expenses →", type="primary", use_container_width=True):
-            go_to_page('expenses')
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            # BACK button to Page 1
+            if st.button("← BACK to Profile", use_container_width=True):
+                go_to_page('profile')
+
+        with col2:
+            # NEXT button (no save - data already in session_state)
+            if st.button("NEXT →", type="primary", use_container_width=True):
+                # Data already in session_state via widget key= parameters
+                go_to_page('expenses')
 
     # ===== PAGE 3: EXPENSES =====
     elif current_page == 'expenses':
@@ -662,12 +709,45 @@ def show_intake_questionnaire():
         st.header("🏠 Monthly Expenses")
         st.markdown("*Enter your typical monthly expenses. Enter 0 if not applicable.*")
 
-        # Expense fields with defaults
+        # Initialize expense fields from existing data (ONLY if not already in session_state)
+        if "input_housing_expenses" not in st.session_state:
+            st.session_state["input_housing_expenses"] = float(0.0)
+        if "input_utilities_expenses" not in st.session_state:
+            st.session_state["input_utilities_expenses"] = float(0.0)
+        if "input_groceries_expenses" not in st.session_state:
+            st.session_state["input_groceries_expenses"] = float(0.0)
+        if "input_transportation_expenses" not in st.session_state:
+            st.session_state["input_transportation_expenses"] = float(0.0)
+        if "input_healthcare_expenses" not in st.session_state:
+            st.session_state["input_healthcare_expenses"] = float(0.0)
+        if "input_insurance_expenses" not in st.session_state:
+            st.session_state["input_insurance_expenses"] = float(0.0)
+        if "input_property_tax_expenses" not in st.session_state:
+            st.session_state["input_property_tax_expenses"] = float(0.0)
+        if "input_entertainment_expenses" not in st.session_state:
+            st.session_state["input_entertainment_expenses"] = float(0.0)
+        if "input_restaurant_expenses" not in st.session_state:
+            st.session_state["input_restaurant_expenses"] = float(0.0)
+        if "input_travel_expenses" not in st.session_state:
+            st.session_state["input_travel_expenses"] = float(0.0)
+        if "input_education_expenses" not in st.session_state:
+            st.session_state["input_education_expenses"] = float(0.0)
+        if "input_childcare_expenses" not in st.session_state:
+            st.session_state["input_childcare_expenses"] = float(0.0)
+        if "input_clothing_expenses" not in st.session_state:
+            st.session_state["input_clothing_expenses"] = float(0.0)
+        if "input_charitable_donations" not in st.session_state:
+            st.session_state["input_charitable_donations"] = float(0.0)
+        if "input_miscellaneous_expenses" not in st.session_state:
+            st.session_state["input_miscellaneous_expenses"] = float(0.0)
+        if "input_other_expenses" not in st.session_state:
+            st.session_state["input_other_expenses"] = float(0.0)
+
+        # Expense fields - widgets automatically read from and write to session_state via key=
         housing = st.number_input(
             "Housing (rent/mortgage)",
             min_value=0.0,
             max_value=100000.0,
-            value=float(existing.get("input_housing_expenses", 0.0)),
             step=100.0,
             help="Monthly rent or mortgage payment",
             key="input_housing_expenses"
@@ -677,7 +757,6 @@ def show_intake_questionnaire():
             "Utilities",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_utilities_expenses", 0.0)),
             step=10.0,
             help="Electric, gas, water, internet, phone",
             key="input_utilities_expenses"
@@ -687,7 +766,6 @@ def show_intake_questionnaire():
             "Groceries/Food",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_groceries_expenses", 0.0)),
             step=50.0,
             help="Food and household supplies",
             key="input_groceries_expenses"
@@ -697,7 +775,6 @@ def show_intake_questionnaire():
             "Transportation",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_transportation_expenses", 0.0)),
             step=50.0,
             help="Gas, car payments, insurance, public transit",
             key="input_transportation_expenses"
@@ -707,7 +784,6 @@ def show_intake_questionnaire():
             "Healthcare",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_healthcare_expenses", 0.0)),
             step=50.0,
             help="Medical, dental, prescriptions, copays",
             key="input_healthcare_expenses"
@@ -717,7 +793,6 @@ def show_intake_questionnaire():
             "Insurance (non-health)",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_insurance_expenses", 0.0)),
             step=25.0,
             help="Life, home, auto insurance (if not included elsewhere)",
             key="input_insurance_expenses"
@@ -727,7 +802,6 @@ def show_intake_questionnaire():
             "Property Tax",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_property_tax_expenses", 0.0)),
             step=50.0,
             help="Monthly property tax (if not in mortgage)",
             key="input_property_tax_expenses"
@@ -737,7 +811,6 @@ def show_intake_questionnaire():
             "Entertainment",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_entertainment_expenses", 0.0)),
             step=25.0,
             help="Streaming, hobbies, sports, activities",
             key="input_entertainment_expenses"
@@ -747,7 +820,6 @@ def show_intake_questionnaire():
             "Dining Out/Restaurants",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_restaurant_expenses", 0.0)),
             step=25.0,
             help="Meals at restaurants, takeout, delivery",
             key="input_restaurant_expenses"
@@ -757,7 +829,6 @@ def show_intake_questionnaire():
             "Travel/Vacation",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_travel_expenses", 0.0)),
             step=50.0,
             help="Average monthly amount for travel/vacations",
             key="input_travel_expenses"
@@ -767,7 +838,6 @@ def show_intake_questionnaire():
             "Education",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_education_expenses", 0.0)),
             step=50.0,
             help="Tuition, courses, student loans",
             key="input_education_expenses"
@@ -777,7 +847,6 @@ def show_intake_questionnaire():
             "Childcare",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_childcare_expenses", 0.0)),
             step=50.0,
             help="Daycare, babysitting, child support",
             key="input_childcare_expenses"
@@ -787,7 +856,6 @@ def show_intake_questionnaire():
             "Clothing",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_clothing_expenses", 0.0)),
             step=25.0,
             help="Clothing and personal care items",
             key="input_clothing_expenses"
@@ -797,7 +865,6 @@ def show_intake_questionnaire():
             "Charitable Donations",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_charitable_donations", 0.0)),
             step=25.0,
             help="Regular charitable giving",
             key="input_charitable_donations"
@@ -807,7 +874,6 @@ def show_intake_questionnaire():
             "Miscellaneous",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_miscellaneous_expenses", 0.0)),
             step=25.0,
             help="Pet care, gifts, subscriptions, other",
             key="input_miscellaneous_expenses"
@@ -817,7 +883,6 @@ def show_intake_questionnaire():
             "Other Expenses",
             min_value=0.0,
             max_value=10000.0,
-            value=float(existing.get("input_other_expenses", 0.0)),
             step=25.0,
             help="Any other regular monthly expenses",
             key="input_other_expenses"
@@ -835,7 +900,7 @@ def show_intake_questionnaire():
         st.metric("Total Monthly Expenses", f"${total_expenses:,.2f}")
 
         # Intelligent validation (GENIUS DESIGN - KEEP ALL!)
-        total_income = float(existing.get("input_total_income", 0.0))
+        total_income = float(0.0)
 
         level, message = validate_total_expenses(total_expenses)
         show_validation_message(level, message)

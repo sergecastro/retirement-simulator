@@ -71,23 +71,23 @@ def show_assets_page(existing, save_payload, go_to_page):
     st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
     st.header("💎 Assets & Accounts")
     st.caption("Enter current balances for all your accounts and assets")
-    
+
     # Retirement Accounts
-    st.subheader("🦠 Retirement Accounts")
+    st.subheader("🏦 Retirement Accounts")
     ira = st.number_input(
         "Your IRA Balance",
         min_value=0.0,
-        value=float(existing.get("input_ira_balance", 0.0)),
         step=1000.0,
-        help="Traditional IRA balance"
+        help="Traditional IRA balance",
+        key="input_ira_balance"
     )
-    
+
     k401 = st.number_input(
         "Your 401k/403b Balance",
         min_value=0.0,
-        value=float(existing.get("input_four01k_403b_balance", 0.0)),
         step=1000.0,
-        help="Current 401k or 403b balance"
+        help="Current 401k or 403b balance",
+        key="input_four01k_403b_balance"
     )
     
     # Partner accounts (if couple)
@@ -97,111 +97,111 @@ def show_assets_page(existing, save_payload, go_to_page):
         partner_ira = st.number_input(
             "Partner IRA Balance",
             min_value=0.0,
-            value=float(existing.get("input_partner_ira_balance", 0.0)),
-            step=1000.0
+            step=1000.0,
+            key="input_partner_ira_balance"
         )
         partner_k401 = st.number_input(
             "Partner 401k/403b Balance",
             min_value=0.0,
-            value=float(existing.get("input_partner_four01k_403b_balance", 0.0)),
-            step=1000.0
+            step=1000.0,
+            key="input_partner_four01k_403b_balance"
         )
     else:
         partner_ira = 0.0
         partner_k401 = 0.0
-    
+
     # Savings & Investments
     st.subheader("💰 Savings & Investments")
     taxable = st.number_input(
         "Taxable Investment Accounts",
         min_value=0.0,
-        value=float(existing.get("input_taxable_investment_accounts", 0.0)),
         step=1000.0,
-        help="Brokerage accounts, mutual funds"
+        help="Brokerage accounts, mutual funds",
+        key="input_taxable_investment_accounts"
     )
-    
+
     savings = st.number_input(
         "High-Yield Savings Account",
         min_value=0.0,
-        value=float(existing.get("input_high_yield_savings_account", 0.0)),
         step=1000.0,
-        help="Emergency fund, savings accounts"
+        help="Emergency fund, savings accounts",
+        key="input_high_yield_savings_account"
     )
-    
+
     hsa = st.number_input(
         "HSA Balance",
         min_value=0.0,
-        value=float(existing.get("input_hsa_balance", 0.0)),
         step=500.0,
-        help="Health Savings Account"
+        help="Health Savings Account",
+        key="input_hsa_balance"
     )
-    
+
     plan529 = st.number_input(
         "529 Plan Balance",
         min_value=0.0,
-        value=float(existing.get("input_five29_plan_balance", 0.0)),
         step=500.0,
-        help="Education savings plan"
+        help="Education savings plan",
+        key="input_five29_plan_balance"
     )
-    
+
     # Real Estate
     st.subheader("🏡 Real Estate")
     primary_home = st.number_input(
         "Primary Residence Value",
         min_value=0.0,
-        value=float(existing.get("input_primary_residence_value", 0.0)),
         step=10000.0,
-        help="Current market value of your home"
+        help="Current market value of your home",
+        key="input_primary_residence_value"
     )
-    
+
     secondary_home = st.number_input(
         "Secondary Residence Value",
         min_value=0.0,
-        value=float(existing.get("input_secondary_residence_value", 0.0)),
         step=10000.0,
-        help="Vacation home, rental property value"
+        help="Vacation home, rental property value",
+        key="input_secondary_residence_value"
     )
-    
+
     # Other Assets
     st.subheader("🚗 Other Assets")
     vehicles = st.number_input(
         "Vehicles Value",
         min_value=0.0,
-        value=float(existing.get("input_vehicles_value", 0.0)),
         step=1000.0,
-        help="Cars, boats, RVs - current market value"
+        help="Cars, boats, RVs - current market value",
+        key="input_vehicles_value"
     )
-    
+
     jewelry = st.number_input(
         "Jewelry & Collectibles",
         min_value=0.0,
-        value=float(existing.get("input_jewelry_collectibles_value", 0.0)),
         step=500.0,
-        help="Valuable jewelry, art, collectibles"
+        help="Valuable jewelry, art, collectibles",
+        key="input_jewelry_collectibles_value"
     )
-    
+
     business = st.number_input(
         "Business Ownership Value",
         min_value=0.0,
-        value=float(existing.get("input_business_ownership_value", 0.0)),
         step=5000.0,
-        help="Your stake in a business"
+        help="Your stake in a business",
+        key="input_business_ownership_value"
     )
-    
+
     crypto = st.number_input(
         "Cryptocurrency Holdings",
         min_value=0.0,
-        value=float(existing.get("input_cryptocurrency_holdings", 0.0)),
         step=500.0,
-        help="Bitcoin, Ethereum, etc. - current value"
+        help="Bitcoin, Ethereum, etc. - current value",
+        key="input_cryptocurrency_holdings"
     )
-    
+
     other_assets = st.number_input(
         "Other Assets",
         min_value=0.0,
-        value=float(existing.get("input_other_assets", 0.0)),
         step=500.0,
-        help="Any other valuable assets"
+        help="Any other valuable assets",
+        key="input_other_assets"
     )
     
     # Calculate total
@@ -236,9 +236,6 @@ def show_assets_page(existing, save_payload, go_to_page):
             data["input_business_ownership_value"] = float(business)
             data["input_cryptocurrency_holdings"] = float(crypto)
             data["input_other_assets"] = float(other_assets)
-            # CRITICAL FIX: Save to session_state so data persists across pages
-            for key, value in data.items():
-                st.session_state[key] = value
             # REMOVED: Auto-save on navigation (user must explicitly save)
             # save_payload(data)
             go_to_page('liabilities')
@@ -251,45 +248,45 @@ def show_liabilities_page(existing, save_payload, go_to_page):
 
     st.header("💳 Liabilities & Debts")
     st.caption("Enter outstanding balances (leave at $0 if you don't have these)")
-    
+
     mortgage = st.number_input(
         "Mortgage Balance",
         min_value=0.0,
-        value=float(existing.get("input_mortgage_balance", 0.0)),
         step=5000.0,
-        help="Remaining mortgage principal"
+        help="Remaining mortgage principal",
+        key="input_mortgage_balance"
     )
-    
+
     auto_loan = st.number_input(
         "Auto Loans",
         min_value=0.0,
-        value=float(existing.get("input_auto_loan_balance", 0.0)),
         step=500.0,
-        help="Car loans, leases"
+        help="Car loans, leases",
+        key="input_auto_loan_balance"
     )
-    
+
     student_loan = st.number_input(
         "Student Loans",
         min_value=0.0,
-        value=float(existing.get("input_student_loan_balance", 0.0)),
         step=500.0,
-        help="Education debt"
+        help="Education debt",
+        key="input_student_loan_balance"
     )
-    
+
     credit_card = st.number_input(
         "Credit Card Debt",
         min_value=0.0,
-        value=float(existing.get("input_credit_card_debt", 0.0)),
         step=100.0,
-        help="Outstanding credit card balances"
+        help="Outstanding credit card balances",
+        key="input_credit_card_debt"
     )
-    
+
     other_debt = st.number_input(
         "Other Liabilities",
         min_value=0.0,
-        value=float(existing.get("input_other_liabilities", 0.0)),
         step=500.0,
-        help="Personal loans, HELOCs, other debts"
+        help="Personal loans, HELOCs, other debts",
+        key="input_other_liabilities"
     )
     
     total_liabilities = mortgage + auto_loan + student_loan + credit_card + other_debt
@@ -299,21 +296,21 @@ def show_liabilities_page(existing, save_payload, go_to_page):
     
     # Calculate net worth preview
     total_assets = sum([
-        existing.get("input_ira_balance", 0.0),
-        existing.get("input_four01k_403b_balance", 0.0),
-        existing.get("input_partner_ira_balance", 0.0),
-        existing.get("input_partner_four01k_403b_balance", 0.0),
-        existing.get("input_taxable_investment_accounts", 0.0),
-        existing.get("input_high_yield_savings_account", 0.0),
-        existing.get("input_hsa_balance", 0.0),
-        existing.get("input_five29_plan_balance", 0.0),
-        existing.get("input_primary_residence_value", 0.0),
-        existing.get("input_secondary_residence_value", 0.0),
-        existing.get("input_vehicles_value", 0.0),
-        existing.get("input_jewelry_collectibles_value", 0.0),
-        existing.get("input_business_ownership_value", 0.0),
-        existing.get("input_cryptocurrency_holdings", 0.0),
-        existing.get("input_other_assets", 0.0)
+        st.session_state.get("input_ira_balance", existing.get("input_ira_balance", 0.0)),
+        st.session_state.get("input_four01k_403b_balance", existing.get("input_four01k_403b_balance", 0.0)),
+        st.session_state.get("input_partner_ira_balance", existing.get("input_partner_ira_balance", 0.0)),
+        st.session_state.get("input_partner_four01k_403b_balance", existing.get("input_partner_four01k_403b_balance", 0.0)),
+        st.session_state.get("input_taxable_investment_accounts", existing.get("input_taxable_investment_accounts", 0.0)),
+        st.session_state.get("input_high_yield_savings_account", existing.get("input_high_yield_savings_account", 0.0)),
+        st.session_state.get("input_hsa_balance", existing.get("input_hsa_balance", 0.0)),
+        st.session_state.get("input_five29_plan_balance", existing.get("input_five29_plan_balance", 0.0)),
+        st.session_state.get("input_primary_residence_value", existing.get("input_primary_residence_value", 0.0)),
+        st.session_state.get("input_secondary_residence_value", existing.get("input_secondary_residence_value", 0.0)),
+        st.session_state.get("input_vehicles_value", existing.get("input_vehicles_value", 0.0)),
+        st.session_state.get("input_jewelry_collectibles_value", existing.get("input_jewelry_collectibles_value", 0.0)),
+        st.session_state.get("input_business_ownership_value", existing.get("input_business_ownership_value", 0.0)),
+        st.session_state.get("input_cryptocurrency_holdings", existing.get("input_cryptocurrency_holdings", 0.0)),
+        st.session_state.get("input_other_assets", existing.get("input_other_assets", 0.0))
     ])
     
     if total_assets > 0:
@@ -336,9 +333,6 @@ def show_liabilities_page(existing, save_payload, go_to_page):
             data["input_student_loan_balance"] = float(student_loan)
             data["input_credit_card_debt"] = float(credit_card)
             data["input_other_liabilities"] = float(other_debt)
-            # CRITICAL FIX: Save to session_state so data persists across pages
-            for key, value in data.items():
-                st.session_state[key] = value
             # REMOVED: Auto-save on navigation (user must explicitly save)
             # save_payload(data)
             go_to_page('family')
@@ -588,11 +582,11 @@ def show_review_page(existing, shared_path, go_to_page):
     st.subheader("👤 Profile")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Your Age", existing.get("input_age", "N/A"))
+        st.metric("Your Age", st.session_state.get("input_age", existing.get("input_age", "N/A")))
     with col2:
-        if existing.get("input_partner_exists"):
-            partner_name = existing.get("input_partner_name", "Partner")
-            partner_age = existing.get("input_partner_age", "N/A")
+        if st.session_state.get("input_partner_exists", existing.get("input_partner_exists")):
+            partner_name = st.session_state.get("input_partner_name", existing.get("input_partner_name", "Partner"))
+            partner_age = st.session_state.get("input_partner_age", existing.get("input_partner_age", "N/A"))
             st.metric(f"{partner_name}'s Age", partner_age)
         else:
             st.metric("Planning Mode", "Single")
@@ -604,14 +598,14 @@ def show_review_page(existing, shared_path, go_to_page):
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("💰 Monthly Income")
-        total_income = existing.get("input_total_income", 0.0)
+        total_income = st.session_state.get("input_total_income", existing.get("input_total_income", 0.0))
         st.metric("Total", f"${total_income:,.2f}")
         if st.button("✏️ Edit Income", key="edit_income", use_container_width=True):
             go_to_page('income')
     
     with col2:
         st.subheader("🏠 Monthly Expenses")
-        total_expenses = existing.get("input_total_expenses", 0.0)
+        total_expenses = st.session_state.get("input_total_expenses", existing.get("input_total_expenses", 0.0))
         st.metric("Total", f"${total_expenses:,.2f}")
         if st.button("✏️ Edit Expenses", key="edit_expenses", use_container_width=True):
             go_to_page('expenses')
@@ -630,21 +624,21 @@ def show_review_page(existing, shared_path, go_to_page):
     with col1:
         st.subheader("💎 Total Assets")
         total_assets = sum([
-            existing.get("input_ira_balance", 0.0),
-            existing.get("input_four01k_403b_balance", 0.0),
-            existing.get("input_partner_ira_balance", 0.0),
-            existing.get("input_partner_four01k_403b_balance", 0.0),
-            existing.get("input_taxable_investment_accounts", 0.0),
-            existing.get("input_high_yield_savings_account", 0.0),
-            existing.get("input_hsa_balance", 0.0),
-            existing.get("input_five29_plan_balance", 0.0),
-            existing.get("input_primary_residence_value", 0.0),
-            existing.get("input_secondary_residence_value", 0.0),
-            existing.get("input_vehicles_value", 0.0),
-            existing.get("input_jewelry_collectibles_value", 0.0),
-            existing.get("input_business_ownership_value", 0.0),
-            existing.get("input_cryptocurrency_holdings", 0.0),
-            existing.get("input_other_assets", 0.0)
+            st.session_state.get("input_ira_balance", existing.get("input_ira_balance", 0.0)),
+            st.session_state.get("input_four01k_403b_balance", existing.get("input_four01k_403b_balance", 0.0)),
+            st.session_state.get("input_partner_ira_balance", existing.get("input_partner_ira_balance", 0.0)),
+            st.session_state.get("input_partner_four01k_403b_balance", existing.get("input_partner_four01k_403b_balance", 0.0)),
+            st.session_state.get("input_taxable_investment_accounts", existing.get("input_taxable_investment_accounts", 0.0)),
+            st.session_state.get("input_high_yield_savings_account", existing.get("input_high_yield_savings_account", 0.0)),
+            st.session_state.get("input_hsa_balance", existing.get("input_hsa_balance", 0.0)),
+            st.session_state.get("input_five29_plan_balance", existing.get("input_five29_plan_balance", 0.0)),
+            st.session_state.get("input_primary_residence_value", existing.get("input_primary_residence_value", 0.0)),
+            st.session_state.get("input_secondary_residence_value", existing.get("input_secondary_residence_value", 0.0)),
+            st.session_state.get("input_vehicles_value", existing.get("input_vehicles_value", 0.0)),
+            st.session_state.get("input_jewelry_collectibles_value", existing.get("input_jewelry_collectibles_value", 0.0)),
+            st.session_state.get("input_business_ownership_value", existing.get("input_business_ownership_value", 0.0)),
+            st.session_state.get("input_cryptocurrency_holdings", existing.get("input_cryptocurrency_holdings", 0.0)),
+            st.session_state.get("input_other_assets", existing.get("input_other_assets", 0.0))
         ])
         st.metric("Assets", f"${total_assets:,.2f}")
         if st.button("✏️ Edit Assets", key="edit_assets", use_container_width=True):
@@ -653,11 +647,11 @@ def show_review_page(existing, shared_path, go_to_page):
     with col2:
         st.subheader("💳 Total Liabilities")
         total_liabilities = sum([
-            existing.get("input_mortgage_balance", 0.0),
-            existing.get("input_auto_loan_balance", 0.0),
-            existing.get("input_student_loan_balance", 0.0),
-            existing.get("input_credit_card_debt", 0.0),
-            existing.get("input_other_liabilities", 0.0)
+            st.session_state.get("input_mortgage_balance", existing.get("input_mortgage_balance", 0.0)),
+            st.session_state.get("input_auto_loan_balance", existing.get("input_auto_loan_balance", 0.0)),
+            st.session_state.get("input_student_loan_balance", existing.get("input_student_loan_balance", 0.0)),
+            st.session_state.get("input_credit_card_debt", existing.get("input_credit_card_debt", 0.0)),
+            st.session_state.get("input_other_liabilities", existing.get("input_other_liabilities", 0.0))
         ])
         st.metric("Liabilities", f"${total_liabilities:,.2f}")
         if st.button("✏️ Edit Liabilities", key="edit_liabilities", use_container_width=True):
@@ -671,9 +665,9 @@ def show_review_page(existing, shared_path, go_to_page):
     
     # Family Events Summary
     st.subheader("👨‍👩‍👧‍👦 Family Events")
-    children_count = len(existing.get("children_rows", existing.get("children_list", [])))
-    inherit_count = len(existing.get("inherit_rows", existing.get("inheritance_list", [])))
-    custom_count = len(existing.get("custom_expenses", []))
+    children_count = len(st.session_state.get("children_list", existing.get("children_list", existing.get("children_rows", []))))
+    inherit_count = len(st.session_state.get("inheritance_list", existing.get("inheritance_list", existing.get("inherit_rows", []))))
+    custom_count = len(st.session_state.get("custom_expenses", existing.get("custom_expenses", [])))
     
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -689,7 +683,7 @@ def show_review_page(existing, shared_path, go_to_page):
     # Show custom expenses if any
     if custom_count > 0:
         with st.expander("📝 Custom Monthly Expenses Details"):
-            custom_expenses = existing.get("custom_expenses", [])
+            custom_expenses = st.session_state.get("custom_expenses", existing.get("custom_expenses", []))
             for item in custom_expenses:
                 st.write(f"• **{item.get('Name', 'N/A')}**: ${item.get('Monthly Amount', 0):,.2f} ({item.get('Category', 'N/A')})")
             total_custom = sum(item.get("Monthly Amount", 0) for item in custom_expenses)
@@ -706,6 +700,13 @@ def show_review_page(existing, shared_path, go_to_page):
             go_to_page('family')
     with col2:
         if st.button("✅ COMPLETE & EXPORT TO SIMULATOR", type="primary", use_container_width=True):
+            # Collect all data from session_state, fallback to existing
+            data = existing.copy()
+            data.update({
+                k: v for k, v in st.session_state.items() 
+                if k.startswith("input_") or k in ["schema_version", "children_list", "inheritance_list", "goals_list", "custom_expenses", "children_rows", "inherit_rows", "goals_data", "custom_expenses_list"]
+            })
+            save_payload(data)
             st.success(f"✅ Successfully saved to:\n`{shared_path}`")
             st.balloons()
             st.markdown("### 🎯 Next Steps:")
