@@ -135,23 +135,43 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
         current_snapshot_id = None
 
     # AUTO-LOAD DEFAULT SCENARIO ON FIRST VISIT
+    # CRITICAL FIX: Only auto-load demo if user has NO saved snapshots
     if 'scenario_auto_loaded' not in st.session_state:
         if 'scenario_loaded' not in st.session_state:
-            # Load appropriate default based on user type
-            if is_trusted_user:
-                default_scenario = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
-                default_name = '70+ Retirement (Private - Trusted)'
+            # Check if user has saved snapshots
+            if len(snapshots) > 0:
+                # User has saved data - use most recent snapshot
+                most_recent = snapshots[-1]
+                st.session_state['current_scenario'] = most_recent['name']
+                st.session_state['scenario_auto_loaded'] = True
+                print(f"[AUTO-LOAD] Using saved snapshot: {most_recent['name']}")
+                # Don't load here - let intake_data_loaded flag handle it
             else:
-                default_scenario = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
-                default_name = 'Original 70+ Retirement (Demo)'
+                # No saved data - load demo
+                if is_trusted_user:
+                    default_scenario = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
+                    default_name = '70+ Retirement (Private - Trusted)'
+                else:
+                    default_scenario = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
+                    default_name = 'Original 70+ Retirement (Demo)'
 
-            # ✅ Queue the default scenario for loading
-            st.session_state['current_scenario'] = default_name
-            st.session_state['scenario_auto_loaded'] = True
-            queue_scenario_load(default_scenario)  # This will rerun
+                # ✅ Queue the default scenario for loading
+                st.session_state['current_scenario'] = default_name
+                st.session_state['scenario_auto_loaded'] = True
+                queue_scenario_load(default_scenario)  # This will rerun
 
-    # Get current scenario name
-    current_name = st.session_state.get('current_scenario', 'Original 70+ Retirement (Demo)')
+    # Get current scenario name - prioritize current_snapshot_id
+    if current_snapshot_id:
+        # Find snapshot name from ID
+        current_name = None
+        for s in snapshots:
+            if s['id'] == current_snapshot_id:
+                current_name = s['name']
+                break
+        if not current_name:
+            current_name = st.session_state.get('current_scenario', 'No plan loaded')
+    else:
+        current_name = st.session_state.get('current_scenario', 'No plan loaded')
 
     st.sidebar.info(f"📋 **Currently:** {current_name}")
 

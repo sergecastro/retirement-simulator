@@ -100,10 +100,15 @@ def load_intake_data_to_session():
 
     print(f"[LOAD_INTAKE] already_loaded flag = {already_loaded}")
 
+    # FORCE RELOAD if we have cached snapshot data (just came from Intake)
+    if '_cached_snapshots' in st.session_state and len(st.session_state['_cached_snapshots']) > 0:
+        print(f"[LOAD_INTAKE] Found {len(st.session_state['_cached_snapshots'])} cached snapshot(s), forcing reload")
+        already_loaded = False
+
     # Only load if not already loaded in this session
     if not already_loaded:
         try:
-            # Try to get current snapshot
+            # Try to get current snapshot (will use cache if available)
             print(f"[LOAD_INTAKE] Calling get_current_snapshot()...")
             intake_data = get_current_snapshot()
 
@@ -115,10 +120,12 @@ def load_intake_data_to_session():
 
                 st.session_state.intake_data_loaded = True
 
-                # Show welcome message
-                user_name = intake_data.get('input_user_name', '')
-                if user_name:
-                    st.success(f"✅ Loaded data for: {user_name}")
+                # Show welcome message ONCE
+                if 'intake_welcome_shown' not in st.session_state:
+                    user_name = intake_data.get('input_user_name', '')
+                    if user_name:
+                        st.success(f"✅ Loaded data for: {user_name}")
+                    st.session_state['intake_welcome_shown'] = True
             else:
                 print(f"[LOAD_INTAKE] ❌ get_current_snapshot() returned None")
 
@@ -161,16 +168,16 @@ def main():
     if st.session_state.current_mode is None:
         st.session_state.mode_selected = False
 
-    # SIMPLIFIED: Don't check snapshots on every render (causes hundreds of calls)
-    # Just assume user might have data - they can choose their mode
-    has_intake_data = False  # Will be detected when needed
+    # Check if user has saved snapshots (for smart landing page)
+    from utils.snapshot_manager import has_user_snapshots
+    has_saved_data = has_user_snapshots()
 
     # Get user type
     is_trusted = is_trusted_user()
 
     # CRITICAL: SHOW LANDING PAGE if mode not selected
     if not st.session_state.mode_selected or st.session_state.current_mode is None:
-        show_mode_selection_landing_page(has_intake_data, is_trusted)
+        show_mode_selection_landing_page(has_saved_data, is_trusted)
         show_sidebar_footer(is_trusted)
         st.stop()  # ← STOP EXECUTION HERE!
 
@@ -279,11 +286,13 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 
     st.markdown("")  # Spacing
 
-    # Show status based on returning user
+    # Show status based on whether user has saved snapshots
     if has_intake_data:
-        st.success("✅ **Welcome back!** It seems that you have already filled out the INTAKE form with your personal encrypted data.\n\n**Your choices are:**\n\n1️⃣ **Go directly to Analysis** to calculate or simulate your financial situation\n\n2️⃣ **Enter INTAKE again** to update or modify data entries as required")
+        # User has saved snapshots (returning user with data)
+        st.success("✅ **Welcome back!** You have saved retirement plans ready to analyze.\n\n**Your choices:**\n\n1️⃣ **Go to Analysis** to review and simulate your saved plans\n\n2️⃣ **Start INTAKE** to create a new plan or update existing data")
     else:
-        st.info("ℹ️ **First time here?** We've pre-filled an example data form to help you get started.\n\n**Please start with INTAKE** to replace the example data with your own information.")
+        # No saved snapshots (new user)
+        st.info("ℹ️ **First time here?** Get started by creating your retirement plan.\n\n**Recommended:** Start with INTAKE to enter your financial information, or explore Analysis mode with demo data.")
 
     st.markdown("---")
 

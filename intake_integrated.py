@@ -1343,8 +1343,11 @@ def show_intake_questionnaire():
         st.divider()
         st.markdown("### 🎉 Ready to Continue?")
 
-        # TWO-STEP PROCESS: Must save BEFORE going to Analysis
-        if not st.session_state.get('intake_snapshot_saved', False):
+        # SERGE'S ELEGANT TWO-STEP SOLUTION
+        # Step 1: MUST save snapshot first
+        # Step 2: ONLY THEN show "Go to Analysis" button
+
+        if not st.session_state.get('snapshot_saved', False):
             # STEP 1: Save Snapshot First
             st.markdown("**Step 1: Save Your Plan**")
             st.info("💾 Save your data so you can return to it later, even after closing your browser!")
@@ -1353,8 +1356,9 @@ def show_intake_questionnaire():
             with col1:
                 snapshot_name = st.text_input(
                     "Name your plan:",
-                    value=f"My Plan - {datetime.now().strftime('%b %d, %Y')}",
-                    help="Give your retirement plan a memorable name"
+                    value=f"My Plan - {datetime.now().strftime('%b %d, %Y @ %I:%M %p')}",
+                    help="Give your retirement plan a memorable name",
+                    key="snapshot_name_final"
                 )
             with col2:
                 st.write("")  # Spacer for alignment
@@ -1368,7 +1372,7 @@ def show_intake_questionnaire():
 
             with col2:
                 if st.button(
-                    "💾 SAVE PLAN",
+                    "💾 Save Snapshot",
                     type="primary",
                     use_container_width=True,
                     help="Save your data to browser storage"
@@ -1376,22 +1380,30 @@ def show_intake_questionnaire():
                     # Collect all data from session_state
                     data = collect_current_form_data()
 
+                    # CRITICAL: Print debug info BEFORE saving
+                    print(f"[REVIEW SAVE] About to save snapshot: {snapshot_name}")
+                    print(f"[REVIEW SAVE] User name in data: {data.get('input_user_name', 'MISSING')}")
+                    print(f"[REVIEW SAVE] Data keys count: {len(data.keys())}")
+
                     # Save with user's custom name
                     success = save_payload(data, snapshot_name=snapshot_name)
 
+                    print(f"[REVIEW SAVE] save_payload() returned: {success}")
+
                     if success:
                         # Mark as saved
-                        st.session_state['intake_snapshot_saved'] = True
+                        st.session_state['snapshot_saved'] = True
                         st.session_state['saved_snapshot_name'] = snapshot_name
 
                         # CRITICAL: Clear intake_data_loaded flag so Analysis loads fresh snapshot
                         if 'intake_data_loaded' in st.session_state:
                             del st.session_state['intake_data_loaded']
 
+                        print(f"[REVIEW SAVE] Marked as saved, about to show balloons and rerun")
+
                         # Show celebration
                         st.balloons()
-                        st.success(f"✅ '{snapshot_name}' saved successfully!")
-                        time.sleep(1.5)
+                        time.sleep(0.5)  # Give localStorage time to write
                         st.rerun()
                     else:
                         st.error("❌ Failed to save. Please try again.")
@@ -1406,19 +1418,29 @@ def show_intake_questionnaire():
             with col1:
                 if st.button("📝 Edit Plan", use_container_width=True):
                     # Allow user to go back and edit
-                    st.session_state['intake_snapshot_saved'] = False
+                    st.session_state['snapshot_saved'] = False
                     st.rerun()
 
             with col2:
                 if st.button(
-                    "📊 GO TO ANALYSIS →",
+                    "📊 Go to Analysis",
                     type="primary",
                     use_container_width=True
                 ):
+                    # CRITICAL: Clear intake_data_loaded flag to force Analysis to load saved snapshot
+                    if 'intake_data_loaded' in st.session_state:
+                        del st.session_state['intake_data_loaded']
+
+                    # Clear scenario auto-load flags to prevent demo override
+                    if 'scenario_auto_loaded' in st.session_state:
+                        del st.session_state['scenario_auto_loaded']
+                    if 'scenario_loaded' in st.session_state:
+                        del st.session_state['scenario_loaded']
+
                     # Set mode flags
                     st.session_state.current_mode = 'Analysis'
                     st.session_state.mode_selected = True
-                    st.session_state['intake_snapshot_saved'] = False  # Reset for next time
+                    st.session_state['snapshot_saved'] = False  # Reset for next time
 
                     # Switch to Analysis mode
                     st.rerun()

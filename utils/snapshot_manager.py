@@ -2,6 +2,11 @@
 """
 Manages multiple saved retirement plan snapshots with versioning.
 
+# =============================================================================
+# DEMO SNAPSHOT IDENTIFIER
+# =============================================================================
+DEMO_SNAPSHOT_ID = "DEMO_SNAPSHOT"  # Special ID for demo snapshots
+
 FEATURES:
 - Save multiple plan versions ("Conservative", "Aggressive", etc.)
 - Each snapshot has unique ID, name, metadata
@@ -81,6 +86,12 @@ def get_snapshots_index() -> Dict[str, Any]:
     Returns:
         Index dict with current_snapshot_id and snapshots list
     """
+    # CRITICAL: Check session_state cache FIRST (avoids localStorage race condition)
+    if '_cached_snapshots_index' in st.session_state:
+        cached = st.session_state['_cached_snapshots_index']
+        print(f"[CACHE HIT] Using cached index with {len(cached.get('snapshots', []))} snapshots")
+        return cached.copy()
+
     # Get LocalStorage instance
     localS = _get_local_storage()
 
@@ -91,16 +102,19 @@ def get_snapshots_index() -> Dict[str, Any]:
             print(f"[LS] GET 'ff_snapshots_index' = {type(data).__name__ if data else 'None'}")
             index = decrypt_data(data, localS)
             if index:
-                # Filter out demo scenarios
+                # Filter out demo scenarios (anything with "Demo", "Private", "Retirement", "Original" in name)
                 all_snapshots = index.get('snapshots', [])
                 print(f"[DEBUG] Before filter: {len(all_snapshots)} snapshots")
                 for s in all_snapshots:
-                    print(f"  - '{s.get('name')}' starts with 'Original'? {s.get('name', '').startswith('Original')}")
+                    name = s.get('name', '')
+                    is_demo = any(keyword in name for keyword in ['Original', 'Demo', 'Private - Trusted', 'Retirement ('])
+                    print(f"  - '{name}' is demo? {is_demo}")
 
+                # Filter out ONLY demo scenarios
                 snapshots = [s for s in all_snapshots
-                             if not s.get('name', '').startswith('Original')]
+                             if not any(keyword in s.get('name', '') for keyword in ['Original', 'Demo', 'Private - Trusted', 'Retirement ('])]
                 index['snapshots'] = snapshots
-                print(f"[SNAPSHOT] After filter: {len(snapshots)} snapshots")
+                print(f"[SNAPSHOT] After filter: {len(snapshots)} snapshots (removed demo scenarios)")
 
                 # CRITICAL FIX: Ensure current_snapshot_id is valid
                 current_id = index.get('current_snapshot_id')
@@ -112,16 +126,18 @@ def get_snapshots_index() -> Dict[str, Any]:
                         print(f"[WARN] current_snapshot_id '{current_id}' was filtered out (demo scenario)")
                         # Set to most recent non-demo snapshot
                         if snapshots:
-                            index['current_snapshot_id'] = snapshots[-1]['id']
-                            print(f"[FIX] Set current_snapshot_id to most recent: {snapshots[-1]['id']}")
+                            new_id = snapshots[-1]['id']
+                            index['current_snapshot_id'] = new_id
+                            print(f"[FIX] Set current_snapshot_id to most recent user snapshot: {snapshots[-1]['name']} (ID: {new_id})")
                         else:
                             index['current_snapshot_id'] = None
                             print(f"[WARN] No non-demo snapshots found, clearing current_snapshot_id")
                 else:
-                    # No current_snapshot_id set at all - use most recent snapshot
+                    # No current_snapshot_id set at all - use most recent user snapshot if available
                     if snapshots:
-                        index['current_snapshot_id'] = snapshots[-1]['id']
-                        print(f"[FIX] No current_snapshot_id was set, using most recent: {snapshots[-1]['id']}")
+                        new_id = snapshots[-1]['id']
+                        index['current_snapshot_id'] = new_id
+                        print(f"[FIX] No current_snapshot_id was set, using most recent user snapshot: {snapshots[-1]['name']} (ID: {new_id})")
 
                 return index
     except Exception as e:
@@ -148,6 +164,10 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
         True if successful
     """
     try:
+        # CRITICAL: Cache in session_state FIRST to avoid race condition
+        st.session_state['_cached_snapshots_index'] = index.copy()
+        print(f"[CACHE] Cached index in session_state with {len(index.get('snapshots', []))} snapshots")
+
         # Get LocalStorage instance
         localS = _get_local_storage()
 
@@ -197,7 +217,7 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
 
     # Generate default name if not provided
     if not snapshot_name:
-        snapshot_name = f"Plan - {datetime.now().strftime('%b %d, %Y @ %I:%M %p')}"
+        snapshot_name = f"Plan - {datetime.now().strftime('%b %d, %Y @ %I:%M:%S %p')}"
 
     # Extract metadata from data
     metadata = {
@@ -232,6 +252,12 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
 
     # Print save confirmation
     print(f"[SAVE] Saving: '{snapshot_name}' (ID: {snapshot_id})")
+
+    # CRITICAL: Cache snapshot data in session_state FIRST
+    if '_cached_snapshots' not in st.session_state:
+        st.session_state['_cached_snapshots'] = {}
+    st.session_state['_cached_snapshots'][snapshot_id] = data.copy()
+    print(f"[CACHE] Cached snapshot data for {snapshot_id}")
 
     # Save snapshot data to browser localStorage (ENCRYPTED)
     try:
@@ -287,6 +313,14 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
     """
     print(f"[DEBUG load_snapshot] Attempting to load snapshot: {snapshot_id}")
 
+    # CRITICAL: Check session_state cache FIRST
+    if '_cached_snapshots' in st.session_state:
+        if snapshot_id in st.session_state['_cached_snapshots']:
+            cached_data = st.session_state['_cached_snapshots'][snapshot_id]
+            print(f"[CACHE HIT] Loaded snapshot {snapshot_id} from cache")
+            print(f"[CACHE HIT] User: {cached_data.get('input_user_name', 'NOT FOUND')}")
+            return cached_data.copy()
+
     # Check if this is a demo scenario (by ID or name from index)
     index = get_snapshots_index()
     for snapshot in index.get('snapshots', []):
@@ -341,6 +375,30 @@ def list_snapshots() -> List[Dict[str, Any]]:
     """
     index = get_snapshots_index()
     return index.get("snapshots", [])
+
+
+def has_user_snapshots() -> bool:
+    """
+    Check if user has any saved snapshots (excluding demo).
+
+    Returns:
+        True if user has at least one non-demo snapshot
+
+    Example:
+        >>> if has_user_snapshots():
+        >>>     print("Show Go to Analysis button")
+        >>> else:
+        >>>     print("Show Start INTAKE button")
+    """
+    snapshots = list_snapshots()
+
+    # Filter out demo snapshots
+    user_snapshots = [s for s in snapshots if s['id'] != DEMO_SNAPSHOT_ID]
+
+    has_snapshots = len(user_snapshots) > 0
+    print(f"[CHECK] has_user_snapshots() = {has_snapshots} ({len(user_snapshots)} user snapshots found)")
+
+    return has_snapshots
 
 
 def delete_snapshot(snapshot_id: str) -> bool:
