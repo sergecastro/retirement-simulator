@@ -510,11 +510,29 @@ def show_intake_questionnaire():
     if 'intake_from_review' not in st.session_state:
         st.session_state.intake_from_review = False
 
-    # NO AUTO-LOAD: Data stays in session_state only
-    # User fills form, saves at end on Review page
+    # AUTO-LOAD saved snapshot if user has one (FIRST TIME entering INTAKE this session)
     if 'intake_initialized' not in st.session_state:
         st.session_state['intake_initialized'] = True
-        print("[INTAKE] ✅ Session initialized (no auto-load)")
+
+        # Check if user has saved snapshots
+        from utils.snapshot_manager import get_current_snapshot, has_user_snapshots
+
+        if has_user_snapshots():
+            # Load most recent snapshot into session_state
+            print("[INTAKE] User has saved snapshots, loading current snapshot...")
+            snapshot_data = get_current_snapshot()
+
+            if snapshot_data:
+                # Load all fields into session_state
+                for key, value in snapshot_data.items():
+                    st.session_state[key] = value
+
+                user_name = snapshot_data.get('input_user_name', 'Unknown')
+                print(f"[INTAKE] OK Loaded saved data for: {user_name}")
+            else:
+                print("[INTAKE] OK Session initialized (no snapshot to load)")
+        else:
+            print("[INTAKE] OK Session initialized (new user, no saved data)")
 
     # Progress bar
     pages = ['profile', 'income', 'expenses', 'custom_expenses', 'assets', 'liabilities', 'family', 'review']
@@ -576,14 +594,23 @@ def show_intake_questionnaire():
 
         st.divider()
 
-        # Demo Data Loader Button
-        if st.button("📋 Load Demo Data (John Smith)", help="Pre-fill all forms with sample data that you can modify"):
-            load_demo_data()
-            st.rerun()
+        # Demo Data Loader Button - ONLY show if user has NO saved snapshots
+        from utils.snapshot_manager import has_user_snapshots
 
-        # Show success message if demo data was just loaded
-        if st.session_state.get('input_user_name') == "John Smith":
-            st.info("ℹ️ Demo data loaded! You can now modify any fields and save as your own.")
+        if not has_user_snapshots():
+            # New user - offer demo data
+            if st.button("📋 Load Demo Data (John Smith)", help="Pre-fill all forms with sample data that you can modify"):
+                load_demo_data()
+                st.rerun()
+
+            # Show success message if demo data was just loaded
+            if st.session_state.get('input_user_name') == "John Smith":
+                st.info("ℹ️ Demo data loaded! You can now modify any fields and save as your own.")
+        else:
+            # Returning user - show confirmation that data was loaded
+            loaded_name = st.session_state.get('input_user_name', '')
+            if loaded_name and loaded_name != "John Smith":
+                st.success(f"✅ Loaded your saved data: **{loaded_name}**")
 
         st.markdown("*Please enter your basic information. You can enter 0 or leave fields empty if not applicable.*")
 
@@ -1273,6 +1300,14 @@ def show_intake_questionnaire():
                     # Store message in session state to show AFTER rerun
                     saved_name = snapshot_name if snapshot_name else f"Plan - {datetime.now().strftime('%b %d, %Y')}"
                     st.session_state['snapshot_save_message'] = f"✅ Saved: {saved_name}"
+
+                    # CRITICAL: Set just_saved flag so "Go to Analysis" button appears
+                    st.session_state['just_saved'] = True
+                    st.session_state['saved_snapshot_name'] = saved_name
+
+                    # Show BIG balloons celebration (2 seconds minimum!)
+                    st.balloons()
+                    time.sleep(2.0)  # Give user time to enjoy the celebration!
                     st.rerun()
 
         # Show save success message if exists
@@ -1340,85 +1375,19 @@ def show_intake_questionnaire():
                 except Exception as e:
                     st.error(f"❌ Import failed: {e}")
 
-        st.divider()
-        st.markdown("### 🎉 Ready to Continue?")
+        # Show success message after save (if just saved)
+        if st.session_state.get('just_saved', False):
+            st.success(f"✅ Plan saved successfully: **{st.session_state.get('saved_snapshot_name', 'Your Plan')}**")
 
-        # SERGE'S ELEGANT TWO-STEP SOLUTION
-        # Step 1: MUST save snapshot first
-        # Step 2: ONLY THEN show "Go to Analysis" button
-
-        if not st.session_state.get('snapshot_saved', False):
-            # STEP 1: Save Snapshot First
-            st.markdown("**Step 1: Save Your Plan**")
-            st.info("💾 Save your data so you can return to it later, even after closing your browser!")
-
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                snapshot_name = st.text_input(
-                    "Name your plan:",
-                    value=f"My Plan - {datetime.now().strftime('%b %d, %Y @ %I:%M %p')}",
-                    help="Give your retirement plan a memorable name",
-                    key="snapshot_name_final"
-                )
-            with col2:
-                st.write("")  # Spacer for alignment
-                st.write("")  # Spacer for alignment
-
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("🔄 Start Over (Re-enter Data)", use_container_width=True):
-                    # Reset to profile page
-                    go_to_page('profile')
-
-            with col2:
-                if st.button(
-                    "💾 Save Snapshot",
-                    type="primary",
-                    use_container_width=True,
-                    help="Save your data to browser storage"
-                ):
-                    # Collect all data from session_state
-                    data = collect_current_form_data()
-
-                    # CRITICAL: Print debug info BEFORE saving
-                    print(f"[REVIEW SAVE] About to save snapshot: {snapshot_name}")
-                    print(f"[REVIEW SAVE] User name in data: {data.get('input_user_name', 'MISSING')}")
-                    print(f"[REVIEW SAVE] Data keys count: {len(data.keys())}")
-
-                    # Save with user's custom name
-                    success = save_payload(data, snapshot_name=snapshot_name)
-
-                    print(f"[REVIEW SAVE] save_payload() returned: {success}")
-
-                    if success:
-                        # Mark as saved
-                        st.session_state['snapshot_saved'] = True
-                        st.session_state['saved_snapshot_name'] = snapshot_name
-
-                        # CRITICAL: Clear intake_data_loaded flag so Analysis loads fresh snapshot
-                        if 'intake_data_loaded' in st.session_state:
-                            del st.session_state['intake_data_loaded']
-
-                        print(f"[REVIEW SAVE] Marked as saved, about to show balloons and rerun")
-
-                        # Show celebration
-                        st.balloons()
-                        time.sleep(0.5)  # Give localStorage time to write
-                        st.rerun()
-                    else:
-                        st.error("❌ Failed to save. Please try again.")
-
-        else:
-            # STEP 2: Now user can go to Analysis
-            st.success(f"✅ Plan saved: **{st.session_state.get('saved_snapshot_name', 'Your Plan')}**")
-            st.markdown("**Step 2: Continue to Analysis**")
-            st.info("🎯 Your data is safe! You can now analyze your retirement plan.")
+            st.divider()
+            st.markdown("### 🎉 Ready to Continue?")
 
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("📝 Edit Plan", use_container_width=True):
                     # Allow user to go back and edit
-                    st.session_state['snapshot_saved'] = False
+                    st.session_state['just_saved'] = False
+                    go_to_page('profile')
                     st.rerun()
 
             with col2:
@@ -1440,10 +1409,13 @@ def show_intake_questionnaire():
                     # Set mode flags
                     st.session_state.current_mode = 'Analysis'
                     st.session_state.mode_selected = True
-                    st.session_state['snapshot_saved'] = False  # Reset for next time
+                    st.session_state['just_saved'] = False  # Reset for next time
 
                     # Switch to Analysis mode
                     st.rerun()
+        else:
+            # Show info message when not saved yet
+            st.info("💡 Save your plan above before proceeding to Analysis")
 
     # Footer
     st.divider()

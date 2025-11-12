@@ -2,11 +2,6 @@
 """
 Manages multiple saved retirement plan snapshots with versioning.
 
-# =============================================================================
-# DEMO SNAPSHOT IDENTIFIER
-# =============================================================================
-DEMO_SNAPSHOT_ID = "DEMO_SNAPSHOT"  # Special ID for demo snapshots
-
 FEATURES:
 - Save multiple plan versions ("Conservative", "Aggressive", etc.)
 - Each snapshot has unique ID, name, metadata
@@ -44,6 +39,12 @@ from typing import Dict, Any, List, Optional
 from utils.encryption import encrypt_data, decrypt_data
 import traceback
 from streamlit_browser_storage import LocalStorage
+
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+DEMO_SNAPSHOT_ID = "DEMO_SNAPSHOT"  # Special ID for demo snapshots
 
 
 # =============================================================================
@@ -91,6 +92,22 @@ def get_snapshots_index() -> Dict[str, Any]:
         cached = st.session_state['_cached_snapshots_index']
         print(f"[CACHE HIT] Using cached index with {len(cached.get('snapshots', []))} snapshots")
         return cached.copy()
+
+    # PERSISTENCE FIX: Try loading from disk cache (survives restarts)
+    try:
+        import json
+        import os
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+        cache_file = os.path.join(cache_dir, 'snapshots_index.json')
+        if os.path.exists(cache_file):
+            with open(cache_file, 'r') as f:
+                disk_index = json.load(f)
+            print(f"[DISK CACHE HIT] Loaded index from disk with {len(disk_index.get('snapshots', []))} snapshots")
+            # Cache it in session_state for next time
+            st.session_state['_cached_snapshots_index'] = disk_index.copy()
+            return disk_index
+    except Exception as disk_err:
+        print(f"[DISK CACHE] Failed to load from disk: {disk_err}")
 
     # Get LocalStorage instance
     localS = _get_local_storage()
@@ -167,6 +184,19 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
         # CRITICAL: Cache in session_state FIRST to avoid race condition
         st.session_state['_cached_snapshots_index'] = index.copy()
         print(f"[CACHE] Cached index in session_state with {len(index.get('snapshots', []))} snapshots")
+
+        # PERSISTENCE FIX: Also save to disk as backup (survives restarts)
+        try:
+            import json
+            import os
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+            os.makedirs(cache_dir, exist_ok=True)
+            cache_file = os.path.join(cache_dir, 'snapshots_index.json')
+            with open(cache_file, 'w') as f:
+                json.dump(index, f, indent=2)
+            print(f"[DISK CACHE] Saved index to {cache_file}")
+        except Exception as disk_err:
+            print(f"[DISK CACHE] Failed to save to disk: {disk_err}")
 
         # Get LocalStorage instance
         localS = _get_local_storage()
@@ -259,6 +289,19 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
     st.session_state['_cached_snapshots'][snapshot_id] = data.copy()
     print(f"[CACHE] Cached snapshot data for {snapshot_id}")
 
+    # PERSISTENCE FIX: Also save snapshot to disk as backup (survives restarts)
+    try:
+        import json
+        import os
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        snapshot_file = os.path.join(cache_dir, f'snapshot_{snapshot_id}.json')
+        with open(snapshot_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        print(f"[DISK CACHE] Saved snapshot to {snapshot_file}")
+    except Exception as disk_err:
+        print(f"[DISK CACHE] Failed to save snapshot to disk: {disk_err}")
+
     # Save snapshot data to browser localStorage (ENCRYPTED)
     try:
         localS = _get_local_storage()
@@ -321,6 +364,25 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
             print(f"[CACHE HIT] User: {cached_data.get('input_user_name', 'NOT FOUND')}")
             return cached_data.copy()
 
+    # PERSISTENCE FIX: Try loading from disk cache (survives restarts)
+    try:
+        import json
+        import os
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+        snapshot_file = os.path.join(cache_dir, f'snapshot_{snapshot_id}.json')
+        if os.path.exists(snapshot_file):
+            with open(snapshot_file, 'r') as f:
+                disk_data = json.load(f)
+            print(f"[DISK CACHE HIT] Loaded snapshot {snapshot_id} from disk")
+            print(f"[DISK CACHE HIT] User: {disk_data.get('input_user_name', 'NOT FOUND')}")
+            # Cache it in session_state for next time
+            if '_cached_snapshots' not in st.session_state:
+                st.session_state['_cached_snapshots'] = {}
+            st.session_state['_cached_snapshots'][snapshot_id] = disk_data.copy()
+            return disk_data
+    except Exception as disk_err:
+        print(f"[DISK CACHE] Failed to load snapshot from disk: {disk_err}")
+
     # Check if this is a demo scenario (by ID or name from index)
     index = get_snapshots_index()
     for snapshot in index.get('snapshots', []):
@@ -351,7 +413,7 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
                 print(f"[WARN] Decryption failed for snapshot: {snapshot_key}")
                 return None
         else:
-            print(f"[ERROR] ❌ No data found in localStorage for key: {snapshot_key}")
+            print(f"[ERROR] No data found in localStorage for key: {snapshot_key}")
             return None
 
     except Exception as e:
@@ -492,13 +554,13 @@ def get_current_snapshot() -> Optional[Dict[str, Any]]:
         print(f"[DEBUG get_current_snapshot] Loading snapshot: {current_id}")
         data = load_snapshot(current_id)
         if data:
-            print(f"[DEBUG get_current_snapshot] ✅ Successfully loaded snapshot {current_id}")
+            print(f"[DEBUG get_current_snapshot] OK Successfully loaded snapshot {current_id}")
             print(f"[DEBUG get_current_snapshot] User name: {data.get('input_user_name', 'NOT FOUND')}")
         else:
-            print(f"[DEBUG get_current_snapshot] ❌ Failed to load snapshot {current_id}")
+            print(f"[DEBUG get_current_snapshot] ERROR Failed to load snapshot {current_id}")
         return data
 
-    print(f"[DEBUG get_current_snapshot] ⚠️  No current_snapshot_id set!")
+    print(f"[DEBUG get_current_snapshot] WARNING No current_snapshot_id set!")
     return None
 
 

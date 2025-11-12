@@ -113,7 +113,7 @@ def load_intake_data_to_session():
             intake_data = get_current_snapshot()
 
             if intake_data:
-                print(f"[LOAD_INTAKE] ✅ Got snapshot data, user = {intake_data.get('input_user_name', 'MISSING')}")
+                print(f"[LOAD_INTAKE] OK Got snapshot data, user = {intake_data.get('input_user_name', 'MISSING')}")
                 # Load snapshot data into session state
                 for key, value in intake_data.items():
                     st.session_state[key] = value
@@ -127,16 +127,16 @@ def load_intake_data_to_session():
                         st.success(f"✅ Loaded data for: {user_name}")
                     st.session_state['intake_welcome_shown'] = True
             else:
-                print(f"[LOAD_INTAKE] ❌ get_current_snapshot() returned None")
+                print(f"[LOAD_INTAKE] ERROR get_current_snapshot() returned None")
 
         except Exception as e:
             # Silently fail - user will use sidebar inputs
-            print(f"[LOAD_INTAKE] ❌ Exception: {e}")
+            print(f"[LOAD_INTAKE] ERROR Exception: {e}")
             import traceback
             traceback.print_exc()
             pass
     else:
-        print(f"[LOAD_INTAKE] ⚠️  Skipping load - already_loaded=True")
+        print(f"[LOAD_INTAKE] WARNING Skipping load - already_loaded=True")
 
 
 # =============================================================================
