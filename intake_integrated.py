@@ -1305,9 +1305,9 @@ def show_intake_questionnaire():
                     st.session_state['just_saved'] = True
                     st.session_state['saved_snapshot_name'] = saved_name
 
-                    # Show BIG balloons celebration (2 seconds minimum!)
-                    st.balloons()
-                    time.sleep(2.0)  # Give user time to enjoy the celebration!
+                    # Set flag to show balloons AFTER rerun
+                    st.session_state['show_balloons_on_load'] = True
+
                     st.rerun()
 
         # Show save success message if exists
@@ -1375,6 +1375,11 @@ def show_intake_questionnaire():
                 except Exception as e:
                     st.error(f"❌ Import failed: {e}")
 
+        # Show balloons if flag is set (after save rerun)
+        if st.session_state.get('show_balloons_on_load', False):
+            st.balloons()
+            del st.session_state['show_balloons_on_load']  # Clear flag
+
         # Show success message after save (if just saved)
         if st.session_state.get('just_saved', False):
             st.success(f"✅ Plan saved successfully: **{st.session_state.get('saved_snapshot_name', 'Your Plan')}**")
@@ -1396,6 +1401,9 @@ def show_intake_questionnaire():
                     type="primary",
                     use_container_width=True
                 ):
+                    # Show balloons celebration for completing INTAKE!
+                    st.balloons()
+
                     # CRITICAL: Clear intake_data_loaded flag to force Analysis to load saved snapshot
                     if 'intake_data_loaded' in st.session_state:
                         del st.session_state['intake_data_loaded']

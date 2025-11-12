@@ -366,12 +366,32 @@ def show_family_page(existing, save_payload, go_to_page):
         ("Start Age","Int64"),("Years","Int64")
     ])
 
-    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
+    st.info("💡 **HOW TO USE:** Click directly in cells to edit. Data saves automatically as you type!")
+
+    # CRITICAL FIX: Use on_change callback to persist immediately
+    def save_children_data():
+        """Callback to save children data immediately on change"""
+        edited = st.session_state.children_editor
+        if edited is not None and not edited.get('edited_rows', {}) and not edited.get('added_rows', []) and not edited.get('deleted_rows', []):
+            return  # No changes
+
+        # Get the current dataframe state
+        current_df = st.session_state.get('_children_df_state', children_df)
+
+        # Save to temp_children immediately
+        if not current_df.empty:
+            current_df["Birth Year"] = pd.to_numeric(current_df["Birth Year"], errors="coerce").astype("Int64")
+            current_df["Scholarship %"] = pd.to_numeric(current_df["Scholarship %"], errors="coerce").astype("Int64")
+            current_df["Start Age"] = pd.to_numeric(current_df["Start Age"], errors="coerce").astype("Int64")
+            current_df["Years"] = pd.to_numeric(current_df["Years"], errors="coerce").astype("Int64")
+            st.session_state.temp_children = current_df.to_dict("records")
+
     edited_children = st.data_editor(
         children_df,
         num_rows="dynamic",
         use_container_width=True,
         key="children_editor",
+        on_change=save_children_data,
         column_config={
             "Name": st.column_config.TextColumn("Child Name", required=True),
             "Birth Year": st.column_config.NumberColumn("Birth Year", min_value=1900, max_value=2045, step=1, help="Child's birth year (1900-2045)"),
@@ -385,6 +405,10 @@ def show_family_page(existing, save_payload, go_to_page):
             "Years": st.column_config.NumberColumn("Years", min_value=0, max_value=10, step=1),
         },
     )
+
+    # Store current state for callback
+    st.session_state['_children_df_state'] = edited_children
+
     # normalize dtypes before persisting
     if not edited_children.empty:
         edited_children["Birth Year"] = pd.to_numeric(edited_children["Birth Year"], errors="coerce").astype("Int64")
@@ -411,19 +435,33 @@ def show_family_page(existing, save_payload, go_to_page):
             })
     inherit_df = pd.DataFrame(st.session_state.temp_inherit)
     inherit_df = _ensure_columns(inherit_df, [("Year","Int64"),("Amount","float"),("Taxable?","bool")])
-    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
+    st.info("💡 **HOW TO USE:** Click directly in cells to edit. Data saves automatically as you type!")
+
+    # CRITICAL FIX: Use on_change callback for inheritances
+    def save_inherit_data():
+        """Callback to save inheritance data immediately on change"""
+        current_df = st.session_state.get('_inherit_df_state', inherit_df)
+        if not current_df.empty:
+            current_df["Year"] = pd.to_numeric(current_df["Year"], errors="coerce").astype("Int64")
+            current_df["Amount"] = current_df["Amount"].apply(_to_float)
+            st.session_state.temp_inherit = current_df.to_dict("records")
 
     edited_inherit = st.data_editor(
         inherit_df,
         num_rows="dynamic",
         use_container_width=True,
         key="inherit_editor",
+        on_change=save_inherit_data,
         column_config={
             "Year": st.column_config.NumberColumn("Year", min_value=2020, max_value=2075, step=1, help="Year of expected inheritance (2020-2075)"),
             "Amount": st.column_config.NumberColumn("Amount ($)", min_value=0, step=1000, format="$%.0f"),
             "Taxable?": st.column_config.CheckboxColumn("Taxable?"),
         },
     )
+
+    # Store current state for callback
+    st.session_state['_inherit_df_state'] = edited_inherit
+
     if not edited_inherit.empty:
         edited_inherit["Year"] = pd.to_numeric(edited_inherit["Year"], errors="coerce").astype("Int64")
         # Allow users to type $… strings; convert when present
@@ -442,19 +480,33 @@ def show_family_page(existing, save_payload, go_to_page):
         st.session_state.temp_goals = existing.get("goals_list", existing.get("goals_data", [])) or []
     goals_df = pd.DataFrame(st.session_state.temp_goals)
     goals_df = _ensure_columns(goals_df, [("goal","str"),("amount","float"),("year","Int64")])
-    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
+    st.info("💡 **HOW TO USE:** Click directly in cells to edit. Data saves automatically as you type!")
+
+    # CRITICAL FIX: Use on_change callback for goals
+    def save_goals_data():
+        """Callback to save goals data immediately on change"""
+        current_df = st.session_state.get('_goals_df_state', goals_df)
+        if not current_df.empty:
+            current_df["amount"] = current_df["amount"].apply(_to_float)
+            current_df["year"] = pd.to_numeric(current_df["year"], errors="coerce").astype("Int64")
+            st.session_state.temp_goals = current_df.to_dict('records')
 
     edited_goals = st.data_editor(
         goals_df,
         num_rows="dynamic",
         use_container_width=True,
         key="goals_editor",
+        on_change=save_goals_data,
         column_config={
             "goal": st.column_config.TextColumn("Goal Name", required=True, help="e.g., Retirement Fund, Down Payment, World Travel"),
             "amount": st.column_config.NumberColumn("Target Amount", min_value=0, step=1000, format="$%.0f"),
             "year": st.column_config.NumberColumn("Target Year", min_value=2020, max_value=2075, step=1),
         },
     )
+
+    # Store current state for callback
+    st.session_state['_goals_df_state'] = edited_goals
+
     if not edited_goals.empty:
         edited_goals["amount"] = edited_goals["amount"].apply(_to_float)
         edited_goals["year"] = pd.to_numeric(edited_goals["year"], errors="coerce").astype("Int64")
@@ -474,14 +526,23 @@ def show_family_page(existing, save_payload, go_to_page):
     
     custom_df = pd.DataFrame(st.session_state.temp_custom_expenses)
     custom_df = _ensure_columns(custom_df, [("Name","str"),("Monthly Amount","float"),("Category","str")])
-    
-    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
-    
+
+    st.info("💡 **HOW TO USE:** Click directly in cells to edit. Data saves automatically as you type!")
+
+    # CRITICAL FIX: Use on_change callback for custom expenses
+    def save_custom_expenses_data():
+        """Callback to save custom expenses data immediately on change"""
+        current_df = st.session_state.get('_custom_df_state', custom_df)
+        if not current_df.empty:
+            current_df["Monthly Amount"] = current_df["Monthly Amount"].apply(_to_float)
+            st.session_state.temp_custom_expenses = current_df.to_dict("records")
+
     edited_custom = st.data_editor(
         custom_df,
         num_rows="dynamic",
         use_container_width=True,
         key="custom_expenses_editor",
+        on_change=save_custom_expenses_data,
         column_config={
             "Name": st.column_config.TextColumn("Expense Name", required=True, help="e.g., Autism School Costs, Special Therapy"),
             "Monthly Amount": st.column_config.NumberColumn("Monthly Amount ($)", min_value=0, step=50, format="$%.2f"),
@@ -492,7 +553,10 @@ def show_family_page(existing, save_payload, go_to_page):
             ),
         },
     )
-    
+
+    # Store current state for callback
+    st.session_state['_custom_df_state'] = edited_custom
+
     if not edited_custom.empty:
         edited_custom["Monthly Amount"] = edited_custom["Monthly Amount"].apply(_to_float)
     st.session_state.temp_custom_expenses = edited_custom.to_dict("records") if not edited_custom.empty else []
