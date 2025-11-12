@@ -363,7 +363,12 @@ def save_payload(data, snapshot_name=None):
 
         # CRITICAL: Set this snapshot as current so Analysis loads it
         from utils.snapshot_manager import set_current_snapshot
-        set_current_snapshot(snapshot_id)
+        success = set_current_snapshot(snapshot_id)
+
+        # Debug output
+        print(f"[SAVE_PAYLOAD] Saved snapshot: {snapshot_id}")
+        print(f"[SAVE_PAYLOAD] User name in saved data: {data.get('input_user_name', 'MISSING')}")
+        print(f"[SAVE_PAYLOAD] set_current_snapshot returned: {success}")
 
         return True
 

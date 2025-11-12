@@ -98,13 +98,17 @@ def load_intake_data_to_session():
 
     already_loaded = 'intake_data_loaded' in st.session_state
 
+    print(f"[LOAD_INTAKE] already_loaded flag = {already_loaded}")
+
     # Only load if not already loaded in this session
     if not already_loaded:
         try:
             # Try to get current snapshot
+            print(f"[LOAD_INTAKE] Calling get_current_snapshot()...")
             intake_data = get_current_snapshot()
 
             if intake_data:
+                print(f"[LOAD_INTAKE] ✅ Got snapshot data, user = {intake_data.get('input_user_name', 'MISSING')}")
                 # Load snapshot data into session state
                 for key, value in intake_data.items():
                     st.session_state[key] = value
@@ -115,11 +119,17 @@ def load_intake_data_to_session():
                 user_name = intake_data.get('input_user_name', '')
                 if user_name:
                     st.success(f"✅ Loaded data for: {user_name}")
+            else:
+                print(f"[LOAD_INTAKE] ❌ get_current_snapshot() returned None")
 
         except Exception as e:
             # Silently fail - user will use sidebar inputs
-            print(f"DEBUG: Could not load snapshot: {e}")
+            print(f"[LOAD_INTAKE] ❌ Exception: {e}")
+            import traceback
+            traceback.print_exc()
             pass
+    else:
+        print(f"[LOAD_INTAKE] ⚠️  Skipping load - already_loaded=True")
 
 
 # =============================================================================
