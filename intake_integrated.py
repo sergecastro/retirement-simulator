@@ -1353,6 +1353,10 @@ def show_intake_questionnaire():
                 auto_save_name = f"Auto-saved - {datetime.now().strftime('%b %d, %Y %I:%M %p')}"
                 save_payload(data, snapshot_name=auto_save_name)
 
+                # CRITICAL: Clear intake_data_loaded flag so Analysis loads fresh snapshot
+                if 'intake_data_loaded' in st.session_state:
+                    del st.session_state['intake_data_loaded']
+
                 # Show celebration
                 st.balloons()
                 st.success("✅ Plan auto-saved! Switching to Analysis mode...")
@@ -1361,10 +1365,10 @@ def show_intake_questionnaire():
                 st.session_state.current_mode = 'Analysis'
                 st.session_state.mode_selected = True
 
-                # Brief pause so user sees success
-                time.sleep(1.5)
+                # Brief pause so user sees success message and balloons
+                time.sleep(2.0)
 
-                # Rerun to Analysis mode - file will be loaded automatically
+                # Rerun to Analysis mode - snapshot will be loaded automatically
                 st.rerun()
 
     # Footer
