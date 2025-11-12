@@ -1342,43 +1342,86 @@ def show_intake_questionnaire():
 
         st.divider()
         st.markdown("### 🎉 Ready to Continue?")
-        st.markdown("**Choose what to do next:**")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🔄 Start Over (Re-enter Data)", use_container_width=True):
-                # Reset to profile page
-                go_to_page('profile')
-        with col2:
-            # ✅ FOOLPROOF FIX: Re-save file to update timestamp
-            if st.button(
-                "📊 COMPLETE & Go to Analysis Mode",
-                type="primary",
-                use_container_width=True,
-                key="complete_intake_btn"
-            ):
-                # Collect all data from session_state before completing
-                data = collect_current_form_data()
-                auto_save_name = f"Auto-saved - {datetime.now().strftime('%b %d, %Y %I:%M %p')}"
-                save_payload(data, snapshot_name=auto_save_name)
+        # TWO-STEP PROCESS: Must save BEFORE going to Analysis
+        if not st.session_state.get('intake_snapshot_saved', False):
+            # STEP 1: Save Snapshot First
+            st.markdown("**Step 1: Save Your Plan**")
+            st.info("💾 Save your data so you can return to it later, even after closing your browser!")
 
-                # CRITICAL: Clear intake_data_loaded flag so Analysis loads fresh snapshot
-                if 'intake_data_loaded' in st.session_state:
-                    del st.session_state['intake_data_loaded']
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                snapshot_name = st.text_input(
+                    "Name your plan:",
+                    value=f"My Plan - {datetime.now().strftime('%b %d, %Y')}",
+                    help="Give your retirement plan a memorable name"
+                )
+            with col2:
+                st.write("")  # Spacer for alignment
+                st.write("")  # Spacer for alignment
 
-                # Show celebration
-                st.balloons()
-                st.success("✅ Plan auto-saved! Switching to Analysis mode...")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔄 Start Over (Re-enter Data)", use_container_width=True):
+                    # Reset to profile page
+                    go_to_page('profile')
 
-                # Set mode flags
-                st.session_state.current_mode = 'Analysis'
-                st.session_state.mode_selected = True
+            with col2:
+                if st.button(
+                    "💾 SAVE PLAN",
+                    type="primary",
+                    use_container_width=True,
+                    help="Save your data to browser storage"
+                ):
+                    # Collect all data from session_state
+                    data = collect_current_form_data()
 
-                # Brief pause so user sees success message and balloons
-                time.sleep(2.0)
+                    # Save with user's custom name
+                    success = save_payload(data, snapshot_name=snapshot_name)
 
-                # Rerun to Analysis mode - snapshot will be loaded automatically
-                st.rerun()
+                    if success:
+                        # Mark as saved
+                        st.session_state['intake_snapshot_saved'] = True
+                        st.session_state['saved_snapshot_name'] = snapshot_name
+
+                        # CRITICAL: Clear intake_data_loaded flag so Analysis loads fresh snapshot
+                        if 'intake_data_loaded' in st.session_state:
+                            del st.session_state['intake_data_loaded']
+
+                        # Show celebration
+                        st.balloons()
+                        st.success(f"✅ '{snapshot_name}' saved successfully!")
+                        time.sleep(1.5)
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to save. Please try again.")
+
+        else:
+            # STEP 2: Now user can go to Analysis
+            st.success(f"✅ Plan saved: **{st.session_state.get('saved_snapshot_name', 'Your Plan')}**")
+            st.markdown("**Step 2: Continue to Analysis**")
+            st.info("🎯 Your data is safe! You can now analyze your retirement plan.")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("📝 Edit Plan", use_container_width=True):
+                    # Allow user to go back and edit
+                    st.session_state['intake_snapshot_saved'] = False
+                    st.rerun()
+
+            with col2:
+                if st.button(
+                    "📊 GO TO ANALYSIS →",
+                    type="primary",
+                    use_container_width=True
+                ):
+                    # Set mode flags
+                    st.session_state.current_mode = 'Analysis'
+                    st.session_state.mode_selected = True
+                    st.session_state['intake_snapshot_saved'] = False  # Reset for next time
+
+                    # Switch to Analysis mode
+                    st.rerun()
 
     # Footer
     st.divider()
