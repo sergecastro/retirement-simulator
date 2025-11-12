@@ -360,6 +360,11 @@ def save_payload(data, snapshot_name=None):
         st.session_state['intake_data_saved'] = True
         st.session_state['intake_data_timestamp'] = time.time()
         st.session_state['last_snapshot_id'] = snapshot_id
+
+        # CRITICAL: Set this snapshot as current so Analysis loads it
+        from utils.snapshot_manager import set_current_snapshot
+        set_current_snapshot(snapshot_id)
+
         return True
 
     return False
@@ -374,6 +379,85 @@ def go_to_page(page_name):
     """Navigate to a different intake page"""
     st.session_state.intake_current_page = page_name
     st.rerun()
+
+
+def load_demo_data():
+    """Load demo data (John Smith) into all session_state fields for testing/demonstration"""
+    # Profile
+    st.session_state['input_user_name'] = "John Smith"
+    st.session_state['input_age'] = 65
+    st.session_state['input_partner_exists'] = True
+    st.session_state['input_partner_name'] = "Jane Smith"
+    st.session_state['input_partner_age'] = 63
+
+    # Income
+    st.session_state['input_salary_wages'] = 0.0
+    st.session_state['input_self_employment_income'] = 0.0
+    st.session_state['input_rental_income'] = 0.0
+    st.session_state['input_investment_income'] = 2000.0
+    st.session_state['input_social_security_income'] = 3000.0
+    st.session_state['input_pension_income'] = 3000.0
+    st.session_state['input_other_income'] = 0.0
+    st.session_state['input_total_income'] = 8000.0
+
+    # Expenses
+    st.session_state['input_housing_expenses'] = 1500.0
+    st.session_state['input_utilities_expenses'] = 300.0
+    st.session_state['input_groceries_expenses'] = 600.0
+    st.session_state['input_transportation_expenses'] = 400.0
+    st.session_state['input_healthcare_expenses'] = 500.0
+    st.session_state['input_insurance_expenses'] = 300.0
+    st.session_state['input_property_tax_expenses'] = 400.0
+    st.session_state['input_entertainment_expenses'] = 200.0
+    st.session_state['input_restaurant_expenses'] = 300.0
+    st.session_state['input_travel_expenses'] = 400.0
+    st.session_state['input_education_expenses'] = 0.0
+    st.session_state['input_childcare_expenses'] = 0.0
+    st.session_state['input_clothing_expenses'] = 100.0
+    st.session_state['input_charitable_donations'] = 200.0
+    st.session_state['input_miscellaneous_expenses'] = 200.0
+    st.session_state['input_other_expenses'] = 100.0
+    st.session_state['input_total_expenses'] = 5000.0
+
+    # Custom expenses (empty)
+    st.session_state['custom_expenses_list'] = []
+    st.session_state['custom_expenses'] = []
+
+    # Assets
+    st.session_state['input_ira_balance'] = 250000.0
+    st.session_state['input_four01k_403b_balance'] = 250000.0
+    st.session_state['input_partner_ira_balance'] = 150000.0
+    st.session_state['input_partner_four01k_403b_balance'] = 150000.0
+    st.session_state['input_taxable_investment_accounts'] = 100000.0
+    st.session_state['input_high_yield_savings_account'] = 50000.0
+    st.session_state['input_hsa_balance'] = 10000.0
+    st.session_state['input_five29_plan_balance'] = 0.0
+    st.session_state['input_primary_residence_value'] = 400000.0
+    st.session_state['input_secondary_residence_value'] = 0.0
+    st.session_state['input_vehicles_value'] = 30000.0
+    st.session_state['input_jewelry_collectibles_value'] = 10000.0
+    st.session_state['input_business_ownership_value'] = 0.0
+    st.session_state['input_cryptocurrency_holdings'] = 0.0
+    st.session_state['input_other_assets'] = 0.0
+
+    # Liabilities
+    st.session_state['input_mortgage_balance'] = 150000.0
+    st.session_state['input_auto_loan_balance'] = 0.0
+    st.session_state['input_student_loan_balance'] = 0.0
+    st.session_state['input_credit_card_debt'] = 0.0
+    st.session_state['input_other_liabilities'] = 0.0
+
+    # Family data (empty - user can add their own)
+    st.session_state['temp_children'] = []
+    st.session_state['children_list'] = []
+    st.session_state['children_rows'] = []
+    st.session_state['temp_inherit'] = []
+    st.session_state['inheritance_list'] = []
+    st.session_state['inherit_rows'] = []
+    st.session_state['temp_goals'] = []
+    st.session_state['goals_list'] = []
+    st.session_state['goals_data'] = []
+    st.session_state['temp_custom_expenses'] = []
 
 
 # ========== ✅ CRITICAL FIX: CALLBACK FUNCTION FOR COMPLETE BUTTON ==========
@@ -487,6 +571,12 @@ def show_intake_questionnaire():
 
         st.divider()
         st.markdown("*Please enter your basic information. You can enter 0 or leave fields empty if not applicable.*")
+
+        # Demo Data Loader Button
+        if st.button("📋 Load Demo Data (John Smith)", help="Pre-fill all forms with sample data that you can modify"):
+            load_demo_data()
+            st.success("✅ Demo data loaded! You can now modify any fields and save as your own.")
+            st.rerun()
 
         # Widgets WITHOUT key= - we'll manually save on button click
         user_name = st.text_input(
@@ -852,7 +942,8 @@ def show_intake_questionnaire():
         st.metric("Total Monthly Expenses", f"${total_expenses:,.2f}")
 
         # Intelligent validation (GENIUS DESIGN - KEEP ALL!)
-        total_income = float(0.0)
+        # Get total income from session_state for validation
+        total_income = st.session_state.get('input_total_income', 0.0)
 
         level, message = validate_total_expenses(total_expenses)
         show_validation_message(level, message)
