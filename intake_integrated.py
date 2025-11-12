@@ -570,13 +570,17 @@ def show_intake_questionnaire():
             """)
 
         st.divider()
-        st.markdown("*Please enter your basic information. You can enter 0 or leave fields empty if not applicable.*")
 
         # Demo Data Loader Button
         if st.button("📋 Load Demo Data (John Smith)", help="Pre-fill all forms with sample data that you can modify"):
             load_demo_data()
-            st.success("✅ Demo data loaded! You can now modify any fields and save as your own.")
             st.rerun()
+
+        # Show success message if demo data was just loaded
+        if st.session_state.get('input_user_name') == "John Smith":
+            st.info("ℹ️ Demo data loaded! You can now modify any fields and save as your own.")
+
+        st.markdown("*Please enter your basic information. You can enter 0 or leave fields empty if not applicable.*")
 
         # Widgets WITHOUT key= - we'll manually save on button click
         user_name = st.text_input(
