@@ -37,25 +37,31 @@ def collect_user_inputs():
         age_group_index = 0
     
     age_group = st.selectbox(
-        "Age Group:", 
-        age_group_options, 
+        "Age Group:",
+        age_group_options,
         index=age_group_index,
-        key="input_age_group"
+        key="input_age_group",
+        disabled=True,
+        help="📝 Edit in INTAKE mode"
     )
     
     # CRITICAL FIX: Read from session state for scenario loading
     age = st.number_input(
-        "Your Age:", 
-        min_value=18, 
-        max_value=120, 
+        "Your Age:",
+        min_value=18,
+        max_value=120,
         value=safe_int(st.session_state.get('input_age', 35), 35),
-        key="input_age"
+        key="input_age",
+        disabled=True,
+        help="📝 Edit in INTAKE mode"
     )
     
     partner_exists = st.checkbox(
-        "Have Partner?", 
+        "Have Partner?",
         value=st.session_state.get('input_partner_exists', False),
-        key="input_partner_exists"
+        key="input_partner_exists",
+        disabled=True,
+        help="📝 Edit in INTAKE mode"
     )
     
     partner_name = ""
@@ -63,16 +69,20 @@ def collect_user_inputs():
     
     if partner_exists:
         partner_name = st.text_input(
-            "Partner Name:", 
+            "Partner Name:",
             value=st.session_state.get('input_partner_name', ''),
-            key="input_partner_name"
+            key="input_partner_name",
+            disabled=True,
+            help="📝 Edit in INTAKE mode"
         )
         partner_age = st.number_input(
-            "Partner Age:", 
-            min_value=18, 
-            max_value=120, 
+            "Partner Age:",
+            min_value=18,
+            max_value=120,
             value=safe_int(st.session_state.get('input_partner_age', age), age),
-            key="input_partner_age"
+            key="input_partner_age",
+            disabled=True,
+            help="📝 Edit in INTAKE mode"
         )
     else:
         # Clear partner data when not needed
