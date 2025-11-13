@@ -391,6 +391,18 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                             with st.expander("💾 Save This Comparison Scenario", expanded=False):
                                 print("[DEBUG SAVE] Expander opened")
                                 st.write("🔍 [DEBUG] Save Comparison expander opened")
+
+                                # CHECK FOR SUCCESS MESSAGE FROM PREVIOUS SAVE (after reload)
+                                if "comparison_save_success" in st.session_state:
+                                    print("[DEBUG SAVE] ✓ Found success message in session state")
+                                    success_data = st.session_state.comparison_save_success
+                                    st.success(f"✅ Comparison saved: {success_data['name']}")
+                                    st.balloons()
+                                    st.info(f"📊 Comparison ID: `{success_data['id']}`\n\nYou can now load this comparison from the sidebar.")
+                                    # Clear the flag so it doesn't show again
+                                    del st.session_state.comparison_save_success
+                                    print("[DEBUG SAVE] ✓ Success message displayed and cleared from session state")
+
                                 st.markdown("""
                                 Save this comparison to review later or compare with other scenarios.
                                 Only your adjustments are saved (not your full plan data).
@@ -532,9 +544,18 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
 
                                                     if comparison_id:
                                                         print(f"[DEBUG SAVE] ===== SUCCESS! Comparison ID: {comparison_id} =====")
-                                                        st.success(f"✅ Comparison saved: {comparison_name}")
-                                                        st.balloons()
-                                                        st.info(f"📊 Comparison ID: `{comparison_id}`\n\nYou can now load this comparison from the sidebar.")
+
+                                                        # STORE SUCCESS IN SESSION STATE (survives reload!)
+                                                        st.session_state.comparison_save_success = {
+                                                            "name": comparison_name,
+                                                            "id": comparison_id
+                                                        }
+                                                        print("[DEBUG SAVE] ✓ Stored success message in session state")
+
+                                                        # Force a rerun to show the success message
+                                                        print("[DEBUG SAVE] ✓ Triggering rerun to display success message")
+                                                        st.rerun()
+
                                                     else:
                                                         print(f"[DEBUG SAVE] ERROR: save_comparison_scenario returned empty/None")
                                                         st.error("❌ Failed to save comparison. Please try again.")
