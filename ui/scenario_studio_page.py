@@ -774,6 +774,9 @@ def render_scenario_studio_page():
                     if comparison_id:
                         print(f"[SCENARIO STUDIO] ✅ Save successful! ID: {comparison_id}")
 
+                        # 🎈 CELEBRATION!
+                        st.balloons()
+
                         # Set flags
                         st.session_state['scenario_just_saved'] = True
                         st.session_state['last_saved_name'] = pending['name']
