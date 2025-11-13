@@ -716,19 +716,9 @@ def render_scenario_studio_page():
 
         st.markdown("---")
         st.markdown("---")
-
-        # Check if we just saved - show message and skip button
-        if st.session_state.get('scenario_just_saved'):
-            st.success(f"✅ **Saved!** Scenario '{st.session_state.get('last_saved_name')}' "
-                     f"(ID: {st.session_state.get('last_saved_id', '')[:8]}...)")
-            st.info("🔄 **Reload the page** to see it in your saved scenarios list below.")
-            # Clear the flag
-            st.session_state['scenario_just_saved'] = False
-        else:
-            # Show save section normally
-            st.markdown("### 💾 Save This Scenario")
-            st.markdown(f"**Scenario:** {pending['name']}")
-            st.markdown("This scenario has been simulated. Click below to save it permanently.")
+        st.markdown("### 💾 Save This Scenario")
+        st.markdown(f"**Scenario:** {pending['name']}")
+        st.markdown("This scenario has been simulated. Click below to save it permanently.")
 
             col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
 
@@ -779,16 +769,12 @@ def render_scenario_studio_page():
                             # 🎈 CELEBRATION!
                             st.balloons()
 
-                            # Set flags
-                            st.session_state['scenario_just_saved'] = True
-                            st.session_state['last_saved_name'] = pending['name']
-                            st.session_state['last_saved_id'] = comparison_id
-
-                            # Clear pending
+                            # Clear pending scenario
                             del st.session_state['pending_scenario']
 
-                            # Rerun
-                            st.rerun()
+                            # Show success inline (NO RERUN!)
+                            st.success(f"✅ **Saved!** Scenario '{pending['name']}' (ID: {comparison_id[:8]}...)")
+                            st.info("🔄 **Reload the page manually** to see it in your saved scenarios list below.")
                         else:
                             st.error("❌ Save failed - no comparison ID returned")
                             print(f"[SCENARIO STUDIO] ❌ No ID returned")
