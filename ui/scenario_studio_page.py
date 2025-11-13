@@ -59,12 +59,22 @@ def render_scenario_studio_page():
 
     with st.form(key="create_scenario_form"):
 
-        # Scenario name
+        # Scenario name - PROMINENT & MANDATORY
+        st.markdown("#### 📝 Scenario Name (Required)")
+        st.markdown("**Give this scenario a unique, memorable name before adjusting parameters**")
+
         scenario_name = st.text_input(
-            "📝 Scenario Name",
-            placeholder="e.g., High Income, Early Retirement, Conservative Strategy",
-            help="Give this scenario a memorable name"
+            "Enter scenario name:",
+            placeholder="e.g., High Income Strategy, Early Retirement at 60, Conservative Plan",
+            help="⚠️ REQUIRED: You must enter a scenario name to run the simulation",
+            label_visibility="collapsed"
         )
+
+        # Show warning if name is empty (visual cue)
+        if not scenario_name or scenario_name.strip() == "":
+            st.warning("⚠️ **Please enter a scenario name above before running the simulation**")
+        else:
+            st.success(f"✅ Scenario name set: **{scenario_name}**")
 
         # Get all base plan values from current_snapshot for defaults
         # The snapshot stores raw input values with 'input_' prefix
