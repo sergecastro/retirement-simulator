@@ -513,64 +513,228 @@ def render_scenario_studio_page():
         if not scenario_name or scenario_name.strip() == "":
             st.error("⚠️ **Please enter a scenario name** before running the simulation.")
         else:
-            # Store scenario parameters in session state for Step 4
-            st.session_state['pending_scenario'] = {
-                'name': scenario_name,
-                'base_plan_id': base_plan_id,
-                'adjustments': {
-                    # Income
-                    'salary_wages': adj_salary_wages,
-                    'social_security_income': adj_social_security,
-                    'pension_income': adj_pension,
-                    'investment_income': adj_investment_income,
-                    'other_income': adj_other_income,
+            # =============================================================================
+            # RUN SIMULATION
+            # =============================================================================
 
-                    # Expenses
-                    'housing_expenses': adj_housing_expenses,
-                    'healthcare_expenses': adj_healthcare_expenses,
-                    'groceries_expenses': adj_groceries,
-                    'transportation_expenses': adj_transportation,
-                    'other_expenses': adj_other_expenses,
+            st.markdown("---")
+            st.markdown("### 🔍 Running Simulation...")
 
-                    # Timing
-                    'age': adj_age,
-                    'retirement_age': adj_retirement_age,
-                    'life_expectancy': adj_life_expectancy,
-                    'ss_claiming_age': adj_ss_claiming_age,
-                    'partner_exists': adj_partner_exists,
-                    'partner_age': adj_partner_age,
+            with st.spinner(f"Calculating '{scenario_name}' retirement trajectory..."):
+                try:
+                    from simulation_core import run_simulation
 
-                    # Investment
-                    'return_rate': adj_return_rate,
-                    'inflation_rate': adj_inflation_rate,
-                    'stocks_allocation': adj_stocks_allocation,
-                    'bonds_allocation': adj_bonds_allocation,
+                    # Calculate total income and expenses
+                    total_income = (adj_salary_wages + adj_social_security +
+                                  adj_pension + adj_investment_income + adj_other_income)
 
-                    # Accounts
-                    'ira_balance': adj_ira_balance,
-                    'four01k_403b_balance': adj_401k_balance,
-                    'roth_balance': adj_roth_balance,
-                    'hsa_balance': adj_hsa_balance,
-                    'taxable_investment_accounts': adj_taxable_accounts,
-                    'high_yield_savings_account': adj_savings,
-                    'partner_ira_balance': adj_partner_ira,
-                    'partner_four01k_403b_balance': adj_partner_401k,
+                    total_expenses = (adj_housing_expenses + adj_healthcare_expenses +
+                                    adj_groceries + adj_transportation + adj_other_expenses)
 
-                    # Real Estate
-                    'primary_residence_value': adj_home_value,
-                    'mortgage_balance': adj_mortgage_balance,
-                    'vehicles_value': adj_vehicles_value,
-                    'other_assets': adj_other_assets,
-                    'other_liabilities': adj_other_liabilities,
-                }
-            }
+                    # Calculate liquid assets (retirement accounts + taxable + savings)
+                    liquid_assets = (adj_ira_balance + adj_401k_balance + adj_roth_balance +
+                                   adj_hsa_balance + adj_taxable_accounts + adj_savings +
+                                   adj_partner_ira + adj_partner_401k)
 
-            st.success(f"✅ **Scenario '{scenario_name}' captured!**")
-            st.info("🚧 **Step 4: Simulation and results preview coming next...**")
+                    # Calculate total liabilities
+                    total_liabilities = adj_mortgage_balance + adj_other_liabilities
 
-            # Show what was captured
-            with st.expander("📋 Show captured parameters"):
-                st.json(st.session_state['pending_scenario']['adjustments'])
+                    # Calculate simulation years (from current age to life expectancy)
+                    simulation_years = adj_life_expectancy - adj_age
+
+                    # Monthly surplus
+                    monthly_surplus = (total_income - total_expenses) / 12
+
+                    # Run the simulation!
+                    results = run_simulation(
+                        age=adj_age,
+                        partner_exists=adj_partner_exists,
+                        partner_age=adj_partner_age if adj_partner_exists else adj_age,
+                        total_income=total_income,
+                        total_expenses=total_expenses,
+                        combined_financial_assets=liquid_assets,
+                        primary_residence_value=adj_home_value,
+                        secondary_residence_value=0,  # Not captured in form yet
+                        combined_other_assets_total=adj_other_assets + adj_vehicles_value,
+                        total_liabilities_local=total_liabilities,
+                        partner_liabilities=0,
+                        tax_rate=22.0,  # Default tax rate
+                        inflation_rate=adj_inflation_rate * 100,  # Convert to percentage
+                        investment_return_rate=adj_return_rate * 100,  # Convert to percentage
+                        simulation_years=simulation_years,
+                        mc_iterations=0,  # No Monte Carlo for quick preview
+                        goal_costs={},
+                        college_inflation_pct=4.0,
+                        base_public_in=20000,
+                        base_public_out=40000,
+                        base_private=60000,
+                        ira_balance=adj_ira_balance,
+                        four01k_403b_balance=adj_401k_balance,
+                        partner_ira_balance=adj_partner_ira,
+                        partner_four01k_403b_balance=adj_partner_401k,
+                        monthly_surplus=monthly_surplus,
+                        combined_total_liabilities=total_liabilities
+                    )
+
+                    if results:
+                        st.success(f"✅ **Simulation complete for '{scenario_name}'!**")
+
+                        # =============================================================================
+                        # RESULTS PREVIEW
+                        # =============================================================================
+
+                        st.markdown("---")
+                        st.markdown("### 📊 Results Preview")
+
+                        # Key metrics in columns
+                        col_r1, col_r2, col_r3 = st.columns(3)
+
+                        with col_r1:
+                            final_savings = results.get('final_savings', 0)
+                            st.metric(
+                                "Final Savings",
+                                f"${final_savings:,.0f}",
+                                help="Projected savings at life expectancy"
+                            )
+
+                        with col_r2:
+                            years_solvent = results.get('years_solvent', 0)
+                            st.metric(
+                                "Years Solvent",
+                                f"{years_solvent} years",
+                                help="How many years your money lasts"
+                            )
+
+                        with col_r3:
+                            final_net_worth = results.get('final_net_worth', 0)
+                            st.metric(
+                                "Final Net Worth",
+                                f"${final_net_worth:,.0f}",
+                                help="Total net worth at end"
+                            )
+
+                        # Additional metrics
+                        col_r4, col_r5, col_r6 = st.columns(3)
+
+                        with col_r4:
+                            health_score = results.get('health_score', 0)
+                            st.metric(
+                                "Financial Health Score",
+                                f"{health_score}/100",
+                                help="Overall financial health rating"
+                            )
+
+                        with col_r5:
+                            savings_rate = results.get('savings_rate', 0)
+                            st.metric(
+                                "Savings Rate",
+                                f"{savings_rate:.1f}%",
+                                help="Percentage of income saved"
+                            )
+
+                        with col_r6:
+                            emergency_months = results.get('emergency_fund_months', 0)
+                            st.metric(
+                                "Emergency Fund",
+                                f"{emergency_months:.1f} months",
+                                help="Months of expenses covered"
+                            )
+
+                        # Store results for comparison and saving
+                        st.session_state['pending_scenario'] = {
+                            'name': scenario_name,
+                            'base_plan_id': base_plan_id,
+                            'adjustments': {
+                                # Income
+                                'salary_wages': adj_salary_wages,
+                                'social_security_income': adj_social_security,
+                                'pension_income': adj_pension,
+                                'investment_income': adj_investment_income,
+                                'other_income': adj_other_income,
+
+                                # Expenses
+                                'housing_expenses': adj_housing_expenses,
+                                'healthcare_expenses': adj_healthcare_expenses,
+                                'groceries_expenses': adj_groceries,
+                                'transportation_expenses': adj_transportation,
+                                'other_expenses': adj_other_expenses,
+
+                                # Timing
+                                'age': adj_age,
+                                'retirement_age': adj_retirement_age,
+                                'life_expectancy': adj_life_expectancy,
+                                'ss_claiming_age': adj_ss_claiming_age,
+                                'partner_exists': adj_partner_exists,
+                                'partner_age': adj_partner_age,
+
+                                # Investment
+                                'return_rate': adj_return_rate,
+                                'inflation_rate': adj_inflation_rate,
+                                'stocks_allocation': adj_stocks_allocation,
+                                'bonds_allocation': adj_bonds_allocation,
+
+                                # Accounts
+                                'ira_balance': adj_ira_balance,
+                                'four01k_403b_balance': adj_401k_balance,
+                                'roth_balance': adj_roth_balance,
+                                'hsa_balance': adj_hsa_balance,
+                                'taxable_investment_accounts': adj_taxable_accounts,
+                                'high_yield_savings_account': adj_savings,
+                                'partner_ira_balance': adj_partner_ira,
+                                'partner_four01k_403b_balance': adj_partner_401k,
+
+                                # Real Estate
+                                'primary_residence_value': adj_home_value,
+                                'mortgage_balance': adj_mortgage_balance,
+                                'vehicles_value': adj_vehicles_value,
+                                'other_assets': adj_other_assets,
+                                'other_liabilities': adj_other_liabilities,
+                            },
+                            'simulation_results': results
+                        }
+
+                        # =============================================================================
+                        # SAVE SCENARIO BUTTON
+                        # =============================================================================
+
+                        st.markdown("---")
+                        st.markdown("### 💾 Save This Scenario")
+                        st.markdown("Click below to save this scenario for comparison.")
+
+                        col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
+
+                        with col_save2:
+                            if st.button(
+                                "💾 Save Scenario",
+                                type="primary",
+                                use_container_width=True,
+                                key="save_scenario_button"
+                            ):
+                                # Save using comparison_scenarios module
+                                from utils.comparison_scenarios import save_comparison_scenario
+
+                                try:
+                                    comparison_id = save_comparison_scenario(
+                                        base_plan_id=base_plan_id,
+                                        name=scenario_name,
+                                        description=f"Created in Scenario Studio",
+                                        adjustments=st.session_state['pending_scenario']['adjustments']
+                                    )
+
+                                    st.success(f"✅ **Saved!** Scenario '{scenario_name}' is now in your saved scenarios.")
+                                    st.info("🔄 **Click 'Reload Page' to see it in the list below.**")
+
+                                except Exception as e:
+                                    st.error(f"❌ Error saving scenario: {str(e)}")
+
+                    else:
+                        st.error("❌ Simulation failed. Please check your parameters.")
+
+                except Exception as e:
+                    st.error(f"❌ Error running simulation: {str(e)}")
+                    import traceback
+                    with st.expander("🐛 Show error details"):
+                        st.code(traceback.format_exc())
 
     # =============================================================================
     # SECTION 2: SAVED SCENARIOS (List)
