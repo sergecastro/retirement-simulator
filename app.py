@@ -299,9 +299,9 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     # Mode selection header
     st.markdown("### 🎯 Choose Your Starting Point")
 
-    # Three big buttons for mode selection (or 2 if Healthcare unavailable)
+    # Four big buttons for mode selection (or fewer if modules unavailable)
     if HEALTHCARE_AVAILABLE:
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
     else:
         col1, col2 = st.columns(2)
         st.warning("⚠️ Healthcare module temporarily unavailable")
@@ -373,6 +373,29 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
                 st.session_state.current_mode = "Healthcare"
                 st.rerun()
 
+        # Card 4: Scenario Studio
+        with col4:
+            st.markdown("""
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
+                <h3 style='color: #FFFFFF; margin-top: 0;'>🎬 Scenario Studio</h3>
+                <p style='color: #FFFFFF;'><strong>Multi-Scenario Comparison</strong></p>
+                <ul style='color: #FFFFFF;'>
+                    <li>Compare 2-4 scenarios side-by-side</li>
+                    <li>Visual difference highlighting</li>
+                    <li>AI-powered recommendations</li>
+                    <li>Export comparison reports</li>
+                </ul>
+                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Exploring "what-if" retirement strategies</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("")  # Spacing
+
+            if st.button("🚀 Enter Scenario Studio", type="primary", use_container_width=True, key="btn_scenario_studio"):
+                st.session_state.mode_selected = True
+                st.session_state.current_mode = "scenario_studio"
+                st.rerun()
+
     st.markdown("---")
 
     # Help section
@@ -397,6 +420,12 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
         - 💰 You need to project healthcare costs in retirement
         - 💊 You're planning Roth conversions and want to see Medicare impacts
         - 🩺 You want to explore long-term care planning options
+
+        **Choose Scenario Studio if:**
+        - 🎬 You've saved multiple "what-if" comparison scenarios
+        - 📊 You want to compare different retirement strategies side-by-side
+        - 🔍 You need to see the differences between scenarios at a glance
+        - 🤔 You're deciding between multiple retirement paths
 
         **💡 Pro Tip:** You can always switch between modes later using the sidebar button!
         """)
