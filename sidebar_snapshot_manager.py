@@ -17,6 +17,11 @@ from utils.snapshot_manager import (
     delete_snapshot,
     get_current_snapshot
 )
+from utils.comparison_scenarios import (
+    get_comparisons_for_plan,
+    load_comparison_scenario,
+    delete_comparison_scenario
+)
 
 
 def queue_scenario_load(scenario_data):
@@ -262,6 +267,97 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
                     queue_scenario_load(scenario_data)
         else:
             st.caption("No saved plans yet")
+
+    st.sidebar.markdown("---")
+
+    # ============================================
+    # SECTION 2B: COMPARISON SCENARIOS (Sub-Phase 2A)
+    # ============================================
+    st.sidebar.subheader("🔀 Comparison Scenarios")
+
+    # Only show if we have a current base plan loaded
+    if current_snapshot_id:
+        with st.sidebar.expander("🔀 View & Manage Comparisons", expanded=False):
+            try:
+                # Get comparisons for current base plan
+                comparisons = get_comparisons_for_plan(current_snapshot_id)
+
+                if not comparisons:
+                    st.caption("💡 No saved comparisons yet")
+                    st.caption("Go to **ANALYSIS** mode and save a comparison scenario!")
+                else:
+                    st.caption(f"📊 Found {len(comparisons)} comparison(s) for this plan")
+                    st.markdown("---")
+
+                    # Display each comparison with Load/Delete buttons
+                    comparisons_to_delete = []
+                    for idx, comp_meta in enumerate(comparisons):
+                        comp_id = comp_meta['id']
+                        comp_name = comp_meta['name']
+                        comp_created = comp_meta.get('created_at', 'Unknown')
+
+                        # Show comparison name and date
+                        st.markdown(f"**{comp_name}**")
+                        st.caption(f"Created: {comp_created[:10]}")
+
+                        # Action buttons
+                        col1, col2 = st.columns(2)
+
+                        with col1:
+                            if st.button("📥 Load", key=f"load_comp_{comp_id}_{idx}", use_container_width=True):
+                                # Load comparison data
+                                try:
+                                    comp_data = load_comparison_scenario(comp_id)
+                                    if comp_data:
+                                        # Apply adjustments to session state
+                                        adjustments = comp_data.get('adjustments', {})
+
+                                        # Set comparison adjustments in session state
+                                        st.session_state['comparison_income'] = adjustments.get('adjusted_income', 0)
+                                        st.session_state['comparison_expenses'] = adjustments.get('adjusted_expenses', 0)
+                                        st.session_state['comparison_return'] = adjustments.get('adjusted_return_rate', 0)
+                                        st.session_state['comparison_inflation'] = adjustments.get('adjusted_inflation_rate', 0)
+
+                                        # Set flag to indicate comparison is loaded
+                                        st.session_state['comparison_loaded'] = True
+                                        st.session_state['loaded_comparison_name'] = comp_name
+
+                                        st.success(f"✅ Loaded: {comp_name}")
+                                        st.info("📊 Go to **ANALYSIS** mode to see this comparison")
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Failed to load comparison")
+                                except Exception as e:
+                                    st.error(f"❌ Load error: {e}")
+                                    print(f"[ERROR] Failed to load comparison {comp_id}: {e}")
+
+                        with col2:
+                            if st.button("🗑️", key=f"delete_comp_{comp_id}_{idx}", help=f"Delete {comp_name}", use_container_width=True):
+                                comparisons_to_delete.append((comp_id, comp_name))
+
+                        st.markdown("---")
+
+                    # Process deletions
+                    if comparisons_to_delete:
+                        for comp_id, comp_name in comparisons_to_delete:
+                            try:
+                                success = delete_comparison_scenario(comp_id)
+                                if success:
+                                    st.success(f"✅ Deleted: {comp_name}")
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ Failed to delete: {comp_name}")
+                            except Exception as e:
+                                st.error(f"❌ Delete error: {e}")
+                                print(f"[ERROR] Failed to delete comparison {comp_id}: {e}")
+
+            except Exception as e:
+                st.error(f"⚠️ Error loading comparisons: {e}")
+                print(f"[ERROR] Failed to get comparisons: {e}")
+                import traceback
+                traceback.print_exc()
+    else:
+        st.sidebar.caption("💡 Save a base plan first to create comparisons")
 
     st.sidebar.markdown("---")
 
