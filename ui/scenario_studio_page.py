@@ -714,18 +714,31 @@ def render_scenario_studio_page():
                                 from utils.comparison_scenarios import save_comparison_scenario
 
                                 try:
+                                    print(f"[SCENARIO STUDIO] Attempting to save scenario: {scenario_name}")
+
                                     comparison_id = save_comparison_scenario(
                                         base_plan_id=base_plan_id,
                                         name=scenario_name,
                                         description=f"Created in Scenario Studio",
-                                        adjustments=st.session_state['pending_scenario']['adjustments']
+                                        adjustments=st.session_state['pending_scenario']['adjustments'],
+                                        simulation_results=st.session_state['pending_scenario']['simulation_results']
                                     )
 
-                                    st.success(f"✅ **Saved!** Scenario '{scenario_name}' is now in your saved scenarios.")
-                                    st.info("🔄 **Click 'Reload Page' to see it in the list below.**")
+                                    if comparison_id:
+                                        print(f"[SCENARIO STUDIO] Save successful! ID: {comparison_id}")
+                                        st.success(f"✅ **Saved!** Scenario '{scenario_name}' (ID: {comparison_id[:8]}...)")
+                                        st.info("🔄 **Reload the page** to see it in your saved scenarios list below.")
+
+                                        # Clear pending scenario to avoid duplicate saves
+                                        if 'pending_scenario' in st.session_state:
+                                            del st.session_state['pending_scenario']
+                                    else:
+                                        st.error("❌ Save failed - no comparison ID returned")
 
                                 except Exception as e:
                                     st.error(f"❌ Error saving scenario: {str(e)}")
+                                    import traceback
+                                    st.code(traceback.format_exc())
 
                     else:
                         st.error("❌ Simulation failed. Please check your parameters.")
