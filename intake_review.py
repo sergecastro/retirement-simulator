@@ -733,6 +733,11 @@ def show_family_page(existing, save_payload, go_to_page):
 
     st.info("ℹ️ These fields are completely optional. Leave blank if not applicable.")
 
+    # DEBUG: Show what's currently in temp_custom_expenses
+    print(f"[FAMILY PAGE] temp_custom_expenses has {len(st.session_state.get('temp_custom_expenses', []))} items")
+    for idx, exp in enumerate(st.session_state.get('temp_custom_expenses', [])):
+        print(f"  temp_custom_expenses[{idx}]: {exp.get('Name')} - ${exp.get('Monthly Amount')}")
+
     # Navigation with manual save
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -746,6 +751,11 @@ def show_family_page(existing, save_payload, go_to_page):
             st.session_state['inheritance_list'] = st.session_state.get("temp_inherit", [])
             st.session_state['goals_list'] = st.session_state.get("temp_goals", [])
             st.session_state['custom_expenses'] = st.session_state.get("temp_custom_expenses", [])
+
+            # DEBUG: Log what we're saving
+            print(f"[FAMILY PAGE SAVE] Custom Expenses Count: {len(st.session_state['custom_expenses'])}")
+            for idx, exp in enumerate(st.session_state['custom_expenses']):
+                print(f"  Expense {idx+1}: {exp.get('Name')} - ${exp.get('Monthly Amount')}")
 
             # Backward compatibility keys
             st.session_state['children_rows'] = st.session_state['children_list']
