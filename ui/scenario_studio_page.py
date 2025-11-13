@@ -716,86 +716,88 @@ def render_scenario_studio_page():
 
         st.markdown("---")
         st.markdown("---")
-        st.markdown("### 💾 Save This Scenario")
-        st.markdown(f"**Scenario:** {pending['name']}")
-        st.markdown("This scenario has been simulated. Click below to save it permanently.")
 
-        # Check if we just saved
+        # Check if we just saved - show message and skip button
         if st.session_state.get('scenario_just_saved'):
             st.success(f"✅ **Saved!** Scenario '{st.session_state.get('last_saved_name')}' "
                      f"(ID: {st.session_state.get('last_saved_id', '')[:8]}...)")
             st.info("🔄 **Reload the page** to see it in your saved scenarios list below.")
             # Clear the flag
             st.session_state['scenario_just_saved'] = False
+        else:
+            # Show save section normally
+            st.markdown("### 💾 Save This Scenario")
+            st.markdown(f"**Scenario:** {pending['name']}")
+            st.markdown("This scenario has been simulated. Click below to save it permanently.")
 
-        col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
+            col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
 
-        with col_save2:
-            # Unique key based on scenario name
-            save_button_key = f"save_btn_{pending['name'].replace(' ', '_')}"
+            with col_save2:
+                # Unique key based on scenario name
+                save_button_key = f"save_btn_{pending['name'].replace(' ', '_')}"
 
-            if st.button(
-                "💾 Save Scenario",
-                type="primary",
-                use_container_width=True,
-                key=save_button_key
-            ):
-                from utils.comparison_scenarios import save_comparison_scenario
+                if st.button(
+                    "💾 Save Scenario",
+                    type="primary",
+                    use_container_width=True,
+                    key=save_button_key
+                ):
+                    from utils.comparison_scenarios import save_comparison_scenario
 
-                try:
-                    print(f"[SCENARIO STUDIO] 🔴 Save button clicked! Scenario: {pending['name']}")
+                    try:
+                        print(f"[SCENARIO STUDIO] 🔴 Save button clicked! Scenario: {pending['name']}")
 
-                    # Prepare simulation results - convert DataFrame to dict for JSON serialization
-                    sim_results = pending.get('simulation_results', {})
-                    serializable_results = {}
+                        # Prepare simulation results - convert DataFrame to dict for JSON serialization
+                        sim_results = pending.get('simulation_results', {})
+                        serializable_results = {}
 
-                    for key, value in sim_results.items():
-                        # Check if it's a DataFrame
-                        if hasattr(value, 'to_dict'):
-                            # Convert DataFrame to dict (orient='list' is most compact)
-                            serializable_results[key] = {
-                                '_type': 'dataframe',
-                                'data': value.to_dict(orient='list')
-                            }
+                        for key, value in sim_results.items():
+                            # Check if it's a DataFrame
+                            if hasattr(value, 'to_dict'):
+                                # Convert DataFrame to dict (orient='list' is most compact)
+                                serializable_results[key] = {
+                                    '_type': 'dataframe',
+                                    'data': value.to_dict(orient='list')
+                                }
+                            else:
+                                # Keep as-is for other types
+                                serializable_results[key] = value
+
+                        print(f"[SCENARIO STUDIO] Serialized {len(serializable_results)} result keys")
+
+                        comparison_id = save_comparison_scenario(
+                            base_plan_id=pending['base_plan_id'],
+                            name=pending['name'],
+                            description=f"Created in Scenario Studio",
+                            adjustments=pending['adjustments'],
+                            simulation_results=serializable_results
+                        )
+
+                        if comparison_id:
+                            print(f"[SCENARIO STUDIO] ✅ Save successful! ID: {comparison_id}")
+
+                            # 🎈 CELEBRATION!
+                            st.balloons()
+
+                            # Set flags
+                            st.session_state['scenario_just_saved'] = True
+                            st.session_state['last_saved_name'] = pending['name']
+                            st.session_state['last_saved_id'] = comparison_id
+
+                            # Clear pending
+                            del st.session_state['pending_scenario']
+
+                            # Rerun
+                            st.rerun()
                         else:
-                            # Keep as-is for other types
-                            serializable_results[key] = value
+                            st.error("❌ Save failed - no comparison ID returned")
+                            print(f"[SCENARIO STUDIO] ❌ No ID returned")
 
-                    print(f"[SCENARIO STUDIO] Serialized {len(serializable_results)} result keys")
-
-                    comparison_id = save_comparison_scenario(
-                        base_plan_id=pending['base_plan_id'],
-                        name=pending['name'],
-                        description=f"Created in Scenario Studio",
-                        adjustments=pending['adjustments'],
-                        simulation_results=serializable_results
-                    )
-
-                    if comparison_id:
-                        print(f"[SCENARIO STUDIO] ✅ Save successful! ID: {comparison_id}")
-
-                        # 🎈 CELEBRATION!
-                        st.balloons()
-
-                        # Set flags
-                        st.session_state['scenario_just_saved'] = True
-                        st.session_state['last_saved_name'] = pending['name']
-                        st.session_state['last_saved_id'] = comparison_id
-
-                        # Clear pending
-                        del st.session_state['pending_scenario']
-
-                        # Rerun
-                        st.rerun()
-                    else:
-                        st.error("❌ Save failed - no comparison ID returned")
-                        print(f"[SCENARIO STUDIO] ❌ No ID returned")
-
-                except Exception as e:
-                    st.error(f"❌ Error saving: {str(e)}")
-                    print(f"[SCENARIO STUDIO] ❌ Error: {e}")
-                    import traceback
-                    traceback.print_exc()
+                    except Exception as e:
+                        st.error(f"❌ Error saving: {str(e)}")
+                        print(f"[SCENARIO STUDIO] ❌ Error: {e}")
+                        import traceback
+                        traceback.print_exc()
 
     # =============================================================================
     # SECTION 2: SAVED SCENARIOS (List)
