@@ -182,68 +182,134 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
         st.sidebar.caption(f"ℹ️ No saved plans found yet")
 
     # ============================================
-    # LOAD SECTION
+    # SECTION 1: SAVE (TOP)
     # ============================================
-    st.sidebar.subheader("📥 Load Plan")
+    st.sidebar.subheader("💾 SAVE YOUR PLAN")
 
-    # Build list: User's saved snapshots + embedded defaults
-    snapshot_options = {}
+    # 1A: Save Current Plan (same name)
+    with st.sidebar.expander("💾 Save Plan", expanded=False):
+        st.info(f"📋 Current: {current_name}")
 
-    # Add user's saved snapshots FIRST
-    for snapshot in snapshots:
-        display_name = f"{snapshot['name']}"
-        snapshot_options[display_name] = ('snapshot', snapshot['id'])
+        if st.button("💾 SAVE", key="save_current_plan", use_container_width=True, type="primary"):
+            scenario_data = collect_current_scenario_data()
 
-    # Add embedded options ONLY if no user snapshots exist
-    if len(snapshots) == 0:
-        if is_trusted_user:
-            snapshot_options['70+ Retirement (Private - Trusted)'] = ('embedded', 'private')
-        snapshot_options['Original 70+ Retirement (Demo)'] = ('embedded', 'demo')
+            try:
+                # Save to encrypted localStorage via snapshot_manager
+                snapshot_id = save_snapshot(scenario_data, snapshot_name=current_name)
 
-    # Dropdown selector
-    if snapshot_options:
-        selected_display = st.sidebar.selectbox(
-            "Select:",
-            options=list(snapshot_options.keys()),
-            key="snapshot_selector"
+                if snapshot_id:
+                    st.success(f"✅ Plan saved!")
+                    st.info("💡 Plan saved securely with encryption!")
+                    st.rerun()
+                else:
+                    st.error("❌ Save failed")
+            except Exception as e:
+                st.error(f"❌ Save error: {e}")
+
+    # 1B: Save As New Plan (new name)
+    with st.sidebar.expander("💾 Save As New Plan", expanded=False):
+        new_plan_name = st.text_input(
+            "New plan name:",
+            value="",
+            placeholder="My Retirement Plan 2025",
+            key="new_plan_name_input"
         )
 
-        if st.sidebar.button("📂 Load", use_container_width=True):
-            source_type, source_id = snapshot_options[selected_display]
+        if st.button("✨ CREATE NEW", key="create_new_plan", use_container_width=True, type="primary", disabled=not new_plan_name):
+            if new_plan_name:
+                scenario_data = collect_current_scenario_data()
 
-            if source_type == 'snapshot':
-                # Load from encrypted localStorage
                 try:
-                    scenario_data = load_snapshot(source_id)
-                    if scenario_data:
-                        st.session_state['current_scenario'] = selected_display
-                        queue_scenario_load(scenario_data)
+                    # Save to encrypted localStorage
+                    snapshot_id = save_snapshot(scenario_data, snapshot_name=new_plan_name)
+
+                    if snapshot_id:
+                        st.session_state['current_scenario'] = new_plan_name
+                        st.success(f"✅ Created: {new_plan_name}")
+                        st.info("💡 Select it from dropdown below to load it!")
+                        st.rerun()
                     else:
-                        st.sidebar.error("❌ Failed to load snapshot")
+                        st.error("❌ Failed to create plan")
                 except Exception as e:
-                    st.sidebar.error(f"❌ Load error: {e}")
+                    st.error(f"❌ Save error: {e}")
+            else:
+                st.error("Please enter a plan name")
 
-            elif source_type == 'embedded':
-                # Load embedded scenario
-                if source_id == 'private':
-                    scenario_data = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
-                else:
-                    scenario_data = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
+    st.sidebar.markdown("---")
 
-                st.session_state['current_scenario'] = selected_display
-                queue_scenario_load(scenario_data)
-    else:
-        st.sidebar.caption("No saved plans yet")
+    # ============================================
+    # SECTION 2: LOAD (MIDDLE)
+    # ============================================
+    st.sidebar.subheader("📥 LOAD A PLAN")
 
-    # Upload - in expander
-    with st.sidebar.expander("📤 Upload File"):
+    with st.sidebar.expander("📥 Select & Load Plan", expanded=False):
+        # Build list: User's saved snapshots + embedded defaults
+        snapshot_options = {}
+
+        # Add user's saved snapshots FIRST
+        for snapshot in snapshots:
+            display_name = f"{snapshot['name']}"
+            snapshot_options[display_name] = ('snapshot', snapshot['id'])
+
+        # Add embedded options ONLY if no user snapshots exist
+        if len(snapshots) == 0:
+            if is_trusted_user:
+                snapshot_options['70+ Retirement (Private - Trusted)'] = ('embedded', 'private')
+            snapshot_options['Original 70+ Retirement (Demo)'] = ('embedded', 'demo')
+
+        # Dropdown selector
+        if snapshot_options:
+            selected_display = st.selectbox(
+                "Choose plan:",
+                options=list(snapshot_options.keys()),
+                key="select_plan_to_load"
+            )
+
+            if st.button("📥 LOAD", key="load_selected_plan", use_container_width=True, type="primary"):
+                source_type, source_id = snapshot_options[selected_display]
+
+                if source_type == 'snapshot':
+                    # Load from encrypted localStorage
+                    try:
+                        scenario_data = load_snapshot(source_id)
+                        if scenario_data:
+                            st.session_state['current_scenario'] = selected_display
+                            st.success(f"✅ Loaded: {selected_display}")
+                            queue_scenario_load(scenario_data)
+                        else:
+                            st.error("❌ Failed to load snapshot")
+                    except Exception as e:
+                        st.error(f"❌ Load error: {e}")
+
+                elif source_type == 'embedded':
+                    # Load embedded scenario
+                    if source_id == 'private':
+                        scenario_data = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
+                    else:
+                        scenario_data = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
+
+                    st.session_state['current_scenario'] = selected_display
+                    st.success(f"✅ Loaded: {selected_display}")
+                    queue_scenario_load(scenario_data)
+        else:
+            st.caption("No saved plans yet")
+
+    st.sidebar.markdown("---")
+
+    # ============================================
+    # SECTION 3: OTHER ACTIONS (BOTTOM)
+    # ============================================
+    st.sidebar.subheader("🔧 OTHER ACTIONS")
+
+    # Upload
+    with st.sidebar.expander("📤 Upload Backup File", expanded=False):
         if 'last_uploaded_file' not in st.session_state:
             st.session_state['last_uploaded_file'] = None
 
         uploaded_file = st.file_uploader(
-            "Choose JSON:",
+            "Choose .ffb or .json file:",
             type=['json', 'ffb'],
-            key="snapshot_uploader"
+            key="upload_backup_file"
         )
 
         if uploaded_file is not None:
@@ -258,83 +324,34 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
                         scenario_name = uploaded_file.name.replace('.json', '').replace('.ffb', '')
                         st.session_state['current_scenario'] = scenario_name
                         st.session_state['last_uploaded_file'] = file_id
+                        st.success(f"✅ Uploaded: {scenario_name}")
                         queue_scenario_load(scenario_data)
                 except Exception as e:
-                    st.sidebar.error(f"❌ Error: {e}")
+                    st.error(f"❌ Upload error: {e}")
 
-    # ============================================
-    # SAVE SECTION
-    # ============================================
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("💾 Save Plan")
-
-    # Show current name
-    st.sidebar.caption(f"**Current:** {current_name}")
-
-    # SAVE CURRENT button - saves to encrypted localStorage
-    if st.sidebar.button("💾 Save Current Plan", use_container_width=True, type="primary"):
-        scenario_data = collect_current_scenario_data()
-
-        try:
-            # Save to encrypted localStorage via snapshot_manager
-            snapshot_id = save_snapshot(scenario_data, snapshot_name=current_name)
-
-            if snapshot_id:
-                st.sidebar.success(f"✅ Saved: {current_name}")
-                st.sidebar.info("💡 Plan saved securely with encryption!")
-                st.rerun()
-            else:
-                st.sidebar.error("❌ Save failed")
-        except Exception as e:
-            st.sidebar.error(f"❌ Save error: {e}")
-
-    # SAVE AS NEW - Compact
-    with st.sidebar.expander("💾 Save As New Plan"):
-        new_plan_name = st.text_input(
-            "New name:",
-            value="",
-            placeholder="My Retirement Plan 2025",
-            key="new_snapshot_name_input"
-        )
-
-        if st.button("💾 Create New", use_container_width=True, disabled=not new_plan_name):
-            if new_plan_name:
-                scenario_data = collect_current_scenario_data()
-
-                try:
-                    # Save to encrypted localStorage
-                    snapshot_id = save_snapshot(scenario_data, snapshot_name=new_plan_name)
-
-                    if snapshot_id:
-                        st.session_state['current_scenario'] = new_plan_name
-                        st.success(f"✅ Created: {new_plan_name}")
-                        st.info("💡 Select it from dropdown and click Load to use it!")
-                        st.rerun()
-                    else:
-                        st.error("❌ Failed to create plan")
-                except Exception as e:
-                    st.error(f"❌ Save error: {e}")
-
-    # ============================================
-    # DELETE SECTION
-    # ============================================
-    with st.sidebar.expander("🗑️ Delete Plans"):
+    # Delete
+    with st.sidebar.expander("🗑️ Delete Plans", expanded=False):
         if not snapshots:
             st.caption("No saved plans to delete")
         else:
-            st.caption("Select plans to delete:")
+            st.warning("⚠️ Deletion is permanent!")
 
-            # Show checkboxes for each snapshot
+            # Show list of plans with delete buttons
             snapshots_to_delete = []
-            for snapshot in snapshots:
+            for idx, snapshot in enumerate(snapshots):
                 snapshot_name = snapshot['name']
                 snapshot_id = snapshot['id']
-                if st.checkbox(snapshot_name, key=f"delete_{snapshot_id}"):
-                    snapshots_to_delete.append((snapshot_id, snapshot_name))
 
-            # Delete button
-            if st.button("🗑️ Delete Selected", use_container_width=True,
-                        disabled=not snapshots_to_delete, type="primary"):
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.text(snapshot_name)
+                with col2:
+                    # ✅ FIX: Add idx to make unique key
+                    if st.button("🗑️", key=f"delete_{snapshot_id}_{idx}", help=f"Delete {snapshot_name}"):
+                        snapshots_to_delete.append((snapshot_id, snapshot_name))
+
+            # Process deletions
+            if snapshots_to_delete:
                 need_reload_default = False
 
                 for snapshot_id, snapshot_name in snapshots_to_delete:
@@ -343,6 +360,8 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
                         success = delete_snapshot(snapshot_id)
 
                         if success:
+                            st.success(f"✅ Deleted: {snapshot_name}")
+
                             # If we deleted the currently loaded scenario, switch to default
                             if st.session_state.get('current_scenario') == snapshot_name:
                                 default = 'Original 70+ Retirement (Demo)'
@@ -355,7 +374,6 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
                 if need_reload_default:
                     queue_scenario_load(EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO'])
                 else:
-                    st.success(f"✅ Deleted {len(snapshots_to_delete)} plan(s)")
                     st.rerun()
 
     return {}
