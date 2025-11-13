@@ -197,6 +197,10 @@ def main():
         show_sidebar_footer(is_trusted)
         show_healthcare_mode()
 
+    elif st.session_state.current_mode == "scenario_studio":
+        show_sidebar_footer(is_trusted)
+        show_scenario_studio_mode()
+
     elif st.session_state.current_mode == "Analysis":
         # ✅ FIXED: Load INTAKE data into session state if available
         load_intake_data_to_session()
@@ -503,6 +507,59 @@ def show_healthcare_mode():
         st.error(f"Error loading Healthcare module: {e}")
         import traceback
         st.code(traceback.format_exc())
+
+
+# =============================================================================
+# SCENARIO STUDIO MODE
+# =============================================================================
+
+def show_scenario_studio_mode():
+    """Display Scenario Studio - Multi-scenario comparison mode"""
+    st.components.v1.html(SCROLL_TO_TOP_JS, height=0)
+
+    # Add mode selector to sidebar
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 🎯 Quick Mode Switch")
+
+        mode = st.radio(
+            "Choose mode:",
+            options=["INTAKE", "Analysis", "Healthcare", "Scenario Studio"],
+            index=3,  # Scenario Studio is index 3
+            key="mode_selector_scenario_studio",
+            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Healthcare: Cost planning | Scenario Studio: Compare scenarios"
+        )
+
+        # Map display names to internal mode names
+        mode_map = {
+            "INTAKE": "INTAKE",
+            "Analysis": "Analysis",
+            "Healthcare": "Healthcare",
+            "Scenario Studio": "scenario_studio"
+        }
+
+        if mode_map[mode] != st.session_state.current_mode:
+            st.session_state.current_mode = mode_map[mode]
+            st.session_state.mode_selected = True
+            st.rerun()
+
+    # Display Scenario Studio page
+    st.title("🎬 Scenario Studio")
+    st.markdown("### Compare Multiple Retirement Strategies Side-by-Side")
+
+    st.success("✅ **Scenario Studio mode is active!**")
+    st.info("📋 **Step 3 will build the full comparison interface here.**")
+
+    # Show placeholder content
+    st.markdown("---")
+    st.markdown("#### Coming Soon:")
+    st.markdown("""
+    - 📊 Multi-scenario selection
+    - 📈 Side-by-side comparison table
+    - 🔍 Visual difference highlighting
+    - 🤖 AI-powered recommendations
+    - 📄 Export comparison reports
+    """)
 
 
 # =============================================================================
