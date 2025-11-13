@@ -25,6 +25,7 @@ from visualization.longevity_analysis import show_longevity_analysis
 # ⚠️ HEALTHCARE MODULE DISABLED - Uncomment when ready to deploy healthcare features
 # from visualization.irmaa_analysis import show_irmaa_analysis
 import disclaimers
+from utils.comparison_scenarios import save_comparison_scenario
 
 
 # =============================================================================
@@ -381,6 +382,92 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                                 height=500
                             )
                             st.plotly_chart(fig, use_container_width=True)
+
+                            # =================================================================
+                            # SAVE COMPARISON SCENARIO SECTION (Sub-Phase 2A)
+                            # =================================================================
+                            st.markdown("---")
+                            with st.expander("💾 Save This Comparison Scenario", expanded=False):
+                                st.markdown("""
+                                Save this comparison to review later or compare with other scenarios.
+                                Only your adjustments are saved (not your full plan data).
+                                """)
+
+                                col1, col2 = st.columns([2, 1])
+
+                                with col1:
+                                    comparison_name = st.text_input(
+                                        "Comparison Name",
+                                        placeholder="e.g., Retire at 67, Save 10% More, Lower Expenses",
+                                        help="Give this comparison a memorable name",
+                                        key="comparison_name_input"
+                                    )
+
+                                    comparison_description = st.text_area(
+                                        "Description (Optional)",
+                                        placeholder="Describe what makes this scenario different...",
+                                        help="Add notes about this comparison",
+                                        height=100,
+                                        key="comparison_description_input"
+                                    )
+
+                                with col2:
+                                    st.markdown("**Current Adjustments:**")
+                                    st.caption(f"Income: ${adj_income:,.0f}")
+                                    st.caption(f"Expenses: ${adj_expenses:,.0f}")
+                                    st.caption(f"Return Rate: {adj_return * 100:.1f}%")
+                                    st.caption(f"Inflation: {adj_inflation * 100:.1f}%")
+
+                                if st.button("💾 Save Comparison", type="primary", use_container_width=True, key="save_comparison_button"):
+                                    if not comparison_name:
+                                        st.error("⚠️ Please enter a name for this comparison")
+                                    else:
+                                        # Get current base plan ID
+                                        from utils.snapshot_manager import get_snapshots_index
+                                        index = get_snapshots_index()
+                                        current_plan_id = index.get('current_snapshot_id')
+
+                                        if not current_plan_id:
+                                            st.error("⚠️ No base plan found. Please save a base plan first in INTAKE mode.")
+                                        else:
+                                            # Build adjustments dict
+                                            adjustments = {
+                                                "adjusted_income": float(adj_income),
+                                                "adjusted_expenses": float(adj_expenses),
+                                                "adjusted_return_rate": float(adj_return),
+                                                "adjusted_inflation_rate": float(adj_inflation)
+                                            }
+
+                                            # Build simulation results for quick display later
+                                            simulation_results = {
+                                                "final_savings": comp_results.get('final_savings', 0),
+                                                "final_net_worth": comp_results.get('final_net_worth', 0),
+                                                "years_solvent": comp_results.get('years_solvent', 0),
+                                                "health_score": comp_results.get('health_score', 0)
+                                            }
+
+                                            # Save comparison scenario
+                                            try:
+                                                comparison_id = save_comparison_scenario(
+                                                    base_plan_id=current_plan_id,
+                                                    name=comparison_name,
+                                                    description=comparison_description or "",
+                                                    adjustments=adjustments,
+                                                    simulation_results=simulation_results
+                                                )
+
+                                                if comparison_id:
+                                                    st.success(f"✅ Comparison saved: {comparison_name}")
+                                                    st.balloons()
+                                                    st.info(f"📊 Comparison ID: `{comparison_id}`\n\nYou can now load this comparison from the sidebar.")
+                                                else:
+                                                    st.error("❌ Failed to save comparison. Please try again.")
+
+                                            except Exception as e:
+                                                st.error(f"❌ Error saving comparison: {e}")
+                                                import traceback
+                                                traceback.print_exc()
+
                         else:
                             st.error("❌ Comparison failed to generate results")
         except Exception as e:
