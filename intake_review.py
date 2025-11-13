@@ -677,10 +677,20 @@ def show_family_page(existing, save_payload, go_to_page):
                     st.session_state.temp_custom_expenses[idx]["Monthly Amount"] = amount
 
                 with col_b:
+                    # SAFE category index lookup (handles missing/invalid categories)
+                    category_options = ["Education", "Healthcare", "Special Needs", "Childcare", "Other"]
+                    saved_category = expense.get("Category", "Other")
+                    try:
+                        category_index = category_options.index(saved_category)
+                    except ValueError:
+                        # If saved category not in list, default to "Other"
+                        category_index = category_options.index("Other")
+                        print(f"[WARN] Invalid category '{saved_category}' for expense '{expense.get('Name')}', defaulting to 'Other'")
+
                     category = st.selectbox(
                         "Category:",
-                        options=["Education", "Healthcare", "Special Needs", "Childcare", "Other"],
-                        index=["Education", "Healthcare", "Special Needs", "Childcare", "Other"].index(expense.get("Category", "Other")),
+                        options=category_options,
+                        index=category_index,
                         key=f"custom_expense_category_{idx}",
                         help="Category for organizing expenses"
                     )
