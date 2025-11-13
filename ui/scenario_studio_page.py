@@ -745,12 +745,30 @@ def render_scenario_studio_page():
                 try:
                     print(f"[SCENARIO STUDIO] 🔴 Save button clicked! Scenario: {pending['name']}")
 
+                    # Prepare simulation results - convert DataFrame to dict for JSON serialization
+                    sim_results = pending.get('simulation_results', {})
+                    serializable_results = {}
+
+                    for key, value in sim_results.items():
+                        # Check if it's a DataFrame
+                        if hasattr(value, 'to_dict'):
+                            # Convert DataFrame to dict (orient='list' is most compact)
+                            serializable_results[key] = {
+                                '_type': 'dataframe',
+                                'data': value.to_dict(orient='list')
+                            }
+                        else:
+                            # Keep as-is for other types
+                            serializable_results[key] = value
+
+                    print(f"[SCENARIO STUDIO] Serialized {len(serializable_results)} result keys")
+
                     comparison_id = save_comparison_scenario(
                         base_plan_id=pending['base_plan_id'],
                         name=pending['name'],
                         description=f"Created in Scenario Studio",
                         adjustments=pending['adjustments'],
-                        simulation_results=pending.get('simulation_results', {})
+                        simulation_results=serializable_results
                     )
 
                     if comparison_id:
