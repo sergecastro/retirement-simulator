@@ -694,27 +694,38 @@ def render_scenario_studio_page():
                         }
 
                         # =============================================================================
-                        # SAVE SCENARIO BUTTON
+                        # SAVE SCENARIO BUTTON - Using session state flag for reliability
                         # =============================================================================
 
                         st.markdown("---")
                         st.markdown("### 💾 Save This Scenario")
                         st.markdown("Click below to save this scenario for comparison.")
 
+                        # Check if we need to show save confirmation
+                        if st.session_state.get('scenario_just_saved'):
+                            st.success(f"✅ **Saved!** Scenario '{st.session_state.get('last_saved_name')}' "
+                                     f"(ID: {st.session_state.get('last_saved_id', '')[:8]}...)")
+                            st.info("🔄 **Reload the page** to see it in your saved scenarios list below.")
+                            # Clear the flag
+                            st.session_state['scenario_just_saved'] = False
+
                         col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
 
                         with col_save2:
+                            # Use a unique key based on scenario name to force recreation
+                            save_button_key = f"save_scenario_{scenario_name.replace(' ', '_')}"
+
                             if st.button(
                                 "💾 Save Scenario",
                                 type="primary",
                                 use_container_width=True,
-                                key="save_scenario_button"
+                                key=save_button_key
                             ):
                                 # Save using comparison_scenarios module
                                 from utils.comparison_scenarios import save_comparison_scenario
 
                                 try:
-                                    print(f"[SCENARIO STUDIO] Attempting to save scenario: {scenario_name}")
+                                    print(f"[SCENARIO STUDIO] Save button clicked for: {scenario_name}")
 
                                     comparison_id = save_comparison_scenario(
                                         base_plan_id=base_plan_id,
@@ -725,20 +736,25 @@ def render_scenario_studio_page():
                                     )
 
                                     if comparison_id:
-                                        print(f"[SCENARIO STUDIO] Save successful! ID: {comparison_id}")
-                                        st.success(f"✅ **Saved!** Scenario '{scenario_name}' (ID: {comparison_id[:8]}...)")
-                                        st.info("🔄 **Reload the page** to see it in your saved scenarios list below.")
+                                        print(f"[SCENARIO STUDIO] ✅ Save successful! ID: {comparison_id}")
 
-                                        # Clear pending scenario to avoid duplicate saves
-                                        if 'pending_scenario' in st.session_state:
-                                            del st.session_state['pending_scenario']
+                                        # Set session state flags for next render
+                                        st.session_state['scenario_just_saved'] = True
+                                        st.session_state['last_saved_name'] = scenario_name
+                                        st.session_state['last_saved_id'] = comparison_id
+
+                                        # Force rerun to show success message
+                                        st.rerun()
                                     else:
                                         st.error("❌ Save failed - no comparison ID returned")
+                                        print(f"[SCENARIO STUDIO] ❌ Save failed - no ID returned")
 
                                 except Exception as e:
                                     st.error(f"❌ Error saving scenario: {str(e)}")
+                                    print(f"[SCENARIO STUDIO] ❌ Save error: {e}")
                                     import traceback
                                     st.code(traceback.format_exc())
+                                    traceback.print_exc()
 
                     else:
                         st.error("❌ Simulation failed. Please check your parameters.")
