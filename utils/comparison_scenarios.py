@@ -132,7 +132,7 @@ def save_comparison_scenario(
 
         # Save to localStorage
         storage_key = f"{COMPARISON_KEY_PREFIX}{comparison_id}"
-        localS.setItem(storage_key, encrypted_data)
+        localS.set_item(storage_key, encrypted_data)
         print(f"[SAVE COMPARISON] Saved to localStorage: {storage_key}")
 
         # Update comparisons index
@@ -175,7 +175,7 @@ def load_comparison_scenario(comparison_id: str) -> Optional[Dict[str, Any]]:
 
     try:
         localS = _get_local_storage()
-        encrypted_data = localS.getItem(storage_key)
+        encrypted_data = localS.get_item(storage_key)
 
         if not encrypted_data:
             print(f"[WARN] Comparison not found: {storage_key}")
@@ -224,7 +224,7 @@ def get_comparisons_index() -> List[Dict[str, str]]:
 
     try:
         localS = _get_local_storage()
-        encrypted_index = localS.getItem(COMPARISONS_INDEX_KEY)
+        encrypted_index = localS.get_item(COMPARISONS_INDEX_KEY)
 
         if not encrypted_index:
             print(f"[INFO] No comparisons index found, returning empty list")
@@ -300,7 +300,7 @@ def delete_comparison_scenario(comparison_id: str) -> bool:
         localS = _get_local_storage()
 
         # Remove from localStorage
-        localS.removeItem(storage_key)
+        localS.remove_item(storage_key)
         print(f"[DELETE COMPARISON] Removed from localStorage: {storage_key}")
 
         # Update index
@@ -385,7 +385,7 @@ def _update_comparisons_index(
         # Encrypt and save updated index
         index_data = {"comparisons": index}
         encrypted_index = encrypt_data(index_data, localS)
-        localS.setItem(COMPARISONS_INDEX_KEY, encrypted_index)
+        localS.set_item(COMPARISONS_INDEX_KEY, encrypted_index)
 
         print(f"[OK] Updated comparisons index")
 
@@ -418,7 +418,7 @@ def _remove_from_comparisons_index(comparison_id: str) -> None:
         # Encrypt and save updated index
         index_data = {"comparisons": updated_index}
         encrypted_index = encrypt_data(index_data, localS)
-        localS.setItem(COMPARISONS_INDEX_KEY, encrypted_index)
+        localS.set_item(COMPARISONS_INDEX_KEY, encrypted_index)
 
         print(f"[OK] Removed comparison from index")
 
