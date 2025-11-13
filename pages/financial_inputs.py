@@ -508,10 +508,12 @@ def collect_financial_data():
                         "Goal Name:",
                         value=goal_data.get('goal', ''),
                         key=f"goal_name_{idx}",
-                        placeholder="e.g., Retirement Fund, Down Payment"
+                        placeholder="e.g., Retirement Fund, Down Payment",
+                        disabled=True,
+                        help="📝 Edit in INTAKE mode"
                     )
                     st.session_state['goals_list'][idx]['goal'] = goal_name
-                
+
                 with col2:
                     goal_amount = st.number_input(
                         "Target Amount ($):",
@@ -519,10 +521,12 @@ def collect_financial_data():
                         min_value=0.0,
                         step=1000.0,
                         format="%.0f",
-                        key=f"goal_amount_{idx}"
+                        key=f"goal_amount_{idx}",
+                        disabled=True,
+                        help="📝 Edit in INTAKE mode"
                     )
                     st.session_state['goals_list'][idx]['amount'] = goal_amount
-                
+
                 with col3:
                     default_year = date.today().year + 10
                     year_value = goal_data.get('year', default_year)
@@ -533,7 +537,9 @@ def collect_financial_data():
                         min_value=date.today().year,
                         max_value=date.today().year + 50,
                         step=1,
-                        key=f"goal_year_{idx}"
+                        key=f"goal_year_{idx}",
+                        disabled=True,
+                        help="📝 Edit in INTAKE mode"
                     )
                     st.session_state['goals_list'][idx]['year'] = goal_year
                 

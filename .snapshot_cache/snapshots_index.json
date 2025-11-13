@@ -1,0 +1,229 @@
+{
+  "current_snapshot_id": "20251112_1810",
+  "snapshots": [
+    {
+      "id": "20251112_0907",
+      "name": "My Plan - SERGE",
+      "created": "2025-11-12T09:07:30.309417",
+      "metadata": {
+        "user_name": "SERGE CASTRO",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "Jane Smith           IIIIIIIIIIIIII",
+        "partner_age": 74,
+        "net_worth": 1250000.0,
+        "monthly_surplus": 2500.0
+      }
+    },
+    {
+      "id": "20251112_1209",
+      "name": "new test serge 12:09",
+      "created": "2025-11-12T12:09:11.829810",
+      "metadata": {
+        "user_name": "SERGE CASTRO NEW TEST",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "Jane Smith    NEW TESST",
+        "partner_age": 74,
+        "net_worth": 1250000.0,
+        "monthly_surplus": 2500.0
+      }
+    },
+    {
+      "id": "20251112_1211",
+      "name": "new test serge 12:09",
+      "created": "2025-11-12T12:11:19.115749",
+      "metadata": {
+        "user_name": "SERGE CASTRO NEW TEST",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "Jane Smith    NEW TESST",
+        "partner_age": 74,
+        "net_worth": 1250000.0,
+        "monthly_surplus": 2500.0
+      }
+    },
+    {
+      "id": "20251112_1220",
+      "name": "tesst 2 12:20",
+      "created": "2025-11-12T12:20:54.216907",
+      "metadata": {
+        "user_name": "SERGE CASTRO NEW TESt2",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "Jane Smith    NEW TESt2",
+        "partner_age": 74,
+        "net_worth": 1250000.0,
+        "monthly_surplus": 2500.0
+      }
+    },
+    {
+      "id": "20251112_1244",
+      "name": "FINAL TEST 112:44",
+      "created": "2025-11-12T12:44:24.831071",
+      "metadata": {
+        "user_name": "SERGE CASTRO FINAL",
+        "user_age": 80,
+        "partner_exists": true,
+        "partner_name": "Jane Smith   FINAL",
+        "partner_age": 76,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1245",
+      "name": "FINAL TEST 112:44",
+      "created": "2025-11-12T12:45:54.083106",
+      "metadata": {
+        "user_name": "SERGE CASTRO FINAL",
+        "user_age": 80,
+        "partner_exists": true,
+        "partner_name": "Jane Smith   FINAL",
+        "partner_age": 76,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1308",
+      "name": "REALLY FINAL",
+      "created": "2025-11-12T13:08:09.563472",
+      "metadata": {
+        "user_name": "SERGE CASTRO FINAL",
+        "user_age": 80,
+        "partner_exists": true,
+        "partner_name": "Jane Smith   FINAL",
+        "partner_age": 76,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1605",
+      "name": "RETESTING 123",
+      "created": "2025-11-12T16:05:41.749347",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1642",
+      "name": "final test 4:41pm",
+      "created": "2025-11-12T16:42:13.445472",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1710",
+      "name": "final test 4:41pm",
+      "created": "2025-11-12T17:10:03.679068",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1710",
+      "name": "Test Scenario Phase 1",
+      "created": "2025-11-12T17:10:39.479231",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1731",
+      "name": "Test Scenario Phase 1",
+      "created": "2025-11-12T17:31:19.963574",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1807",
+      "name": "Test Scenario Phase 1",
+      "created": "2025-11-12T18:07:32.387907",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1808",
+      "name": "test1 plan based on TEST SCENERIO",
+      "created": "2025-11-12T18:08:33.718941",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1809",
+      "name": "  RETESTING save1",
+      "created": "2025-11-12T18:09:42.994667",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1810",
+      "name": "  RETESTING save2",
+      "created": "2025-11-12T18:10:44.703597",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    }
+  ]
+}

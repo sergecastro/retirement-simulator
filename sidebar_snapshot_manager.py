@@ -11,6 +11,7 @@ from datetime import datetime
 from embedded_scenarios import EMBEDDED_SCENARIOS
 from utils.snapshot_manager import (
     get_snapshots_index,
+    save_snapshots_index,
     save_snapshot,
     load_snapshot,
     delete_snapshot,
@@ -231,6 +232,11 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
                     try:
                         scenario_data = load_snapshot(source_id)
                         if scenario_data:
+                            # CRITICAL FIX: Update current_snapshot_id in index
+                            index['current_snapshot_id'] = source_id
+                            save_snapshots_index(index)
+                            print(f"[LOAD] Updated current_snapshot_id to: {source_id}")
+
                             st.session_state['current_scenario'] = selected_display
                             st.success(f"✅ Loaded: {selected_display}")
                             queue_scenario_load(scenario_data)
@@ -245,6 +251,11 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
                         scenario_data = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
                     else:
                         scenario_data = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
+
+                    # Clear current_snapshot_id for embedded scenarios
+                    index['current_snapshot_id'] = None
+                    save_snapshots_index(index)
+                    print(f"[LOAD] Cleared current_snapshot_id for embedded scenario")
 
                     st.session_state['current_scenario'] = selected_display
                     st.success(f"✅ Loaded: {selected_display}")
