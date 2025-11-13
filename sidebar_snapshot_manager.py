@@ -173,16 +173,8 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
     else:
         current_name = st.session_state.get('current_scenario', 'No plan loaded')
 
-    st.sidebar.info(f"📋 **Currently:** {current_name}")
-
-    # DEBUG: Show snapshot count to user
-    if snapshots:
-        st.sidebar.caption(f"✅ Found {len(snapshots)} saved plan(s) in localStorage")
-    else:
-        st.sidebar.caption(f"ℹ️ No saved plans found yet")
-
     # ============================================
-    # SECTION 1: SAVE (TOP)
+    # SECTION 1: SAVE YOUR PLAN (TOP)
     # ============================================
     st.sidebar.subheader("💾 SAVE YOUR PLAN")
 
@@ -238,7 +230,23 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
     st.sidebar.markdown("---")
 
     # ============================================
-    # SECTION 2: LOAD (MIDDLE)
+    # SECTION 2: SAVED PLANS (CURRENT STATUS)
+    # ============================================
+    st.sidebar.subheader("📂 Saved Plans")
+
+    # Simple info display - NOT an expander
+    st.sidebar.info(f"📋 **Currently:** {current_name}")
+
+    # Show snapshot count
+    if snapshots:
+        st.sidebar.caption(f"✅ Found {len(snapshots)} saved plan(s) in localStorage")
+    else:
+        st.sidebar.caption(f"ℹ️ No saved plans found yet")
+
+    st.sidebar.markdown("---")
+
+    # ============================================
+    # SECTION 3: LOAD A PLAN
     # ============================================
     st.sidebar.subheader("📥 LOAD A PLAN")
 
@@ -297,7 +305,7 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
     st.sidebar.markdown("---")
 
     # ============================================
-    # SECTION 3: OTHER ACTIONS (BOTTOM)
+    # SECTION 4: OTHER ACTIONS (BOTTOM)
     # ============================================
     st.sidebar.subheader("🔧 OTHER ACTIONS")
 
