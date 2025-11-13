@@ -284,8 +284,26 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
         with st.sidebar.expander("🔀 View & Manage Comparisons", expanded=False):
             st.write("🔍 [DEBUG] Expander opened")
             try:
-                # Get comparisons for current base plan
-                comparisons = get_comparisons_for_plan(current_snapshot_id)
+                # CACHE comparisons in session state to prevent rerun loop
+                cache_key = f'comparisons_cache_{current_snapshot_id}'
+
+                # Check if we need to refresh the cache
+                refresh_needed = (
+                    cache_key not in st.session_state or
+                    'comparison_save_success' in st.session_state or  # Just saved a new comparison
+                    'comparison_deleted' in st.session_state  # Just deleted a comparison
+                )
+
+                if refresh_needed:
+                    print(f"[DEBUG SIDEBAR] Refreshing comparisons cache for plan {current_snapshot_id}")
+                    st.session_state[cache_key] = get_comparisons_for_plan(current_snapshot_id)
+                    # Clear the refresh flags
+                    if 'comparison_deleted' in st.session_state:
+                        del st.session_state['comparison_deleted']
+                else:
+                    print(f"[DEBUG SIDEBAR] Using cached comparisons for plan {current_snapshot_id}")
+
+                comparisons = st.session_state[cache_key]
                 print(f"[DEBUG SIDEBAR] Found {len(comparisons)} comparisons")
                 st.write(f"🔍 [DEBUG] Found {len(comparisons)} comparisons")
 
@@ -351,6 +369,8 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
                                 success = delete_comparison_scenario(comp_id)
                                 if success:
                                     st.success(f"✅ Deleted: {comp_name}")
+                                    # Set flag to refresh cache on next load
+                                    st.session_state['comparison_deleted'] = True
                                     st.rerun()
                                 else:
                                     st.error(f"❌ Failed to delete: {comp_name}")
