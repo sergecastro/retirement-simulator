@@ -810,19 +810,164 @@ def render_scenario_studio_page():
 
     if len(comparisons) == 0:
         st.info("💡 **No saved scenarios yet!** Create and save your first scenario above.")
+
     elif len(comparisons) == 1:
         st.info(f"✅ **Found 1 saved scenario.** Create at least one more to enable side-by-side comparison.")
         st.markdown("**Saved Scenarios:**")
         for comp in comparisons:
             st.markdown(f"- {comp['name']} (Created: {comp['created_at'][:10]})")
-    else:
-        st.success(f"📊 **Found {len(comparisons)} saved scenarios!**")
-        st.info("🚧 **Comparison table coming in future steps...**")
 
-        # List the scenarios
-        st.markdown("**Your Saved Scenarios:**")
-        for comp in comparisons:
-            st.markdown(f"- {comp['name']} (Created: {comp['created_at'][:10]})")
+    else:
+        # 2+ scenarios - SHOW COMPARISON TABLE!
+        st.success(f"📊 **Found {len(comparisons)} saved scenarios!**")
+
+        st.markdown("---")
+        st.markdown("### 🔀 Compare Scenarios Side-by-Side")
+
+        # Multi-select for scenarios to compare
+        scenario_names = [comp['name'] for comp in comparisons]
+
+        selected_names = st.multiselect(
+            "Select 2-4 scenarios to compare:",
+            options=scenario_names,
+            default=scenario_names[:min(3, len(scenario_names))],  # Auto-select first 3
+            max_selections=4,
+            help="Choose which scenarios you want to compare"
+        )
+
+        if len(selected_names) >= 2:
+            st.markdown(f"**Comparing {len(selected_names)} scenarios...**")
+
+            # Load full data for selected scenarios
+            selected_comparisons = [comp for comp in comparisons if comp['name'] in selected_names]
+
+            # Load detailed data for each
+            from utils.comparison_scenarios import load_comparison_scenario
+            detailed_scenarios = []
+
+            for comp in selected_comparisons:
+                detailed = load_comparison_scenario(comp['id'])
+                if detailed:
+                    detailed_scenarios.append(detailed)
+
+            if len(detailed_scenarios) >= 2:
+                # Build comparison table
+                import pandas as pd
+
+                comparison_data = []
+
+                # Row 1: Scenario Name
+                comparison_data.append({
+                    'Metric': '📝 Scenario Name',
+                    **{f'Scenario {i+1}': s['name'] for i, s in enumerate(detailed_scenarios)}
+                })
+
+                # Section: Key Results
+                comparison_data.append({
+                    'Metric': '─── 📊 KEY RESULTS ───',
+                    **{f'Scenario {i+1}': '' for i in range(len(detailed_scenarios))}
+                })
+
+                # Get simulation results (if available)
+                for metric_key, metric_label in [
+                    ('final_savings', '💰 Final Savings'),
+                    ('final_net_worth', '💎 Final Net Worth'),
+                    ('years_solvent', '⏳ Years Solvent'),
+                    ('health_score', '❤️ Health Score'),
+                    ('savings_rate', '📈 Savings Rate'),
+                ]:
+                    row = {'Metric': metric_label}
+                    for i, s in enumerate(detailed_scenarios):
+                        sim_results = s.get('simulation_results', {})
+                        value = sim_results.get(metric_key, 'N/A')
+
+                        # Format the value
+                        if value == 'N/A':
+                            formatted = 'N/A'
+                        elif metric_key in ['final_savings', 'final_net_worth']:
+                            formatted = f"${value:,.0f}"
+                        elif metric_key == 'years_solvent':
+                            formatted = f"{value} years"
+                        elif metric_key == 'health_score':
+                            formatted = f"{value}/100"
+                        elif metric_key == 'savings_rate':
+                            formatted = f"{value:.1f}%"
+                        else:
+                            formatted = str(value)
+
+                        row[f'Scenario {i+1}'] = formatted
+
+                    comparison_data.append(row)
+
+                # Section: Income & Expenses
+                comparison_data.append({
+                    'Metric': '─── 💰 INCOME & EXPENSES ───',
+                    **{f'Scenario {i+1}': '' for i in range(len(detailed_scenarios))}
+                })
+
+                for adj_key, adj_label in [
+                    ('salary_wages', '💵 Salary/Wages'),
+                    ('social_security_income', '🏛️ Social Security'),
+                    ('pension_income', '🎖️ Pension'),
+                    ('housing_expenses', '🏠 Housing'),
+                    ('healthcare_expenses', '⚕️ Healthcare'),
+                ]:
+                    row = {'Metric': adj_label}
+                    for i, s in enumerate(detailed_scenarios):
+                        adjustments = s.get('adjustments', {})
+                        value = adjustments.get(adj_key, 'N/A')
+                        row[f'Scenario {i+1}'] = f"${value:,.0f}" if value != 'N/A' else 'N/A'
+                    comparison_data.append(row)
+
+                # Section: Investment Strategy
+                comparison_data.append({
+                    'Metric': '─── 📈 INVESTMENT STRATEGY ───',
+                    **{f'Scenario {i+1}': '' for i in range(len(detailed_scenarios))}
+                })
+
+                for adj_key, adj_label in [
+                    ('return_rate', '📊 Return Rate'),
+                    ('inflation_rate', '📉 Inflation Rate'),
+                    ('stocks_allocation', '📈 Stocks %'),
+                    ('bonds_allocation', '🔒 Bonds %'),
+                ]:
+                    row = {'Metric': adj_label}
+                    for i, s in enumerate(detailed_scenarios):
+                        adjustments = s.get('adjustments', {})
+                        value = adjustments.get(adj_key, 'N/A')
+
+                        if value != 'N/A':
+                            if 'rate' in adj_key:
+                                formatted = f"{value * 100:.1f}%"
+                            elif 'allocation' in adj_key:
+                                formatted = f"{value}%"
+                            else:
+                                formatted = str(value)
+                        else:
+                            formatted = 'N/A'
+
+                        row[f'Scenario {i+1}'] = formatted
+                    comparison_data.append(row)
+
+                # Create DataFrame and display
+                df = pd.DataFrame(comparison_data)
+
+                st.dataframe(
+                    df,
+                    use_container_width=True,
+                    hide_index=True,
+                    height=600
+                )
+
+                st.success("✅ Comparison complete! Scroll to see all metrics.")
+
+            else:
+                st.warning("⚠️ Could not load detailed data for selected scenarios.")
+
+        elif len(selected_names) == 1:
+            st.info("💡 Select at least 2 scenarios to see the comparison table.")
+        else:
+            st.info("💡 Select 2-4 scenarios above to compare them side-by-side.")
 
     st.markdown("---")
-    st.markdown("*Features in progress: Simulation engine, results preview, side-by-side comparison table*")
+    st.markdown("*🎬 Scenario Studio - Create, simulate, and compare retirement strategies*")
