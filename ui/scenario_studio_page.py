@@ -720,9 +720,9 @@ def render_scenario_studio_page():
         st.markdown(f"**Scenario:** {pending['name']}")
         st.markdown("This scenario has been simulated. Click below to save it permanently.")
 
-            col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
+        col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
 
-            with col_save2:
+        with col_save2:
                 # Unique key based on scenario name
                 save_button_key = f"save_btn_{pending['name'].replace(' ', '_')}"
 
