@@ -174,63 +174,13 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
         current_name = st.session_state.get('current_scenario', 'No plan loaded')
 
     # ============================================
-    # SECTION 1: SAVE YOUR PLAN (TOP)
+    # ANALYSIS MODE - READ ONLY INDICATOR
     # ============================================
-    st.sidebar.subheader("💾 SAVE YOUR PLAN")
-
-    # 1A: Save Current Plan (same name)
-    with st.sidebar.expander("💾 Save Plan", expanded=False):
-        st.info(f"📋 Current: {current_name}")
-
-        if st.button("💾 SAVE", key="save_current_plan", use_container_width=True, type="primary"):
-            scenario_data = collect_current_scenario_data()
-
-            try:
-                # Save to encrypted localStorage via snapshot_manager
-                snapshot_id = save_snapshot(scenario_data, snapshot_name=current_name)
-
-                if snapshot_id:
-                    st.success(f"✅ Plan saved!")
-                    st.info("💡 Plan saved securely with encryption!")
-                    st.rerun()
-                else:
-                    st.error("❌ Save failed")
-            except Exception as e:
-                st.error(f"❌ Save error: {e}")
-
-    # 1B: Save As New Plan (new name)
-    with st.sidebar.expander("💾 Save As New Plan", expanded=False):
-        new_plan_name = st.text_input(
-            "New plan name:",
-            value="",
-            placeholder="My Retirement Plan 2025",
-            key="new_plan_name_input"
-        )
-
-        if st.button("✨ CREATE NEW", key="create_new_plan", use_container_width=True, type="primary", disabled=not new_plan_name):
-            if new_plan_name:
-                scenario_data = collect_current_scenario_data()
-
-                try:
-                    # Save to encrypted localStorage
-                    snapshot_id = save_snapshot(scenario_data, snapshot_name=new_plan_name)
-
-                    if snapshot_id:
-                        st.session_state['current_scenario'] = new_plan_name
-                        st.success(f"✅ Created: {new_plan_name}")
-                        st.info("💡 Select it from dropdown below to load it!")
-                        st.rerun()
-                    else:
-                        st.error("❌ Failed to create plan")
-                except Exception as e:
-                    st.error(f"❌ Save error: {e}")
-            else:
-                st.error("Please enter a plan name")
-
+    st.sidebar.info("ℹ️ **Analysis Mode - Read Only**\n\n📝 To edit your retirement data, go to **INTAKE** mode.")
     st.sidebar.markdown("---")
 
     # ============================================
-    # SECTION 2: SAVED PLANS (CURRENT STATUS)
+    # SECTION 1: SAVED PLANS (CURRENT STATUS)
     # ============================================
     st.sidebar.subheader("📂 Saved Plans")
 
@@ -246,7 +196,7 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
     st.sidebar.markdown("---")
 
     # ============================================
-    # SECTION 3: LOAD A PLAN
+    # SECTION 2: LOAD A PLAN
     # ============================================
     st.sidebar.subheader("📥 LOAD A PLAN")
 
@@ -305,7 +255,7 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
     st.sidebar.markdown("---")
 
     # ============================================
-    # SECTION 4: OTHER ACTIONS (BOTTOM)
+    # SECTION 3: OTHER ACTIONS (BOTTOM)
     # ============================================
     st.sidebar.subheader("🔧 OTHER ACTIONS")
 
