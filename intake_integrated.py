@@ -1072,12 +1072,20 @@ def show_intake_questionnaire():
                     )
                     st.session_state['custom_expenses_list'][idx]['Monthly Amount'] = amount
 
+                    # SAFE category index lookup (handles missing/invalid categories)
+                    category_options = ["Education", "Healthcare", "Special Needs", "Childcare", "Other"]
+                    saved_category = expense_data.get('Category', 'Other')
+                    try:
+                        category_index = category_options.index(saved_category)
+                    except ValueError:
+                        # If saved category not in list, default to "Other"
+                        category_index = category_options.index("Other")
+                        print(f"[WARN] Invalid category '{saved_category}' for expense, defaulting to 'Other'")
+
                     category = st.selectbox(
                         "Category:",
-                        ["Education", "Healthcare", "Special Needs", "Transportation", "Other"],
-                        index=["Education", "Healthcare", "Special Needs", "Transportation", "Other"].index(
-                            expense_data.get('Category', 'Other')
-                        ),
+                        category_options,
+                        index=category_index,
                         key=f"custom_exp_category_{idx}"
                     )
                     st.session_state['custom_expenses_list'][idx]['Category'] = category

@@ -403,10 +403,20 @@ def show_family_page(existing, save_payload, go_to_page):
                     st.session_state.temp_children[idx]["Birth Year"] = birth_year
 
                 with col_b:
+                    # SAFE college plan index lookup (handles invalid plans)
+                    college_options = ["None", "Public In-State", "Public Out-of-State", "Private Nonprofit"]
+                    saved_plan = child.get("College Plan", "None")
+                    try:
+                        plan_index = college_options.index(saved_plan)
+                    except ValueError:
+                        # If saved plan not in list, default to "None"
+                        plan_index = 0
+                        print(f"[WARN] Invalid college plan '{saved_plan}' for child, defaulting to 'None'")
+
                     college_plan = st.selectbox(
                         "College Plan:",
-                        options=["None", "Public In-State", "Public Out-of-State", "Private Nonprofit"],
-                        index=["None", "Public In-State", "Public Out-of-State", "Private Nonprofit"].index(child.get("College Plan", "None")),
+                        options=college_options,
+                        index=plan_index,
                         key=f"child_college_{idx}"
                     )
                     st.session_state.temp_children[idx]["College Plan"] = college_plan
