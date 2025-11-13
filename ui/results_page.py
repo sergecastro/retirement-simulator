@@ -305,6 +305,14 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                         adjusted_sim_params['investment_return_rate'] = adj_return
                         adjusted_sim_params['inflation_rate'] = adj_inflation
 
+                        # STORE adjusted values in session state for save form
+                        st.session_state['last_comparison_adjustments'] = {
+                            'adj_income': adj_income,
+                            'adj_expenses': adj_expenses,
+                            'adj_return': adj_return,
+                            'adj_inflation': adj_inflation
+                        }
+
                         # Run adjusted simulation
                         comp_results = run_simulation(
                             age=user_data.get('age', 35),
@@ -337,6 +345,9 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                         )
 
                         if comp_results:
+                            # STORE comparison results in session state for save form
+                            st.session_state['last_comparison_results'] = comp_results
+
                             st.success("✅ Comparison complete!")
 
                             # Show comparison metrics
@@ -383,200 +394,203 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                             )
                             st.plotly_chart(fig, use_container_width=True)
 
-                            # =================================================================
-                            # SAVE COMPARISON SCENARIO SECTION (Sub-Phase 2A)
-                            # =================================================================
-                            st.markdown("---")
-                            print("[DEBUG RESULTS] ===== Reached Save Comparison Section =====")
-                            with st.expander("💾 Save This Comparison Scenario", expanded=False):
-                                print("[DEBUG SAVE] Expander opened")
-                                st.write("🔍 [DEBUG] Save Comparison expander opened")
-
-                                # CHECK FOR SUCCESS MESSAGE FROM PREVIOUS SAVE (after reload)
-                                if "comparison_save_success" in st.session_state:
-                                    print("[DEBUG SAVE] ✓ Found success message in session state")
-                                    success_data = st.session_state.comparison_save_success
-                                    st.success(f"✅ Comparison saved: {success_data['name']}")
-                                    st.balloons()
-                                    st.info(f"📊 Comparison ID: `{success_data['id']}`\n\nYou can now load this comparison from the sidebar.")
-                                    # Clear the flag so it doesn't show again
-                                    del st.session_state.comparison_save_success
-                                    print("[DEBUG SAVE] ✓ Success message displayed and cleared from session state")
-
-                                st.markdown("""
-                                Save this comparison to review later or compare with other scenarios.
-                                Only your adjustments are saved (not your full plan data).
-                                """)
-
-                                # WRAP IN FORM to prevent auto-reload
-                                with st.form("save_comparison_form", clear_on_submit=False):
-                                    print("[DEBUG SAVE] Form initialized")
-
-                                    col1, col2 = st.columns([2, 1])
-
-                                    with col1:
-                                        comparison_name = st.text_input(
-                                            "Comparison Name",
-                                            placeholder="e.g., Retire at 67, Save 10% More, Lower Expenses",
-                                            help="Give this comparison a memorable name"
-                                        )
-                                        print(f"[DEBUG SAVE] Name input widget created")
-
-                                        comparison_description = st.text_area(
-                                            "Description (Optional)",
-                                            placeholder="Describe what makes this scenario different...",
-                                            help="Add notes about this comparison",
-                                            height=100
-                                        )
-                                        print(f"[DEBUG SAVE] Description textarea widget created")
-
-                                    with col2:
-                                        st.markdown("**Current Adjustments:**")
-                                        try:
-                                            st.caption(f"Income: ${adj_income:,.0f}")
-                                            st.caption(f"Expenses: ${adj_expenses:,.0f}")
-                                            st.caption(f"Return Rate: {adj_return * 100:.1f}%")
-                                            st.caption(f"Inflation: {adj_inflation * 100:.1f}%")
-                                            print(f"[DEBUG SAVE] Adjustments displayed - Income: {adj_income}, Expenses: {adj_expenses}, Return: {adj_return}, Inflation: {adj_inflation}")
-                                        except Exception as e:
-                                            print(f"[DEBUG SAVE ERROR] Could not display adjustments: {e}")
-                                            st.error(f"Error displaying adjustments: {e}")
-
-                                    # FORM SUBMIT BUTTON (prevents auto-reload)
-                                    submitted = st.form_submit_button(
-                                        "💾 Save Comparison",
-                                        type="primary",
-                                        use_container_width=True
-                                    )
-                                    print(f"[DEBUG SAVE] Submit button rendered, submitted={submitted}")
-
-                                # ONLY PROCESS when button is ACTUALLY CLICKED
-                                if submitted:
-                                    print("="*60)
-                                    print("[DEBUG SAVE] ===== SAVE BUTTON CLICKED =====")
-                                    print(f"[DEBUG SAVE] Comparison name: '{comparison_name}'")
-                                    print(f"[DEBUG SAVE] Description: '{comparison_description}'")
-                                    print("="*60)
-                                    st.write(f"🔍 [DEBUG] Button clicked! Name: '{comparison_name}'")
-
-                                    if not comparison_name:
-                                        print("[DEBUG SAVE] ERROR: No name provided")
-                                        st.error("⚠️ Please enter a name for this comparison")
-                                    else:
-                                        print("[DEBUG SAVE] ✓ Name provided, proceeding to save...")
-                                        st.write("🔍 [DEBUG] Name validated, proceeding...")
-
-                                        # Get current base plan ID
-                                        try:
-                                            from utils.snapshot_manager import get_snapshots_index
-                                            print("[DEBUG SAVE] ✓ Imported get_snapshots_index")
-
-                                            index = get_snapshots_index()
-                                            print(f"[DEBUG SAVE] ✓ Got snapshots index: {list(index.keys())}")
-
-                                            current_plan_id = index.get('current_snapshot_id')
-                                            print(f"[DEBUG SAVE] Current base plan ID: '{current_plan_id}'")
-                                            st.write(f"🔍 [DEBUG] Base plan ID: '{current_plan_id}'")
-                                        except Exception as e:
-                                            print(f"[DEBUG SAVE ERROR] Failed to get plan ID: {e}")
-                                            import traceback
-                                            traceback.print_exc()
-                                            st.error(f"Error getting plan ID: {e}")
-                                            current_plan_id = None
-
-                                        if not current_plan_id:
-                                            print("[DEBUG SAVE] ERROR: No base plan ID found")
-                                            st.error("⚠️ No base plan found. Please save a base plan first in INTAKE mode.")
-                                        else:
-                                            print("[DEBUG SAVE] ✓ Base plan found, building adjustments...")
-                                            st.write("🔍 [DEBUG] Building adjustments dict...")
-
-                                            # Build adjustments dict
-                                            try:
-                                                adjustments = {
-                                                    "adjusted_income": float(adj_income),
-                                                    "adjusted_expenses": float(adj_expenses),
-                                                    "adjusted_return_rate": float(adj_return),
-                                                    "adjusted_inflation_rate": float(adj_inflation)
-                                                }
-                                                print(f"[DEBUG SAVE] ✓ Adjustments dict: {adjustments}")
-                                            except NameError as e:
-                                                print(f"[DEBUG SAVE ERROR] Adjustment variables not defined: {e}")
-                                                st.error(f"Error: Adjustment variables not found. Run comparison first.")
-                                                adjustments = None
-                                            except Exception as e:
-                                                print(f"[DEBUG SAVE ERROR] Failed to build adjustments: {e}")
-                                                st.error(f"Error building adjustments: {e}")
-                                                adjustments = None
-
-                                            if adjustments:
-                                                # Build simulation results (with error handling)
-                                                simulation_results = {}
-                                                try:
-                                                    simulation_results = {
-                                                        "final_savings": comp_results.get('final_savings', 0),
-                                                        "final_net_worth": comp_results.get('final_net_worth', 0),
-                                                        "years_solvent": comp_results.get('years_solvent', 0),
-                                                        "health_score": comp_results.get('health_score', 0)
-                                                    }
-                                                    print(f"[DEBUG SAVE] ✓ Simulation results: {simulation_results}")
-                                                except Exception as result_err:
-                                                    print(f"[DEBUG SAVE] ⚠ Could not capture simulation results: {result_err}")
-                                                    simulation_results = {}
-
-                                                # Save comparison scenario
-                                                print("[DEBUG SAVE] ===== Calling save_comparison_scenario() =====")
-                                                st.write("🔍 [DEBUG] Calling save function...")
-
-                                                try:
-                                                    from utils.comparison_scenarios import save_comparison_scenario
-                                                    print("[DEBUG SAVE] ✓ Imported save_comparison_scenario")
-
-                                                    comparison_id = save_comparison_scenario(
-                                                        base_plan_id=current_plan_id,
-                                                        name=comparison_name,
-                                                        description=comparison_description or "",
-                                                        adjustments=adjustments,
-                                                        simulation_results=simulation_results
-                                                    )
-
-                                                    print(f"[DEBUG SAVE] ✓ save_comparison_scenario returned: {comparison_id}")
-
-                                                    if comparison_id:
-                                                        print(f"[DEBUG SAVE] ===== SUCCESS! Comparison ID: {comparison_id} =====")
-
-                                                        # STORE SUCCESS IN SESSION STATE (survives reload!)
-                                                        st.session_state.comparison_save_success = {
-                                                            "name": comparison_name,
-                                                            "id": comparison_id
-                                                        }
-                                                        print("[DEBUG SAVE] ✓ Stored success message in session state")
-
-                                                        # Force a rerun to show the success message
-                                                        print("[DEBUG SAVE] ✓ Triggering rerun to display success message")
-                                                        st.rerun()
-
-                                                    else:
-                                                        print(f"[DEBUG SAVE] ERROR: save_comparison_scenario returned empty/None")
-                                                        st.error("❌ Failed to save comparison. Please try again.")
-
-                                                except Exception as e:
-                                                    print("="*60)
-                                                    print(f"[DEBUG SAVE] ===== SAVE FAILED WITH EXCEPTION =====")
-                                                    print(f"[DEBUG SAVE ERROR] Exception: {e}")
-                                                    print(f"[DEBUG SAVE ERROR] Exception type: {type(e)}")
-                                                    print("="*60)
-                                                    import traceback
-                                                    traceback.print_exc()
-                                                    st.error(f"❌ Error saving comparison: {e}")
-                                            else:
-                                                print("[DEBUG SAVE] ERROR: adjustments is None, skipping save")
-                                                st.error("Cannot save: adjustments could not be built")
-
                         else:
                             st.error("❌ Comparison failed to generate results")
         except Exception as e:
             st.error(f"Scenario comparison error: {str(e)}")
+
+    # =============================================================================
+    # SAVE COMPARISON SCENARIO (Sub-Phase 2A) - MOVED OUTSIDE COMPARISON FORM
+    # =============================================================================
+    # Only show if a comparison was run and data exists in session state
+    if 'last_comparison_adjustments' in st.session_state and 'last_comparison_results' in st.session_state:
+        st.markdown("---")
+        print("[DEBUG RESULTS] ===== Reached Save Comparison Section (OUTSIDE comparison form) =====")
+
+        with st.expander("💾 Save This Comparison Scenario", expanded=False):
+            print("[DEBUG SAVE] Expander opened")
+            st.write("🔍 [DEBUG] Save Comparison expander opened")
+
+            # CHECK FOR SUCCESS MESSAGE FROM PREVIOUS SAVE (after reload)
+            if "comparison_save_success" in st.session_state:
+                print("[DEBUG SAVE] ✓ Found success message in session state")
+                success_data = st.session_state.comparison_save_success
+                st.success(f"✅ Comparison saved: {success_data['name']}")
+                st.balloons()
+                st.info(f"📊 Comparison ID: `{success_data['id']}`\n\nYou can now load this comparison from the sidebar.")
+                # Clear the flag so it doesn't show again
+                del st.session_state.comparison_save_success
+                print("[DEBUG SAVE] ✓ Success message displayed and cleared from session state")
+
+            st.markdown("""
+            Save this comparison to review later or compare with other scenarios.
+            Only your adjustments are saved (not your full plan data).
+            """)
+
+            # Get adjustment data from session state
+            adjustments_data = st.session_state['last_comparison_adjustments']
+            comp_results = st.session_state['last_comparison_results']
+
+            # WRAP IN FORM to prevent auto-reload
+            with st.form(key="save_comparison_form", clear_on_submit=False):
+                print("[DEBUG SAVE] Form initialized")
+
+                col1, col2 = st.columns([2, 1])
+
+                with col1:
+                    comparison_name = st.text_input(
+                        "Comparison Name",
+                        placeholder="e.g., Retire at 67, Save 10% More, Lower Expenses",
+                        help="Give this comparison a memorable name"
+                    )
+                    print(f"[DEBUG SAVE] Name input widget created")
+
+                    comparison_description = st.text_area(
+                        "Description (Optional)",
+                        placeholder="Describe what makes this scenario different...",
+                        help="Add notes about this comparison",
+                        height=100
+                    )
+                    print(f"[DEBUG SAVE] Description textarea widget created")
+
+                with col2:
+                    st.markdown("**Current Adjustments:**")
+                    try:
+                        st.caption(f"Income: ${adjustments_data['adj_income']:,.0f}")
+                        st.caption(f"Expenses: ${adjustments_data['adj_expenses']:,.0f}")
+                        st.caption(f"Return Rate: {adjustments_data['adj_return'] * 100:.1f}%")
+                        st.caption(f"Inflation: {adjustments_data['adj_inflation'] * 100:.1f}%")
+                        print(f"[DEBUG SAVE] Adjustments displayed from session state")
+                    except Exception as e:
+                        print(f"[DEBUG SAVE ERROR] Could not display adjustments: {e}")
+                        st.error(f"Error displaying adjustments: {e}")
+
+                # FORM SUBMIT BUTTON (prevents auto-reload)
+                save_submitted = st.form_submit_button(
+                    "💾 Save Comparison",
+                    type="primary",
+                    use_container_width=True
+                )
+                print(f"[DEBUG SAVE] Submit button rendered, save_submitted={save_submitted}")
+
+            # ONLY PROCESS when button is ACTUALLY CLICKED
+            if save_submitted:
+                print("="*60)
+                print("[DEBUG SAVE] ===== SAVE BUTTON CLICKED =====")
+                print(f"[DEBUG SAVE] Comparison name: '{comparison_name}'")
+                print(f"[DEBUG SAVE] Description: '{comparison_description}'")
+                print("="*60)
+                st.write(f"🔍 [DEBUG] Button clicked! Name: '{comparison_name}'")
+
+                if not comparison_name:
+                    print("[DEBUG SAVE] ERROR: No name provided")
+                    st.error("⚠️ Please enter a name for this comparison")
+                else:
+                    print("[DEBUG SAVE] ✓ Name provided, proceeding to save...")
+                    st.write("🔍 [DEBUG] Name validated, proceeding...")
+
+                    # Get current base plan ID
+                    try:
+                        from utils.snapshot_manager import get_snapshots_index
+                        print("[DEBUG SAVE] ✓ Imported get_snapshots_index")
+
+                        index = get_snapshots_index()
+                        print(f"[DEBUG SAVE] ✓ Got snapshots index: {list(index.keys())}")
+
+                        current_plan_id = index.get('current_snapshot_id')
+                        print(f"[DEBUG SAVE] Current base plan ID: '{current_plan_id}'")
+                        st.write(f"🔍 [DEBUG] Base plan ID: '{current_plan_id}'")
+                    except Exception as e:
+                        print(f"[DEBUG SAVE ERROR] Failed to get plan ID: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        st.error(f"Error getting plan ID: {e}")
+                        current_plan_id = None
+
+                    if not current_plan_id:
+                        print("[DEBUG SAVE] ERROR: No base plan ID found")
+                        st.error("⚠️ No base plan found. Please save a base plan first in INTAKE mode.")
+                    else:
+                        print("[DEBUG SAVE] ✓ Base plan found, building adjustments...")
+                        st.write("🔍 [DEBUG] Building adjustments dict...")
+
+                        # Build adjustments dict from session state
+                        try:
+                            adjustments = {
+                                "adjusted_income": float(adjustments_data['adj_income']),
+                                "adjusted_expenses": float(adjustments_data['adj_expenses']),
+                                "adjusted_return_rate": float(adjustments_data['adj_return']),
+                                "adjusted_inflation_rate": float(adjustments_data['adj_inflation'])
+                            }
+                            print(f"[DEBUG SAVE] ✓ Adjustments dict: {adjustments}")
+                        except Exception as e:
+                            print(f"[DEBUG SAVE ERROR] Failed to build adjustments: {e}")
+                            st.error(f"Error building adjustments: {e}")
+                            adjustments = None
+
+                        if adjustments:
+                            # Build simulation results (with error handling)
+                            simulation_results = {}
+                            try:
+                                simulation_results = {
+                                    "final_savings": comp_results.get('final_savings', 0),
+                                    "final_net_worth": comp_results.get('final_net_worth', 0),
+                                    "years_solvent": comp_results.get('years_solvent', 0),
+                                    "health_score": comp_results.get('health_score', 0)
+                                }
+                                print(f"[DEBUG SAVE] ✓ Simulation results: {simulation_results}")
+                            except Exception as result_err:
+                                print(f"[DEBUG SAVE] ⚠ Could not capture simulation results: {result_err}")
+                                simulation_results = {}
+
+                            # Save comparison scenario
+                            print("[DEBUG SAVE] ===== Calling save_comparison_scenario() =====")
+                            st.write("🔍 [DEBUG] Calling save function...")
+
+                            try:
+                                from utils.comparison_scenarios import save_comparison_scenario
+                                print("[DEBUG SAVE] ✓ Imported save_comparison_scenario")
+
+                                comparison_id = save_comparison_scenario(
+                                    base_plan_id=current_plan_id,
+                                    name=comparison_name,
+                                    description=comparison_description or "",
+                                    adjustments=adjustments,
+                                    simulation_results=simulation_results
+                                )
+
+                                print(f"[DEBUG SAVE] ✓ save_comparison_scenario returned: {comparison_id}")
+
+                                if comparison_id:
+                                    print(f"[DEBUG SAVE] ===== SUCCESS! Comparison ID: {comparison_id} =====")
+
+                                    # STORE SUCCESS IN SESSION STATE (survives reload!)
+                                    st.session_state.comparison_save_success = {
+                                        "name": comparison_name,
+                                        "id": comparison_id
+                                    }
+                                    print("[DEBUG SAVE] ✓ Stored success message in session state")
+
+                                    # Force a rerun to show the success message
+                                    print("[DEBUG SAVE] ✓ Triggering rerun to display success message")
+                                    st.rerun()
+
+                                else:
+                                    print(f"[DEBUG SAVE] ERROR: save_comparison_scenario returned empty/None")
+                                    st.error("❌ Failed to save comparison. Please try again.")
+
+                            except Exception as e:
+                                print("="*60)
+                                print(f"[DEBUG SAVE] ===== SAVE FAILED WITH EXCEPTION =====")
+                                print(f"[DEBUG SAVE ERROR] Exception: {e}")
+                                print(f"[DEBUG SAVE ERROR] Exception type: {type(e)}")
+                                print("="*60)
+                                import traceback
+                                traceback.print_exc()
+                                st.error(f"❌ Error saving comparison: {e}")
+                        else:
+                            print("[DEBUG SAVE] ERROR: adjustments is None, skipping save")
+                            st.error("Cannot save: adjustments could not be built")
 
     # =============================================================================
     # COMPARE SAVED PLANS
