@@ -1,80 +1,577 @@
 """
 Scenario Studio Page
-Side-by-side comparison of multiple retirement scenarios
+Self-contained scenario creation and side-by-side comparison
 """
 
 import streamlit as st
 from utils.comparison_scenarios import get_comparisons_for_plan, load_comparison_scenario
 from utils.snapshot_manager import get_current_snapshot
 
+
 def render_scenario_studio_page():
-    """Render the Scenario Studio page"""
+    """Render the Scenario Studio page - Full self-contained experience"""
 
     # Page header
     st.markdown("# 🎬 Scenario Studio")
-    st.markdown("**Compare multiple retirement strategies side-by-side**")
+    st.markdown("**Create, simulate, and compare multiple retirement strategies**")
     st.markdown("---")
 
     # Get current base plan
     try:
         current_snapshot = get_current_snapshot()
         if not current_snapshot:
-            st.warning("⚠️ Please complete the INTAKE questionnaire first to create scenarios.")
+            st.warning("⚠️ Please complete the INTAKE questionnaire first to create a base plan.")
             if st.button("📝 Go to INTAKE"):
-                st.session_state['mode'] = 'intake'
+                st.session_state['current_mode'] = 'INTAKE'
                 st.rerun()
             return
 
         base_plan_id = current_snapshot.get('id')
-        user_name = current_snapshot.get('user_info', {}).get('name', 'User')
 
-        st.success(f"✅ Creating scenarios for: **{user_name}'s Base Plan**")
+        # Extract user info from snapshot metadata or data
+        metadata = current_snapshot.get('metadata', {})
+        user_name = metadata.get('user_name', 'User')
+
+        st.success(f"✅ Base Plan: **{user_name}** (ID: {base_plan_id[:8]}...)")
 
     except Exception as e:
         st.error(f"❌ Error loading base plan: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())
         return
+
+    # =============================================================================
+    # SECTION 1: CREATE NEW SCENARIO
+    # =============================================================================
+
+    st.markdown("---")
+    st.markdown("### 🎨 Create New Scenario")
+    st.markdown("**Adjust any parameters below to explore different retirement strategies**")
+
+    with st.form(key="create_scenario_form"):
+
+        # Scenario name
+        scenario_name = st.text_input(
+            "📝 Scenario Name",
+            placeholder="e.g., High Income, Early Retirement, Conservative Strategy",
+            help="Give this scenario a memorable name"
+        )
+
+        # Get all base plan values from current_snapshot for defaults
+        # The snapshot stores raw input values with 'input_' prefix
+        snapshot_data = current_snapshot.get('data', current_snapshot)
+
+        # Helper function to safely get values with defaults
+        def get_value(key, default=0):
+            """Get value from snapshot, handling both with and without input_ prefix"""
+            # Try with input_ prefix first
+            if f'input_{key}' in snapshot_data:
+                return snapshot_data[f'input_{key}']
+            # Try without prefix
+            if key in snapshot_data:
+                return snapshot_data[key]
+            # Return default
+            return default
+
+        st.markdown("---")
+
+        # =============================================================================
+        # INCOME & EXPENSES
+        # =============================================================================
+        st.markdown("#### 💰 Income & Expenses")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**Income Sources**")
+
+            adj_salary_wages = st.number_input(
+                "Annual Salary/Wages",
+                min_value=0,
+                max_value=10000000,
+                value=int(get_value('salary_wages', 100000)),
+                step=5000,
+                help="Employment income"
+            )
+
+            adj_social_security = st.number_input(
+                "Annual Social Security",
+                min_value=0,
+                max_value=100000,
+                value=int(get_value('social_security_income', 0)),
+                step=1000,
+                help="Expected Social Security benefits"
+            )
+
+            adj_pension = st.number_input(
+                "Annual Pension",
+                min_value=0,
+                max_value=500000,
+                value=int(get_value('pension_income', 0)),
+                step=1000,
+                help="Pension income"
+            )
+
+            adj_investment_income = st.number_input(
+                "Annual Investment Income",
+                min_value=0,
+                max_value=1000000,
+                value=int(get_value('investment_income', 0)),
+                step=1000,
+                help="Dividends, interest, rental income"
+            )
+
+            adj_other_income = st.number_input(
+                "Other Annual Income",
+                min_value=0,
+                max_value=1000000,
+                value=int(get_value('other_income', 0)),
+                step=1000,
+                help="Other income sources"
+            )
+
+        with col2:
+            st.markdown("**Expense Categories**")
+
+            adj_housing_expenses = st.number_input(
+                "Annual Housing Expenses",
+                min_value=0,
+                max_value=500000,
+                value=int(get_value('housing_expenses', 24000)),
+                step=1000,
+                help="Rent/mortgage, maintenance, utilities"
+            )
+
+            adj_healthcare_expenses = st.number_input(
+                "Annual Healthcare Expenses",
+                min_value=0,
+                max_value=100000,
+                value=int(get_value('healthcare_expenses', 6000)),
+                step=500,
+                help="Medical, insurance, prescriptions"
+            )
+
+            adj_groceries = st.number_input(
+                "Annual Groceries",
+                min_value=0,
+                max_value=50000,
+                value=int(get_value('groceries_expenses', 7200)),
+                step=500,
+                help="Food and household supplies"
+            )
+
+            adj_transportation = st.number_input(
+                "Annual Transportation",
+                min_value=0,
+                max_value=50000,
+                value=int(get_value('transportation_expenses', 4800)),
+                step=500,
+                help="Car, gas, insurance, public transit"
+            )
+
+            adj_other_expenses = st.number_input(
+                "Other Annual Expenses",
+                min_value=0,
+                max_value=200000,
+                value=int(get_value('other_expenses', 12000)),
+                step=500,
+                help="Entertainment, travel, misc"
+            )
+
+        st.markdown("---")
+
+        # =============================================================================
+        # RETIREMENT TIMING
+        # =============================================================================
+        st.markdown("#### 🎯 Retirement Timing & Life Planning")
+
+        col3, col4, col5 = st.columns(3)
+
+        with col3:
+            adj_age = st.number_input(
+                "Current Age",
+                min_value=18,
+                max_value=100,
+                value=int(get_value('age', 45)),
+                step=1,
+                help="Your current age"
+            )
+
+            adj_retirement_age = st.slider(
+                "Planned Retirement Age",
+                min_value=50,
+                max_value=80,
+                value=int(get_value('retirement_age', 65)),
+                step=1,
+                help="Age you plan to retire"
+            )
+
+        with col4:
+            adj_life_expectancy = st.slider(
+                "Life Expectancy",
+                min_value=75,
+                max_value=105,
+                value=int(get_value('life_expectancy', 90)),
+                step=1,
+                help="Planning horizon"
+            )
+
+            adj_ss_claiming_age = st.slider(
+                "Social Security Claiming Age",
+                min_value=62,
+                max_value=70,
+                value=int(get_value('ss_claiming_age', 67)),
+                step=1,
+                help="Age to start Social Security"
+            )
+
+        with col5:
+            adj_partner_exists = st.checkbox(
+                "Partner/Spouse?",
+                value=bool(get_value('partner_exists', False)),
+                help="Include partner in planning"
+            )
+
+            if adj_partner_exists:
+                adj_partner_age = st.number_input(
+                    "Partner's Age",
+                    min_value=18,
+                    max_value=100,
+                    value=int(get_value('partner_age', 45)),
+                    step=1
+                )
+            else:
+                adj_partner_age = None
+
+        st.markdown("---")
+
+        # =============================================================================
+        # INVESTMENT STRATEGY
+        # =============================================================================
+        st.markdown("#### 📈 Investment Strategy & Returns")
+
+        col6, col7 = st.columns(2)
+
+        with col6:
+            adj_return_rate = st.slider(
+                "Expected Annual Return Rate",
+                min_value=0.0,
+                max_value=0.20,
+                value=float(get_value('return_rate', 0.07)),
+                step=0.005,
+                format="%.2f%%",
+                help="Average annual investment return (before inflation)"
+            )
+
+            adj_stocks_allocation = st.slider(
+                "Stocks Allocation %",
+                min_value=0,
+                max_value=100,
+                value=int(get_value('stocks_allocation', 60)),
+                step=5,
+                format="%d%%",
+                help="Percentage allocated to stocks/equity"
+            )
+
+            adj_bonds_allocation = st.slider(
+                "Bonds Allocation %",
+                min_value=0,
+                max_value=100,
+                value=int(get_value('bonds_allocation', 40)),
+                step=5,
+                format="%d%%",
+                help="Percentage allocated to bonds/fixed income"
+            )
+
+        with col7:
+            adj_inflation_rate = st.slider(
+                "Expected Inflation Rate",
+                min_value=0.0,
+                max_value=0.10,
+                value=float(get_value('inflation_rate', 0.03)),
+                step=0.005,
+                format="%.2f%%",
+                help="Average annual inflation rate"
+            )
+
+            # Allocation warning
+            total_allocation = adj_stocks_allocation + adj_bonds_allocation
+            if total_allocation != 100:
+                st.warning(f"⚠️ Allocation total: {total_allocation}% (should be 100%)")
+            else:
+                st.success(f"✅ Allocation total: {total_allocation}%")
+
+        st.markdown("---")
+
+        # =============================================================================
+        # ACCOUNT BALANCES
+        # =============================================================================
+        st.markdown("#### 💼 Current Account Balances")
+
+        col8, col9, col10 = st.columns(3)
+
+        with col8:
+            st.markdown("**Tax-Advantaged**")
+
+            adj_ira_balance = st.number_input(
+                "Traditional IRA Balance",
+                min_value=0,
+                max_value=50000000,
+                value=int(get_value('ira_balance', 0)),
+                step=10000,
+                help="Traditional IRA accounts"
+            )
+
+            adj_401k_balance = st.number_input(
+                "401(k)/403(b) Balance",
+                min_value=0,
+                max_value=50000000,
+                value=int(get_value('four01k_403b_balance', 0)),
+                step=10000,
+                help="Employer retirement accounts"
+            )
+
+        with col9:
+            st.markdown("**Tax-Free**")
+
+            adj_roth_balance = st.number_input(
+                "Roth IRA Balance",
+                min_value=0,
+                max_value=50000000,
+                value=int(get_value('roth_balance', 0)),
+                step=10000,
+                help="Roth IRA accounts"
+            )
+
+            adj_hsa_balance = st.number_input(
+                "HSA Balance",
+                min_value=0,
+                max_value=1000000,
+                value=int(get_value('hsa_balance', 0)),
+                step=1000,
+                help="Health Savings Account"
+            )
+
+        with col10:
+            st.markdown("**Taxable**")
+
+            adj_taxable_accounts = st.number_input(
+                "Taxable Investment Accounts",
+                min_value=0,
+                max_value=100000000,
+                value=int(get_value('taxable_investment_accounts', 0)),
+                step=10000,
+                help="Brokerage accounts"
+            )
+
+            adj_savings = st.number_input(
+                "High-Yield Savings",
+                min_value=0,
+                max_value=10000000,
+                value=int(get_value('high_yield_savings_account', 0)),
+                step=5000,
+                help="Cash savings accounts"
+            )
+
+        # Partner accounts (if applicable)
+        if adj_partner_exists:
+            st.markdown("---")
+            st.markdown("**Partner's Accounts**")
+
+            col11, col12, col13 = st.columns(3)
+
+            with col11:
+                adj_partner_ira = st.number_input(
+                    "Partner's IRA Balance",
+                    min_value=0,
+                    max_value=50000000,
+                    value=int(get_value('partner_ira_balance', 0)),
+                    step=10000
+                )
+
+            with col12:
+                adj_partner_401k = st.number_input(
+                    "Partner's 401(k) Balance",
+                    min_value=0,
+                    max_value=50000000,
+                    value=int(get_value('partner_four01k_403b_balance', 0)),
+                    step=10000
+                )
+
+            with col13:
+                st.write("")  # Spacing
+        else:
+            adj_partner_ira = 0
+            adj_partner_401k = 0
+
+        st.markdown("---")
+
+        # =============================================================================
+        # REAL ESTATE & ASSETS
+        # =============================================================================
+        st.markdown("#### 🏠 Real Estate & Other Assets")
+
+        col14, col15 = st.columns(2)
+
+        with col14:
+            adj_home_value = st.number_input(
+                "Primary Residence Value",
+                min_value=0,
+                max_value=50000000,
+                value=int(get_value('primary_residence_value', 0)),
+                step=25000,
+                help="Current market value of home"
+            )
+
+            adj_mortgage_balance = st.number_input(
+                "Mortgage Balance",
+                min_value=0,
+                max_value=10000000,
+                value=int(get_value('mortgage_balance', 0)),
+                step=10000,
+                help="Remaining mortgage principal"
+            )
+
+            adj_vehicles_value = st.number_input(
+                "Vehicles Value",
+                min_value=0,
+                max_value=1000000,
+                value=int(get_value('vehicles_value', 0)),
+                step=5000,
+                help="Total value of vehicles"
+            )
+
+        with col15:
+            adj_other_assets = st.number_input(
+                "Other Assets",
+                min_value=0,
+                max_value=100000000,
+                value=int(get_value('other_assets', 0)),
+                step=10000,
+                help="Business, rental property, collectibles, etc."
+            )
+
+            adj_other_liabilities = st.number_input(
+                "Other Debts/Liabilities",
+                min_value=0,
+                max_value=10000000,
+                value=int(get_value('other_liabilities', 0)),
+                step=5000,
+                help="Credit cards, loans, etc."
+            )
+
+        st.markdown("---")
+
+        # =============================================================================
+        # FORM SUBMIT
+        # =============================================================================
+
+        col_submit1, col_submit2 = st.columns([3, 1])
+
+        with col_submit1:
+            st.markdown("**Ready to simulate this scenario?**")
+            st.markdown("Click below to run the retirement simulation with these adjusted parameters.")
+
+        with col_submit2:
+            run_scenario = st.form_submit_button(
+                "🔍 Run This Scenario",
+                type="primary",
+                use_container_width=True
+            )
+
+    # =============================================================================
+    # HANDLE FORM SUBMISSION
+    # =============================================================================
+
+    if run_scenario:
+        if not scenario_name or scenario_name.strip() == "":
+            st.error("⚠️ **Please enter a scenario name** before running the simulation.")
+        else:
+            # Store scenario parameters in session state for Step 4
+            st.session_state['pending_scenario'] = {
+                'name': scenario_name,
+                'base_plan_id': base_plan_id,
+                'adjustments': {
+                    # Income
+                    'salary_wages': adj_salary_wages,
+                    'social_security_income': adj_social_security,
+                    'pension_income': adj_pension,
+                    'investment_income': adj_investment_income,
+                    'other_income': adj_other_income,
+
+                    # Expenses
+                    'housing_expenses': adj_housing_expenses,
+                    'healthcare_expenses': adj_healthcare_expenses,
+                    'groceries_expenses': adj_groceries,
+                    'transportation_expenses': adj_transportation,
+                    'other_expenses': adj_other_expenses,
+
+                    # Timing
+                    'age': adj_age,
+                    'retirement_age': adj_retirement_age,
+                    'life_expectancy': adj_life_expectancy,
+                    'ss_claiming_age': adj_ss_claiming_age,
+                    'partner_exists': adj_partner_exists,
+                    'partner_age': adj_partner_age,
+
+                    # Investment
+                    'return_rate': adj_return_rate,
+                    'inflation_rate': adj_inflation_rate,
+                    'stocks_allocation': adj_stocks_allocation,
+                    'bonds_allocation': adj_bonds_allocation,
+
+                    # Accounts
+                    'ira_balance': adj_ira_balance,
+                    'four01k_403b_balance': adj_401k_balance,
+                    'roth_balance': adj_roth_balance,
+                    'hsa_balance': adj_hsa_balance,
+                    'taxable_investment_accounts': adj_taxable_accounts,
+                    'high_yield_savings_account': adj_savings,
+                    'partner_ira_balance': adj_partner_ira,
+                    'partner_four01k_403b_balance': adj_partner_401k,
+
+                    # Real Estate
+                    'primary_residence_value': adj_home_value,
+                    'mortgage_balance': adj_mortgage_balance,
+                    'vehicles_value': adj_vehicles_value,
+                    'other_assets': adj_other_assets,
+                    'other_liabilities': adj_other_liabilities,
+                }
+            }
+
+            st.success(f"✅ **Scenario '{scenario_name}' captured!**")
+            st.info("🚧 **Step 4: Simulation and results preview coming next...**")
+
+            # Show what was captured
+            with st.expander("📋 Show captured parameters"):
+                st.json(st.session_state['pending_scenario']['adjustments'])
+
+    # =============================================================================
+    # SECTION 2: SAVED SCENARIOS (List)
+    # =============================================================================
+
+    st.markdown("---")
+    st.markdown("---")
+    st.markdown("### 📊 Your Saved Scenarios")
 
     # Get saved comparisons
     comparisons = get_comparisons_for_plan(base_plan_id)
 
-    st.markdown("---")
-
-    # Show saved scenarios count
     if len(comparisons) == 0:
-        st.info("💡 **No saved scenarios yet!**")
-        st.markdown("""
-        To create scenarios:
-        1. Go to **ANALYSIS** mode
-        2. Adjust the sliders (income, expenses, etc.)
-        3. Click **Run Comparison**
-        4. Scroll down and click **💾 Save This Comparison**
-
-        Come back here when you have 2+ scenarios to compare!
-        """)
-
-        if st.button("📊 Go to ANALYSIS"):
-            st.session_state['mode'] = 'analysis'
-            st.rerun()
-        return
-
+        st.info("💡 **No saved scenarios yet!** Create and save your first scenario above.")
     elif len(comparisons) == 1:
-        st.info(f"💡 **Found 1 saved scenario.** Save at least one more to enable side-by-side comparison.")
-        st.markdown("Go to ANALYSIS mode to create more scenarios.")
-
-        if st.button("📊 Go to ANALYSIS"):
-            st.session_state['mode'] = 'analysis'
-            st.rerun()
-
+        st.info(f"✅ **Found 1 saved scenario.** Create at least one more to enable side-by-side comparison.")
+        st.markdown("**Saved Scenarios:**")
+        for comp in comparisons:
+            st.markdown(f"- {comp['name']} (Created: {comp['created_at'][:10]})")
     else:
-        # Show scenario selection (coming in next step)
         st.success(f"📊 **Found {len(comparisons)} saved scenarios!**")
-        st.markdown("### Select Scenarios to Compare")
-        st.info("🚧 **Comparison table coming in Step 3...** (Next 1 hour)")
+        st.info("🚧 **Comparison table coming in future steps...**")
 
-        # List the scenarios for now
+        # List the scenarios
         st.markdown("**Your Saved Scenarios:**")
         for comp in comparisons:
             st.markdown(f"- {comp['name']} (Created: {comp['created_at'][:10]})")
 
     st.markdown("---")
-    st.markdown("*More features coming soon: AI insights, probability analysis, timeline views*")
+    st.markdown("*Features in progress: Simulation engine, results preview, side-by-side comparison table*")
