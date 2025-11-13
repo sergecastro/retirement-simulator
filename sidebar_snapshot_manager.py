@@ -273,14 +273,21 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
     # ============================================
     # SECTION 2B: COMPARISON SCENARIOS (Sub-Phase 2A)
     # ============================================
+    print("[DEBUG SIDEBAR] Reached SECTION 2B: Comparison Scenarios")
+    st.sidebar.write("🔍 [DEBUG] Section 2B Loading...")
     st.sidebar.subheader("🔀 Comparison Scenarios")
 
     # Only show if we have a current base plan loaded
+    print(f"[DEBUG SIDEBAR] Current base plan ID: '{current_snapshot_id if current_snapshot_id else 'None'}'")
     if current_snapshot_id:
+        print("[DEBUG SIDEBAR] Base plan exists, loading comparisons...")
         with st.sidebar.expander("🔀 View & Manage Comparisons", expanded=False):
+            st.write("🔍 [DEBUG] Expander opened")
             try:
                 # Get comparisons for current base plan
                 comparisons = get_comparisons_for_plan(current_snapshot_id)
+                print(f"[DEBUG SIDEBAR] Found {len(comparisons)} comparisons")
+                st.write(f"🔍 [DEBUG] Found {len(comparisons)} comparisons")
 
                 if not comparisons:
                     st.caption("💡 No saved comparisons yet")
