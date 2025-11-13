@@ -26,11 +26,20 @@ def render_scenario_studio_page():
                 st.rerun()
             return
 
-        base_plan_id = current_snapshot.get('id')
+        # Get the current snapshot ID from the index
+        from utils.snapshot_manager import get_snapshots_index
+        index = get_snapshots_index()
+        base_plan_id = index.get('current_snapshot_id')
 
-        # Extract user info from snapshot metadata or data
-        metadata = current_snapshot.get('metadata', {})
-        user_name = metadata.get('user_name', 'User')
+        if not base_plan_id:
+            st.error("❌ No current snapshot ID found. Please save a snapshot in INTAKE mode first.")
+            if st.button("📝 Go to INTAKE"):
+                st.session_state['current_mode'] = 'INTAKE'
+                st.rerun()
+            return
+
+        # Extract user info from snapshot data (snapshot uses 'input_' prefix)
+        user_name = current_snapshot.get('input_user_name', 'User')
 
         st.success(f"✅ Base Plan: **{user_name}** (ID: {base_plan_id[:8]}...)")
 
