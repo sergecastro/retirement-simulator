@@ -435,6 +435,11 @@ def show_intake_mode():
         st.error(f"INTAKE error: {str(e)}")
         st.info("💡 Try switching to Analysis mode if you encounter issues.")
 
+        # DEBUG: Print full traceback to console
+        import traceback
+        print("[INTAKE ERROR] Full traceback:")
+        traceback.print_exc()
+
 
 # =============================================================================
 # HEALTHCARE MODE
