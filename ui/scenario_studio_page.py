@@ -11,9 +11,16 @@ from utils.snapshot_manager import get_current_snapshot
 def render_scenario_studio_page():
     """Render the Scenario Studio page - Full self-contained experience"""
 
-    # Page header
-    st.markdown("# 🎬 Scenario Studio")
-    st.markdown("**Create, simulate, and compare multiple retirement strategies**")
+    # Page header with quick rerun button for testing
+    col_header1, col_header2 = st.columns([4, 1])
+    with col_header1:
+        st.markdown("# 🎬 Scenario Studio")
+        st.markdown("**Create, simulate, and compare multiple retirement strategies**")
+    with col_header2:
+        st.markdown("### ")  # Spacing
+        if st.button("🔄 Reload Page", key="quick_rerun_button", help="Refresh to see latest code changes", use_container_width=True):
+            st.rerun()
+
     st.markdown("---")
 
     # Get current base plan
