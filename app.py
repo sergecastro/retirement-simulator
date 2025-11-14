@@ -5,7 +5,7 @@ Main application entry point and navigation.
 
 Author: Family Forecast Development Team
 Last Updated: November 6, 2025 - 7:30 PM EST
-Version: 3.1.1 (Healthcare Hub + Diagnostic Mode)
+Version: 3.1.1 (Healthcare Hub)
 """
 
 # =============================================================================
@@ -57,7 +57,7 @@ from sidebar_snapshot_manager import manage_snapshots_sidebar as manage_scenario
 # Import INTAKE module
 from intake_integrated import show_intake_questionnaire
 
-# Import Healthcare module (with error handling for debugging)
+# Import Healthcare module
 try:
     from healthcare.healthcare_main import main as healthcare_main
     HEALTHCARE_AVAILABLE = True
@@ -271,9 +271,6 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     st.title("🏠 Welcome to Family Forecast!")
     st.markdown("## *Family Lifecycle Retirement Planner*")
 
-    # DEBUG: Show version to confirm deployment
-    st.caption(f"🔧 Debug: Version 3.1.1 | Healthcare Module: {'Available' if HEALTHCARE_AVAILABLE else 'UNAVAILABLE'} | Deployed: Nov 6, 7:30 PM")
-
     # Welcome message box
     st.markdown("""
     <div style='background-color: #E8E6E0; padding: 20px; border-radius: 10px; border-left: 5px solid #E8B541;'>
@@ -467,11 +464,6 @@ def show_intake_mode():
     except Exception as e:
         st.error(f"INTAKE error: {str(e)}")
         st.info("💡 Try switching to Analysis mode if you encounter issues.")
-
-        # DEBUG: Print full traceback to console
-        import traceback
-        print("[INTAKE ERROR] Full traceback:")
-        traceback.print_exc()
 
 
 # =============================================================================
