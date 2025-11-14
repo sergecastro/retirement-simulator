@@ -825,16 +825,25 @@ def render_scenario_studio_page():
                 max_value=50000000,
                 value=int(get_value('primary_residence_value', 0)),
                 step=25000,
-                help="Current market value of home"
+                help="Current market value of primary home"
             )
 
             adj_mortgage_balance = st.number_input(
-                "Mortgage Balance",
+                "Primary Mortgage Balance",
                 min_value=0,
                 max_value=10000000,
-                value=int(get_value('mortgage_balance', 0)),
+                value=int(get_value('primary_residence_mortgage', 0)),
                 step=10000,
-                help="Remaining mortgage principal"
+                help="Remaining mortgage principal on primary home"
+            )
+
+            adj_secondary_residence = st.number_input(
+                "Secondary Residence Value",
+                min_value=0,
+                max_value=50000000,
+                value=int(get_value('secondary_residence_value', 0)),
+                step=25000,
+                help="Current market value of vacation/second home"
             )
 
             adj_vehicles_value = st.number_input(
@@ -847,6 +856,15 @@ def render_scenario_studio_page():
             )
 
         with col15:
+            adj_secondary_mortgage = st.number_input(
+                "Secondary Mortgage Balance",
+                min_value=0,
+                max_value=10000000,
+                value=int(get_value('secondary_residence_mortgage', 0)),
+                step=10000,
+                help="Remaining mortgage principal on secondary home"
+            )
+
             adj_other_assets = st.number_input(
                 "Other Assets",
                 min_value=0,
@@ -915,8 +933,8 @@ def render_scenario_studio_page():
                                    adj_hsa_balance + adj_taxable_accounts + adj_savings +
                                    adj_partner_ira + adj_partner_401k)
 
-                    # Calculate total liabilities
-                    total_liabilities = adj_mortgage_balance + adj_other_liabilities
+                    # Calculate total liabilities (includes both mortgages)
+                    total_liabilities = adj_mortgage_balance + adj_secondary_mortgage + adj_other_liabilities
 
                     # Calculate simulation years (from current age to life expectancy)
                     simulation_years = adj_life_expectancy - adj_age
@@ -933,7 +951,7 @@ def render_scenario_studio_page():
                         total_expenses=total_expenses,
                         combined_financial_assets=liquid_assets,
                         primary_residence_value=adj_home_value,
-                        secondary_residence_value=0,  # Not captured in form yet
+                        secondary_residence_value=adj_secondary_residence,
                         combined_other_assets_total=adj_other_assets + adj_vehicles_value,
                         total_liabilities_local=total_liabilities,
                         partner_liabilities=0,
@@ -1064,7 +1082,9 @@ def render_scenario_studio_page():
 
                                 # Real Estate
                                 'primary_residence_value': adj_home_value,
-                                'mortgage_balance': adj_mortgage_balance,
+                                'primary_residence_mortgage': adj_mortgage_balance,
+                                'secondary_residence_value': adj_secondary_residence,
+                                'secondary_residence_mortgage': adj_secondary_mortgage,
                                 'vehicles_value': adj_vehicles_value,
                                 'other_assets': adj_other_assets,
                                 'other_liabilities': adj_other_liabilities,
