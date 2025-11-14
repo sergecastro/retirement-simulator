@@ -1205,13 +1205,13 @@ def render_scenario_studio_page():
     elif len(comparisons) == 1:
         st.info(f"✅ **Found 1 saved scenario.** Create at least one more to enable side-by-side comparison.")
         st.markdown("**Saved Scenarios:**")
-        for comp in comparisons:
+        for idx, comp in enumerate(comparisons):
             col1, col2 = st.columns([4, 1])
             with col1:
                 st.markdown(f"**{comp['name']}**")
                 st.caption(f"Created: {comp['created_at'][:10]}")
             with col2:
-                if st.button("🗑️ Delete", key=f"delete_{comp['id']}", type="secondary", use_container_width=True):
+                if st.button("🗑️ Delete", key=f"delete_single_{idx}_{comp['id']}", type="secondary", use_container_width=True):
                     from utils.comparison_scenarios import delete_comparison_scenario
                     if delete_comparison_scenario(comp['id']):
                         st.success(f"✅ Deleted: {comp['name']}")
