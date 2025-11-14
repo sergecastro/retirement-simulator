@@ -8,6 +8,253 @@ from utils.comparison_scenarios import get_comparisons_for_plan, load_comparison
 from utils.snapshot_manager import get_current_snapshot
 
 
+# =============================================================================
+# EXPORT FUNCTIONS
+# =============================================================================
+
+def export_comparison_to_csv(scenarios, base_plan_id):
+    """Export comparison data to CSV format"""
+    import pandas as pd
+    from io import StringIO
+
+    try:
+        # Prepare comparison data
+        rows = []
+        for scenario in scenarios:
+            sim_results = scenario.get('simulation_results', {})
+            row = {
+                'Scenario Name': scenario.get('name', 'Unknown'),
+                'Created Date': scenario.get('created_at', '')[:10],
+                'Final Savings': sim_results.get('final_savings', 0),
+                'Final Net Worth': sim_results.get('final_net_worth', 0),
+                'Years Solvent': sim_results.get('years_solvent', 0),
+                'Health Score': sim_results.get('health_score', 0),
+                'Emergency Fund (Months)': sim_results.get('emergency_fund_months', 0),
+                'Debt to Income Ratio': sim_results.get('debt_to_income', 0),
+                'Savings Rate': sim_results.get('savings_rate', 0),
+            }
+            rows.append(row)
+
+        # Create DataFrame
+        df = pd.DataFrame(rows)
+
+        # Convert to CSV
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+
+        return csv_buffer.getvalue()
+
+    except Exception as e:
+        print(f"Error exporting to CSV: {e}")
+        return None
+
+
+def export_comparison_to_excel(scenarios, base_plan_id):
+    """Export comparison data to Excel with multiple sheets"""
+    import pandas as pd
+    from io import BytesIO
+
+    try:
+        # Create Excel writer
+        excel_buffer = BytesIO()
+
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            # Sheet 1: Summary Comparison
+            summary_rows = []
+            for scenario in scenarios:
+                sim_results = scenario.get('simulation_results', {})
+                row = {
+                    'Scenario Name': scenario.get('name', 'Unknown'),
+                    'Created Date': scenario.get('created_at', '')[:10],
+                    'Final Savings': sim_results.get('final_savings', 0),
+                    'Final Net Worth': sim_results.get('final_net_worth', 0),
+                    'Years Solvent': sim_results.get('years_solvent', 0),
+                    'Health Score': sim_results.get('health_score', 0),
+                    'Emergency Fund (Months)': sim_results.get('emergency_fund_months', 0),
+                    'Debt to Income Ratio': sim_results.get('debt_to_income', 0),
+                    'Savings Rate': sim_results.get('savings_rate', 0),
+                }
+                summary_rows.append(row)
+
+            summary_df = pd.DataFrame(summary_rows)
+            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+
+            # Sheet 2: Parameters for each scenario
+            for idx, scenario in enumerate(scenarios, 1):
+                adjustments = scenario.get('adjustments', {})
+                param_data = []
+                for key, value in adjustments.items():
+                    param_data.append({
+                        'Parameter': key.replace('_', ' ').title(),
+                        'Value': value
+                    })
+
+                param_df = pd.DataFrame(param_data)
+                sheet_name = f"Params_{idx}"[:31]  # Excel limit 31 chars
+                param_df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+            # Sheet 3: Year-by-year data for first scenario (if available)
+            if scenarios and 'simulation_results' in scenarios[0]:
+                df_data = scenarios[0]['simulation_results'].get('df', {}).get('data', {})
+                if df_data:
+                    trajectory_df = pd.DataFrame(df_data)
+                    trajectory_df.to_excel(writer, sheet_name='Trajectory', index=False)
+
+        excel_buffer.seek(0)
+        return excel_buffer.getvalue()
+
+    except Exception as e:
+        print(f"Error exporting to Excel: {e}")
+        return None
+
+
+def export_comparison_to_pdf(scenarios, base_plan_id):
+    """Export comparison data to PDF with professional formatting"""
+    from io import BytesIO
+
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT
+        import datetime
+
+        # Create PDF buffer
+        pdf_buffer = BytesIO()
+
+        # Create document
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=letter,
+                                rightMargin=0.75*inch, leftMargin=0.75*inch,
+                                topMargin=0.75*inch, bottomMargin=0.75*inch)
+
+        # Container for PDF elements
+        elements = []
+
+        # Styles
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.HexColor('#1f77b4'),
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=16,
+            textColor=colors.HexColor('#333333'),
+            spaceAfter=12,
+            spaceBefore=12
+        )
+
+        # Title Page
+        elements.append(Spacer(1, 2*inch))
+        elements.append(Paragraph("Scenario Comparison Report", title_style))
+        elements.append(Spacer(1, 0.5*inch))
+        elements.append(Paragraph(f"Generated: {datetime.datetime.now().strftime('%B %d, %Y at %I:%M %p')}",
+                                 styles['Normal']))
+        elements.append(Spacer(1, 0.3*inch))
+        elements.append(Paragraph(f"Base Plan ID: {base_plan_id}", styles['Normal']))
+        elements.append(Spacer(1, 0.3*inch))
+        elements.append(Paragraph(f"Number of Scenarios: {len(scenarios)}", styles['Normal']))
+        elements.append(PageBreak())
+
+        # Comparison Table
+        elements.append(Paragraph("Scenario Comparison Summary", heading_style))
+        elements.append(Spacer(1, 0.2*inch))
+
+        # Prepare table data
+        table_data = [
+            ['Scenario', 'Final Savings', 'Net Worth', 'Years Solvent', 'Health Score']
+        ]
+
+        for scenario in scenarios:
+            sim_results = scenario.get('simulation_results', {})
+            table_data.append([
+                scenario.get('name', 'Unknown')[:20],  # Truncate long names
+                f"${sim_results.get('final_savings', 0):,.0f}",
+                f"${sim_results.get('final_net_worth', 0):,.0f}",
+                f"{sim_results.get('years_solvent', 0)}",
+                f"{sim_results.get('health_score', 0)}/100"
+            ])
+
+        # Create table
+        table = Table(table_data, colWidths=[2*inch, 1.5*inch, 1.5*inch, 1*inch, 1*inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f77b4')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+        ]))
+
+        elements.append(table)
+        elements.append(Spacer(1, 0.5*inch))
+
+        # Detailed metrics for each scenario
+        elements.append(PageBreak())
+        elements.append(Paragraph("Detailed Scenario Metrics", heading_style))
+
+        for scenario in scenarios:
+            elements.append(Spacer(1, 0.2*inch))
+            elements.append(Paragraph(f"<b>{scenario.get('name', 'Unknown')}</b>", styles['Heading3']))
+            elements.append(Spacer(1, 0.1*inch))
+
+            sim_results = scenario.get('simulation_results', {})
+
+            details = [
+                ['Metric', 'Value'],
+                ['Final Savings', f"${sim_results.get('final_savings', 0):,.2f}"],
+                ['Final Net Worth', f"${sim_results.get('final_net_worth', 0):,.2f}"],
+                ['Years Solvent', f"{sim_results.get('years_solvent', 0)} years"],
+                ['Health Score', f"{sim_results.get('health_score', 0)}/100"],
+                ['Emergency Fund', f"{sim_results.get('emergency_fund_months', 0):.1f} months"],
+                ['Debt/Income Ratio', f"{sim_results.get('debt_to_income', 0):.2f}%"],
+                ['Savings Rate', f"{sim_results.get('savings_rate', 0):.2%}"],
+            ]
+
+            detail_table = Table(details, colWidths=[3*inch, 3*inch])
+            detail_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4a90e2')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 11),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightblue])
+            ]))
+
+            elements.append(detail_table)
+            elements.append(Spacer(1, 0.3*inch))
+
+        # Build PDF
+        doc.build(elements)
+
+        pdf_buffer.seek(0)
+        return pdf_buffer.getvalue()
+
+    except ImportError:
+        print("Error: reportlab not installed")
+        return None
+    except Exception as e:
+        print(f"Error exporting to PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def render_scenario_studio_page():
     """Render the Scenario Studio page - Full self-contained experience"""
 
@@ -1236,6 +1483,291 @@ def render_scenario_studio_page():
                             best_solvent['name'],
                             f"{best_solvent['simulation_results']['years_solvent']} years"
                         )
+
+                # =============================================================================
+                # CHARTS & VISUALIZATIONS SECTION
+                # =============================================================================
+
+                st.markdown("---")
+                st.markdown("### 📊 Visual Analysis")
+                st.markdown("Interactive charts to help you compare scenarios at a glance.")
+
+                # Chart 1: Final Savings Comparison (Bar Chart)
+                st.markdown("#### 💰 Final Savings Comparison")
+
+                try:
+                    import plotly.graph_objects as go
+                    import plotly.express as px
+
+                    # Prepare data for bar chart
+                    chart_data = []
+                    for scenario in valid_scenarios:
+                        chart_data.append({
+                            'Scenario': scenario['name'],
+                            'Final Savings': scenario['simulation_results']['final_savings']
+                        })
+
+                    # Sort by final savings descending
+                    chart_data = sorted(chart_data, key=lambda x: x['Final Savings'], reverse=True)
+
+                    # Create bar chart
+                    fig1 = go.Figure(data=[
+                        go.Bar(
+                            x=[d['Scenario'] for d in chart_data],
+                            y=[d['Final Savings'] for d in chart_data],
+                            marker_color='rgb(55, 83, 109)',
+                            text=[f"${d['Final Savings']:,.0f}" for d in chart_data],
+                            textposition='outside',
+                        )
+                    ])
+
+                    fig1.update_layout(
+                        title="Final Savings by Scenario",
+                        xaxis_title="Scenario",
+                        yaxis_title="Final Savings ($)",
+                        yaxis_tickformat='$,.0f',
+                        height=400,
+                        showlegend=False,
+                    )
+
+                    st.plotly_chart(fig1, use_container_width=True)
+
+                except ImportError:
+                    st.warning("📊 Plotly not available. Install with: pip install plotly")
+                except Exception as e:
+                    st.error(f"Error creating chart: {e}")
+
+                # Chart 2: Savings Trajectory Over Time (Line Chart)
+                st.markdown("#### 📈 Savings Trajectory Over Time")
+
+                try:
+                    fig2 = go.Figure()
+
+                    # Add a line for each scenario
+                    for scenario in valid_scenarios:
+                        df_data = scenario['simulation_results']['df']['data']
+                        years = df_data['Year']
+                        savings = df_data['Savings_End']
+
+                        fig2.add_trace(go.Scatter(
+                            x=years,
+                            y=savings,
+                            mode='lines+markers',
+                            name=scenario['name'],
+                            line=dict(width=2),
+                            marker=dict(size=6)
+                        ))
+
+                    fig2.update_layout(
+                        title="Savings Growth Over Time",
+                        xaxis_title="Year",
+                        yaxis_title="Savings Balance ($)",
+                        yaxis_tickformat='$,.0f',
+                        height=500,
+                        hovermode='x unified',
+                        legend=dict(
+                            orientation="v",
+                            yanchor="top",
+                            y=0.99,
+                            xanchor="left",
+                            x=0.01
+                        )
+                    )
+
+                    st.plotly_chart(fig2, use_container_width=True)
+
+                except Exception as e:
+                    st.error(f"Error creating trajectory chart: {e}")
+
+                # Chart 3: Income vs Expenses Comparison (Grouped Bar)
+                st.markdown("#### 💵 First Year Income vs Expenses")
+
+                try:
+                    # Get first year income and expenses for each scenario
+                    income_expense_data = []
+                    for scenario in valid_scenarios:
+                        df_data = scenario['simulation_results']['df']['data']
+                        # First year data (index 0)
+                        total_income = df_data['Total_Income'][0]
+                        total_expenses = df_data['Total_Expenses'][0]
+
+                        income_expense_data.append({
+                            'Scenario': scenario['name'],
+                            'Income': total_income,
+                            'Expenses': total_expenses,
+                            'Surplus': total_income - total_expenses
+                        })
+
+                    # Create grouped bar chart
+                    fig3 = go.Figure()
+
+                    scenarios_list = [d['Scenario'] for d in income_expense_data]
+
+                    fig3.add_trace(go.Bar(
+                        name='Income',
+                        x=scenarios_list,
+                        y=[d['Income'] for d in income_expense_data],
+                        marker_color='rgb(26, 118, 255)',
+                        text=[f"${d['Income']:,.0f}" for d in income_expense_data],
+                        textposition='outside',
+                    ))
+
+                    fig3.add_trace(go.Bar(
+                        name='Expenses',
+                        x=scenarios_list,
+                        y=[d['Expenses'] for d in income_expense_data],
+                        marker_color='rgb(255, 65, 54)',
+                        text=[f"${d['Expenses']:,.0f}" for d in income_expense_data],
+                        textposition='outside',
+                    ))
+
+                    fig3.update_layout(
+                        title="Annual Income vs Expenses (First Year)",
+                        xaxis_title="Scenario",
+                        yaxis_title="Amount ($)",
+                        yaxis_tickformat='$,.0f',
+                        barmode='group',
+                        height=400,
+                        legend=dict(
+                            orientation="h",
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="right",
+                            x=1
+                        )
+                    )
+
+                    st.plotly_chart(fig3, use_container_width=True)
+
+                except Exception as e:
+                    st.error(f"Error creating income/expenses chart: {e}")
+
+                # Chart 4: Financial Health Score Comparison (Gauge-style Bar)
+                st.markdown("#### 🎯 Financial Health Score Comparison")
+
+                try:
+                    # Prepare health score data
+                    health_data = []
+                    for scenario in valid_scenarios:
+                        health_score = scenario['simulation_results'].get('health_score', 0)
+                        health_data.append({
+                            'Scenario': scenario['name'],
+                            'Health Score': health_score
+                        })
+
+                    # Sort by health score
+                    health_data = sorted(health_data, key=lambda x: x['Health Score'], reverse=True)
+
+                    # Create horizontal bar chart with color gradient
+                    colors = []
+                    for score in [d['Health Score'] for d in health_data]:
+                        if score >= 80:
+                            colors.append('rgb(34, 139, 34)')  # Green
+                        elif score >= 60:
+                            colors.append('rgb(255, 215, 0)')  # Gold
+                        elif score >= 40:
+                            colors.append('rgb(255, 165, 0)')  # Orange
+                        else:
+                            colors.append('rgb(220, 20, 60)')  # Red
+
+                    fig4 = go.Figure(data=[
+                        go.Bar(
+                            y=[d['Scenario'] for d in health_data],
+                            x=[d['Health Score'] for d in health_data],
+                            orientation='h',
+                            marker_color=colors,
+                            text=[f"{d['Health Score']}/100" for d in health_data],
+                            textposition='inside',
+                        )
+                    ])
+
+                    fig4.update_layout(
+                        title="Financial Health Score (0-100)",
+                        xaxis_title="Health Score",
+                        yaxis_title="Scenario",
+                        xaxis=dict(range=[0, 100]),
+                        height=max(300, len(health_data) * 60),
+                        showlegend=False,
+                    )
+
+                    st.plotly_chart(fig4, use_container_width=True)
+
+                except Exception as e:
+                    st.error(f"Error creating health score chart: {e}")
+
+                # =============================================================================
+                # EXPORT OPTIONS SECTION
+                # =============================================================================
+
+                st.markdown("---")
+                st.markdown("### 📥 Export Comparison Results")
+                st.markdown("Download your scenario comparison in various formats for sharing or further analysis.")
+
+                col_exp1, col_exp2, col_exp3 = st.columns(3)
+
+                with col_exp1:
+                    if st.button("📄 Export to PDF", use_container_width=True, type="secondary"):
+                        try:
+                            from io import BytesIO
+                            import datetime
+
+                            # Generate PDF export
+                            pdf_bytes = export_comparison_to_pdf(detailed_scenarios, base_plan_id)
+
+                            if pdf_bytes:
+                                st.download_button(
+                                    label="⬇️ Download PDF Report",
+                                    data=pdf_bytes,
+                                    file_name=f"scenario_comparison_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                                    mime="application/pdf",
+                                    use_container_width=True
+                                )
+                                st.success("✅ PDF generated! Click Download above.")
+                        except ImportError as e:
+                            st.error(f"❌ PDF export requires reportlab. Install with: pip install reportlab")
+                        except Exception as e:
+                            st.error(f"❌ Error generating PDF: {e}")
+
+                with col_exp2:
+                    if st.button("📊 Export to Excel", use_container_width=True, type="secondary"):
+                        try:
+                            from io import BytesIO
+                            import datetime
+
+                            # Generate Excel export
+                            excel_bytes = export_comparison_to_excel(detailed_scenarios, base_plan_id)
+
+                            if excel_bytes:
+                                st.download_button(
+                                    label="⬇️ Download Excel File",
+                                    data=excel_bytes,
+                                    file_name=f"scenario_comparison_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                    use_container_width=True
+                                )
+                                st.success("✅ Excel file generated! Click Download above.")
+                        except Exception as e:
+                            st.error(f"❌ Error generating Excel: {e}")
+
+                with col_exp3:
+                    if st.button("📋 Export to CSV", use_container_width=True, type="secondary"):
+                        try:
+                            import datetime
+
+                            # Generate CSV export
+                            csv_data = export_comparison_to_csv(detailed_scenarios, base_plan_id)
+
+                            if csv_data:
+                                st.download_button(
+                                    label="⬇️ Download CSV File",
+                                    data=csv_data,
+                                    file_name=f"scenario_comparison_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                                    mime="text/csv",
+                                    use_container_width=True
+                                )
+                                st.success("✅ CSV file generated! Click Download above.")
+                        except Exception as e:
+                            st.error(f"❌ Error generating CSV: {e}")
 
             else:
                 st.warning("⚠️ Could not load detailed data for selected scenarios.")
