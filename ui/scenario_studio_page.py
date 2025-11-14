@@ -104,21 +104,28 @@ def render_scenario_studio_page():
     template_adjustments = {}
     template_name = ""
 
+    # Get base plan values (needed for templates)
+    snapshot_data = current_snapshot.get('data', current_snapshot)
+
+    def get_value(key, default=0):
+        if f'input_{key}' in snapshot_data:
+            return snapshot_data[f'input_{key}']
+        if key in snapshot_data:
+            return snapshot_data[key]
+        return default
+
+    # Get current age for validation
+    current_age = int(get_value('age', 45))
+
     if 'template' in st.session_state:
         template = st.session_state['template']
 
-        # Get base plan values
-        snapshot_data = current_snapshot.get('data', current_snapshot)
-
-        def get_value(key, default=0):
-            if f'input_{key}' in snapshot_data:
-                return snapshot_data[f'input_{key}']
-            if key in snapshot_data:
-                return snapshot_data[key]
-            return default
-
         if template == 'early_retirement':
             template_name = "Early Retirement (Age 60)"
+            # Check if user is already past early retirement age
+            if current_age >= 60:
+                st.warning(f"⚠️ **Age Validation**: Your current age is {current_age}. Early retirement at age 60 is in the past. This template may not be suitable.")
+                template_name = f"Early Retirement (Already {current_age})"
             template_adjustments = {
                 'retirement_age': 60,
                 'life_expectancy': 90,
@@ -152,8 +159,17 @@ def render_scenario_studio_page():
                 'other_expenses': int(base_other * 0.5),
             }
 
-        # Clear template from session state
+        # Store template data persistently until form is submitted
+        st.session_state['active_template_name'] = template_name
+        st.session_state['active_template_adjustments'] = template_adjustments
+
+        # Clear the trigger
         del st.session_state['template']
+
+    # Use active template if it exists (persists across form interactions)
+    if 'active_template_name' in st.session_state:
+        template_name = st.session_state['active_template_name']
+        template_adjustments = st.session_state['active_template_adjustments']
 
     with st.form(key="create_scenario_form"):
 
@@ -863,8 +879,12 @@ def render_scenario_studio_page():
                         # CELEBRATION!
                         st.balloons()
 
-                        # Clear pending scenario
+                        # Clear pending scenario and active template
                         del st.session_state['pending_scenario']
+                        if 'active_template_name' in st.session_state:
+                            del st.session_state['active_template_name']
+                        if 'active_template_adjustments' in st.session_state:
+                            del st.session_state['active_template_adjustments']
 
                         # Show success inline (NO RERUN!)
                         st.success(f"✅ **Saved!** Scenario '{pending['name']}' (ID: {comparison_id[:8]}...)")
