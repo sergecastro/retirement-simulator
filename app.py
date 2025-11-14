@@ -217,25 +217,24 @@ def main():
             st.markdown("---")
             st.markdown("### 🎯 Quick Mode Switch")
 
-            # Determine smart default based on current mode
-            mode_options = ["INTAKE", "Analysis", "Healthcare"]
-            if st.session_state.current_mode in mode_options:
-                default_index = mode_options.index(st.session_state.current_mode)
-            else:
-                default_index = 1  # Default to Analysis
+            mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Healthcare"]
+            current_idx = 1  # Analysis is current
 
             # Mode selector radio buttons
             mode = st.radio(
                 "Choose mode:",
                 options=mode_options,
-                index=default_index,
+                index=current_idx,
                 key="mode_selector_analysis",
-                help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Healthcare: Cost planning"
+                help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Healthcare: Cost planning"
             )
 
-            # Sync radio button with session state
-            if mode != st.session_state.current_mode:
-                st.session_state.current_mode = mode
+            # Handle mode change
+            if mode != "Analysis":
+                if mode == "Scenario Studio":
+                    st.session_state.current_mode = "scenario_studio"
+                else:
+                    st.session_state.current_mode = mode
                 st.session_state.mode_selected = True
                 st.rerun()
 
@@ -447,6 +446,32 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 
 def show_intake_mode():
     """Display INTAKE questionnaire mode"""
+
+    # Add Quick Mode Switch in sidebar
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 🎯 Quick Mode Switch")
+
+        mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Healthcare"]
+        current_idx = 0  # INTAKE is current
+
+        mode = st.radio(
+            "Choose mode:",
+            options=mode_options,
+            index=current_idx,
+            key="mode_selector_intake",
+            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Healthcare: Cost planning"
+        )
+
+        # Handle mode change
+        if mode != "INTAKE":
+            if mode == "Scenario Studio":
+                st.session_state.current_mode = "scenario_studio"
+            else:
+                st.session_state.current_mode = mode
+            st.session_state.mode_selected = True
+            st.rerun()
+
     st.title("📝 INTAKE Questionnaire")
     st.markdown("*Guided data collection for retirement planning*")
     st.markdown("---")

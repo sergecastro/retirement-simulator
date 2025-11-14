@@ -258,6 +258,28 @@ def export_comparison_to_pdf(scenarios, base_plan_id):
 def render_scenario_studio_page():
     """Render the Scenario Studio page - Full self-contained experience"""
 
+    # Add Quick Mode Switch in sidebar
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 🎯 Quick Mode Switch")
+
+        mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Healthcare"]
+        current_idx = 2  # Scenario Studio is current
+
+        mode = st.radio(
+            "Choose mode:",
+            options=mode_options,
+            index=current_idx,
+            key="mode_selector_scenario_studio",
+            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Healthcare: Cost planning"
+        )
+
+        # Handle mode change
+        if mode != "Scenario Studio":
+            st.session_state.current_mode = mode
+            st.session_state.mode_selected = True
+            st.rerun()
+
     # Page header with reload button
     col_h1, col_h2 = st.columns([5, 1])
 
