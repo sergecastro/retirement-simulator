@@ -1,7 +1,7 @@
 # Core web framework
 streamlit==1.36.0
 streamlit-local-storage==0.0.25
-streamlit-browser-storage==0.0.3
+streamlit-browser-storage==0.3.6
 
 # Data processing
 pandas==2.2.2
