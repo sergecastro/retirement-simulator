@@ -1326,9 +1326,20 @@ def show_intake_questionnaire():
             if len(snapshots) >= 10:
                 st.warning("⚠️ You have 10+ saved plans. Consider deleting old ones to save space.")
 
-            # Show ALL snapshots (reversed so newest first)
-            for snap in reversed(snapshots):
-                st.caption(f"• **{snap['name']}** - Created: {snap['created'][:16]}")
+            # Show ALL snapshots (reversed so newest first) with DELETE buttons
+            for idx, snap in enumerate(reversed(snapshots)):
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.caption(f"• **{snap['name']}** - Created: {snap['created'][:16]}")
+                with col2:
+                    if st.button("🗑️", key=f"delete_snap_{idx}_{snap['id']}", help=f"Delete '{snap['name']}'"):
+                        try:
+                            from utils.snapshot_manager import delete_snapshot
+                            delete_snapshot(snap['id'])
+                            st.success(f"✅ Deleted: {snap['name']}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Delete failed: {e}")
 
         # Export/Import Section
         st.divider()

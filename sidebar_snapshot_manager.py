@@ -212,7 +212,10 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
 
         # Add user's saved snapshots FIRST
         for snapshot in snapshots:
-            display_name = f"{snapshot['name']}"
+            # Include date/time to make names unique and identifiable
+            snapshot_date = snapshot['id']  # Format: 20251114_1032
+            date_part = f"{snapshot_date[4:6]}/{snapshot_date[6:8]} {snapshot_date[9:11]}:{snapshot_date[11:13]}"
+            display_name = f"{snapshot['name']} [{date_part}]"
             snapshot_options[display_name] = ('snapshot', snapshot['id'])
 
         # Add embedded options ONLY if no user snapshots exist
