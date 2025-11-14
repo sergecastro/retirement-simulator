@@ -1208,13 +1208,13 @@ def render_scenario_studio_page():
         st.markdown("### 📋 Manage Saved Scenarios")
 
         with st.expander("View & Delete Scenarios", expanded=False):
-            for comp in comparisons:
+            for idx, comp in enumerate(comparisons):
                 col1, col2 = st.columns([4, 1])
                 with col1:
                     st.markdown(f"**{comp['name']}**")
                     st.caption(f"Created: {comp['created_at'][:10]} | ID: {comp['id'][:8]}...")
                 with col2:
-                    if st.button("🗑️ Delete", key=f"delete_{comp['id']}", type="secondary", use_container_width=True):
+                    if st.button("🗑️ Delete", key=f"delete_{idx}_{comp['id']}", type="secondary", use_container_width=True):
                         from utils.comparison_scenarios import delete_comparison_scenario
                         if delete_comparison_scenario(comp['id']):
                             st.success(f"✅ Deleted: {comp['name']}")
