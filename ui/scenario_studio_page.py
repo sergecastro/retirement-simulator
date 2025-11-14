@@ -956,17 +956,76 @@ def render_scenario_studio_page():
 
         st.markdown("---")
         st.markdown("### 🔀 Compare Scenarios Side-by-Side")
+        st.markdown("**Click on 2-4 scenarios below to compare them:**")
 
-        # Multi-select for scenarios to compare
-        scenario_names = [comp['name'] for comp in comparisons]
+        # Initialize selected scenarios in session state
+        if 'selected_scenario_ids' not in st.session_state:
+            st.session_state['selected_scenario_ids'] = []
 
-        selected_names = st.multiselect(
-            "Select 2-4 scenarios to compare:",
-            options=scenario_names,
-            default=scenario_names[:min(3, len(scenario_names))],  # Auto-select first 3
-            max_selections=4,
-            help="Choose which scenarios you want to compare"
-        )
+        # Display ALL scenarios as clickable cards
+        num_scenarios = len(comparisons)
+        cols_per_row = min(4, num_scenarios)  # Max 4 columns per row
+
+        # Create rows of scenario cards
+        for row_start in range(0, num_scenarios, cols_per_row):
+            row_scenarios = comparisons[row_start:row_start + cols_per_row]
+            cols = st.columns(len(row_scenarios))
+
+            for idx, comp in enumerate(row_scenarios):
+                with cols[idx]:
+                    is_selected = comp['id'] in st.session_state['selected_scenario_ids']
+
+                    # Card styling based on selection
+                    if is_selected:
+                        button_type = "primary"
+                        button_label = f"✅ {comp['name']}"
+                    else:
+                        button_type = "secondary"
+                        button_label = comp['name']
+
+                    # Clickable card
+                    if st.button(
+                        button_label,
+                        key=f"select_compare_{comp['id']}",
+                        type=button_type,
+                        use_container_width=True,
+                        help=f"Created: {comp['created_at'][:10]}"
+                    ):
+                        # Toggle selection
+                        if is_selected:
+                            st.session_state['selected_scenario_ids'].remove(comp['id'])
+                        else:
+                            # Check if already have 4 selected
+                            if len(st.session_state['selected_scenario_ids']) >= 4:
+                                st.warning("⚠️ Maximum 4 scenarios can be compared at once. Deselect one first.")
+                            else:
+                                st.session_state['selected_scenario_ids'].append(comp['id'])
+                        st.rerun()
+
+                    # Show selection number
+                    if is_selected:
+                        selection_num = st.session_state['selected_scenario_ids'].index(comp['id']) + 1
+                        st.caption(f"🔢 Selection #{selection_num}")
+                    else:
+                        st.caption(f"ID: {comp['id'][:8]}...")
+
+        # Show selection summary
+        num_selected = len(st.session_state['selected_scenario_ids'])
+        if num_selected > 0:
+            if num_selected == 1:
+                st.info(f"💡 **{num_selected} scenario selected.** Select at least 1 more to compare.")
+            elif num_selected >= 2:
+                st.success(f"✅ **{num_selected} scenarios selected!** Comparison table will appear below.")
+
+            # Clear selection button
+            if st.button("🔄 Clear Selection", key="clear_comparison_selection"):
+                st.session_state['selected_scenario_ids'] = []
+                st.rerun()
+        else:
+            st.info("💡 **No scenarios selected.** Click on 2-4 scenario cards above to compare them.")
+
+        # Get selected scenario names for comparison
+        selected_names = [comp['name'] for comp in comparisons if comp['id'] in st.session_state['selected_scenario_ids']]
 
         if len(selected_names) >= 2:
             st.markdown(f"**Comparing {len(selected_names)} scenarios...**")
@@ -1180,11 +1239,6 @@ def render_scenario_studio_page():
 
             else:
                 st.warning("⚠️ Could not load detailed data for selected scenarios.")
-
-        elif len(selected_names) == 1:
-            st.info("💡 Select at least 2 scenarios to see the comparison table.")
-        else:
-            st.info("💡 Select 2-4 scenarios above to compare them side-by-side.")
 
     st.markdown("---")
     st.markdown("*🎬 Scenario Studio - Create, simulate, and compare retirement strategies*")
