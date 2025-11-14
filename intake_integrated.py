@@ -1143,10 +1143,6 @@ def show_intake_questionnaire():
         # Collect data from session_state (what user just typed in forms)
         review_data = collect_current_form_data()
 
-        # DEBUG
-        st.write("DEBUG: User name from session_state:", st.session_state.get("input_user_name"))
-        st.write("DEBUG: User name from review_data:", review_data.get("input_user_name"))
-
         # Profile Summary - READ FROM COLLECTED DATA
         st.subheader("👤 Profile")
         col1, col2 = st.columns(2)
