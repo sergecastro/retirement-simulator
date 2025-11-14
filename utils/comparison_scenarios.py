@@ -1,0 +1,588 @@
+"""
+Comparison Scenarios Manager - Sub-Phase 2A
+============================================
+Stores and manages "what-if" comparison scenarios separately from base plans.
+Each comparison scenario stores ONLY the adjustments, not full data.
+
+Architecture:
+- Base Plans (Snapshots) = Full INTAKE data (~50-200 KB)
+- Comparison Scenarios = Only parameter adjustments (~1-5 KB)
+- Each comparison links to a base plan via base_plan_id
+
+Storage:
+- Encrypted in browser localStorage using AES-256-GCM
+- Index stored at: ff_comparisons_index
+- Individual comparisons: ff_comparison_{id}
+
+Author: Family Forecast Development Team
+Created: November 14, 2025
+"""
+
+import json
+import streamlit as st
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+from utils.encryption import encrypt_data, decrypt_data
+from streamlit_browser_storage import LocalStorage
+
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+
+COMPARISONS_INDEX_KEY = "ff_comparisons_index"
+COMPARISON_KEY_PREFIX = "ff_comparison_"
+
+
+# =============================================================================
+# LOCALSTORAGE CONNECTION
+# =============================================================================
+
+@st.cache_resource
+def _get_local_storage():
+    """Get localStorage instance (singleton-cached)."""
+    if '_localStorage_singleton' not in st.session_state:
+        st.session_state._localStorage_singleton = LocalStorage(key="forecash_local_storage")
+    return st.session_state._localStorage_singleton
+
+
+# =============================================================================
+# COMPARISON ID GENERATION
+# =============================================================================
+
+def create_comparison_id() -> str:
+    """
+    Generate unique comparison ID using timestamp.
+
+    Format: YYYYMMDD_HHMM
+    Example: 20251114_0825
+
+    Returns:
+        Unique comparison ID string
+    """
+    return datetime.now().strftime("%Y%m%d_%H%M")
+
+
+# =============================================================================
+# SAVE COMPARISON SCENARIO
+# =============================================================================
+
+def save_comparison_scenario(
+    base_plan_id: str,
+    name: str,
+    description: str,
+    adjustments: Dict[str, Any],
+    simulation_results: Optional[Dict[str, Any]] = None
+) -> str:
+    """
+    Save a comparison scenario to encrypted localStorage.
+
+    Args:
+        base_plan_id: ID of the base plan this comparison is based on
+        name: User-friendly name (e.g., "Retire at 67")
+        description: Detailed description (e.g., "Delay retirement by 2 years")
+        adjustments: Dict of parameter adjustments:
+            - adjusted_income: float (annual income)
+            - adjusted_expenses: float (annual expenses)
+            - adjusted_return_rate: float (investment return %, as decimal)
+            - adjusted_inflation_rate: float (inflation %, as decimal)
+        simulation_results: Optional dict with simulation results for display
+
+    Returns:
+        comparison_id: Unique ID of saved comparison
+
+    Example:
+        >>> comparison_id = save_comparison_scenario(
+        ...     base_plan_id="20251114_0800",
+        ...     name="Retire at 67",
+        ...     description="Delay retirement by 2 years, reduce expenses",
+        ...     adjustments={
+        ...         "adjusted_income": 85000,
+        ...         "adjusted_expenses": 45000,
+        ...         "adjusted_return_rate": 0.07,
+        ...         "adjusted_inflation_rate": 0.03
+        ...     }
+        ... )
+    """
+    print(f"[SAVE COMPARISON] Starting save for base_plan_id: {base_plan_id}")
+
+    # Generate unique comparison ID
+    comparison_id = create_comparison_id()
+    print(f"[SAVE COMPARISON] Generated comparison_id: {comparison_id}")
+
+    # Build comparison data structure
+    comparison_data = {
+        "id": comparison_id,
+        "base_plan_id": base_plan_id,
+        "name": name,
+        "description": description,
+        "created_at": datetime.now().isoformat(),
+        "adjustments": adjustments,
+        "simulation_results": simulation_results or {}
+    }
+
+    print(f"[SAVE COMPARISON] Comparison data: {list(comparison_data.keys())}")
+
+    try:
+        # Encrypt comparison data
+        localS = _get_local_storage()
+
+        # Save encryption key if it's new (CRITICAL: Must happen before encrypting!)
+        if st.session_state.get('encryption_key_needs_save', False):
+            localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
+            st.session_state.encryption_key_needs_save = False
+            print("[SAVE COMPARISON] Saved encryption key to localStorage")
+
+        encrypted_data = encrypt_data(comparison_data, localS)
+        print(f"[SAVE COMPARISON] Encrypted data length: {len(str(encrypted_data))}")
+
+        # Save to localStorage
+        storage_key = f"{COMPARISON_KEY_PREFIX}{comparison_id}"
+        localS.set(storage_key, encrypted_data)
+        print(f"[SAVE COMPARISON] Saved to localStorage: {storage_key}")
+
+        # SAVE TO DISK CACHE (reliable backup!)
+        try:
+            import os
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache', 'comparisons')
+            os.makedirs(cache_dir, exist_ok=True)
+            cache_file = os.path.join(cache_dir, f"{storage_key}.json")
+            with open(cache_file, 'w') as f:
+                json.dump(comparison_data, f, indent=2)
+            print(f"[OK] Saved comparison to disk cache")
+        except Exception as disk_err:
+            print(f"[WARN] Failed to save comparison to disk: {disk_err}")
+
+        # Update comparisons index
+        _update_comparisons_index(comparison_id, base_plan_id, name)
+        print(f"[SAVE COMPARISON] Updated index")
+
+        print(f"[OK] Comparison scenario saved: {name} (ID: {comparison_id})")
+        return comparison_id
+
+    except Exception as e:
+        print(f"[ERROR] Failed to save comparison scenario: {e}")
+        import traceback
+        traceback.print_exc()
+        return ""
+
+
+# =============================================================================
+# LOAD COMPARISON SCENARIO
+# =============================================================================
+
+def load_comparison_scenario(comparison_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Load a comparison scenario from localStorage.
+
+    Args:
+        comparison_id: ID of comparison to load
+
+    Returns:
+        Decrypted comparison data dict or None if not found
+
+    Example:
+        >>> comparison = load_comparison_scenario("20251114_0825")
+        >>> if comparison:
+        ...     print(f"Name: {comparison['name']}")
+        ...     print(f"Adjustments: {comparison['adjustments']}")
+    """
+    print(f"[LOAD COMPARISON] Loading comparison: {comparison_id}")
+
+    storage_key = f"{COMPARISON_KEY_PREFIX}{comparison_id}"
+
+    # TRY DISK CACHE FIRST (localStorage is unreliable!)
+    try:
+        import os
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache', 'comparisons')
+        cache_file = os.path.join(cache_dir, f"{storage_key}.json")
+        if os.path.exists(cache_file):
+            with open(cache_file, 'r') as f:
+                comparison_data = json.load(f)
+            print(f"[DISK CACHE HIT] Loaded comparison from disk: {comparison_data.get('name')}")
+            return comparison_data
+    except Exception as disk_err:
+        print(f"[DISK CACHE] Failed to load from disk: {disk_err}")
+
+    # FALLBACK: Try localStorage
+    try:
+        localS = _get_local_storage()
+        encrypted_data = localS.get(storage_key)
+
+        if not encrypted_data:
+            print(f"[WARN] Comparison not found in localStorage or disk: {storage_key}")
+            return None
+
+        print(f"[LOAD COMPARISON] Found encrypted data ({len(str(encrypted_data))} chars)")
+
+        # Decrypt comparison data
+        comparison_data = decrypt_data(encrypted_data, localS)
+
+        if comparison_data:
+            print(f"[OK] Loaded comparison from localStorage: {comparison_data.get('name')}")
+            return comparison_data
+        else:
+            print(f"[ERROR] Decryption failed for comparison: {comparison_id}")
+            return None
+
+    except Exception as e:
+        print(f"[ERROR] Failed to load comparison {comparison_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+# =============================================================================
+# GET COMPARISONS INDEX
+# =============================================================================
+
+def get_comparisons_index() -> List[Dict[str, str]]:
+    """
+    Get index of all saved comparison scenarios.
+
+    Returns:
+        List of comparison metadata dicts with keys:
+        - id: comparison ID
+        - base_plan_id: linked base plan ID
+        - name: comparison name
+        - created_at: ISO timestamp
+
+    Example:
+        >>> index = get_comparisons_index()
+        >>> for comp in index:
+        ...     print(f"{comp['name']} (base: {comp['base_plan_id']})")
+    """
+    print(f"[GET INDEX] Loading comparisons index")
+
+    # TRY DISK CACHE FIRST (localStorage is unreliable!)
+    try:
+        import json
+        import os
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+        cache_file = os.path.join(cache_dir, 'comparisons_index.json')
+        if os.path.exists(cache_file):
+            with open(cache_file, 'r') as f:
+                disk_index = json.load(f)
+            comparisons = disk_index.get("comparisons", [])
+            print(f"[DISK CACHE HIT] Loaded {len(comparisons)} comparisons from disk")
+            return comparisons
+    except Exception as disk_err:
+        print(f"[DISK CACHE] Failed to load from disk: {disk_err}")
+
+    # FALLBACK: Try localStorage (probably won't work, but try anyway)
+    try:
+        localS = _get_local_storage()
+        print(f"[DEBUG GET INDEX] localStorage instance ID: {id(localS)}")
+        print(f"[DEBUG GET INDEX] Looking for key: '{COMPARISONS_INDEX_KEY}'")
+
+        encrypted_index = localS.get(COMPARISONS_INDEX_KEY)
+        print(f"[DEBUG GET INDEX] Raw result from localStorage: {type(encrypted_index)} = {encrypted_index}")
+
+        if not encrypted_index:
+            print(f"[INFO] No comparisons index found in localStorage or disk, returning empty list")
+            return []
+
+        print(f"[GET INDEX] Found encrypted index ({len(str(encrypted_index))} chars)")
+
+        # Decrypt index
+        index_data = decrypt_data(encrypted_index, localS)
+        comparisons = index_data.get("comparisons", [])
+
+        print(f"[OK] Loaded {len(comparisons)} comparisons from localStorage")
+        return comparisons
+
+    except Exception as e:
+        print(f"[ERROR] Failed to load comparisons index: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+
+# =============================================================================
+# GET COMPARISONS FOR SPECIFIC BASE PLAN
+# =============================================================================
+
+def get_comparisons_for_plan(base_plan_id: str) -> List[Dict[str, str]]:
+    """
+    Get all comparison scenarios for a specific base plan.
+
+    Args:
+        base_plan_id: ID of base plan (snapshot ID)
+
+    Returns:
+        List of comparisons linked to this base plan
+
+    Example:
+        >>> comparisons = get_comparisons_for_plan("20251114_0800")
+        >>> print(f"Found {len(comparisons)} comparisons for this plan")
+    """
+    print(f"[GET COMPARISONS FOR PLAN] base_plan_id: {base_plan_id}")
+
+    all_comparisons = get_comparisons_index()
+    filtered = [c for c in all_comparisons if c.get("base_plan_id") == base_plan_id]
+
+    print(f"[OK] Found {len(filtered)} comparisons for base plan {base_plan_id}")
+    return filtered
+
+
+# =============================================================================
+# DELETE COMPARISON SCENARIO
+# =============================================================================
+
+def delete_comparison_scenario(comparison_id: str) -> bool:
+    """
+    Delete a comparison scenario from localStorage.
+
+    Args:
+        comparison_id: ID of comparison to delete
+
+    Returns:
+        True if deleted successfully, False otherwise
+
+    Example:
+        >>> success = delete_comparison_scenario("20251114_0825")
+        >>> if success:
+        ...     print("Comparison deleted")
+    """
+    print(f"[DELETE COMPARISON] Deleting comparison: {comparison_id}")
+
+    storage_key = f"{COMPARISON_KEY_PREFIX}{comparison_id}"
+
+    try:
+        localS = _get_local_storage()
+
+        # Remove from localStorage
+        localS.delete(storage_key)
+        print(f"[DELETE COMPARISON] Removed from localStorage: {storage_key}")
+
+        # DELETE FROM DISK CACHE
+        try:
+            import os
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache', 'comparisons')
+            cache_file = os.path.join(cache_dir, f"{storage_key}.json")
+            if os.path.exists(cache_file):
+                os.remove(cache_file)
+                print(f"[OK] Deleted comparison from disk cache")
+        except Exception as disk_err:
+            print(f"[WARN] Failed to delete from disk cache: {disk_err}")
+
+        # Update index
+        _remove_from_comparisons_index(comparison_id)
+        print(f"[DELETE COMPARISON] Updated index")
+
+        print(f"[OK] Comparison deleted: {comparison_id}")
+        return True
+
+    except Exception as e:
+        print(f"[ERROR] Failed to delete comparison {comparison_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+# =============================================================================
+# LIST ALL COMPARISON SCENARIOS
+# =============================================================================
+
+def list_comparison_scenarios() -> List[Dict[str, Any]]:
+    """
+    List all comparison scenarios with full details.
+
+    Returns:
+        List of all comparison scenario objects (fully loaded)
+
+    Example:
+        >>> all_comparisons = list_comparison_scenarios()
+        >>> for comp in all_comparisons:
+        ...     print(f"{comp['name']}: {comp['description']}")
+    """
+    print(f"[LIST COMPARISONS] Loading all comparison scenarios")
+
+    index = get_comparisons_index()
+    comparisons = []
+
+    for meta in index:
+        comp_data = load_comparison_scenario(meta["id"])
+        if comp_data:
+            comparisons.append(comp_data)
+
+    print(f"[OK] Loaded {len(comparisons)} full comparison scenarios")
+    return comparisons
+
+
+# =============================================================================
+# INTERNAL HELPER FUNCTIONS
+# =============================================================================
+
+def _update_comparisons_index(
+    comparison_id: str,
+    base_plan_id: str,
+    name: str
+) -> None:
+    """
+    Internal: Update the comparisons index with new comparison.
+
+    Args:
+        comparison_id: New comparison ID
+        base_plan_id: Base plan this comparison links to
+        name: Comparison name
+    """
+    print(f"[UPDATE INDEX] Adding comparison to index: {comparison_id}")
+
+    # Load existing index
+    index = get_comparisons_index()
+
+    # Add new comparison metadata
+    index.append({
+        "id": comparison_id,
+        "base_plan_id": base_plan_id,
+        "name": name,
+        "created_at": datetime.now().isoformat()
+    })
+
+    print(f"[UPDATE INDEX] Index now has {len(index)} comparisons")
+
+    try:
+        localS = _get_local_storage()
+        print(f"[DEBUG UPDATE INDEX] localStorage instance ID: {id(localS)}")
+        print(f"[DEBUG UPDATE INDEX] Saving to key: '{COMPARISONS_INDEX_KEY}'")
+
+        # Save encryption key if it's new (CRITICAL: Must happen before encrypting!)
+        if st.session_state.get('encryption_key_needs_save', False):
+            localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
+            st.session_state.encryption_key_needs_save = False
+            print("[UPDATE INDEX] Saved encryption key to localStorage")
+
+        # Encrypt and save updated index
+        index_data = {"comparisons": index}
+        print(f"[DEBUG UPDATE INDEX] Index data to encrypt: {index_data}")
+
+        encrypted_index = encrypt_data(index_data, localS)
+        print(f"[DEBUG UPDATE INDEX] Encrypted data type: {type(encrypted_index)}, length: {len(str(encrypted_index))}")
+
+        localS.set(COMPARISONS_INDEX_KEY, encrypted_index)
+        print(f"[DEBUG UPDATE INDEX] Called localS.set() - data sent to browser")
+        print(f"[DEBUG UPDATE INDEX] NOTE: Data will be available after next page render")
+
+        # SAVE TO DISK CACHE (because localStorage is unreliable!)
+        try:
+            import json
+            import os
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+            os.makedirs(cache_dir, exist_ok=True)
+            cache_file = os.path.join(cache_dir, 'comparisons_index.json')
+            with open(cache_file, 'w') as f:
+                json.dump(index_data, f, indent=2)
+            print(f"[OK] Saved comparisons index to disk cache: {cache_file}")
+        except Exception as disk_err:
+            print(f"[WARN] Failed to save to disk cache: {disk_err}")
+
+        print(f"[OK] Updated comparisons index")
+
+    except Exception as e:
+        print(f"[ERROR] Failed to update comparisons index: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+def _remove_from_comparisons_index(comparison_id: str) -> None:
+    """
+    Internal: Remove comparison from index.
+
+    Args:
+        comparison_id: ID of comparison to remove
+    """
+    print(f"[REMOVE FROM INDEX] Removing comparison from index: {comparison_id}")
+
+    # Load existing index
+    index = get_comparisons_index()
+
+    # Filter out the deleted comparison
+    updated_index = [c for c in index if c["id"] != comparison_id]
+
+    print(f"[REMOVE FROM INDEX] Index reduced from {len(index)} to {len(updated_index)} comparisons")
+
+    try:
+        localS = _get_local_storage()
+
+        # Encrypt and save updated index
+        index_data = {"comparisons": updated_index}
+        encrypted_index = encrypt_data(index_data, localS)
+        localS.set(COMPARISONS_INDEX_KEY, encrypted_index)
+
+        # UPDATE DISK CACHE
+        try:
+            import json
+            import os
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+            cache_file = os.path.join(cache_dir, 'comparisons_index.json')
+            with open(cache_file, 'w') as f:
+                json.dump(index_data, f, indent=2)
+            print(f"[OK] Updated disk cache after deletion")
+        except Exception as disk_err:
+            print(f"[WARN] Failed to update disk cache: {disk_err}")
+
+        print(f"[OK] Removed comparison from index")
+
+    except Exception as e:
+        print(f"[ERROR] Failed to remove from comparisons index: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+# =============================================================================
+# DELETE COMPARISON SCENARIO
+# =============================================================================
+
+def delete_comparison_scenario(comparison_id: str) -> bool:
+    """
+    Delete a comparison scenario by ID.
+
+    Args:
+        comparison_id: ID of comparison to delete
+
+    Returns:
+        True if deleted successfully, False otherwise
+
+    Example:
+        >>> delete_comparison_scenario("20251114_0800")
+        True
+    """
+    print(f"[DELETE COMPARISON] Deleting comparison: {comparison_id}")
+
+    try:
+        import os
+
+        # Delete from localStorage
+        try:
+            localS = _get_local_storage()
+            storage_key = f"{COMPARISON_KEY_PREFIX}{comparison_id}"
+            localS.delete(storage_key)
+            print(f"[DELETE] Removed from localStorage: {storage_key}")
+        except Exception as ls_err:
+            print(f"[WARN] Failed to delete from localStorage: {ls_err}")
+
+        # Delete from disk cache
+        try:
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache', 'comparisons')
+            comp_file = os.path.join(cache_dir, f"ff_comparison_{comparison_id}.json")
+
+            if os.path.exists(comp_file):
+                os.remove(comp_file)
+                print(f"[DELETE] Removed from disk: {comp_file}")
+            else:
+                print(f"[WARN] File not found on disk: {comp_file}")
+        except Exception as disk_err:
+            print(f"[WARN] Failed to delete from disk: {disk_err}")
+
+        # Remove from index
+        _remove_from_comparisons_index(comparison_id)
+
+        print(f"[OK] Successfully deleted comparison: {comparison_id}")
+        return True
+
+    except Exception as e:
+        print(f"[ERROR] Failed to delete comparison: {e}")
+        import traceback
+        traceback.print_exc()
+        return False

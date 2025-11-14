@@ -37,6 +37,14 @@ import streamlit as st
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from utils.encryption import encrypt_data, decrypt_data
+import traceback
+from streamlit_browser_storage import LocalStorage
+
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+DEMO_SNAPSHOT_ID = "DEMO_SNAPSHOT"  # Special ID for demo snapshots
 
 
 # =============================================================================
@@ -60,12 +68,14 @@ def create_snapshot_id() -> str:
 # SNAPSHOT INDEX MANAGEMENT
 # =============================================================================
 
+@st.cache_resource
 def _get_local_storage():
-    """Get or create LocalStorage instance (cached in session state)."""
-    if 'localS' not in st.session_state:
-        from streamlit_local_storage import LocalStorage
-        st.session_state.localS = LocalStorage()
-    return st.session_state.localS
+    """Get localStorage instance (singleton-cached in session_state)."""
+    # Cache in session_state to prevent creating multiple instances
+    if '_localStorage_singleton' not in st.session_state:
+        print("[DEBUG] Creating localStorage singleton (FIRST TIME)")
+        st.session_state._localStorage_singleton = LocalStorage(key="forecash_local_storage")
+    return st.session_state._localStorage_singleton
 
 
 def get_snapshots_index() -> Dict[str, Any]:
@@ -77,19 +87,80 @@ def get_snapshots_index() -> Dict[str, Any]:
     Returns:
         Index dict with current_snapshot_id and snapshots list
     """
+    # CRITICAL: Check session_state cache FIRST (avoids localStorage race condition)
+    if '_cached_snapshots_index' in st.session_state:
+        cached = st.session_state['_cached_snapshots_index']
+        print(f"[CACHE HIT] Using cached index with {len(cached.get('snapshots', []))} snapshots")
+        return cached.copy()
+
+    # PERSISTENCE FIX: Try loading from disk cache (survives restarts)
+    try:
+        import json
+        import os
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+        cache_file = os.path.join(cache_dir, 'snapshots_index.json')
+        if os.path.exists(cache_file):
+            with open(cache_file, 'r') as f:
+                disk_index = json.load(f)
+            print(f"[DISK CACHE HIT] Loaded index from disk with {len(disk_index.get('snapshots', []))} snapshots")
+            # Cache it in session_state for next time
+            st.session_state['_cached_snapshots_index'] = disk_index.copy()
+            return disk_index
+    except Exception as disk_err:
+        print(f"[DISK CACHE] Failed to load from disk: {disk_err}")
+
     # Get LocalStorage instance
     localS = _get_local_storage()
 
     # Try to load from browser localStorage
     try:
-        encrypted_str = localS.getItem('ff_snapshots_index')
-        if encrypted_str:
-            index = decrypt_data(encrypted_str, localS)
+        data = localS.get('ff_snapshots_index')
+        if data:
+            print(f"[LS] GET 'ff_snapshots_index' = {type(data).__name__ if data else 'None'}")
+            index = decrypt_data(data, localS)
             if index:
-                print(f"[SNAPSHOT] Loaded {len(index.get('snapshots', []))} snapshots from browser localStorage")
+                # Filter out demo scenarios (anything with "Demo", "Private", "Retirement", "Original" in name)
+                all_snapshots = index.get('snapshots', [])
+                print(f"[DEBUG] Before filter: {len(all_snapshots)} snapshots")
+                for s in all_snapshots:
+                    name = s.get('name', '')
+                    is_demo = any(keyword in name for keyword in ['Original', 'Demo', 'Private - Trusted', 'Retirement ('])
+                    print(f"  - '{name}' is demo? {is_demo}")
+
+                # Filter out ONLY demo scenarios
+                snapshots = [s for s in all_snapshots
+                             if not any(keyword in s.get('name', '') for keyword in ['Original', 'Demo', 'Private - Trusted', 'Retirement ('])]
+                index['snapshots'] = snapshots
+                print(f"[SNAPSHOT] After filter: {len(snapshots)} snapshots (removed demo scenarios)")
+
+                # CRITICAL FIX: Ensure current_snapshot_id is valid
+                current_id = index.get('current_snapshot_id')
+
+                if current_id:
+                    # Check if current_id is in the filtered list
+                    current_exists = any(s['id'] == current_id for s in snapshots)
+                    if not current_exists:
+                        print(f"[WARN] current_snapshot_id '{current_id}' was filtered out (demo scenario)")
+                        # Set to most recent non-demo snapshot
+                        if snapshots:
+                            new_id = snapshots[-1]['id']
+                            index['current_snapshot_id'] = new_id
+                            print(f"[FIX] Set current_snapshot_id to most recent user snapshot: {snapshots[-1]['name']} (ID: {new_id})")
+                        else:
+                            index['current_snapshot_id'] = None
+                            print(f"[WARN] No non-demo snapshots found, clearing current_snapshot_id")
+                else:
+                    # No current_snapshot_id set at all - use most recent user snapshot if available
+                    if snapshots:
+                        new_id = snapshots[-1]['id']
+                        index['current_snapshot_id'] = new_id
+                        print(f"[FIX] No current_snapshot_id was set, using most recent user snapshot: {snapshots[-1]['name']} (ID: {new_id})")
+
                 return index
     except Exception as e:
         print(f"[WARN] Could not load snapshots index: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Initialize empty index if not found
     print("[SNAPSHOT] Initialized (empty)")
@@ -110,21 +181,37 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
         True if successful
     """
     try:
+        # CRITICAL: Cache in session_state FIRST to avoid race condition
+        st.session_state['_cached_snapshots_index'] = index.copy()
+        print(f"[CACHE] Cached index in session_state with {len(index.get('snapshots', []))} snapshots")
+
+        # PERSISTENCE FIX: Also save to disk as backup (survives restarts)
+        try:
+            import json
+            import os
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+            os.makedirs(cache_dir, exist_ok=True)
+            cache_file = os.path.join(cache_dir, 'snapshots_index.json')
+            with open(cache_file, 'w') as f:
+                json.dump(index, f, indent=2)
+            print(f"[DISK CACHE] Saved index to {cache_file}")
+        except Exception as disk_err:
+            print(f"[DISK CACHE] Failed to save to disk: {disk_err}")
+
         # Get LocalStorage instance
         localS = _get_local_storage()
 
         # Encrypt and save
         encrypted_str = encrypt_data(index, localS)
 
-        # Save encryption key if it's new (to avoid duplicate key error)
+        # Save encryption key if it's new
         if st.session_state.get('encryption_key_needs_save', False):
-            localS.setItem('ff_encryption_key', st.session_state.encryption_key_b64)
+            localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
             st.session_state.encryption_key_needs_save = False
             print("[OK] Saved encryption key to browser localStorage")
 
         # Save encrypted index
-        localS.setItem('ff_snapshots_index', encrypted_str)
-
+        localS.set('ff_snapshots_index', encrypted_str)
         print(f"[OK] Saved snapshots index to browser localStorage ({len(index.get('snapshots', []))} snapshots)")
         return True
 
@@ -160,7 +247,7 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
 
     # Generate default name if not provided
     if not snapshot_name:
-        snapshot_name = f"Plan - {datetime.now().strftime('%b %d, %Y @ %I:%M %p')}"
+        snapshot_name = f"Plan - {datetime.now().strftime('%b %d, %Y @ %I:%M:%S %p')}"
 
     # Extract metadata from data
     metadata = {
@@ -182,8 +269,38 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
         "metadata": metadata
     }
 
+    # DEBUG: Print what we're saving
+    print(f"[DEBUG SAVE] ==========================================")
+    print(f"[DEBUG SAVE] Snapshot name: {snapshot_name}")
+    print(f"[DEBUG SAVE] Snapshot ID: {snapshot_id}")
+    print(f"[DEBUG SAVE] User name in data: {data.get('input_user_name', 'NOT FOUND')}")
+    print(f"[DEBUG SAVE] User age in data: {data.get('input_age', 'NOT FOUND')}")
+    print(f"[DEBUG SAVE] Total data keys: {len(data.keys())}")
+    print(f"[DEBUG SAVE] Sample keys: {list(data.keys())[:10]}")
+    print(f"[DEBUG SAVE] Metadata extracted: {metadata}")
+    print(f"[DEBUG SAVE] ==========================================")
+
     # Print save confirmation
     print(f"[SAVE] Saving: '{snapshot_name}' (ID: {snapshot_id})")
+
+    # CRITICAL: Cache snapshot data in session_state FIRST
+    if '_cached_snapshots' not in st.session_state:
+        st.session_state['_cached_snapshots'] = {}
+    st.session_state['_cached_snapshots'][snapshot_id] = data.copy()
+    print(f"[CACHE] Cached snapshot data for {snapshot_id}")
+
+    # PERSISTENCE FIX: Also save snapshot to disk as backup (survives restarts)
+    try:
+        import json
+        import os
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        snapshot_file = os.path.join(cache_dir, f'snapshot_{snapshot_id}.json')
+        with open(snapshot_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        print(f"[DISK CACHE] Saved snapshot to {snapshot_file}")
+    except Exception as disk_err:
+        print(f"[DISK CACHE] Failed to save snapshot to disk: {disk_err}")
 
     # Save snapshot data to browser localStorage (ENCRYPTED)
     try:
@@ -193,14 +310,14 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
         # Encrypt and save snapshot data
         encrypted_str = encrypt_data(data, localS)
 
-        # Save encryption key if it's new (to avoid duplicate key error)
+        # Save encryption key if it's new
         if st.session_state.get('encryption_key_needs_save', False):
-            localS.setItem('ff_encryption_key', st.session_state.encryption_key_b64)
+            localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
             st.session_state.encryption_key_needs_save = False
             print("[OK] Saved encryption key to browser localStorage")
 
         # Save encrypted snapshot data
-        localS.setItem(snapshot_key, encrypted_str)
+        localS.set(snapshot_key, encrypted_str)
 
         print(f"[OK] Saved snapshot data to browser localStorage: {snapshot_key}")
 
@@ -237,22 +354,66 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
         >>> if data:
         >>>     print(f"User: {data['input_user_name']}")
     """
+    print(f"[DEBUG load_snapshot] Attempting to load snapshot: {snapshot_id}")
+
+    # CRITICAL: Check session_state cache FIRST
+    if '_cached_snapshots' in st.session_state:
+        if snapshot_id in st.session_state['_cached_snapshots']:
+            cached_data = st.session_state['_cached_snapshots'][snapshot_id]
+            print(f"[CACHE HIT] Loaded snapshot {snapshot_id} from cache")
+            print(f"[CACHE HIT] User: {cached_data.get('input_user_name', 'NOT FOUND')}")
+            return cached_data.copy()
+
+    # PERSISTENCE FIX: Try loading from disk cache (survives restarts)
+    try:
+        import json
+        import os
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+        snapshot_file = os.path.join(cache_dir, f'snapshot_{snapshot_id}.json')
+        if os.path.exists(snapshot_file):
+            with open(snapshot_file, 'r') as f:
+                disk_data = json.load(f)
+            print(f"[DISK CACHE HIT] Loaded snapshot {snapshot_id} from disk")
+            print(f"[DISK CACHE HIT] User: {disk_data.get('input_user_name', 'NOT FOUND')}")
+            # Cache it in session_state for next time
+            if '_cached_snapshots' not in st.session_state:
+                st.session_state['_cached_snapshots'] = {}
+            st.session_state['_cached_snapshots'][snapshot_id] = disk_data.copy()
+            return disk_data
+    except Exception as disk_err:
+        print(f"[DISK CACHE] Failed to load snapshot from disk: {disk_err}")
+
+    # Check if this is a demo scenario (by ID or name from index)
+    index = get_snapshots_index()
+    for snapshot in index.get('snapshots', []):
+        if snapshot['id'] == snapshot_id:
+            if snapshot.get('name', '').startswith('Original'):
+                print(f"[INFO] Skipping demo scenario: {snapshot['name']}")
+                return None
+            print(f"[DEBUG load_snapshot] Found in index: '{snapshot.get('name')}'")
+            break
+
     try:
         localS = _get_local_storage()
         snapshot_key = f"ff_snapshot_{snapshot_id}"
 
+        print(f"[DEBUG load_snapshot] Looking for localStorage key: {snapshot_key}")
+
         # Load and decrypt snapshot data
-        encrypted_str = localS.getItem(snapshot_key)
+        encrypted_str = localS.get(snapshot_key)
         if encrypted_str:
+            print(f"[DEBUG load_snapshot] Found encrypted data ({len(str(encrypted_str))} chars)")
             data = decrypt_data(encrypted_str, localS)
             if data:
                 print(f"[OK] Loaded snapshot from browser localStorage: {snapshot_key}")
+                print(f"[DEBUG load_snapshot] Decrypted data has {len(data.keys())} keys")
+                print(f"[DEBUG load_snapshot] User name in data: {data.get('input_user_name', 'NOT FOUND')}")
                 return data
             else:
                 print(f"[WARN] Decryption failed for snapshot: {snapshot_key}")
                 return None
         else:
-            print(f"[INFO] No snapshot found in browser localStorage: {snapshot_key}")
+            print(f"[ERROR] No data found in localStorage for key: {snapshot_key}")
             return None
 
     except Exception as e:
@@ -278,6 +439,30 @@ def list_snapshots() -> List[Dict[str, Any]]:
     return index.get("snapshots", [])
 
 
+def has_user_snapshots() -> bool:
+    """
+    Check if user has any saved snapshots (excluding demo).
+
+    Returns:
+        True if user has at least one non-demo snapshot
+
+    Example:
+        >>> if has_user_snapshots():
+        >>>     print("Show Go to Analysis button")
+        >>> else:
+        >>>     print("Show Start INTAKE button")
+    """
+    snapshots = list_snapshots()
+
+    # Filter out demo snapshots
+    user_snapshots = [s for s in snapshots if s['id'] != DEMO_SNAPSHOT_ID]
+
+    has_snapshots = len(user_snapshots) > 0
+    print(f"[CHECK] has_user_snapshots() = {has_snapshots} ({len(user_snapshots)} user snapshots found)")
+
+    return has_snapshots
+
+
 def delete_snapshot(snapshot_id: str) -> bool:
     """
     Delete a snapshot by ID from browser localStorage.
@@ -295,7 +480,7 @@ def delete_snapshot(snapshot_id: str) -> bool:
         # Remove from browser localStorage
         localS = _get_local_storage()
         snapshot_key = f"ff_snapshot_{snapshot_id}"
-        localS.deleteItem(snapshot_key)
+        localS.delete(snapshot_key)
         print(f"[OK] Deleted snapshot from browser localStorage: {snapshot_key}")
 
         # Update index
@@ -358,12 +543,24 @@ def get_current_snapshot() -> Optional[Dict[str, Any]]:
     Returns:
         Snapshot data dict, or None if no current snapshot
     """
+    print("[DEBUG get_current_snapshot] Getting snapshots index...")
     index = get_snapshots_index()
     current_id = index.get("current_snapshot_id")
 
-    if current_id:
-        return load_snapshot(current_id)
+    print(f"[DEBUG get_current_snapshot] current_snapshot_id = {current_id}")
+    print(f"[DEBUG get_current_snapshot] Total snapshots in index: {len(index.get('snapshots', []))}")
 
+    if current_id:
+        print(f"[DEBUG get_current_snapshot] Loading snapshot: {current_id}")
+        data = load_snapshot(current_id)
+        if data:
+            print(f"[DEBUG get_current_snapshot] OK Successfully loaded snapshot {current_id}")
+            print(f"[DEBUG get_current_snapshot] User name: {data.get('input_user_name', 'NOT FOUND')}")
+        else:
+            print(f"[DEBUG get_current_snapshot] ERROR Failed to load snapshot {current_id}")
+        return data
+
+    print(f"[DEBUG get_current_snapshot] WARNING No current_snapshot_id set!")
     return None
 
 
@@ -444,7 +641,7 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
             # Clear existing snapshots from browser localStorage
             for snapshot in index.get("snapshots", []):
                 snapshot_key = f"ff_snapshot_{snapshot['id']}"
-                localS.deleteItem(snapshot_key)
+                localS.delete(snapshot_key)
                 print(f"[OK] Deleted snapshot during replace: {snapshot_key}")
 
             # Clear index
@@ -464,13 +661,13 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
             snapshot_key = f"ff_snapshot_{snapshot_id}"
             encrypted_str = encrypt_data(data, localS)
 
-            # Save encryption key if it's new (to avoid duplicate key error)
+            # Save encryption key if it's new
             if st.session_state.get('encryption_key_needs_save', False):
-                localS.setItem('ff_encryption_key', st.session_state.encryption_key_b64)
+                localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
                 st.session_state.encryption_key_needs_save = False
                 print("[OK] Saved encryption key to browser localStorage")
 
-            localS.setItem(snapshot_key, encrypted_str)
+            localS.set(snapshot_key, encrypted_str)
             print(f"[OK] Imported snapshot to browser localStorage: {snapshot_key}")
 
             # Add to index (avoid duplicates)
@@ -537,3 +734,206 @@ def _calculate_monthly_surplus(data: Dict[str, Any]) -> float:
     income = data.get("input_total_income", 0)
     expenses = data.get("input_total_expenses", 0)
     return income - expenses
+
+
+# =============================================================================
+# SNAPSHOT COMPARISON
+# =============================================================================
+
+def compare_snapshots(snapshot_ids: List[str]) -> Optional[Dict[str, Any]]:
+    """
+    Compare 2-3 snapshots side-by-side.
+
+    Args:
+        snapshot_ids: List of 2-3 snapshot IDs to compare (e.g., ["20251106_0230", "20251107_1445"])
+
+    Returns:
+        Comparison data dict with metrics for each snapshot, or None if error
+
+    Structure:
+        {
+            "snapshots": [
+                {
+                    "id": "20251106_0230",
+                    "name": "Conservative Plan",
+                    "created": "2025-11-06T02:30:00",
+                    "metrics": {
+                        "net_worth": 850000,
+                        "monthly_surplus": 350,
+                        "user_age": 65,
+                        "partner_age": 63,
+                        "total_income": 8500,
+                        "total_expenses": 8150
+                    }
+                },
+                {...}
+            ],
+            "differences": {
+                "net_worth": [850000, 920000, 70000, 8.2],  # [val1, val2, diff, pct]
+                "monthly_surplus": [350, 500, 150, 42.9],
+                ...
+            }
+        }
+    """
+    # Validate input
+    if not snapshot_ids or len(snapshot_ids) < 2 or len(snapshot_ids) > 3:
+        print("[ERROR] compare_snapshots requires 2-3 snapshot IDs")
+        return None
+
+    # Load each snapshot
+    snapshots_data = []
+    for snapshot_id in snapshot_ids:
+        # Get metadata from index
+        index = get_snapshots_index()
+        metadata = None
+        for s in index.get("snapshots", []):
+            if s["id"] == snapshot_id:
+                metadata = s
+                break
+
+        if not metadata:
+            print(f"[ERROR] Snapshot {snapshot_id} not found in index")
+            return None
+
+        # Load full data
+        data = load_snapshot(snapshot_id)
+        if not data:
+            print(f"[ERROR] Could not load data for snapshot {snapshot_id}")
+            return None
+
+        # Calculate metrics
+        metrics = {
+            "net_worth": _calculate_net_worth(data),
+            "monthly_surplus": _calculate_monthly_surplus(data),
+            "user_age": data.get("input_age", 0),
+            "partner_age": data.get("input_partner_age", 0),
+            "total_income": data.get("input_total_income", 0),
+            "total_expenses": data.get("input_total_expenses", 0),
+            "retirement_age": data.get("input_retirement_age", 0),
+            "partner_retirement_age": data.get("input_partner_retirement_age", 0)
+        }
+
+        snapshots_data.append({
+            "id": snapshot_id,
+            "name": metadata.get("name", snapshot_id),
+            "created": metadata.get("created", ""),
+            "metrics": metrics
+        })
+
+    # Calculate differences (comparing first snapshot to others)
+    base = snapshots_data[0]["metrics"]
+    differences = {}
+
+    for key in base.keys():
+        if len(snapshots_data) == 2:
+            # 2-snapshot comparison
+            val1 = base[key]
+            val2 = snapshots_data[1]["metrics"][key]
+            diff = val2 - val1
+            pct = (diff / val1 * 100) if val1 != 0 else 0
+            differences[key] = [val1, val2, diff, pct]
+        else:
+            # 3-snapshot comparison
+            val1 = base[key]
+            val2 = snapshots_data[1]["metrics"][key]
+            val3 = snapshots_data[2]["metrics"][key]
+            diff_2 = val2 - val1
+            diff_3 = val3 - val1
+            pct_2 = (diff_2 / val1 * 100) if val1 != 0 else 0
+            pct_3 = (diff_3 / val1 * 100) if val1 != 0 else 0
+            differences[key] = [val1, val2, val3, diff_2, diff_3, pct_2, pct_3]
+
+    print(f"[OK] Compared {len(snapshots_data)} snapshots successfully")
+
+    return {
+        "snapshots": snapshots_data,
+        "differences": differences
+    }
+
+
+def display_snapshot_comparison(comparison: Dict[str, Any]) -> None:
+    """
+    Display snapshot comparison in Streamlit UI.
+
+    Args:
+        comparison: Output from compare_snapshots()
+
+    Shows:
+        - Side-by-side metrics table
+        - Differences with % change
+        - Color coding (green=better, red=worse)
+    """
+    if not comparison:
+        st.warning("⚠️ No comparison data available")
+        return
+
+    snapshots = comparison["snapshots"]
+    differences = comparison["differences"]
+    num_snapshots = len(snapshots)
+
+    # Display header
+    st.subheader("📊 Snapshot Comparison")
+
+    # Create columns for side-by-side display
+    cols = st.columns(num_snapshots)
+
+    # Display each snapshot's basic info
+    for idx, snapshot in enumerate(snapshots):
+        with cols[idx]:
+            st.markdown(f"**{snapshot['name']}**")
+            st.caption(f"ID: {snapshot['id']}")
+            st.caption(f"Created: {snapshot['created'][:10]}")
+
+    st.markdown("---")
+
+    # Display metrics comparison
+    metric_labels = {
+        "net_worth": "💰 Net Worth",
+        "monthly_surplus": "💵 Monthly Surplus",
+        "user_age": "👤 Your Age",
+        "partner_age": "👥 Partner Age",
+        "total_income": "📈 Total Income",
+        "total_expenses": "📉 Total Expenses",
+        "retirement_age": "🎯 Your Retirement Age",
+        "partner_retirement_age": "🎯 Partner Retirement Age"
+    }
+
+    for key, label in metric_labels.items():
+        st.markdown(f"**{label}**")
+        cols = st.columns(num_snapshots)
+
+        diff_data = differences.get(key, [])
+
+        for idx, snapshot in enumerate(snapshots):
+            with cols[idx]:
+                value = snapshot["metrics"][key]
+
+                # Format value
+                if key in ["net_worth", "total_income", "total_expenses"]:
+                    formatted = f"${value:,.0f}"
+                elif key in ["monthly_surplus"]:
+                    formatted = f"${value:,.0f}" if value >= 0 else f"-${abs(value):,.0f}"
+                else:
+                    formatted = f"{value:.0f}"
+
+                # Show difference for snapshots 2 and 3
+                if idx == 0:
+                    st.metric(label="Base", value=formatted)
+                elif idx == 1 and len(diff_data) >= 4:
+                    diff = diff_data[2]
+                    pct = diff_data[3]
+                    st.metric(
+                        label="vs Base",
+                        value=formatted,
+                        delta=f"{diff:+,.0f} ({pct:+.1f}%)"
+                    )
+                elif idx == 2 and len(diff_data) >= 7:
+                    diff = diff_data[4]
+                    pct = diff_data[6]
+                    st.metric(
+                        label="vs Base",
+                        value=formatted,
+                        delta=f"{diff:+,.0f} ({pct:+.1f}%)"
+                    )
+
+        st.markdown("---")

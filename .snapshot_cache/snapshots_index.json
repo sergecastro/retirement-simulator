@@ -1,0 +1,33 @@
+{
+  "current_snapshot_id": "20251112_1810",
+  "snapshots": [
+    {
+      "id": "20251112_1809",
+      "name": "  RETESTING save1",
+      "created": "2025-11-12T18:09:42.994667",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    },
+    {
+      "id": "20251112_1810",
+      "name": "  RETESTING save2",
+      "created": "2025-11-12T18:10:44.703597",
+      "metadata": {
+        "user_name": "SERGE CASTRO RETESTING",
+        "user_age": 76,
+        "partner_exists": true,
+        "partner_name": "JUDITH  RETESTING",
+        "partner_age": 74,
+        "net_worth": 3500000.0,
+        "monthly_surplus": 8444.0
+      }
+    }
+  ]
+}

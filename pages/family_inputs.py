@@ -46,18 +46,21 @@ def collect_family_events():
                     "Name:",
                     value=child_data.get('Name', ''),
                     key=f"child_name_{idx}",
-                    placeholder="Child's name"
+                    placeholder="Child's name",
+                    disabled=True,
+                    help="📝 Edit in INTAKE mode"
                 )
                 st.session_state['children_list'][idx]['Name'] = name
-                
+
                 birth_year = st.number_input(
                     "Birth Year:",
                     value=int(child_data.get('Birth Year') or date.today().year - 5),
                     min_value=1900,
-                    max_value=date.today().year,  # FIX: Can't be born in the future!
+                    max_value=date.today().year,
                     step=1,
                     key=f"child_birth_{idx}",
-                    help="Child's birth year (cannot be in the future)"
+                    disabled=True,
+                    help="📝 Edit in INTAKE mode"
                 )
                 st.session_state['children_list'][idx]['Birth Year'] = birth_year
             
@@ -71,17 +74,21 @@ def collect_family_events():
                     "College Plan:",
                     ["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"],
                     index=["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"].index(college_plan_value),
-                    key=f"child_college_{idx}"
+                    key=f"child_college_{idx}",
+                    disabled=True,
+                    help="📝 Edit in INTAKE mode"
                 )
                 st.session_state['children_list'][idx]['College Plan'] = college_plan
-                
+
                 scholarship = st.number_input(
                     "Scholarship %:",
                     value=float(child_data.get('Scholarship %', 0.0)),
                     min_value=0.0,
                     max_value=100.0,
                     step=1.0,
-                    key=f"child_scholarship_{idx}"
+                    key=f"child_scholarship_{idx}",
+                    disabled=True,
+                    help="📝 Edit in INTAKE mode"
                 )
                 st.session_state['children_list'][idx]['Scholarship %'] = scholarship
             
@@ -92,17 +99,21 @@ def collect_family_events():
                     min_value=15,
                     max_value=25,
                     step=1,
-                    key=f"child_start_{idx}"
+                    key=f"child_start_{idx}",
+                    disabled=True,
+                    help="📝 Edit in INTAKE mode"
                 )
                 st.session_state['children_list'][idx]['Start Age'] = start_age
-                
+
                 years = st.number_input(
                     "Years:",
                     value=int(child_data.get('Years') or 4),
                     min_value=1,
                     max_value=8,
                     step=1,
-                    key=f"child_years_{idx}"
+                    key=f"child_years_{idx}",
+                    disabled=True,
+                    help="📝 Edit in INTAKE mode"
                 )
                 st.session_state['children_list'][idx]['Years'] = years
             
@@ -110,7 +121,9 @@ def collect_family_events():
                 use_529 = st.checkbox(
                     "Use 529 First?",
                     value=bool(child_data.get('Use 529 First?', True)),
-                    key=f"child_529_{idx}"
+                    key=f"child_529_{idx}",
+                    disabled=True,
+                    help="📝 Edit in INTAKE mode"
                 )
                 st.session_state['children_list'][idx]['Use 529 First?'] = use_529
                 
@@ -166,25 +179,31 @@ def collect_family_events():
                     min_value=date.today().year,
                     max_value=date.today().year + 50,
                     step=1,
-                    key=f"inh_year_{idx}"
+                    key=f"inh_year_{idx}",
+                    disabled=True,
+                    help="📝 Edit in INTAKE mode"
                 )
                 st.session_state['inheritance_list'][idx]['Year'] = year
-            
+
             with col2:
                 amount = st.number_input(
                     "Amount:",
                     value=float(inh_data.get('Amount', 0.0)),
                     min_value=0.0,
                     step=1000.0,
-                    key=f"inh_amount_{idx}"
+                    key=f"inh_amount_{idx}",
+                    disabled=True,
+                    help="📝 Edit in INTAKE mode"
                 )
                 st.session_state['inheritance_list'][idx]['Amount'] = amount
-            
+
             with col3:
                 taxable = st.checkbox(
                     "Taxable?",
                     value=bool(inh_data.get('Taxable?', False)),
-                    key=f"inh_taxable_{idx}"
+                    key=f"inh_taxable_{idx}",
+                    disabled=True,
+                    help="📝 Edit in INTAKE mode"
                 )
                 st.session_state['inheritance_list'][idx]['Taxable?'] = taxable
                 
@@ -213,29 +232,33 @@ def collect_family_events():
         col1, col2 = st.columns(2)
         with col1:
             college_inflation_pct = st.number_input(
-                "College Inflation Rate (%):", 
+                "College Inflation Rate (%):",
                 value=float(st.session_state.get('input_college_inflation_pct', 4.0)),
                 key="college_inflation_input",
-                help="Annual increase in college costs"
+                disabled=True,
+                help="📝 Edit in INTAKE mode"
             )
             base_public_in = st.number_input(
-                "Base Public In-State Cost:", 
+                "Base Public In-State Cost:",
                 value=float(st.session_state.get('input_base_public_in', 20000.0)),
                 key="public_in_cost_input",
-                help="Annual cost for in-state public university"
+                disabled=True,
+                help="📝 Edit in INTAKE mode"
             )
         with col2:
             base_public_out = st.number_input(
-                "Base Public Out-of-State Cost:", 
+                "Base Public Out-of-State Cost:",
                 value=float(st.session_state.get('input_base_public_out', 40000.0)),
                 key="public_out_cost_input",
-                help="Annual cost for out-of-state public university"
+                disabled=True,
+                help="📝 Edit in INTAKE mode"
             )
             base_private = st.number_input(
-                "Base Private College Cost:", 
+                "Base Private College Cost:",
                 value=float(st.session_state.get('input_base_private', 60000.0)),
                 key="private_cost_input",
-                help="Annual cost for private university"
+                disabled=True,
+                help="📝 Edit in INTAKE mode"
             )
     
     # Update session state for college parameters

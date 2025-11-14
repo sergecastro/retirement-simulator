@@ -72,7 +72,7 @@ def _get_or_create_encryption_key(localS) -> bytes:
 
     # Try to load key from localStorage
     try:
-        key_b64 = localS.getItem('ff_encryption_key')
+        key_b64 = localS.get('ff_encryption_key')
         if key_b64:
             # Decode from base64
             key = base64.b64decode(key_b64)

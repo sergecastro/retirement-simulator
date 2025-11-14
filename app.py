@@ -5,7 +5,7 @@ Main application entry point and navigation.
 
 Author: Family Forecast Development Team
 Last Updated: November 6, 2025 - 7:30 PM EST
-Version: 3.1.1 (Healthcare Hub + Diagnostic Mode)
+Version: 3.1.1 (Healthcare Hub)
 """
 
 # =============================================================================
@@ -50,12 +50,14 @@ from pages.financial_inputs import collect_financial_data
 from pages.family_inputs import collect_family_events
 
 # Import data management
-from data_manager_cloud import manage_scenarios_cloud as manage_scenarios
+# OLD: from data_manager_cloud import manage_scenarios_cloud as manage_scenarios
+# NEW: Encrypted snapshot system
+from sidebar_snapshot_manager import manage_snapshots_sidebar as manage_scenarios
 
 # Import INTAKE module
 from intake_integrated import show_intake_questionnaire
 
-# Import Healthcare module (with error handling for debugging)
+# Import Healthcare module
 try:
     from healthcare.healthcare_main import main as healthcare_main
     HEALTHCARE_AVAILABLE = True
@@ -96,28 +98,45 @@ def load_intake_data_to_session():
 
     already_loaded = 'intake_data_loaded' in st.session_state
 
+    print(f"[LOAD_INTAKE] already_loaded flag = {already_loaded}")
+
+    # FORCE RELOAD if we have cached snapshot data (just came from Intake)
+    if '_cached_snapshots' in st.session_state and len(st.session_state['_cached_snapshots']) > 0:
+        print(f"[LOAD_INTAKE] Found {len(st.session_state['_cached_snapshots'])} cached snapshot(s), forcing reload")
+        already_loaded = False
+
     # Only load if not already loaded in this session
     if not already_loaded:
         try:
-            # Try to get current snapshot
+            # Try to get current snapshot (will use cache if available)
+            print(f"[LOAD_INTAKE] Calling get_current_snapshot()...")
             intake_data = get_current_snapshot()
 
             if intake_data:
+                print(f"[LOAD_INTAKE] OK Got snapshot data, user = {intake_data.get('input_user_name', 'MISSING')}")
                 # Load snapshot data into session state
                 for key, value in intake_data.items():
                     st.session_state[key] = value
 
                 st.session_state.intake_data_loaded = True
 
-                # Show welcome message
-                user_name = intake_data.get('input_user_name', '')
-                if user_name:
-                    st.success(f"✅ Loaded data for: {user_name}")
+                # Show welcome message ONCE
+                if 'intake_welcome_shown' not in st.session_state:
+                    user_name = intake_data.get('input_user_name', '')
+                    if user_name:
+                        st.success(f"✅ Loaded data for: {user_name}")
+                    st.session_state['intake_welcome_shown'] = True
+            else:
+                print(f"[LOAD_INTAKE] ERROR get_current_snapshot() returned None")
 
         except Exception as e:
             # Silently fail - user will use sidebar inputs
-            print(f"DEBUG: Could not load snapshot: {e}")
+            print(f"[LOAD_INTAKE] ERROR Exception: {e}")
+            import traceback
+            traceback.print_exc()
             pass
+    else:
+        print(f"[LOAD_INTAKE] WARNING Skipping load - already_loaded=True")
 
 
 # =============================================================================
@@ -149,16 +168,16 @@ def main():
     if st.session_state.current_mode is None:
         st.session_state.mode_selected = False
 
-    # Check if user has completed INTAKE data
-    from utils.snapshot_manager import list_snapshots
-    has_intake_data = len(list_snapshots()) > 0
+    # Check if user has saved snapshots (for smart landing page)
+    from utils.snapshot_manager import has_user_snapshots
+    has_saved_data = has_user_snapshots()
 
     # Get user type
     is_trusted = is_trusted_user()
 
     # CRITICAL: SHOW LANDING PAGE if mode not selected
     if not st.session_state.mode_selected or st.session_state.current_mode is None:
-        show_mode_selection_landing_page(has_intake_data, is_trusted)
+        show_mode_selection_landing_page(has_saved_data, is_trusted)
         show_sidebar_footer(is_trusted)
         st.stop()  # ← STOP EXECUTION HERE!
 
@@ -178,6 +197,10 @@ def main():
         show_sidebar_footer(is_trusted)
         show_healthcare_mode()
 
+    elif st.session_state.current_mode == "scenario_studio":
+        from ui.scenario_studio_page import render_scenario_studio_page
+        render_scenario_studio_page()
+
     elif st.session_state.current_mode == "Analysis":
         # ✅ FIXED: Load INTAKE data into session state if available
         load_intake_data_to_session()
@@ -194,25 +217,24 @@ def main():
             st.markdown("---")
             st.markdown("### 🎯 Quick Mode Switch")
 
-            # Determine smart default based on current mode
-            mode_options = ["INTAKE", "Analysis", "Healthcare"]
-            if st.session_state.current_mode in mode_options:
-                default_index = mode_options.index(st.session_state.current_mode)
-            else:
-                default_index = 1  # Default to Analysis
+            mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Healthcare"]
+            current_idx = 1  # Analysis is current
 
             # Mode selector radio buttons
             mode = st.radio(
                 "Choose mode:",
                 options=mode_options,
-                index=default_index,
+                index=current_idx,
                 key="mode_selector_analysis",
-                help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Healthcare: Cost planning"
+                help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Healthcare: Cost planning"
             )
 
-            # Sync radio button with session state
-            if mode != st.session_state.current_mode:
-                st.session_state.current_mode = mode
+            # Handle mode change
+            if mode != "Analysis":
+                if mode == "Scenario Studio":
+                    st.session_state.current_mode = "scenario_studio"
+                else:
+                    st.session_state.current_mode = mode
                 st.session_state.mode_selected = True
                 st.rerun()
 
@@ -248,9 +270,6 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     st.title("🏠 Welcome to Family Forecast!")
     st.markdown("## *Family Lifecycle Retirement Planner*")
 
-    # DEBUG: Show version to confirm deployment
-    st.caption(f"🔧 Debug: Version 3.1.1 | Healthcare Module: {'Available' if HEALTHCARE_AVAILABLE else 'UNAVAILABLE'} | Deployed: Nov 6, 7:30 PM")
-
     # Welcome message box
     st.markdown("""
     <div style='background-color: #E8E6E0; padding: 20px; border-radius: 10px; border-left: 5px solid #E8B541;'>
@@ -267,20 +286,22 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 
     st.markdown("")  # Spacing
 
-    # Show status based on returning user
+    # Show status based on whether user has saved snapshots
     if has_intake_data:
-        st.success("✅ **Welcome back!** We found your previous INTAKE data. You can go straight to Analysis or update your information.")
+        # User has saved snapshots (returning user with data)
+        st.success("✅ **Welcome back!** You have saved retirement plans ready to analyze.\n\n**Your choices:**\n\n1️⃣ **Go to Analysis** to review and simulate your saved plans\n\n2️⃣ **Start INTAKE** to create a new plan or update existing data")
     else:
-        st.info("ℹ️ **First time here?** We recommend starting with INTAKE to collect your financial profile.")
+        # No saved snapshots (new user)
+        st.info("ℹ️ **First time here?** Get started by creating your retirement plan.\n\n**Recommended:** Start with INTAKE to enter your financial information, or explore Analysis mode with demo data.")
 
     st.markdown("---")
 
     # Mode selection header
     st.markdown("### 🎯 Choose Your Starting Point")
 
-    # Three big buttons for mode selection (or 2 if Healthcare unavailable)
+    # Four big buttons for mode selection (or fewer if modules unavailable)
     if HEALTHCARE_AVAILABLE:
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
     else:
         col1, col2 = st.columns(2)
         st.warning("⚠️ Healthcare module temporarily unavailable")
@@ -352,6 +373,29 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
                 st.session_state.current_mode = "Healthcare"
                 st.rerun()
 
+        # Card 4: Scenario Studio
+        with col4:
+            st.markdown("""
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
+                <h3 style='color: #FFFFFF; margin-top: 0;'>🎬 Scenario Studio</h3>
+                <p style='color: #FFFFFF;'><strong>Multi-Scenario Comparison</strong></p>
+                <ul style='color: #FFFFFF;'>
+                    <li>Compare 2-4 scenarios side-by-side</li>
+                    <li>Visual difference highlighting</li>
+                    <li>AI-powered recommendations</li>
+                    <li>Export comparison reports</li>
+                </ul>
+                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Exploring "what-if" retirement strategies</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("")  # Spacing
+
+            if st.button("🚀 Enter Scenario Studio", type="primary", use_container_width=True, key="btn_scenario_studio"):
+                st.session_state.mode_selected = True
+                st.session_state.current_mode = "scenario_studio"
+                st.rerun()
+
     st.markdown("---")
 
     # Help section
@@ -377,6 +421,12 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
         - 💊 You're planning Roth conversions and want to see Medicare impacts
         - 🩺 You want to explore long-term care planning options
 
+        **Choose Scenario Studio if:**
+        - 🎬 You've saved multiple "what-if" comparison scenarios
+        - 📊 You want to compare different retirement strategies side-by-side
+        - 🔍 You need to see the differences between scenarios at a glance
+        - 🤔 You're deciding between multiple retirement paths
+
         **💡 Pro Tip:** You can always switch between modes later using the sidebar button!
         """)
 
@@ -396,6 +446,32 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 
 def show_intake_mode():
     """Display INTAKE questionnaire mode"""
+
+    # Add Quick Mode Switch in sidebar
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 🎯 Quick Mode Switch")
+
+        mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Healthcare"]
+        current_idx = 0  # INTAKE is current
+
+        mode = st.radio(
+            "Choose mode:",
+            options=mode_options,
+            index=current_idx,
+            key="mode_selector_intake",
+            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Healthcare: Cost planning"
+        )
+
+        # Handle mode change
+        if mode != "INTAKE":
+            if mode == "Scenario Studio":
+                st.session_state.current_mode = "scenario_studio"
+            else:
+                st.session_state.current_mode = mode
+            st.session_state.mode_selected = True
+            st.rerun()
+
     st.title("📝 INTAKE Questionnaire")
     st.markdown("*Guided data collection for retirement planning*")
     st.markdown("---")
@@ -451,6 +527,11 @@ def show_healthcare_mode():
 
 
 # =============================================================================
+# SCENARIO STUDIO MODE - Routing handled in ui/scenario_studio_page.py
+# =============================================================================
+
+
+# =============================================================================
 # ANALYSIS MODE
 # =============================================================================
 
@@ -467,7 +548,9 @@ def show_analysis_mode(nav_state):
         scenario_data = st.session_state.get('_pending_scenario_data', {})
 
         # Import the apply function here to avoid circular import at module level
-        from data_manager_cloud import apply_scenario_data_safe
+        # OLD: from data_manager_cloud import apply_scenario_data_safe
+        # NEW: Use sidebar_snapshot_manager version
+        from sidebar_snapshot_manager import apply_scenario_data_safe
 
         # Apply the scenario data (this clears old keys and sets new values)
         apply_scenario_data_safe(scenario_data)

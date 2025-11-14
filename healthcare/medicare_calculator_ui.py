@@ -4,7 +4,7 @@ Medicare IRMAA Calculator - User Interface
 Streamlit UI for Medicare IRMAA premium calculator with Roth conversion analyzer.
 
 Author: Family Forecast Development Team
-Last Updated: October 22, 2025
+Last Updated: November 14, 2025 - Added INTAKE integration
 """
 
 import streamlit as st
@@ -26,6 +26,9 @@ from healthcare.healthcare_disclaimers import (
     show_roth_conversion_disclaimer,
     require_healthcare_disclaimer_acknowledgment
 )
+
+# Import INTAKE integration
+from healthcare.intake_integration import load_user_data_for_healthcare, get_snapshot_name
 
 
 def format_currency(amount):
@@ -202,22 +205,41 @@ def show_calculator_page():
     # Initialize calculator
     calculator = MedicareIRMAACalculator()
 
+    # ==========================================
+    # LOAD INTAKE DATA (Auto-fill from saved plan)
+    # ==========================================
+    intake_data = load_user_data_for_healthcare()
+    snapshot_name = get_snapshot_name()
+
+    # Show data source info
+    if intake_data['data_loaded']:
+        st.sidebar.success(f"✅ Auto-filled from: {intake_data['user_name']}")
+        if snapshot_name:
+            st.sidebar.caption(f"📋 Plan: {snapshot_name}")
+        st.sidebar.caption("💡 You can still adjust values below")
+        st.sidebar.markdown("---")
+
     # Sidebar inputs
     st.sidebar.header("📋 Your Information")
 
-    # Filing status
+    # Filing status (auto-filled)
+    default_filing_status = intake_data.get('filing_status', 'single')
+    filing_status_index = 0 if default_filing_status == 'single' else 1
+
     filing_status = st.sidebar.selectbox(
         "Filing Status",
         ["single", "married"],
+        index=filing_status_index,
         format_func=lambda x: "Single" if x == "single" else "Married Filing Jointly"
     )
 
-    # Current age
+    # Current age (auto-filled)
+    default_age = intake_data.get('age', 65)
     current_age = st.sidebar.number_input(
         "Current Age",
         min_value=50,
         max_value=100,
-        value=65,
+        value=default_age,
         help="Your current age (Medicare starts at 65)"
     )
 
@@ -231,12 +253,13 @@ def show_calculator_page():
     )
 
     if income_method == "Simple (AGI + Tax-Exempt Interest)":
-        # Simple MAGI input
+        # Simple MAGI input (use total income as default AGI)
+        default_agi = int(intake_data.get('total_income', 100000))
         agi = st.sidebar.number_input(
             "Adjusted Gross Income (AGI)",
             min_value=0,
             max_value=10000000,
-            value=100000,
+            value=default_agi,
             step=5000,
             help="Line 11 from Form 1040"
         )
@@ -253,22 +276,26 @@ def show_calculator_page():
         magi = calculator.calculate_magi_simple(agi, tax_exempt)
 
     else:
-        # Detailed retirement income
+        # Detailed retirement income (auto-filled from INTAKE)
         st.sidebar.markdown("**Income Sources:**")
 
+        # Auto-fill Social Security
+        default_ss = int(intake_data.get('social_security_income', 30000))
         social_security = st.sidebar.number_input(
             "Social Security (taxable portion)",
             min_value=0,
             max_value=100000,
-            value=30000,
+            value=default_ss,
             step=1000
         )
 
+        # Auto-fill Pension
+        default_pension = int(intake_data.get('pension_income', 0))
         pension = st.sidebar.number_input(
             "Pension/Annuity Income",
             min_value=0,
             max_value=500000,
-            value=0,
+            value=default_pension,
             step=5000
         )
 
@@ -280,11 +307,13 @@ def show_calculator_page():
             step=5000
         )
 
+        # Auto-fill Investment Income
+        default_investment = int(intake_data.get('investment_income', 20000))
         investment_income = st.sidebar.number_input(
             "Investment Income (dividends, interest)",
             min_value=0,
             max_value=500000,
-            value=20000,
+            value=default_investment,
             step=5000
         )
 

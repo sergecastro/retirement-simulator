@@ -19,13 +19,18 @@ def ensure_shared_dir():
 
 def load_existing_payload():
     """Load previous intake data if exists"""
-    if os.path.exists(SHARED_PATH):
-        try:
-            with open(SHARED_PATH, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
+    data = get_current_snapshot()
+    if data:
+        return data
+    # Load demo if no snapshot
+    return {
+        "input_user_name": "John Smith",
+        "input_age": 70,
+        "input_partner_exists": True,
+        "input_partner_name": "Jane Smith",
+        "input_partner_age": 68,
+        # Add other demo fields as needed
+    }
 
 def save_payload(data):
     """Save intake data to shared JSON file"""
@@ -66,6 +71,15 @@ st.caption(f"Step {current_idx + 1} of {len(pages)}: {st.session_state.current_p
 if st.session_state.current_page == 'profile':
     st.header("👤 Your Profile")
     
+    user_name_default = existing.get("input_user_name", "")
+    user_name = st.text_input(
+        "Your name",
+        placeholder="Enter your name",
+        help="Your full name",
+        key="input_user_name",
+        value=user_name_default
+    )
+    
     # Single or Couple
     default_mode_is_couple = bool(existing.get("input_partner_exists", True))
     mode = st.radio(
@@ -90,13 +104,20 @@ if st.session_state.current_page == 'profile':
     partner_age_default = int(existing.get("input_partner_age", 68)) if "input_partner_age" in existing else 68
     
     if mode == "Couple":
-        partner_name = st.text_input("Partner name", value=partner_name)
+        partner_name = st.text_input(
+            "Partner name",
+            placeholder="Enter your partner's name",
+            help="Your partner's full name",
+            key="input_partner_name",
+            value=partner_name
+        )
         partner_age = st.number_input(
-            "Partner age", 
-            min_value=18, 
-            max_value=100, 
-            value=partner_age_default, 
-            step=1
+            "Partner age",
+            min_value=18,
+            max_value=100,
+            value=partner_age_default,
+            step=1,
+            key="input_partner_age"
         )
     else:
         partner_age = None
@@ -120,6 +141,7 @@ if st.session_state.current_page == 'profile':
             # Save profile data
             data = existing.copy()
             data["schema_version"] = "1.0"
+            data["input_user_name"] = user_name
             data["input_age"] = int(your_age)
             data["input_partner_exists"] = (mode == "Couple")
             if data["input_partner_exists"]:

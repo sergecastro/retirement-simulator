@@ -83,8 +83,9 @@ def collect_current_scenario_data():
     current_data = {}
 
     # Add metadata
-    current_data["schema_version"] = "3.0"
+    current_data["schema_version"] = "3.1"  # ✅ Incremented for description field
     current_data["saved_at"] = datetime.now().isoformat()
+    current_data["description"] = st.session_state.get('scenario_description', '')  # ✅ NEW FIELD
 
     # Save all input_ fields
     for key in st.session_state:
@@ -369,6 +370,18 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
             placeholder="My Retirement Plan 2025",
             key="new_scenario_name_input"
         )
+
+        # ✅ NEW: Description field for scenario
+        scenario_description = st.text_area(
+            "Description (optional):",
+            value=st.session_state.get('scenario_description', ''),
+            placeholder="e.g., Retire at 67 with increased savings, reduce travel expenses",
+            help="Brief description of what makes this scenario unique",
+            key="new_scenario_description_input",
+            height=80
+        )
+        # Store in session_state so collect_current_scenario_data() can access it
+        st.session_state['scenario_description'] = scenario_description
 
         if st.button("💾 Create New", use_container_width=True, disabled=not new_scenario_name):
             if new_scenario_name:

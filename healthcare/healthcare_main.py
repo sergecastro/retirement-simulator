@@ -163,10 +163,9 @@ def show_calculator_cards():
             - Evaluating plan switches
             - Understanding trade-offs
 
-            ⚠️ *Coming Soon!*
             """)
 
-            if st.button("Compare Plans →", key="medigap_compare", disabled=True):
+            if st.button("Compare Plans →", key="medigap_compare", type="primary"):
                 st.session_state['healthcare_page'] = 'medigap_comparison'
                 st.rerun()
 
@@ -438,6 +437,13 @@ def main():
             st.rerun()
 
         show_calculator_page()
+        return
+
+    elif 'healthcare_page' in st.session_state and st.session_state['healthcare_page'] == 'medigap_comparison':
+        # Import and show Medigap comparison tool
+        from healthcare.medicare_comparison import show_comparison_page
+
+        show_comparison_page()
         return
 
     # Show main hub page
