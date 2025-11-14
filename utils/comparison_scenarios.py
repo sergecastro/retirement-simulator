@@ -528,3 +528,61 @@ def _remove_from_comparisons_index(comparison_id: str) -> None:
         print(f"[ERROR] Failed to remove from comparisons index: {e}")
         import traceback
         traceback.print_exc()
+
+
+# =============================================================================
+# DELETE COMPARISON SCENARIO
+# =============================================================================
+
+def delete_comparison_scenario(comparison_id: str) -> bool:
+    """
+    Delete a comparison scenario by ID.
+
+    Args:
+        comparison_id: ID of comparison to delete
+
+    Returns:
+        True if deleted successfully, False otherwise
+
+    Example:
+        >>> delete_comparison_scenario("20251114_0800")
+        True
+    """
+    print(f"[DELETE COMPARISON] Deleting comparison: {comparison_id}")
+
+    try:
+        import os
+
+        # Delete from localStorage
+        try:
+            localS = _get_local_storage()
+            storage_key = f"{COMPARISON_KEY_PREFIX}{comparison_id}"
+            localS.delete(storage_key)
+            print(f"[DELETE] Removed from localStorage: {storage_key}")
+        except Exception as ls_err:
+            print(f"[WARN] Failed to delete from localStorage: {ls_err}")
+
+        # Delete from disk cache
+        try:
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache', 'comparisons')
+            comp_file = os.path.join(cache_dir, f"ff_comparison_{comparison_id}.json")
+
+            if os.path.exists(comp_file):
+                os.remove(comp_file)
+                print(f"[DELETE] Removed from disk: {comp_file}")
+            else:
+                print(f"[WARN] File not found on disk: {comp_file}")
+        except Exception as disk_err:
+            print(f"[WARN] Failed to delete from disk: {disk_err}")
+
+        # Remove from index
+        _remove_from_comparisons_index(comparison_id)
+
+        print(f"[OK] Successfully deleted comparison: {comparison_id}")
+        return True
+
+    except Exception as e:
+        print(f"[ERROR] Failed to delete comparison: {e}")
+        import traceback
+        traceback.print_exc()
+        return False

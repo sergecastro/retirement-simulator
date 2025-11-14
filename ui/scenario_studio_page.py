@@ -11,14 +11,19 @@ from utils.snapshot_manager import get_current_snapshot
 def render_scenario_studio_page():
     """Render the Scenario Studio page - Full self-contained experience"""
 
-    # Page header with quick rerun button for testing
-    col_header1, col_header2 = st.columns([4, 1])
-    with col_header1:
+    # Page header with reload button
+    col_h1, col_h2 = st.columns([5, 1])
+
+    with col_h1:
         st.markdown("# 🎬 Scenario Studio")
         st.markdown("**Create, simulate, and compare multiple retirement strategies**")
-    with col_header2:
-        st.markdown("### ")  # Spacing
-        if st.button("🔄 Reload Page", key="quick_rerun_button", help="Refresh to see latest code changes", use_container_width=True):
+
+    with col_h2:
+        st.markdown("")  # Spacing
+        if st.button("🔄 Reload", key="reload_studio", help="Refresh page to see latest changes", use_container_width=True):
+            # Clear any cached data
+            if 'pending_scenario' in st.session_state:
+                del st.session_state['pending_scenario']
             st.rerun()
 
     st.markdown("---")
@@ -30,7 +35,7 @@ def render_scenario_studio_page():
             st.warning("⚠️ Please complete the INTAKE questionnaire first to create a base plan.")
             if st.button("📝 Go to INTAKE"):
                 st.session_state['current_mode'] = 'INTAKE'
-                st.rerun()
+                st.session_state['mode_selected'] = True
             return
 
         # Get the current snapshot ID from the index
@@ -42,7 +47,7 @@ def render_scenario_studio_page():
             st.error("❌ No current snapshot ID found. Please save a snapshot in INTAKE mode first.")
             if st.button("📝 Go to INTAKE"):
                 st.session_state['current_mode'] = 'INTAKE'
-                st.rerun()
+                st.session_state['mode_selected'] = True
             return
 
         # Extract user info from snapshot data (snapshot uses 'input_' prefix)
@@ -62,16 +67,105 @@ def render_scenario_studio_page():
 
     st.markdown("---")
     st.markdown("### 🎨 Create New Scenario")
-    st.markdown("**Adjust any parameters below to explore different retirement strategies**")
+    st.markdown("**Choose a preset template or customize your own scenario below**")
+
+    # QUICK START TEMPLATES
+    st.markdown("#### 🎯 Quick Start Templates")
+    col_t1, col_t2, col_t3, col_t4, col_t5 = st.columns(5)
+
+    with col_t1:
+        if st.button("🌅 Early Retirement", use_container_width=True, help="Retire at 60"):
+            st.session_state['template'] = 'early_retirement'
+            st.rerun()
+
+    with col_t2:
+        if st.button("💰 High Income", use_container_width=True, help="3x salary increase"):
+            st.session_state['template'] = 'high_income'
+            st.rerun()
+
+    with col_t3:
+        if st.button("🛡️ Conservative", use_container_width=True, help="Low risk, bonds heavy"):
+            st.session_state['template'] = 'conservative'
+            st.rerun()
+
+    with col_t4:
+        if st.button("🚀 Aggressive", use_container_width=True, help="High risk, stocks heavy"):
+            st.session_state['template'] = 'aggressive'
+            st.rerun()
+
+    with col_t5:
+        if st.button("💵 Frugal Living", use_container_width=True, help="Reduced expenses"):
+            st.session_state['template'] = 'frugal'
+            st.rerun()
+
+    st.markdown("")  # Spacing
+
+    # Get template adjustments if template was selected
+    template_adjustments = {}
+    template_name = ""
+
+    if 'template' in st.session_state:
+        template = st.session_state['template']
+
+        # Get base plan values
+        snapshot_data = current_snapshot.get('data', current_snapshot)
+
+        def get_value(key, default=0):
+            if f'input_{key}' in snapshot_data:
+                return snapshot_data[f'input_{key}']
+            if key in snapshot_data:
+                return snapshot_data[key]
+            return default
+
+        if template == 'early_retirement':
+            template_name = "Early Retirement (Age 60)"
+            template_adjustments = {
+                'retirement_age': 60,
+                'life_expectancy': 90,
+            }
+        elif template == 'high_income':
+            template_name = "High Income Strategy"
+            base_salary = get_value('salary_wages', 100000)
+            template_adjustments = {
+                'salary_wages': base_salary * 3,
+            }
+        elif template == 'conservative':
+            template_name = "Conservative Approach"
+            template_adjustments = {
+                'stocks_allocation': 30,
+                'bonds_allocation': 70,
+                'return_rate': 0.05,
+            }
+        elif template == 'aggressive':
+            template_name = "Aggressive Growth"
+            template_adjustments = {
+                'stocks_allocation': 90,
+                'bonds_allocation': 10,
+                'return_rate': 0.09,
+            }
+        elif template == 'frugal':
+            template_name = "Frugal Living"
+            base_housing = get_value('housing_expenses', 24000)
+            base_other = get_value('other_expenses', 12000)
+            template_adjustments = {
+                'housing_expenses': int(base_housing * 0.7),
+                'other_expenses': int(base_other * 0.5),
+            }
+
+        # Clear template from session state
+        del st.session_state['template']
 
     with st.form(key="create_scenario_form"):
 
         # Scenario name - PROMINENT & MANDATORY
         st.markdown("#### 📝 Scenario Name (Required)")
+        if template_name:
+            st.info(f"📋 **Template Applied:** {template_name}")
         st.markdown("**Give this scenario a unique, memorable name before adjusting parameters**")
 
         scenario_name = st.text_input(
             "Enter scenario name:",
+            value=template_name if template_name else "",
             placeholder="e.g., High Income Strategy, Early Retirement at 60, Conservative Plan",
             help="⚠️ REQUIRED: You must enter a scenario name to run the simulation",
             label_visibility="collapsed"
@@ -115,7 +209,7 @@ def render_scenario_studio_page():
                 "Annual Salary/Wages",
                 min_value=0,
                 max_value=10000000,
-                value=int(get_value('salary_wages', 100000)),
+                value=int(template_adjustments.get('salary_wages', get_value('salary_wages', 100000))),
                 step=5000,
                 help="Employment income"
             )
@@ -163,7 +257,7 @@ def render_scenario_studio_page():
                 "Annual Housing Expenses",
                 min_value=0,
                 max_value=500000,
-                value=int(get_value('housing_expenses', 24000)),
+                value=int(template_adjustments.get('housing_expenses', get_value('housing_expenses', 24000))),
                 step=1000,
                 help="Rent/mortgage, maintenance, utilities"
             )
@@ -199,7 +293,7 @@ def render_scenario_studio_page():
                 "Other Annual Expenses",
                 min_value=0,
                 max_value=200000,
-                value=int(get_value('other_expenses', 12000)),
+                value=int(template_adjustments.get('other_expenses', get_value('other_expenses', 12000))),
                 step=500,
                 help="Entertainment, travel, misc"
             )
@@ -227,7 +321,7 @@ def render_scenario_studio_page():
                 "Planned Retirement Age",
                 min_value=50,
                 max_value=80,
-                value=int(get_value('retirement_age', 65)),
+                value=int(template_adjustments.get('retirement_age', get_value('retirement_age', 65))),
                 step=1,
                 help="Age you plan to retire"
             )
@@ -237,7 +331,7 @@ def render_scenario_studio_page():
                 "Life Expectancy",
                 min_value=75,
                 max_value=105,
-                value=int(get_value('life_expectancy', 90)),
+                value=int(template_adjustments.get('life_expectancy', get_value('life_expectancy', 90))),
                 step=1,
                 help="Planning horizon"
             )
@@ -283,7 +377,7 @@ def render_scenario_studio_page():
                 "Expected Annual Return Rate",
                 min_value=0.0,
                 max_value=0.20,
-                value=float(get_value('return_rate', 0.07)),
+                value=float(template_adjustments.get('return_rate', get_value('return_rate', 0.07))),
                 step=0.005,
                 format="%.2f%%",
                 help="Average annual investment return (before inflation)"
@@ -293,7 +387,7 @@ def render_scenario_studio_page():
                 "Stocks Allocation %",
                 min_value=0,
                 max_value=100,
-                value=int(get_value('stocks_allocation', 60)),
+                value=int(template_adjustments.get('stocks_allocation', get_value('stocks_allocation', 60))),
                 step=5,
                 format="%d%%",
                 help="Percentage allocated to stocks/equity"
@@ -303,7 +397,7 @@ def render_scenario_studio_page():
                 "Bonds Allocation %",
                 min_value=0,
                 max_value=100,
-                value=int(get_value('bonds_allocation', 40)),
+                value=int(template_adjustments.get('bonds_allocation', get_value('bonds_allocation', 40))),
                 step=5,
                 format="%d%%",
                 help="Percentage allocated to bonds/fixed income"
@@ -723,67 +817,67 @@ def render_scenario_studio_page():
         col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
 
         with col_save2:
-                # Unique key based on scenario name
-                save_button_key = f"save_btn_{pending['name'].replace(' ', '_')}"
+            # Unique key based on scenario name
+            save_button_key = f"save_btn_{pending['name'].replace(' ', '_')}"
 
-                if st.button(
-                    "💾 Save Scenario",
-                    type="primary",
-                    use_container_width=True,
-                    key=save_button_key
-                ):
-                    from utils.comparison_scenarios import save_comparison_scenario
+            if st.button(
+                "💾 Save Scenario",
+                type="primary",
+                use_container_width=True,
+                key=save_button_key
+            ):
+                from utils.comparison_scenarios import save_comparison_scenario
 
-                    try:
-                        print(f"[SCENARIO STUDIO] 🔴 Save button clicked! Scenario: {pending['name']}")
+                try:
+                    print(f"[SCENARIO STUDIO] Save button clicked! Scenario: {pending['name']}")
 
-                        # Prepare simulation results - convert DataFrame to dict for JSON serialization
-                        sim_results = pending.get('simulation_results', {})
-                        serializable_results = {}
+                    # Prepare simulation results - convert DataFrame to dict for JSON serialization
+                    sim_results = pending.get('simulation_results', {})
+                    serializable_results = {}
 
-                        for key, value in sim_results.items():
-                            # Check if it's a DataFrame
-                            if hasattr(value, 'to_dict'):
-                                # Convert DataFrame to dict (orient='list' is most compact)
-                                serializable_results[key] = {
-                                    '_type': 'dataframe',
-                                    'data': value.to_dict(orient='list')
-                                }
-                            else:
-                                # Keep as-is for other types
-                                serializable_results[key] = value
-
-                        print(f"[SCENARIO STUDIO] Serialized {len(serializable_results)} result keys")
-
-                        comparison_id = save_comparison_scenario(
-                            base_plan_id=pending['base_plan_id'],
-                            name=pending['name'],
-                            description=f"Created in Scenario Studio",
-                            adjustments=pending['adjustments'],
-                            simulation_results=serializable_results
-                        )
-
-                        if comparison_id:
-                            print(f"[SCENARIO STUDIO] ✅ Save successful! ID: {comparison_id}")
-
-                            # 🎈 CELEBRATION!
-                            st.balloons()
-
-                            # Clear pending scenario
-                            del st.session_state['pending_scenario']
-
-                            # Show success inline (NO RERUN!)
-                            st.success(f"✅ **Saved!** Scenario '{pending['name']}' (ID: {comparison_id[:8]}...)")
-                            st.info("🔄 **Reload the page manually** to see it in your saved scenarios list below.")
+                    for key, value in sim_results.items():
+                        # Check if it's a DataFrame
+                        if hasattr(value, 'to_dict'):
+                            # Convert DataFrame to dict (orient='list' is most compact)
+                            serializable_results[key] = {
+                                '_type': 'dataframe',
+                                'data': value.to_dict(orient='list')
+                            }
                         else:
-                            st.error("❌ Save failed - no comparison ID returned")
-                            print(f"[SCENARIO STUDIO] ❌ No ID returned")
+                            # Keep as-is for other types
+                            serializable_results[key] = value
 
-                    except Exception as e:
-                        st.error(f"❌ Error saving: {str(e)}")
-                        print(f"[SCENARIO STUDIO] ❌ Error: {e}")
-                        import traceback
-                        traceback.print_exc()
+                    print(f"[SCENARIO STUDIO] Serialized {len(serializable_results)} result keys")
+
+                    comparison_id = save_comparison_scenario(
+                        base_plan_id=pending['base_plan_id'],
+                        name=pending['name'],
+                        description=f"Created in Scenario Studio",
+                        adjustments=pending['adjustments'],
+                        simulation_results=serializable_results
+                    )
+
+                    if comparison_id:
+                        print(f"[SCENARIO STUDIO] Save successful! ID: {comparison_id}")
+
+                        # CELEBRATION!
+                        st.balloons()
+
+                        # Clear pending scenario
+                        del st.session_state['pending_scenario']
+
+                        # Show success inline (NO RERUN!)
+                        st.success(f"✅ **Saved!** Scenario '{pending['name']}' (ID: {comparison_id[:8]}...)")
+                        st.info("🔄 **Reload the page manually** to see it in your saved scenarios list below.")
+                    else:
+                        st.error("❌ Save failed - no comparison ID returned")
+                        print(f"[SCENARIO STUDIO] ERROR: No ID returned")
+
+                except Exception as e:
+                    st.error(f"❌ Error saving: {str(e)}")
+                    print(f"[SCENARIO STUDIO] ERROR saving: {e}")
+                    import traceback
+                    traceback.print_exc()
 
     # =============================================================================
     # SECTION 2: SAVED SCENARIOS (List)
@@ -803,11 +897,42 @@ def render_scenario_studio_page():
         st.info(f"✅ **Found 1 saved scenario.** Create at least one more to enable side-by-side comparison.")
         st.markdown("**Saved Scenarios:**")
         for comp in comparisons:
-            st.markdown(f"- {comp['name']} (Created: {comp['created_at'][:10]})")
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.markdown(f"**{comp['name']}**")
+                st.caption(f"Created: {comp['created_at'][:10]}")
+            with col2:
+                if st.button("🗑️ Delete", key=f"delete_{comp['id']}", type="secondary", use_container_width=True):
+                    from utils.comparison_scenarios import delete_comparison_scenario
+                    if delete_comparison_scenario(comp['id']):
+                        st.success(f"✅ Deleted: {comp['name']}")
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to delete scenario")
 
     else:
         # 2+ scenarios - SHOW COMPARISON TABLE!
         st.success(f"📊 **Found {len(comparisons)} saved scenarios!**")
+
+        # MANAGE SCENARIOS SECTION
+        st.markdown("---")
+        st.markdown("### 📋 Manage Saved Scenarios")
+
+        with st.expander("View & Delete Scenarios", expanded=False):
+            for comp in comparisons:
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.markdown(f"**{comp['name']}**")
+                    st.caption(f"Created: {comp['created_at'][:10]} | ID: {comp['id'][:8]}...")
+                with col2:
+                    if st.button("🗑️ Delete", key=f"delete_{comp['id']}", type="secondary", use_container_width=True):
+                        from utils.comparison_scenarios import delete_comparison_scenario
+                        if delete_comparison_scenario(comp['id']):
+                            st.success(f"✅ Deleted: {comp['name']}")
+                            st.rerun()
+                        else:
+                            st.error("❌ Failed to delete scenario")
+                st.markdown("")  # Spacing
 
         st.markdown("---")
         st.markdown("### 🔀 Compare Scenarios Side-by-Side")
@@ -839,6 +964,31 @@ def render_scenario_studio_page():
                     detailed_scenarios.append(detailed)
 
             if len(detailed_scenarios) >= 2:
+                # Helper function for visual comparisons
+                def compare_to_base(scenario_value, base_value, higher_is_better=True):
+                    """Return indicator and delta for comparison"""
+                    if scenario_value == 'N/A' or base_value == 'N/A':
+                        return '', ''
+
+                    try:
+                        delta = scenario_value - base_value
+                        if delta > 0:
+                            if higher_is_better:
+                                indicator = "🟢 ↑"
+                            else:
+                                indicator = "🔴 ↑"
+                        elif delta < 0:
+                            if higher_is_better:
+                                indicator = "🔴 ↓"
+                            else:
+                                indicator = "🟢 ↓"
+                        else:
+                            indicator = "⚪ →"
+                            delta = 0
+                        return indicator, delta
+                    except:
+                        return '', ''
+
                 # Build comparison table
                 import pandas as pd
 
@@ -856,15 +1006,20 @@ def render_scenario_studio_page():
                     **{f'Scenario {i+1}': '' for i in range(len(detailed_scenarios))}
                 })
 
-                # Get simulation results (if available)
-                for metric_key, metric_label in [
-                    ('final_savings', '💰 Final Savings'),
-                    ('final_net_worth', '💎 Final Net Worth'),
-                    ('years_solvent', '⏳ Years Solvent'),
-                    ('health_score', '❤️ Health Score'),
-                    ('savings_rate', '📈 Savings Rate'),
+                # Get simulation results (if available) with comparisons
+                for metric_key, metric_label, higher_is_better in [
+                    ('final_savings', '💰 Final Savings', True),
+                    ('final_net_worth', '💎 Final Net Worth', True),
+                    ('years_solvent', '⏳ Years Solvent', True),
+                    ('health_score', '❤️ Health Score', True),
+                    ('savings_rate', '📈 Savings Rate', True),
                 ]:
                     row = {'Metric': metric_label}
+
+                    # Get base value (first scenario)
+                    base_sim_results = detailed_scenarios[0].get('simulation_results', {})
+                    base_value = base_sim_results.get(metric_key, 'N/A')
+
                     for i, s in enumerate(detailed_scenarios):
                         sim_results = s.get('simulation_results', {})
                         value = sim_results.get(metric_key, 'N/A')
@@ -874,12 +1029,29 @@ def render_scenario_studio_page():
                             formatted = 'N/A'
                         elif metric_key in ['final_savings', 'final_net_worth']:
                             formatted = f"${value:,.0f}"
+                            # Add comparison for non-base scenarios
+                            if i > 0 and value != 'N/A' and base_value != 'N/A':
+                                indicator, delta = compare_to_base(value, base_value, higher_is_better)
+                                if delta != 0:
+                                    formatted += f"\n{indicator} ${abs(delta):,.0f}"
                         elif metric_key == 'years_solvent':
                             formatted = f"{value} years"
+                            if i > 0 and value != 'N/A' and base_value != 'N/A':
+                                indicator, delta = compare_to_base(value, base_value, higher_is_better)
+                                if delta != 0:
+                                    formatted += f"\n{indicator} {abs(delta):.0f} yrs"
                         elif metric_key == 'health_score':
                             formatted = f"{value}/100"
+                            if i > 0 and value != 'N/A' and base_value != 'N/A':
+                                indicator, delta = compare_to_base(value, base_value, higher_is_better)
+                                if delta != 0:
+                                    formatted += f"\n{indicator} {abs(delta):.0f} pts"
                         elif metric_key == 'savings_rate':
                             formatted = f"{value:.1f}%"
+                            if i > 0 and value != 'N/A' and base_value != 'N/A':
+                                indicator, delta = compare_to_base(value, base_value, higher_is_better)
+                                if delta != 0:
+                                    formatted += f"\n{indicator} {abs(delta):.1f}%"
                         else:
                             formatted = str(value)
 
@@ -948,6 +1120,43 @@ def render_scenario_studio_page():
                 )
 
                 st.success("✅ Comparison complete! Scroll to see all metrics.")
+
+                # WINNER BADGES SECTION
+                st.markdown("---")
+                st.markdown("### 🏆 Top Performers")
+
+                col_w1, col_w2, col_w3 = st.columns(3)
+
+                # Find winners for key metrics
+                valid_scenarios = [s for s in detailed_scenarios if s.get('simulation_results', {}).get('final_savings', 'N/A') != 'N/A']
+
+                if valid_scenarios:
+                    # Best Final Savings
+                    best_savings = max(valid_scenarios, key=lambda x: x.get('simulation_results', {}).get('final_savings', 0))
+                    with col_w1:
+                        st.metric(
+                            "🏆 Highest Final Savings",
+                            best_savings['name'],
+                            f"${best_savings['simulation_results']['final_savings']:,.0f}"
+                        )
+
+                    # Best Health Score
+                    best_health = max(valid_scenarios, key=lambda x: x.get('simulation_results', {}).get('health_score', 0))
+                    with col_w2:
+                        st.metric(
+                            "💪 Best Financial Health",
+                            best_health['name'],
+                            f"{best_health['simulation_results']['health_score']}/100"
+                        )
+
+                    # Most Years Solvent
+                    best_solvent = max(valid_scenarios, key=lambda x: x.get('simulation_results', {}).get('years_solvent', 0))
+                    with col_w3:
+                        st.metric(
+                            "⏳ Most Years Solvent",
+                            best_solvent['name'],
+                            f"{best_solvent['simulation_results']['years_solvent']} years"
+                        )
 
             else:
                 st.warning("⚠️ Could not load detailed data for selected scenarios.")
