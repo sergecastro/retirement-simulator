@@ -414,9 +414,9 @@ def render_scenario_studio_page():
             }
         elif template == 'high_income':
             template_name = "High Income Strategy"
-            base_salary = get_value('salary_wages', 100000)
+            base_salary = get_value('salary_wages', 100000) * 12  # Convert monthly to annual
             template_adjustments = {
-                'salary_wages': base_salary * 3,
+                'salary_wages': base_salary * 3,  # 3x annual salary
             }
         elif template == 'conservative':
             template_name = "Conservative Approach"
@@ -434,11 +434,11 @@ def render_scenario_studio_page():
             }
         elif template == 'frugal':
             template_name = "Frugal Living"
-            base_housing = get_value('housing_expenses', 24000)
-            base_other = get_value('other_expenses', 12000)
+            base_housing = get_value('housing_expenses', 24000) * 12  # Convert monthly to annual
+            base_other = get_value('other_expenses', 12000) * 12  # Convert monthly to annual
             template_adjustments = {
-                'housing_expenses': int(base_housing * 0.7),
-                'other_expenses': int(base_other * 0.5),
+                'housing_expenses': int(base_housing * 0.7),  # 70% of annual housing
+                'other_expenses': int(base_other * 0.5),  # 50% of annual other
             }
 
         # Store template data persistently until form is submitted
@@ -501,99 +501,102 @@ def render_scenario_studio_page():
         col1, col2 = st.columns(2)
 
         with col1:
-            st.markdown("**Income Sources**")
+            st.markdown("**Income Sources (Annual)**")
+            st.caption("💡 Values from INTAKE (monthly) are converted to annual (*12)")
 
+            # Convert monthly INTAKE values to annual for display
             adj_salary_wages = st.number_input(
                 "Annual Salary/Wages",
                 min_value=0,
                 max_value=10000000,
-                value=int(template_adjustments.get('salary_wages', get_value('salary_wages', 100000))),
+                value=int(template_adjustments.get('salary_wages', get_value('salary_wages', 100000) * 12)),
                 step=5000,
-                help="Employment income"
+                help="Employment income (annual)"
             )
 
             adj_social_security = st.number_input(
                 "Annual Social Security",
                 min_value=0,
                 max_value=100000,
-                value=int(get_value('social_security_income', 0)),
+                value=int(get_value('social_security_income', 0) * 12),
                 step=1000,
-                help="Expected Social Security benefits"
+                help="Expected Social Security benefits (annual)"
             )
 
             adj_pension = st.number_input(
                 "Annual Pension",
                 min_value=0,
                 max_value=500000,
-                value=int(get_value('pension_income', 0)),
+                value=int(get_value('pension_income', 0) * 12),
                 step=1000,
-                help="Pension income"
+                help="Pension income (annual)"
             )
 
             adj_investment_income = st.number_input(
                 "Annual Investment Income",
                 min_value=0,
                 max_value=1000000,
-                value=int(get_value('investment_income', 0)),
+                value=int(get_value('investment_income', 0) * 12),
                 step=1000,
-                help="Dividends, interest, rental income"
+                help="Dividends, interest, rental income (annual)"
             )
 
             adj_other_income = st.number_input(
                 "Other Annual Income",
                 min_value=0,
                 max_value=1000000,
-                value=int(get_value('other_income', 0)),
+                value=int(get_value('other_income', 0) * 12),
                 step=1000,
-                help="Other income sources"
+                help="Other income sources (annual)"
             )
 
         with col2:
-            st.markdown("**Expense Categories**")
+            st.markdown("**Expense Categories (Annual)**")
+            st.caption("💡 Values from INTAKE (monthly) are converted to annual (*12)")
 
             adj_housing_expenses = st.number_input(
                 "Annual Housing Expenses",
                 min_value=0,
                 max_value=500000,
-                value=int(template_adjustments.get('housing_expenses', get_value('housing_expenses', 24000))),
+                value=int(template_adjustments.get('housing_expenses', get_value('housing_expenses', 24000) * 12)),
                 step=1000,
-                help="Rent/mortgage, maintenance, utilities"
+                help="Rent/mortgage, maintenance, utilities (annual)"
             )
 
             adj_healthcare_expenses = st.number_input(
                 "Annual Healthcare Expenses",
                 min_value=0,
                 max_value=100000,
-                value=int(get_value('healthcare_expenses', 6000)),
+                value=int(get_value('healthcare_expenses', 6000) * 12),
                 step=500,
-                help="Medical, insurance, prescriptions"
+                help="Medical, insurance, prescriptions (annual)"
             )
 
             adj_groceries = st.number_input(
                 "Annual Groceries",
                 min_value=0,
                 max_value=50000,
-                value=int(get_value('groceries_expenses', 7200)),
+                value=int(get_value('groceries_expenses', 7200) * 12),
                 step=500,
-                help="Food and household supplies"
+                help="Food and household supplies (annual)"
             )
 
             adj_transportation = st.number_input(
                 "Annual Transportation",
                 min_value=0,
                 max_value=50000,
-                value=int(get_value('transportation_expenses', 4800)),
+                value=int(get_value('transportation_expenses', 4800) * 12),
                 step=500,
-                help="Car, gas, insurance, public transit"
+                help="Car, gas, insurance, public transit (annual)"
             )
 
             adj_other_expenses = st.number_input(
                 "Other Annual Expenses",
                 min_value=0,
                 max_value=200000,
-                value=int(template_adjustments.get('other_expenses', get_value('other_expenses', 12000))),
+                value=int(template_adjustments.get('other_expenses', get_value('other_expenses', 12000) * 12)),
                 step=500,
-                help="Entertainment, travel, misc"
+                help="Entertainment, travel, misc (annual)"
             )
 
         st.markdown("---")
@@ -1482,6 +1485,9 @@ def render_scenario_studio_page():
                     detailed_scenarios.append(detailed)
 
             if len(detailed_scenarios) >= 2:
+                # Debug info
+                st.caption(f"🔍 Comparing {len(detailed_scenarios)} scenarios")
+
                 # Helper function for visual comparisons
                 def compare_to_base(scenario_value, base_value, higher_is_better=True):
                     """Return indicator and delta for comparison"""
