@@ -477,6 +477,21 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 def show_intake_mode():
     """Display INTAKE questionnaire mode"""
 
+    # AUTO-LOAD: If user has saved plans but no current plan loaded, load the most recent
+    if 'current_snapshot_id' not in st.session_state or st.session_state.get('current_snapshot_id') is None:
+        from utils.snapshot_manager import get_snapshots_index, load_snapshot
+        index = get_snapshots_index()
+        if index.get('snapshots') and len(index['snapshots']) > 0:
+            # Load the most recent snapshot
+            most_recent = index['snapshots'][-1]
+            snapshot_data = load_snapshot(most_recent['id'])
+            if snapshot_data:
+                # Load data into session_state
+                for key, value in snapshot_data.items():
+                    st.session_state[key] = value
+                st.session_state['current_snapshot_id'] = most_recent['id']
+                st.success(f"✅ Loaded your saved data: **{snapshot_data.get('input_user_name', 'Unknown')}**")
+
     # Add Quick Mode Switch in sidebar
     with st.sidebar:
         st.markdown("---")

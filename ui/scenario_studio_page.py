@@ -326,7 +326,14 @@ def render_scenario_studio_page():
         # Extract user info from snapshot data (snapshot uses 'input_' prefix)
         user_name = current_snapshot.get('input_user_name', 'User')
 
-        st.success(f"✅ Base Plan: **{user_name}** (ID: {base_plan_id[:8]}...)")
+        # Get the FULL plan name from the index (not just user_name)
+        base_plan_name = user_name  # Default fallback
+        for snapshot in index.get('snapshots', []):
+            if snapshot['id'] == base_plan_id:
+                base_plan_name = snapshot.get('name', user_name)
+                break
+
+        st.success(f"✅ Base Plan: **{base_plan_name}** (ID: {base_plan_id[:8]}...)")
 
     except Exception as e:
         st.error(f"❌ Error loading base plan: {str(e)}")
@@ -1213,7 +1220,7 @@ def render_scenario_studio_page():
             col1, col2 = st.columns([4, 1])
             with col1:
                 st.markdown(f"**{comp['name']}**")
-                st.caption(f"Created: {comp['created_at'][:10]}")
+                st.caption(f"Created: {comp['created_at'][:16].replace('T', ' ')}")
             with col2:
                 if st.button("🗑️ Delete", key=f"delete_single_{idx}_{comp['id']}", type="secondary", use_container_width=True):
                     from utils.comparison_scenarios import delete_comparison_scenario
@@ -1236,7 +1243,7 @@ def render_scenario_studio_page():
                 col1, col2 = st.columns([4, 1])
                 with col1:
                     st.markdown(f"**{comp['name']}**")
-                    st.caption(f"Created: {comp['created_at'][:10]} | ID: {comp['id'][:8]}...")
+                    st.caption(f"Created: {comp['created_at'][:16].replace('T', ' ')} | ID: {comp['id'][:8]}...")
                 with col2:
                     if st.button("🗑️ Delete", key=f"delete_{idx}_{comp['id']}", type="secondary", use_container_width=True):
                         from utils.comparison_scenarios import delete_comparison_scenario
@@ -1254,6 +1261,20 @@ def render_scenario_studio_page():
         # Initialize selected scenarios in session state
         if 'selected_scenario_ids' not in st.session_state:
             st.session_state['selected_scenario_ids'] = []
+
+        # Option to include base plan in comparison
+        if 'include_base_in_comparison' not in st.session_state:
+            st.session_state['include_base_in_comparison'] = False
+
+        include_base = st.checkbox(
+            f"📊 Include Base Plan (**{base_plan_name}**) in comparison",
+            value=st.session_state['include_base_in_comparison'],
+            key="include_base_checkbox",
+            help="Check this to compare your saved scenarios against the original base plan"
+        )
+        st.session_state['include_base_in_comparison'] = include_base
+        if include_base:
+            st.info(f"✅ Base Plan **{base_plan_name}** will be included in comparison")
 
         # Display ALL scenarios as clickable cards
         num_scenarios = len(comparisons)
@@ -1282,7 +1303,7 @@ def render_scenario_studio_page():
                         key=f"select_compare_{comp['id']}",
                         type=button_type,
                         use_container_width=True,
-                        help=f"Created: {comp['created_at'][:10]}"
+                        help=f"Created: {comp['created_at'][:16].replace('T', ' ')}"
                     ):
                         # Toggle selection
                         if is_selected:
@@ -1320,8 +1341,9 @@ def render_scenario_studio_page():
         # Get selected scenario names for comparison
         selected_names = [comp['name'] for comp in comparisons if comp['id'] in st.session_state['selected_scenario_ids']]
 
-        if len(selected_names) >= 2:
-            st.markdown(f"**Comparing {len(selected_names)} scenarios...**")
+        if len(selected_names) >= 2 or (len(selected_names) >= 1 and include_base):
+            total_in_comparison = len(selected_names) + (1 if include_base else 0)
+            st.markdown(f"**Comparing {total_in_comparison} scenarios...**")
 
             # Load full data for selected scenarios
             selected_comparisons = [comp for comp in comparisons if comp['name'] in selected_names]
@@ -1329,6 +1351,128 @@ def render_scenario_studio_page():
             # Load detailed data for each
             from utils.comparison_scenarios import load_comparison_scenario
             detailed_scenarios = []
+
+            # If including base plan, add it first
+            if include_base:
+                # Run simulation for base plan to get its results
+                try:
+                    from simulation_core import run_simulation
+
+                    # Get base plan values from current_snapshot
+                    base_salary = get_value('salary_wages', 100000)
+                    base_ss = get_value('social_security_income', 0)
+                    base_pension = get_value('pension_income', 0)
+                    base_inv_income = get_value('investment_income', 0)
+                    base_other_income = get_value('other_income', 0)
+
+                    base_housing = get_value('housing_expenses', 24000)
+                    base_healthcare = get_value('healthcare_expenses', 6000)
+                    base_groceries = get_value('groceries_expenses', 7200)
+                    base_transportation = get_value('transportation_expenses', 4800)
+                    base_other_expenses = get_value('other_expenses', 12000)
+
+                    base_age = int(get_value('age', 45))
+                    base_life_expectancy = int(get_value('life_expectancy', 90))
+                    base_partner_exists = bool(get_value('partner_exists', False))
+                    base_partner_age = int(get_value('partner_age', 45))
+
+                    base_return_rate = float(get_value('return_rate', 0.07))
+                    base_inflation_rate = float(get_value('inflation_rate', 0.03))
+
+                    base_ira = int(get_value('ira_balance', 0))
+                    base_401k = int(get_value('four01k_403b_balance', 0))
+                    base_roth = int(get_value('roth_balance', 0))
+                    base_hsa = int(get_value('hsa_balance', 0))
+                    base_taxable = int(get_value('taxable_investment_accounts', 0))
+                    base_savings_acct = int(get_value('high_yield_savings_account', 0))
+                    base_partner_ira = int(get_value('partner_ira_balance', 0))
+                    base_partner_401k = int(get_value('partner_four01k_403b_balance', 0))
+
+                    base_home_value = int(get_value('primary_residence_value', 0))
+                    base_mortgage = int(get_value('primary_residence_mortgage', 0))
+                    base_secondary = int(get_value('secondary_residence_value', 0))
+                    base_secondary_mortgage = int(get_value('secondary_residence_mortgage', 0))
+                    base_vehicles = int(get_value('vehicles_value', 0))
+                    base_other_assets = int(get_value('other_assets', 0))
+                    base_other_liabilities = int(get_value('other_liabilities', 0))
+
+                    # Calculate totals
+                    total_income = base_salary + base_ss + base_pension + base_inv_income + base_other_income
+                    total_expenses = base_housing + base_healthcare + base_groceries + base_transportation + base_other_expenses
+                    liquid_assets = base_ira + base_401k + base_roth + base_hsa + base_taxable + base_savings_acct + base_partner_ira + base_partner_401k
+                    total_liabilities = base_mortgage + base_secondary_mortgage + base_other_liabilities
+                    simulation_years = base_life_expectancy - base_age
+                    monthly_surplus = (total_income - total_expenses) / 12
+
+                    # Run simulation for base plan
+                    base_results = run_simulation(
+                        age=base_age,
+                        partner_exists=base_partner_exists,
+                        partner_age=base_partner_age if base_partner_exists else base_age,
+                        total_income=total_income,
+                        total_expenses=total_expenses,
+                        combined_financial_assets=liquid_assets,
+                        primary_residence_value=base_home_value,
+                        secondary_residence_value=base_secondary,
+                        combined_other_assets_total=base_other_assets + base_vehicles,
+                        total_liabilities_local=total_liabilities,
+                        partner_liabilities=0,
+                        tax_rate=22.0,
+                        inflation_rate=base_inflation_rate * 100,
+                        investment_return_rate=base_return_rate * 100,
+                        simulation_years=simulation_years,
+                        mc_iterations=0,
+                        goal_costs={},
+                        college_inflation_pct=4.0,
+                        base_public_in=20000,
+                        base_public_out=40000,
+                        base_private=60000,
+                        ira_balance=base_ira,
+                        four01k_403b_balance=base_401k,
+                        partner_ira_balance=base_partner_ira,
+                        partner_four01k_403b_balance=base_partner_401k,
+                        monthly_surplus=monthly_surplus,
+                        combined_total_liabilities=total_liabilities
+                    )
+
+                    if base_results:
+                        # Serialize DataFrame in results
+                        serializable_results = {}
+                        for key, value in base_results.items():
+                            if hasattr(value, 'to_dict'):
+                                serializable_results[key] = {
+                                    '_type': 'dataframe',
+                                    'data': value.to_dict(orient='list')
+                                }
+                            else:
+                                serializable_results[key] = value
+
+                        # Create base plan as a "scenario" for comparison
+                        base_scenario = {
+                            'name': f"📊 BASE: {base_plan_name}",
+                            'adjustments': {
+                                'salary_wages': base_salary,
+                                'social_security_income': base_ss,
+                                'pension_income': base_pension,
+                                'investment_income': base_inv_income,
+                                'other_income': base_other_income,
+                                'housing_expenses': base_housing,
+                                'healthcare_expenses': base_healthcare,
+                                'groceries_expenses': base_groceries,
+                                'transportation_expenses': base_transportation,
+                                'other_expenses': base_other_expenses,
+                                'age': base_age,
+                                'return_rate': base_return_rate,
+                                'inflation_rate': base_inflation_rate,
+                                'stocks_allocation': int(get_value('stocks_allocation', 60)),
+                                'bonds_allocation': int(get_value('bonds_allocation', 40)),
+                            },
+                            'simulation_results': serializable_results
+                        }
+                        detailed_scenarios.append(base_scenario)
+                        st.info(f"✅ Base plan **{base_plan_name}** included in comparison")
+                except Exception as e:
+                    st.warning(f"⚠️ Could not include base plan: {e}")
 
             for comp in selected_comparisons:
                 detailed = load_comparison_scenario(comp['id'])

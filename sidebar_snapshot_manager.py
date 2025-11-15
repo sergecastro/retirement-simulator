@@ -117,6 +117,26 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
     CHANGES: Uses utils/snapshot_manager.py backend with encryption
     """
 
+    # Add CSS to make sidebar selectbox show full text with smaller font
+    st.sidebar.markdown("""
+    <style>
+    /* Make sidebar selectbox dropdown show full plan names */
+    .stSelectbox div[data-baseweb="select"] > div {
+        font-size: 11px !important;
+    }
+    .stSelectbox div[data-baseweb="select"] span {
+        font-size: 11px !important;
+        white-space: normal !important;
+        overflow: visible !important;
+    }
+    /* Make dropdown menu items readable */
+    div[data-baseweb="popover"] li {
+        font-size: 11px !important;
+        white-space: normal !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     # Create sidebar UI
     st.sidebar.markdown("---")
     st.sidebar.header("📂 Saved Plans")

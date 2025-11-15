@@ -544,6 +544,13 @@ def show_intake_questionnaire():
     display_name = st.session_state.intake_current_page.replace('_', ' ').title()
     st.caption(f"Step {current_idx + 1} of {len(pages)}: {display_name}")
 
+    # Show welcome header with user name and page progress
+    user_name = st.session_state.get('input_user_name', 'New User')
+    if user_name:
+        st.markdown(f"### 👋 Welcome **{user_name}**! You are on Page **{current_idx + 1}** of **{len(pages)}**")
+    else:
+        st.markdown(f"### 📝 INTAKE Questionnaire - Page **{current_idx + 1}** of **{len(pages)}**")
+
     current_page = st.session_state.intake_current_page
 
     # Show "Return to Review" banner if editing from review page
