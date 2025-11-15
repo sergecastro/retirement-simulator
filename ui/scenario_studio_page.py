@@ -333,6 +333,8 @@ def render_scenario_studio_page():
                 base_plan_name = snapshot.get('name', user_name)
                 break
 
+        # Welcome message with user name
+        st.markdown(f"### 👋 Welcome **{user_name}**!")
         st.success(f"✅ Base Plan: **{base_plan_name}** (ID: {base_plan_id[:8]}...)")
 
     except Exception as e:

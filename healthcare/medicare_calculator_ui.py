@@ -166,6 +166,19 @@ def show_calculator_page():
     st.title("🏥 Medicare IRMAA Calculator")
 
     # ==========================================
+    # LOAD INTAKE DATA EARLY for welcome message
+    # ==========================================
+    intake_data = load_user_data_for_healthcare()
+    snapshot_name = get_snapshot_name()
+
+    # Show welcome message with user name at the top
+    if intake_data['data_loaded']:
+        user_name = intake_data.get('user_name', 'User')
+        st.markdown(f"### 👋 Welcome **{user_name}**!")
+        if snapshot_name:
+            st.caption(f"📋 Plan: {snapshot_name}")
+
+    # ==========================================
     # Check data freshness
     from healthcare.medicare_data import check_data_freshness, get_data_version_info
     freshness = check_data_freshness()
@@ -208,8 +221,7 @@ def show_calculator_page():
     # ==========================================
     # LOAD INTAKE DATA (Auto-fill from saved plan)
     # ==========================================
-    intake_data = load_user_data_for_healthcare()
-    snapshot_name = get_snapshot_name()
+    # intake_data and snapshot_name already loaded above for welcome message
 
     # Show data source info
     if intake_data['data_loaded']:

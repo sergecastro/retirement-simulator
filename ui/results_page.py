@@ -73,6 +73,22 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         base_private=60000
     )
 
+    # Build goal_costs from session state (CRITICAL FIX)
+    goal_costs = {}
+    goals_list = st.session_state.get('goals_list', [])
+    for goal_data in goals_list:
+        goal_name = goal_data.get('goal', '').strip()
+        goal_amount = goal_data.get('amount', 0)
+        goal_year = goal_data.get('year', current_year + 10)
+        if goal_name and goal_amount > 0:
+            goal_costs[goal_name] = {
+                'year': int(goal_year),
+                'amount': float(goal_amount)
+            }
+
+    if goal_costs:
+        st.info(f"🎯 **{len(goal_costs)} goal(s)** will be tracked in simulation")
+
     # Extract features
     features = nav_state.get('features', {})
 
@@ -97,7 +113,7 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             investment_return_rate=sim_params['investment_return_rate'],
             simulation_years=sim_params['simulation_years'],
             mc_iterations=sim_params.get('mc_iterations', 0),
-            goal_costs={},
+            goal_costs=goal_costs,  # ✅ FIXED: Pass actual goals, not empty dict
             college_inflation_pct=4.0,
             base_public_in=20000,
             base_public_out=40000,
