@@ -41,6 +41,10 @@ def register_chart_data(chart_id, title, fig, data_summary):
 # FIXED: show_trajectories with data registration
 # ============================================================
 def show_trajectories(results):
+    # Add help button for this chart
+    from utils.chart_tooltips import add_chart_help_button
+    add_chart_help_button("financial_trajectories")
+
     st.subheader("📈 Financial Trajectories")
     if 'df' not in results or results['df'].empty:
         st.warning("No data for trajectories")

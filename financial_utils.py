@@ -219,6 +219,10 @@ inherit_defaults = {
 
 def display_health_dashboard(emergency_months, dti, savings_rate, health_score):
     """Display the financial health metrics in a dashboard format."""
+    # Add help button for this dashboard
+    from utils.chart_tooltips import add_chart_help_button
+    add_chart_help_button("health_dashboard")
+
     st.subheader("Financial Health Dashboard")
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Emergency Fund", f"{emergency_months:.1f} months")

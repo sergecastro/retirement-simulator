@@ -1685,6 +1685,8 @@ def render_scenario_studio_page():
                 st.markdown("Interactive charts to help you compare scenarios at a glance.")
 
                 # Chart 1: Final Savings Comparison (Bar Chart)
+                from utils.chart_tooltips import add_chart_help_button
+                add_chart_help_button("scenario_comparison_bar")
                 st.markdown("#### 💰 Final Savings Comparison")
 
                 try:
@@ -1730,6 +1732,7 @@ def render_scenario_studio_page():
                     st.error(f"Error creating chart: {e}")
 
                 # Chart 2: Savings Trajectory Over Time (Line Chart)
+                add_chart_help_button("scenario_trajectory_lines")
                 st.markdown("#### 📈 Savings Trajectory Over Time")
 
                 try:
@@ -1772,6 +1775,7 @@ def render_scenario_studio_page():
                     st.error(f"Error creating trajectory chart: {e}")
 
                 # Chart 3: Income vs Expenses Comparison (Grouped Bar)
+                add_chart_help_button("scenario_income_expenses")
                 st.markdown("#### 💵 First Year Income vs Expenses")
 
                 try:
@@ -1835,6 +1839,7 @@ def render_scenario_studio_page():
                     st.error(f"Error creating income/expenses chart: {e}")
 
                 # Chart 4: Financial Health Score Comparison (Gauge-style Bar)
+                add_chart_help_button("scenario_health_scores")
                 st.markdown("#### 🎯 Financial Health Score Comparison")
 
                 try:

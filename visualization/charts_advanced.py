@@ -37,6 +37,10 @@ def register_chart_data(chart_id, title, fig, data_summary):
     print(f"[Chart Registry] Registered: {chart_id} with {len(fig.data)} traces")
 
 def show_sankey(results):
+    # Add help button for this chart
+    from utils.chart_tooltips import add_chart_help_button
+    add_chart_help_button("sankey_diagram")
+
     st.subheader("💰 Cash Flow Analysis (Sankey Diagram)")
     df = results.get('df', pd.DataFrame())
     if df.empty:
@@ -134,6 +138,10 @@ def show_monte_carlo(results):
     FIXED: Display Monte Carlo simulation with percentile bands instead of all paths
     Shows 10th, 50th (median), and 90th percentiles with proper year labels
     """
+    # Add help button for this chart
+    from utils.chart_tooltips import add_chart_help_button
+    add_chart_help_button("monte_carlo_simulation")
+
     st.subheader("🎲 Monte Carlo Simulation Analysis")
     
     if 'monte_carlo_results' not in results:

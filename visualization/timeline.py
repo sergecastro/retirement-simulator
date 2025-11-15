@@ -6,6 +6,10 @@ import pandas as pd
 
 def show_timeline(results, user_data, family_data):
     """Display family financial timeline with major events"""
+    # Add help button for this chart
+    from utils.chart_tooltips import add_chart_help_button
+    add_chart_help_button("family_timeline")
+
     st.subheader("📅 Family Financial Timeline")
     
     events = []
@@ -64,8 +68,12 @@ def show_timeline(results, user_data, family_data):
 
 def show_goal_gauges(results):
     """Display goal achievement gauges"""
+    # Add help button for this visualization
+    from utils.chart_tooltips import add_chart_help_button
+    add_chart_help_button("goal_achievement_gauges")
+
     st.subheader("🎯 Goal Achievement Gauges")
-    
+
     goal_data = results.get('goal_achievement', {})
     if not goal_data:
         st.info("No goals configured")
