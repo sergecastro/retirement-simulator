@@ -149,12 +149,14 @@ def main():
     # Initialize app (page config, CSS, Flask check)
     initialize_app()
 
+    # TEMPORARY: Skip authentication for faster testing
     # Require authentication
-    if not require_authentication():
-        return
+    # if not require_authentication():
+    #     return
 
+    # TEMPORARY: Skip disclaimer for faster testing
     # Require disclaimer acknowledgment
-    disclaimers.require_disclaimer_acknowledgment()
+    # disclaimers.require_disclaimer_acknowledgment()
 
     # Show sidebar header
     show_sidebar_header()
