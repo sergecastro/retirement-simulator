@@ -274,6 +274,30 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     st.title("🏠 Welcome to Family Forecast!")
     st.markdown("## *Family Lifecycle Retirement Planner*")
 
+    # "What's New" banner (dismissible)
+    if 'whats_new_dismissed' not in st.session_state:
+        st.session_state.whats_new_dismissed = False
+
+    if not st.session_state.whats_new_dismissed:
+        col_banner, col_dismiss = st.columns([9, 1])
+        with col_banner:
+            st.markdown("""
+            <div style='background-color: #D4EDDA; padding: 15px; border-radius: 8px; border-left: 5px solid #28A745; margin-bottom: 20px;'>
+                <h4 style='margin-top: 0; color: #155724;'>🎉 What's New - November 2025</h4>
+                <p style='font-size: 15px; color: #155724; margin-bottom: 8px;'><strong>NEW:</strong></p>
+                <ul style='margin: 0; padding-left: 20px; color: #155724;'>
+                    <li><strong>🎬 Scenario Studio</strong> - Compare 2-4 retirement scenarios side-by-side with interactive charts!</li>
+                    <li><strong>🏥 Medicare Comparison Tool</strong> - Analyze Medigap vs Medicare Advantage plans</li>
+                    <li><strong>📊 Enhanced Exports</strong> - Download comparisons as PDF, Excel, or CSV</li>
+                    <li><strong>💬 AI-Powered Insights</strong> - Get intelligent analysis of your retirement projections</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+        with col_dismiss:
+            if st.button("✕", key="dismiss_whats_new", help="Dismiss this message"):
+                st.session_state.whats_new_dismissed = True
+                st.rerun()
+
     # Welcome message box
     st.markdown("""
     <div style='background-color: #E8E6E0; padding: 20px; border-radius: 10px; border-left: 5px solid #E8B541;'>
