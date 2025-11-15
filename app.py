@@ -149,6 +149,13 @@ def main():
     # Initialize app (page config, CSS, Flask check)
     initialize_app()
 
+    # ⚠️⚠️⚠️ WARNING: AUTHENTICATION BYPASSED FOR TESTING ⚠️⚠️⚠️
+    # TODO: RE-ENABLE BEFORE PRODUCTION LAUNCH!
+    # Date bypassed: November 15, 2025
+    # Reason: Save 1-2 minutes per test cycle
+    # To re-enable: Uncomment the lines below and remove the warning banner
+    st.sidebar.error("⚠️ **DEV MODE: Auth bypassed!** Re-enable before launch!")
+
     # TEMPORARY: Skip authentication for faster testing
     # Require authentication
     # if not require_authentication():
