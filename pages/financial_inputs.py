@@ -23,28 +23,28 @@ def collect_financial_data():
 
     with col1:
         salary_wages = st.number_input(
-            "Annual Salary (Gross, Before Taxes):",
+            "Monthly Salary/Wages (Before Taxes):",
             value=float(st.session_state.get('input_salary_wages', 0.0)),
             key="input_salary_wages",
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )
         self_employment = st.number_input(
-            "Self-Employment:",
+            "Monthly Self-Employment Income:",
             value=float(st.session_state.get('input_self_employment_income', 0.0)),
             key="input_self_employment_income",
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )
         rental_income = st.number_input(
-            "Rental Income:",
+            "Monthly Rental Income:",
             value=float(st.session_state.get('input_rental_income', 0.0)),
             key="input_rental_income",
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )
         investment_income = st.number_input(
-            "Annual Investment Income (Before Taxes):",
+            "Monthly Investment Income (Before Taxes):",
             value=float(st.session_state.get('input_investment_income', 0.0)),
             key="input_investment_income",
             disabled=True,
@@ -53,21 +53,21 @@ def collect_financial_data():
 
     with col2:
         social_security = st.number_input(
-            "Expected Social Security (Before Taxes):",
+            "Monthly Social Security (Before Taxes):",
             value=float(st.session_state.get('input_social_security_income', 0.0)),
             key="input_social_security_income",
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )
         pension_income = st.number_input(
-            "Annual Pension (Before Taxes):",
+            "Monthly Pension (Before Taxes):",
             value=float(st.session_state.get('input_pension_income', 0.0)),
             key="input_pension_income",
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )
         other_income = st.number_input(
-            "Other Income:",
+            "Monthly Other Income:",
             value=float(st.session_state.get('input_other_income', 0.0)),
             key="input_other_income",
             disabled=True,
