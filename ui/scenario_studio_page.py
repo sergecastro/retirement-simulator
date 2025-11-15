@@ -445,6 +445,18 @@ def render_scenario_studio_page():
         st.session_state['active_template_name'] = template_name
         st.session_state['active_template_adjustments'] = template_adjustments
 
+        # CRITICAL: Clear cached widget values so form shows new template values
+        # This forces Streamlit to use our template_adjustments instead of cached values
+        keys_to_clear = [
+            'adj_salary_wages', 'adj_social_security', 'adj_pension',
+            'adj_investment_income', 'adj_other_income',
+            'adj_housing_expenses', 'adj_healthcare_expenses',
+            'adj_groceries', 'adj_transportation', 'adj_other_expenses'
+        ]
+        for key in keys_to_clear:
+            if key in st.session_state:
+                del st.session_state[key]
+
         # Clear the trigger
         del st.session_state['template']
 
@@ -1332,7 +1344,10 @@ def render_scenario_studio_page():
         num_selected = len(st.session_state['selected_scenario_ids'])
         if num_selected > 0:
             if num_selected == 1:
-                st.info(f"💡 **{num_selected} scenario selected.** Select at least 1 more to compare.")
+                if include_base:
+                    st.success(f"✅ **{num_selected} scenario + Base Plan selected!** Comparison will appear below.")
+                else:
+                    st.info(f"💡 **{num_selected} scenario selected.** Select at least 1 more to compare, OR check **'Include Base Plan'** above!")
             elif num_selected >= 2:
                 st.success(f"✅ **{num_selected} scenarios selected!** Comparison table will appear below.")
 
