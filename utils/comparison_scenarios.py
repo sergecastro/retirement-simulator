@@ -54,13 +54,13 @@ def create_comparison_id() -> str:
     """
     Generate unique comparison ID using timestamp.
 
-    Format: YYYYMMDD_HHMM
-    Example: 20251114_0825
+    Format: YYYYMMDD_HHMMSS_microseconds
+    Example: 20251114_082530_123456
 
     Returns:
         Unique comparison ID string
     """
-    return datetime.now().strftime("%Y%m%d_%H%M")
+    return datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
 
 # =============================================================================
