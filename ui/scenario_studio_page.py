@@ -276,6 +276,10 @@ def render_scenario_studio_page():
 
         # Handle mode change
         if mode != "Scenario Studio":
+            # Preserve current snapshot before mode switch
+            if 'current_snapshot_id' in st.session_state:
+                st.session_state['preserved_snapshot_id'] = st.session_state['current_snapshot_id']
+
             st.session_state.current_mode = mode
             st.session_state.mode_selected = True
             st.rerun()

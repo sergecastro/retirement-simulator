@@ -231,6 +231,10 @@ def main():
 
             # Handle mode change
             if mode != "Analysis":
+                # Preserve current snapshot before mode switch
+                if 'current_snapshot_id' in st.session_state:
+                    st.session_state['preserved_snapshot_id'] = st.session_state['current_snapshot_id']
+
                 if mode == "Scenario Studio":
                     st.session_state.current_mode = "scenario_studio"
                 else:
@@ -465,6 +469,10 @@ def show_intake_mode():
 
         # Handle mode change
         if mode != "INTAKE":
+            # Preserve current snapshot before mode switch
+            if 'current_snapshot_id' in st.session_state:
+                st.session_state['preserved_snapshot_id'] = st.session_state['current_snapshot_id']
+
             if mode == "Scenario Studio":
                 st.session_state.current_mode = "scenario_studio"
             else:
