@@ -1899,6 +1899,18 @@ def render_scenario_studio_page():
                     st.error(f"Error creating health score chart: {e}")
 
                 # =============================================================================
+                # API FEEDBACK - Claude AI Chart Explanations
+                # =============================================================================
+                try:
+                    from streamlit_explain_api import inject_explain_visual_system
+                    print("[DEBUG] Injecting AI explanation system into Scenario Studio...")
+                    inject_explain_visual_system()
+                    st.caption("💡 **Click the ❓ button** on any chart above for AI-powered explanations")
+                except Exception as e:
+                    print(f"[DEBUG] Could not inject explain system: {e}")
+                    # Silently fail - not critical
+
+                # =============================================================================
                 # EXPORT OPTIONS SECTION
                 # =============================================================================
 
