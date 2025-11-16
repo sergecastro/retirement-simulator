@@ -704,47 +704,67 @@ def get_simulation_parameters():
     """
     with st.sidebar:
         st.markdown("---")
-        st.markdown("### ⚙️ Simulation Parameters")
+        st.markdown("### ⚙️ Advanced Parameters")
 
+        # Show DISABLED sliders with teaser (freemium psychology!)
         col1, col2 = st.columns(2)
 
         with col1:
-            tax_rate = st.slider(
+            st.slider(
                 "Tax Rate (%)",
                 min_value=0.0,
                 max_value=50.0,
-                value=25.0,
+                value=22.0,
                 step=1.0,
-                help="Effective tax rate"
-            ) / 100
+                disabled=True,
+                help="💡 Adjust in Scenario Studio"
+            )
 
-            inflation_rate = st.slider(
+            st.slider(
                 "Inflation (%)",
                 min_value=0.0,
                 max_value=10.0,
                 value=3.0,
                 step=0.5,
-                help="Annual inflation rate"
-            ) / 100
+                disabled=True,
+                help="💡 Adjust in Scenario Studio"
+            )
 
         with col2:
-            investment_return_rate = st.slider(
+            st.slider(
                 "Investment Return (%)",
                 min_value=0.0,
                 max_value=15.0,
                 value=7.0,
                 step=0.5,
-                help="Expected annual return"
-            ) / 100
+                disabled=True,
+                help="💡 Adjust in Scenario Studio"
+            )
 
-            simulation_years = st.number_input(
+            st.slider(
                 "Years to Simulate",
                 min_value=10,
                 max_value=50,
-                value=30,
-                step=5,
-                help="Simulation duration"
+                value=25,
+                step=1,
+                disabled=True,
+                help="💡 Adjust in Scenario Studio"
             )
+
+        # Teaser message
+        st.info("💡 Want to adjust these? Try **Scenario Studio** for full control over 30+ parameters!")
+
+        # Unlock button
+        if st.button("🔓 Unlock in Scenario Studio", key="sidebar_unlock_studio"):
+            st.session_state.current_mode = "scenario_studio"
+            st.session_state.mode_selected = True
+            st.rerun()
+
+        # Use sensible defaults for simulation
+        tax_rate = 0.22
+        inflation_rate = 0.03
+        investment_return_rate = 0.07
+        simulation_years = 25
 
     return {
         'tax_rate': tax_rate,

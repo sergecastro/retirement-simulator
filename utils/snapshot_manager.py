@@ -48,6 +48,96 @@ DEMO_SNAPSHOT_ID = "DEMO_SNAPSHOT"  # Special ID for demo snapshots
 
 
 # =============================================================================
+# DEMO SNAPSHOT LOADING
+# =============================================================================
+
+def load_demo_snapshots() -> List[Dict[str, Any]]:
+    """
+    Load pre-built demo snapshots from JSON file.
+
+    Returns:
+        List of demo snapshot metadata (same format as user snapshots)
+    """
+    try:
+        import os
+        demo_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'demo_snapshots.json')
+
+        if not os.path.exists(demo_file):
+            print(f"[DEMO] Demo snapshots file not found: {demo_file}")
+            return []
+
+        with open(demo_file, 'r') as f:
+            data = json.load(f)
+
+        demo_snapshots = data.get('demo_snapshots', [])
+        print(f"[DEMO] Loaded {len(demo_snapshots)} demo snapshots")
+        return demo_snapshots
+
+    except Exception as e:
+        print(f"[DEMO] Error loading demo snapshots: {e}")
+        return []
+
+
+def load_demo_snapshot_data(demo_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Load full demo snapshot data by ID.
+
+    Args:
+        demo_id: Demo snapshot ID (e.g., "demo_conservative")
+
+    Returns:
+        Full snapshot data dict, or None if not found
+    """
+    try:
+        demo_snapshots = load_demo_snapshots()
+
+        for demo in demo_snapshots:
+            if demo.get('id') == demo_id:
+                # Return the snapshot_data field which contains the full INTAKE data
+                return demo.get('snapshot_data', demo)
+
+        print(f"[DEMO] Demo snapshot not found: {demo_id}")
+        return None
+
+    except Exception as e:
+        print(f"[DEMO] Error loading demo snapshot data: {e}")
+        return None
+
+
+def get_all_snapshots_with_demos() -> List[Dict[str, Any]]:
+    """
+    Get all user snapshots plus demo snapshots.
+
+    If user has no snapshots, returns only demos.
+    If user has snapshots, returns user snapshots + demos (marked clearly).
+
+    Returns:
+        List of snapshot metadata dicts
+    """
+    # Load user's real snapshots
+    index = get_snapshots_index()
+    user_snapshots = index.get('snapshots', [])
+
+    # Load demo snapshots
+    demo_snapshots = load_demo_snapshots()
+
+    # Mark demos clearly
+    for demo in demo_snapshots:
+        demo['is_demo'] = True
+        if 'name' in demo and '[DEMO]' not in demo['name']:
+            demo['name'] = f"[DEMO] {demo['name']}"
+
+    # If user has no snapshots, show only demos
+    if len(user_snapshots) == 0:
+        print(f"[DEMO] No user snapshots, showing {len(demo_snapshots)} demo snapshots")
+        return demo_snapshots
+
+    # User has snapshots - show theirs + demos at end
+    print(f"[DEMO] User has {len(user_snapshots)} snapshots, adding {len(demo_snapshots)} demos")
+    return user_snapshots + demo_snapshots
+
+
+# =============================================================================
 # SNAPSHOT ID GENERATION
 # =============================================================================
 
@@ -223,6 +313,169 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
 
 
 # =============================================================================
+# SMART DEDUPLICATION
+# =============================================================================
+
+def has_meaningful_changes(old_data: Dict[str, Any], new_data: Dict[str, Any]) -> bool:
+    """
+    Check if two snapshots have meaningful differences.
+    Returns True if meaningful changes detected, False otherwise.
+
+    Uses 1% tolerance for numeric fields to avoid saving due to rounding errors.
+    """
+    # Key fields to compare (most important financial fields)
+    key_fields = [
+        # Demographics
+        ('input_age', 'int'),
+        ('input_retirement_age', 'int'),
+        ('input_life_expectancy', 'int'),
+        ('input_partner_exists', 'bool'),
+
+        # Income
+        ('input_salary_wages', 'float'),
+        ('input_social_security_income', 'float'),
+        ('input_pension_income', 'float'),
+        ('input_investment_income', 'float'),
+
+        # Expenses
+        ('input_housing_expenses', 'float'),
+        ('input_healthcare_expenses', 'float'),
+        ('input_groceries_expenses', 'float'),
+        ('input_transportation_expenses', 'float'),
+
+        # Assets
+        ('input_ira_balance', 'float'),
+        ('input_four01k_403b_balance', 'float'),
+        ('input_roth_balance', 'float'),
+        ('input_hsa_balance', 'float'),
+        ('input_taxable_investment_accounts', 'float'),
+
+        # Investment parameters
+        ('input_return_rate', 'float'),
+        ('input_inflation_rate', 'float'),
+        ('input_stocks_allocation', 'int'),
+
+        # Real estate
+        ('input_primary_residence_value', 'float'),
+        ('input_primary_residence_mortgage', 'float'),
+    ]
+
+    for field, field_type in key_fields:
+        old_val = old_data.get(field)
+        new_val = new_data.get(field)
+
+        # Handle None values
+        if old_val is None and new_val is None:
+            continue
+        if old_val is None or new_val is None:
+            print(f"[DEDUP] Field {field} changed: {old_val} → {new_val}")
+            return True
+
+        # Handle booleans
+        if field_type == 'bool':
+            if bool(old_val) != bool(new_val):
+                print(f"[DEDUP] Bool field {field} changed: {old_val} → {new_val}")
+                return True
+
+        # Handle numbers (1% tolerance)
+        elif field_type in ['int', 'float']:
+            try:
+                old_num = float(old_val)
+                new_num = float(new_val)
+
+                # Handle zero case
+                if old_num == 0 and new_num == 0:
+                    continue
+                if old_num == 0 or new_num == 0:
+                    print(f"[DEDUP] Numeric field {field} changed from zero: {old_num} → {new_num}")
+                    return True
+
+                # Calculate percentage difference
+                pct_diff = abs(old_num - new_num) / max(abs(old_num), abs(new_num))
+                if pct_diff > 0.01:  # More than 1% change
+                    print(f"[DEDUP] Numeric field {field} changed by {pct_diff*100:.2f}%: {old_num} → {new_num}")
+                    return True
+
+            except (ValueError, TypeError):
+                # If conversion fails, treat as string comparison
+                if str(old_val) != str(new_val):
+                    print(f"[DEDUP] Field {field} (string fallback) changed: {old_val} → {new_val}")
+                    return True
+
+    # Check lists (goals, children) - compare lengths
+    for list_field in ['goals_list', 'children_rows', 'inherit_rows', 'custom_expenses']:
+        old_list = old_data.get(list_field, [])
+        new_list = new_data.get(list_field, [])
+
+        if not isinstance(old_list, list):
+            old_list = []
+        if not isinstance(new_list, list):
+            new_list = []
+
+        if len(old_list) != len(new_list):
+            print(f"[DEDUP] List field {list_field} changed length: {len(old_list)} → {len(new_list)}")
+            return True
+
+    print("[DEDUP] No meaningful changes detected")
+    return False
+
+
+def get_last_auto_save() -> Optional[Dict[str, Any]]:
+    """
+    Get the most recent auto-save snapshot data for comparison.
+
+    Returns:
+        The most recent snapshot data dict, or None if no snapshots exist.
+    """
+    try:
+        index = get_snapshots_index()
+        snapshots = index.get('snapshots', [])
+
+        if not snapshots:
+            return None
+
+        # Get the most recent snapshot (last in list)
+        most_recent = snapshots[-1]
+        snapshot_id = most_recent['id']
+
+        # Load the actual snapshot data
+        snapshot_data = load_snapshot(snapshot_id)
+        return snapshot_data
+
+    except Exception as e:
+        print(f"[DEDUP] Error getting last auto-save: {e}")
+        return None
+
+
+def save_snapshot_if_changed(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> str:
+    """
+    Smart save that checks for meaningful changes before saving.
+
+    Args:
+        data: Full INTAKE data dictionary
+        snapshot_name: Optional custom name
+
+    Returns:
+        Snapshot ID if saved, empty string if skipped (no changes)
+    """
+    # Get last saved snapshot
+    last_snapshot = get_last_auto_save()
+
+    if last_snapshot is None:
+        # No previous snapshot, save this one
+        print("[DEDUP] No previous snapshot found, saving new snapshot")
+        return save_snapshot(data, snapshot_name)
+
+    # Check for meaningful changes
+    if has_meaningful_changes(last_snapshot, data):
+        print("[DEDUP] Meaningful changes detected, saving new snapshot")
+        return save_snapshot(data, snapshot_name)
+    else:
+        print("[DEDUP] No meaningful changes, skipping save to prevent duplicates")
+        return ""
+
+
+# =============================================================================
 # SNAPSHOT CRUD OPERATIONS
 # =============================================================================
 
@@ -355,6 +608,17 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
         >>>     print(f"User: {data['input_user_name']}")
     """
     print(f"[DEBUG load_snapshot] Attempting to load snapshot: {snapshot_id}")
+
+    # CHECK FOR DEMO SNAPSHOT FIRST
+    if snapshot_id.startswith('demo_'):
+        print(f"[DEMO] Loading demo snapshot: {snapshot_id}")
+        demo_data = load_demo_snapshot_data(snapshot_id)
+        if demo_data:
+            print(f"[DEMO] Successfully loaded demo snapshot: {snapshot_id}")
+            return demo_data
+        else:
+            print(f"[DEMO] Failed to load demo snapshot: {snapshot_id}")
+            return None
 
     # CRITICAL: Check session_state cache FIRST
     if '_cached_snapshots' in st.session_state:

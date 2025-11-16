@@ -254,171 +254,459 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             st.error(f"Detailed table error: {str(e)}")
 
     # =============================================================================
-    # SCENARIO COMPARISON (TRUSTED USERS)
+    # QUICK PLAN COMPARISON (TEMPORAL - Current vs. Past)
     # =============================================================================
 
     if features.get('show_scenario_comparison'):
         st.markdown("---")
-        st.subheader("🔀 Scenario Comparison Tool")
-        st.info("Compare different financial scenarios side-by-side")
+        st.subheader("📊 Quick Plan Comparison")
+        st.info("Compare your current plan to a previous snapshot - see how you've progressed!")
 
         try:
-            with st.expander("⚙️ Adjust Parameters for Comparison", expanded=True):
-                # Use st.form to prevent app reboot on slider changes
-                with st.form("scenario_comparison_form"):
-                    col1, col2 = st.columns(2)
+            # Load available snapshots (user snapshots + demo snapshots)
+            from utils.snapshot_manager import get_snapshots_index, load_snapshot, get_all_snapshots_with_demos
+            index = get_snapshots_index()
+            user_snapshots = index.get('snapshots', [])
 
-                    with col1:
-                        adj_income = st.number_input(
-                            "Adjusted Annual Income",
-                            min_value=0.0,
-                            max_value=10000000.0,
-                            value=float(financial_data['total_income']),
-                            step=5000.0
-                        )
-                        adj_expenses = st.number_input(
-                            "Adjusted Annual Expenses",
-                            min_value=0.0,
-                            max_value=10000000.0,
-                            value=float(financial_data['total_expenses']),
-                            step=5000.0
-                        )
+            # Get all snapshots including demos (for users with no saved data)
+            all_snapshots = get_all_snapshots_with_demos()
 
-                    with col2:
-                        # Safety check for sim_params values
-                        return_rate = sim_params.get('investment_return_rate')
-                        if return_rate is None:
-                            return_rate = 0.07
+            if len(all_snapshots) < 2:
+                st.warning("⚠️ You need at least 2 saved snapshots to compare plans. Save your current plan first!")
+            else:
+                # Show demo data message if user has no snapshots
+                if len(user_snapshots) == 0:
+                    st.info("""
+                    💡 **You're viewing demo data!**
 
-                        inflation = sim_params.get('inflation_rate')
-                        if inflation is None:
-                            inflation = 0.03
+                    These are sample retirement plans to show you how the comparison feature works.
+                    Complete YOUR INTAKE to see YOUR real comparison!
+                    """)
+                    if st.button("📝 Go to INTAKE to create YOUR plan", key="demo_goto_intake_btn"):
+                        st.session_state.current_mode = "INTAKE"
+                        st.session_state.mode_selected = True
+                        st.rerun()
 
-                        adj_return = st.slider(
-                            "Adjusted Investment Return (%)",
-                            min_value=0.0,
-                            max_value=15.0,
-                            value=float(return_rate * 100),
-                            step=0.5
-                        ) / 100
-                        adj_inflation = st.slider(
-                            "Adjusted Inflation Rate (%)",
-                            min_value=0.0,
-                            max_value=10.0,
-                            value=float(inflation * 100),
-                            step=0.5
-                        ) / 100
+                snapshots = all_snapshots
+                # Build dropdown options (exclude current snapshot)
+                current_id = index.get('current_snapshot_id')
+                comparison_options = []
 
-                    # Submit button for the form
-                    submitted = st.form_submit_button("📊 Run Comparison", type="primary")
+                for snap in snapshots:
+                    if snap['id'] != current_id:
+                        # Format: "Name (Nov 15, 2025)" or "Name" for demos
+                        from datetime import datetime
+                        try:
+                            created_dt = datetime.fromisoformat(snap.get('created', '2025-01-01T00:00:00'))
+                            formatted_date = created_dt.strftime("%b %d, %Y %I:%M %p")
+                            option_label = f"{snap['name']} ({formatted_date})"
+                        except:
+                            option_label = snap['name']
 
-                if submitted:
-                    with st.spinner("Running comparison..."):
-                        # Build adjusted parameters
-                        adjusted_financial_data = financial_data.copy()
-                        adjusted_financial_data['total_income'] = adj_income
-                        adjusted_financial_data['total_expenses'] = adj_expenses
+                        comparison_options.append({
+                            'label': option_label,
+                            'id': snap['id'],
+                            'name': snap['name'],
+                            'created': snap.get('created', '2025-01-01T00:00:00'),
+                            'is_demo': snap.get('is_demo', False)
+                        })
 
-                        adjusted_sim_params = sim_params.copy()
-                        adjusted_sim_params['investment_return_rate'] = adj_return
-                        adjusted_sim_params['inflation_rate'] = adj_inflation
+                # Sort by date (newest first)
+                comparison_options.sort(key=lambda x: x['created'], reverse=True)
 
-                        # STORE adjusted values in session state for save form
-                        st.session_state['last_comparison_adjustments'] = {
-                            'adj_income': adj_income,
-                            'adj_expenses': adj_expenses,
-                            'adj_return': adj_return,
-                            'adj_inflation': adj_inflation
-                        }
+                if not comparison_options:
+                    st.warning("⚠️ No previous snapshots found. Your current snapshot is the only one saved.")
+                else:
+                    # Dropdown selector
+                    selected_label = st.selectbox(
+                        "Compare your current plan to:",
+                        options=[opt['label'] for opt in comparison_options],
+                        help="Select a previous snapshot to compare against your current results"
+                    )
 
-                        # Run adjusted simulation
-                        comp_results = run_simulation(
-                            age=user_data.get('age', 35),
-                            partner_exists=user_data.get('partner_exists', False),
-                            partner_age=user_data.get('partner_age', user_data.get('age', 35)),
-                            total_income=adjusted_financial_data['total_income'],
-                            total_expenses=adjusted_financial_data['total_expenses'],
-                            combined_financial_assets=adjusted_financial_data['liquid_assets'],
-                            primary_residence_value=adjusted_financial_data.get('primary_residence_value', 0),
-                            secondary_residence_value=adjusted_financial_data.get('secondary_residence_value', 0),
-                            combined_other_assets_total=adjusted_financial_data.get('other_assets', 0),
-                            total_liabilities_local=adjusted_financial_data['total_liabilities'],
-                            partner_liabilities=0,
-                            tax_rate=adjusted_sim_params['tax_rate'],
-                            inflation_rate=adjusted_sim_params['inflation_rate'],
-                            investment_return_rate=adjusted_sim_params['investment_return_rate'],
-                            simulation_years=adjusted_sim_params['simulation_years'],
-                            mc_iterations=0,
-                            goal_costs={},
-                            college_inflation_pct=4.0,
-                            base_public_in=20000,
-                            base_public_out=40000,
-                            base_private=60000,
-                            ira_balance=adjusted_financial_data.get('ira_balance', 0),
-                            four01k_403b_balance=adjusted_financial_data.get('four01k_403b_balance', 0),
-                            partner_ira_balance=adjusted_financial_data.get('partner_ira_balance', 0),
-                            partner_four01k_403b_balance=adjusted_financial_data.get('partner_four01k_403b_balance', 0),
-                            monthly_surplus=adjusted_financial_data.get('monthly_surplus', 0),
-                            combined_total_liabilities=adjusted_financial_data['total_liabilities']
+                    # Get selected snapshot ID
+                    selected_snapshot = next(opt for opt in comparison_options if opt['label'] == selected_label)
+
+                    # Optional quick adjustment (collapsed by default)
+                    with st.expander("🔧 Optional: Add One Quick Adjustment", expanded=False):
+                        st.caption("Want to test a small change on your CURRENT plan? Select one adjustment below.")
+
+                        adjustment_type = st.radio(
+                            "Quick Adjustment",
+                            ["None - Compare as-is",
+                             "Delay retirement by 2 years",
+                             "Increase income by 10%",
+                             "Reduce expenses by 15%",
+                             "Increase savings rate by 5%"],
+                            index=0,
+                            help="This adjustment will be applied to your CURRENT results for comparison"
                         )
 
-                        if comp_results:
-                            # STORE comparison results in session state for save form
-                            st.session_state['last_comparison_results'] = comp_results
+                    # Compare button
+                    if st.button("🚀 Compare Now", type="primary", key="quick_compare_btn"):
+                        with st.spinner("Loading snapshot and comparing..."):
+                            # Load the selected past snapshot
+                            past_snapshot_data = load_snapshot(selected_snapshot['id'])
 
-                            st.success("✅ Comparison complete!")
+                            if not past_snapshot_data:
+                                st.error(f"❌ Could not load snapshot: {selected_snapshot['name']}")
+                            else:
+                                # Run simulation on past snapshot data to get comparable results
+                                past_user_data = past_snapshot_data.get('user_data', {})
+                                past_financial_data = past_snapshot_data.get('financial_data', {})
+                                past_sim_params = past_snapshot_data.get('sim_params', sim_params)
 
-                            # Show comparison metrics
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.markdown("#### Base Scenario")
-                                st.metric("Final Savings", f"${results['final_savings']:,.0f}")
-                                st.metric("Final Net Worth", f"${results['final_net_worth']:,.0f}")
-                                st.metric("Years Solvent", f"{results['years_solvent']}")
-                            with col2:
-                                st.markdown("#### Adjusted Scenario")
-                                delta_savings = comp_results['final_savings'] - results['final_savings']
-                                delta_nw = comp_results['final_net_worth'] - results['final_net_worth']
-                                delta_years = comp_results['years_solvent'] - results['years_solvent']
-                                st.metric("Final Savings", f"${comp_results['final_savings']:,.0f}",
-                                         delta=f"${delta_savings:,.0f}")
-                                st.metric("Final Net Worth", f"${comp_results['final_net_worth']:,.0f}",
-                                         delta=f"${delta_nw:,.0f}")
-                                st.metric("Years Solvent", f"{comp_results['years_solvent']}",
-                                         delta=f"{delta_years:+d} years")
+                                # Run simulation for past snapshot
+                                past_results = run_simulation(
+                                    age=past_user_data.get('age', user_data.get('age', 35)),
+                                    partner_exists=past_user_data.get('partner_exists', user_data.get('partner_exists', False)),
+                                    partner_age=past_user_data.get('partner_age', user_data.get('partner_age', 35)),
+                                    total_income=past_financial_data.get('total_income', financial_data['total_income']),
+                                    total_expenses=past_financial_data.get('total_expenses', financial_data['total_expenses']),
+                                    combined_financial_assets=past_financial_data.get('liquid_assets', financial_data['liquid_assets']),
+                                    primary_residence_value=past_financial_data.get('primary_residence_value', 0),
+                                    secondary_residence_value=past_financial_data.get('secondary_residence_value', 0),
+                                    combined_other_assets_total=past_financial_data.get('other_assets', 0),
+                                    total_liabilities_local=past_financial_data.get('total_liabilities', financial_data['total_liabilities']),
+                                    partner_liabilities=0,
+                                    tax_rate=past_sim_params.get('tax_rate', sim_params['tax_rate']),
+                                    inflation_rate=past_sim_params.get('inflation_rate', sim_params['inflation_rate']),
+                                    investment_return_rate=past_sim_params.get('investment_return_rate', sim_params['investment_return_rate']),
+                                    simulation_years=past_sim_params.get('simulation_years', sim_params['simulation_years']),
+                                    mc_iterations=0,
+                                    goal_costs={},
+                                    college_inflation_pct=4.0,
+                                    base_public_in=20000,
+                                    base_public_out=40000,
+                                    base_private=60000,
+                                    ira_balance=past_financial_data.get('ira_balance', 0),
+                                    four01k_403b_balance=past_financial_data.get('four01k_403b_balance', 0),
+                                    partner_ira_balance=past_financial_data.get('partner_ira_balance', 0),
+                                    partner_four01k_403b_balance=past_financial_data.get('partner_four01k_403b_balance', 0),
+                                    monthly_surplus=past_financial_data.get('monthly_surplus', 0),
+                                    combined_total_liabilities=past_financial_data.get('total_liabilities', financial_data['total_liabilities'])
+                                )
 
-                            # Comparison chart
-                            import plotly.graph_objects as go
-                            fig = go.Figure()
-                            fig.add_trace(go.Scatter(
-                                x=results['df']['Year'],
-                                y=results['df']['Savings_End'],
-                                mode='lines',
-                                name='Base Scenario',
-                                line=dict(color='blue', width=3)
-                            ))
-                            fig.add_trace(go.Scatter(
-                                x=comp_results['df']['Year'],
-                                y=comp_results['df']['Savings_End'],
-                                mode='lines',
-                                name='Adjusted Scenario',
-                                line=dict(color='red', width=3, dash='dash')
-                            ))
-                            fig.update_layout(
-                                title="Savings Trajectory Comparison",
-                                xaxis_title="Year",
-                                yaxis_title="Savings ($)",
-                                height=500
-                            )
-                            st.plotly_chart(fig, use_container_width=True)
+                                # Apply optional adjustment to CURRENT results
+                                current_results = results.copy()
+                                adjustment_label = ""
 
-                        else:
-                            st.error("❌ Comparison failed to generate results")
+                                if adjustment_type == "Delay retirement by 2 years":
+                                    # Re-run current simulation with +2 years
+                                    adjusted_sim_years = sim_params['simulation_years'] + 2
+                                    current_results = run_simulation(
+                                        age=user_data.get('age', 35),
+                                        partner_exists=user_data.get('partner_exists', False),
+                                        partner_age=user_data.get('partner_age', user_data.get('age', 35)),
+                                        total_income=financial_data['total_income'],
+                                        total_expenses=financial_data['total_expenses'],
+                                        combined_financial_assets=financial_data['liquid_assets'],
+                                        primary_residence_value=financial_data.get('primary_residence_value', 0),
+                                        secondary_residence_value=financial_data.get('secondary_residence_value', 0),
+                                        combined_other_assets_total=financial_data.get('other_assets', 0),
+                                        total_liabilities_local=financial_data['total_liabilities'],
+                                        partner_liabilities=0,
+                                        tax_rate=sim_params['tax_rate'],
+                                        inflation_rate=sim_params['inflation_rate'],
+                                        investment_return_rate=sim_params['investment_return_rate'],
+                                        simulation_years=adjusted_sim_years,
+                                        mc_iterations=0,
+                                        goal_costs={},
+                                        college_inflation_pct=4.0,
+                                        base_public_in=20000,
+                                        base_public_out=40000,
+                                        base_private=60000,
+                                        ira_balance=financial_data.get('ira_balance', 0),
+                                        four01k_403b_balance=financial_data.get('four01k_403b_balance', 0),
+                                        partner_ira_balance=financial_data.get('partner_ira_balance', 0),
+                                        partner_four01k_403b_balance=financial_data.get('partner_four01k_403b_balance', 0),
+                                        monthly_surplus=financial_data.get('monthly_surplus', 0),
+                                        combined_total_liabilities=financial_data['total_liabilities'],
+                                        custom_expenses_total=financial_data.get('custom_expenses_total', 0.0),
+                                        custom_income_total=financial_data.get('custom_income_total', 0.0)
+                                    )
+                                    adjustment_label = " (+ Delay 2 yrs)"
+                                elif adjustment_type == "Increase income by 10%":
+                                    adjusted_income = financial_data['total_income'] * 1.10
+                                    current_results = run_simulation(
+                                        age=user_data.get('age', 35),
+                                        partner_exists=user_data.get('partner_exists', False),
+                                        partner_age=user_data.get('partner_age', user_data.get('age', 35)),
+                                        total_income=adjusted_income,
+                                        total_expenses=financial_data['total_expenses'],
+                                        combined_financial_assets=financial_data['liquid_assets'],
+                                        primary_residence_value=financial_data.get('primary_residence_value', 0),
+                                        secondary_residence_value=financial_data.get('secondary_residence_value', 0),
+                                        combined_other_assets_total=financial_data.get('other_assets', 0),
+                                        total_liabilities_local=financial_data['total_liabilities'],
+                                        partner_liabilities=0,
+                                        tax_rate=sim_params['tax_rate'],
+                                        inflation_rate=sim_params['inflation_rate'],
+                                        investment_return_rate=sim_params['investment_return_rate'],
+                                        simulation_years=sim_params['simulation_years'],
+                                        mc_iterations=0,
+                                        goal_costs={},
+                                        college_inflation_pct=4.0,
+                                        base_public_in=20000,
+                                        base_public_out=40000,
+                                        base_private=60000,
+                                        ira_balance=financial_data.get('ira_balance', 0),
+                                        four01k_403b_balance=financial_data.get('four01k_403b_balance', 0),
+                                        partner_ira_balance=financial_data.get('partner_ira_balance', 0),
+                                        partner_four01k_403b_balance=financial_data.get('partner_four01k_403b_balance', 0),
+                                        monthly_surplus=financial_data.get('monthly_surplus', 0),
+                                        combined_total_liabilities=financial_data['total_liabilities'],
+                                        custom_expenses_total=financial_data.get('custom_expenses_total', 0.0),
+                                        custom_income_total=financial_data.get('custom_income_total', 0.0)
+                                    )
+                                    adjustment_label = " (+ 10% Income)"
+                                elif adjustment_type == "Reduce expenses by 15%":
+                                    adjusted_expenses = financial_data['total_expenses'] * 0.85
+                                    current_results = run_simulation(
+                                        age=user_data.get('age', 35),
+                                        partner_exists=user_data.get('partner_exists', False),
+                                        partner_age=user_data.get('partner_age', user_data.get('age', 35)),
+                                        total_income=financial_data['total_income'],
+                                        total_expenses=adjusted_expenses,
+                                        combined_financial_assets=financial_data['liquid_assets'],
+                                        primary_residence_value=financial_data.get('primary_residence_value', 0),
+                                        secondary_residence_value=financial_data.get('secondary_residence_value', 0),
+                                        combined_other_assets_total=financial_data.get('other_assets', 0),
+                                        total_liabilities_local=financial_data['total_liabilities'],
+                                        partner_liabilities=0,
+                                        tax_rate=sim_params['tax_rate'],
+                                        inflation_rate=sim_params['inflation_rate'],
+                                        investment_return_rate=sim_params['investment_return_rate'],
+                                        simulation_years=sim_params['simulation_years'],
+                                        mc_iterations=0,
+                                        goal_costs={},
+                                        college_inflation_pct=4.0,
+                                        base_public_in=20000,
+                                        base_public_out=40000,
+                                        base_private=60000,
+                                        ira_balance=financial_data.get('ira_balance', 0),
+                                        four01k_403b_balance=financial_data.get('four01k_403b_balance', 0),
+                                        partner_ira_balance=financial_data.get('partner_ira_balance', 0),
+                                        partner_four01k_403b_balance=financial_data.get('partner_four01k_403b_balance', 0),
+                                        monthly_surplus=financial_data.get('monthly_surplus', 0),
+                                        combined_total_liabilities=financial_data['total_liabilities'],
+                                        custom_expenses_total=financial_data.get('custom_expenses_total', 0.0),
+                                        custom_income_total=financial_data.get('custom_income_total', 0.0)
+                                    )
+                                    adjustment_label = " (- 15% Expenses)"
+                                elif adjustment_type == "Increase savings rate by 5%":
+                                    # Increase monthly surplus by 5% of income
+                                    extra_savings = financial_data['total_income'] * 0.05 / 12
+                                    adjusted_surplus = financial_data.get('monthly_surplus', 0) + extra_savings
+                                    current_results = run_simulation(
+                                        age=user_data.get('age', 35),
+                                        partner_exists=user_data.get('partner_exists', False),
+                                        partner_age=user_data.get('partner_age', user_data.get('age', 35)),
+                                        total_income=financial_data['total_income'],
+                                        total_expenses=financial_data['total_expenses'],
+                                        combined_financial_assets=financial_data['liquid_assets'],
+                                        primary_residence_value=financial_data.get('primary_residence_value', 0),
+                                        secondary_residence_value=financial_data.get('secondary_residence_value', 0),
+                                        combined_other_assets_total=financial_data.get('other_assets', 0),
+                                        total_liabilities_local=financial_data['total_liabilities'],
+                                        partner_liabilities=0,
+                                        tax_rate=sim_params['tax_rate'],
+                                        inflation_rate=sim_params['inflation_rate'],
+                                        investment_return_rate=sim_params['investment_return_rate'],
+                                        simulation_years=sim_params['simulation_years'],
+                                        mc_iterations=0,
+                                        goal_costs={},
+                                        college_inflation_pct=4.0,
+                                        base_public_in=20000,
+                                        base_public_out=40000,
+                                        base_private=60000,
+                                        ira_balance=financial_data.get('ira_balance', 0),
+                                        four01k_403b_balance=financial_data.get('four01k_403b_balance', 0),
+                                        partner_ira_balance=financial_data.get('partner_ira_balance', 0),
+                                        partner_four01k_403b_balance=financial_data.get('partner_four01k_403b_balance', 0),
+                                        monthly_surplus=adjusted_surplus,
+                                        combined_total_liabilities=financial_data['total_liabilities'],
+                                        custom_expenses_total=financial_data.get('custom_expenses_total', 0.0),
+                                        custom_income_total=financial_data.get('custom_income_total', 0.0)
+                                    )
+                                    adjustment_label = " (+ 5% Savings)"
+
+                                if past_results and current_results:
+                                    st.success("✅ Comparison complete!")
+
+                                    # Store for potential save (optional future feature)
+                                    st.session_state['last_temporal_comparison'] = {
+                                        'past_snapshot_id': selected_snapshot['id'],
+                                        'past_snapshot_name': selected_snapshot['name'],
+                                        'adjustment_type': adjustment_type,
+                                        'current_results': current_results,
+                                        'past_results': past_results
+                                    }
+
+                                    # Show comparison metrics with deltas
+                                    st.markdown("### 📈 Your Progress")
+
+                                    col1, col2 = st.columns(2)
+                                    with col1:
+                                        st.markdown(f"#### 📅 {selected_snapshot['name']}")
+                                        st.caption("Previous Snapshot")
+                                        st.metric("Final Savings", f"${past_results['final_savings']:,.0f}")
+                                        st.metric("Final Net Worth", f"${past_results['final_net_worth']:,.0f}")
+                                        st.metric("Years Solvent", f"{past_results['years_solvent']}")
+                                        st.metric("Health Score", f"{past_results.get('health_score', 0)}/100")
+
+                                    with col2:
+                                        st.markdown(f"#### 🎯 Current Plan{adjustment_label}")
+                                        st.caption("Your current results")
+
+                                        # Calculate deltas
+                                        delta_savings = current_results['final_savings'] - past_results['final_savings']
+                                        delta_nw = current_results['final_net_worth'] - past_results['final_net_worth']
+                                        delta_years = current_results['years_solvent'] - past_results['years_solvent']
+                                        delta_health = current_results.get('health_score', 0) - past_results.get('health_score', 0)
+
+                                        st.metric(
+                                            "Final Savings",
+                                            f"${current_results['final_savings']:,.0f}",
+                                            delta=f"${delta_savings:+,.0f}",
+                                            delta_color="normal"
+                                        )
+                                        st.metric(
+                                            "Final Net Worth",
+                                            f"${current_results['final_net_worth']:,.0f}",
+                                            delta=f"${delta_nw:+,.0f}",
+                                            delta_color="normal"
+                                        )
+                                        st.metric(
+                                            "Years Solvent",
+                                            f"{current_results['years_solvent']}",
+                                            delta=f"{delta_years:+d} years",
+                                            delta_color="normal"
+                                        )
+                                        st.metric(
+                                            "Health Score",
+                                            f"{current_results.get('health_score', 0)}/100",
+                                            delta=f"{delta_health:+d} pts",
+                                            delta_color="normal"
+                                        )
+
+                                    # Summary message
+                                    if delta_savings > 0 and delta_years >= 0:
+                                        st.success(f"🎉 **Great progress!** Your plan improved by ${delta_savings:,.0f} in final savings!")
+                                    elif delta_savings < 0:
+                                        st.warning(f"⚠️ Your final savings decreased by ${abs(delta_savings):,.0f}. Consider reviewing your plan.")
+                                    else:
+                                        st.info("📊 Your plan is stable. Minor changes detected.")
+
+                                    # Comparison chart
+                                    import plotly.graph_objects as go
+                                    fig = go.Figure()
+                                    fig.add_trace(go.Scatter(
+                                        x=past_results['df']['Year'],
+                                        y=past_results['df']['Savings_End'],
+                                        mode='lines',
+                                        name=f'{selected_snapshot["name"]}',
+                                        line=dict(color='#FF6B6B', width=3, dash='dash')
+                                    ))
+                                    fig.add_trace(go.Scatter(
+                                        x=current_results['df']['Year'],
+                                        y=current_results['df']['Savings_End'],
+                                        mode='lines',
+                                        name=f'Current Plan{adjustment_label}',
+                                        line=dict(color='#4ECDC4', width=3)
+                                    ))
+                                    fig.update_layout(
+                                        title="Savings Trajectory: Past vs. Current",
+                                        xaxis_title="Year",
+                                        yaxis_title="Savings ($)",
+                                        yaxis_tickformat='$,.0f',
+                                        height=450,
+                                        hovermode='x unified',
+                                        legend=dict(
+                                            orientation="h",
+                                            yanchor="bottom",
+                                            y=1.02,
+                                            xanchor="center",
+                                            x=0.5
+                                        )
+                                    )
+                                    st.plotly_chart(fig, use_container_width=True)
+
+                                else:
+                                    st.error("❌ Could not generate comparison results")
+
         except Exception as e:
-            st.error(f"Scenario comparison error: {str(e)}")
+            st.error(f"Quick comparison error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+        # =============================================================================
+        # SCENARIO STUDIO UPSELL (Soft + Hard)
+        # =============================================================================
+        st.markdown("---")
+        st.info("💡 **Want deeper insights?** Explore **Scenario Studio** for advanced multi-scenario planning")
+
+        with st.expander("📖 What is Scenario Studio?", expanded=False):
+            st.markdown("### 🎯 Compare Multiple Future Strategies")
+
+            st.markdown("""
+            **Example: Planning for Early Retirement**
+
+            With Scenario Studio, you can compare 3-4 different retirement approaches side-by-side:
+            """)
+
+            # Visual example
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.markdown("""
+                **📊 Scenario 1: Conservative**
+                - Retire at 67
+                - 6% return
+                - Low risk tolerance
+                - Result: **$2.1M**
+                """)
+
+            with col2:
+                st.markdown("""
+                **📊 Scenario 2: Optimistic**
+                - Retire at 65
+                - 8% return
+                - Moderate risk
+                - Result: **$2.3M**
+                """)
+
+            with col3:
+                st.markdown("""
+                **📊 Scenario 3: Aggressive**
+                - Retire at 62
+                - 10% return
+                - Higher risk
+                - Result: **$1.9M**
+                """)
+
+            st.success("➜ See all scenarios side-by-side with detailed comparison tables and charts!")
+
+            # Features list
+            st.markdown("### ✨ What's Included in Scenario Studio:")
+            st.markdown("""
+            - **30+ adjustable parameters** per scenario (income, expenses, investments, timing, accounts, real estate)
+            - **Professional templates** (Conservative, Optimistic, Custom scenarios)
+            - **Export capabilities** (PDF, Excel, CSV reports)
+            - **Save unlimited scenarios** for future reference
+            - **Advanced visualizations** (comparison tables, bar charts, trajectory lines, winner badges)
+            - **Side-by-side comparison** of up to 4 scenarios at once
+            """)
+
+            # Soft CTA button (no pricing - just educational)
+            st.markdown("---")
+            if st.button("🚀 Try Scenario Studio", key="upsell_studio_btn"):
+                st.session_state.current_mode = "scenario_studio"
+                st.session_state.mode_selected = True
+                st.rerun()
 
     # =============================================================================
-    # SAVE COMPARISON SCENARIO (Sub-Phase 2A) - MOVED OUTSIDE COMPARISON FORM
+    # OLD SAVE COMPARISON SCENARIO (DEPRECATED - keeping for backward compatibility)
     # =============================================================================
     # Only show if a comparison was run and data exists in session state
     if 'last_comparison_adjustments' in st.session_state and 'last_comparison_results' in st.session_state:
@@ -609,57 +897,6 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                         else:
                             print("[DEBUG SAVE] ERROR: adjustments is None, skipping save")
                             st.error("Cannot save: adjustments could not be built")
-
-    # =============================================================================
-    # COMPARE SAVED PLANS
-    # =============================================================================
-
-    st.markdown("---")
-    st.subheader("📊 Compare Saved Plans")
-    st.caption("Compare your saved retirement plans to see which strategy works best.")
-
-    try:
-        from utils.snapshot_manager import get_snapshots_index, compare_snapshots, display_snapshot_comparison
-
-        # Get available snapshots
-        index = get_snapshots_index()
-        snapshots = index.get("snapshots", [])
-
-        if len(snapshots) == 0:
-            st.info("💡 You haven't saved any plans yet. Complete INTAKE and save a scenario first.")
-        elif len(snapshots) == 1:
-            st.warning("⚠️ Save at least 2 plans to use comparison. You currently have 1 saved plan.")
-        else:
-            # Create snapshot options for dropdown
-            snapshot_options = {f"{s['name']} ({s['id']})": s['id'] for s in snapshots}
-
-            # Let user select 2-3 snapshots
-            st.markdown("**Select 2-3 plans to compare:**")
-            selected_labels = st.multiselect(
-                "Choose plans",
-                options=list(snapshot_options.keys()),
-                max_selections=3,
-                help="Pick 2-3 saved plans to compare side-by-side"
-            )
-
-            # Convert labels back to IDs
-            selected_ids = [snapshot_options[label] for label in selected_labels]
-
-            if len(selected_ids) >= 2:
-                if st.button("🔍 Compare Selected Plans", type="primary", use_container_width=True):
-                    with st.spinner("Comparing plans..."):
-                        comparison = compare_snapshots(selected_ids)
-                        if comparison:
-                            display_snapshot_comparison(comparison)
-                        else:
-                            st.error("❌ Comparison failed. Please try again.")
-            elif len(selected_ids) == 1:
-                st.info("👆 Select at least one more plan to compare.")
-            else:
-                st.info("👆 Select 2-3 plans from the dropdown above to start comparing.")
-
-    except Exception as e:
-        st.error(f"Saved plans comparison error: {str(e)}")
 
     # =============================================================================
     # AI ADVISOR

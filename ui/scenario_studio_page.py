@@ -1498,214 +1498,290 @@ def render_scenario_studio_page():
                 detailed = load_comparison_scenario(comp['id'])
                 if detailed:
                     detailed_scenarios.append(detailed)
+                else:
+                    st.warning(f"⚠️ Could not load scenario: {comp['name']} (ID: {comp['id']})")
+
+            # DEBUG: Show what we loaded
+            print(f"[COMPARISON DEBUG] Loaded {len(detailed_scenarios)} scenarios for comparison")
+            for idx, scen in enumerate(detailed_scenarios):
+                print(f"  Scenario {idx+1}: {scen.get('name', 'UNNAMED')}")
+                print(f"    - Has 'adjustments': {'adjustments' in scen}")
+                print(f"    - Has 'simulation_results': {'simulation_results' in scen}")
+                if 'adjustments' in scen:
+                    print(f"    - Adjustment keys: {list(scen['adjustments'].keys())}")
+                if 'simulation_results' in scen:
+                    print(f"    - Result keys: {list(scen['simulation_results'].keys())[:5]}...")
+
+            # DEFENSIVE FIX: Ensure all scenarios have same adjustment keys (fill missing with 'N/A')
+            # This fixes the issue with 3+ scenarios + BASE plan
+            if len(detailed_scenarios) >= 2:
+                all_adjustment_keys = set()
+                all_result_keys = set()
+
+                # Collect all keys from all scenarios
+                for scen in detailed_scenarios:
+                    if 'adjustments' in scen:
+                        all_adjustment_keys.update(scen['adjustments'].keys())
+                    if 'simulation_results' in scen:
+                        all_result_keys.update(scen['simulation_results'].keys())
+
+                print(f"[COMPARISON DEBUG] Total unique adjustment keys: {len(all_adjustment_keys)}")
+                print(f"[COMPARISON DEBUG] Total unique result keys: {len(all_result_keys)}")
+
+                # Fill missing keys with 'N/A' in all scenarios
+                for scen in detailed_scenarios:
+                    if 'adjustments' not in scen:
+                        scen['adjustments'] = {}
+                    if 'simulation_results' not in scen:
+                        scen['simulation_results'] = {}
+
+                    for key in all_adjustment_keys:
+                        if key not in scen['adjustments']:
+                            scen['adjustments'][key] = 'N/A'
+                            print(f"  [FILL] Added missing adjustment key '{key}' to {scen.get('name', 'UNNAMED')}")
+
+                    for key in all_result_keys:
+                        if key not in scen['simulation_results']:
+                            scen['simulation_results'][key] = 'N/A'
+
+                print(f"[COMPARISON DEBUG] All scenarios now have consistent keys")
 
             if len(detailed_scenarios) >= 2:
                 # Debug info
                 st.caption(f"🔍 Comparing {len(detailed_scenarios)} scenarios")
 
-                # Helper function for visual comparisons
-                def compare_to_base(scenario_value, base_value, higher_is_better=True):
-                    """Return indicator and delta for comparison"""
-                    if scenario_value == 'N/A' or base_value == 'N/A':
-                        return '', ''
+                # Wrap entire comparison table in try/except for debugging
+                try:
+                    # Helper function for visual comparisons
+                    def compare_to_base(scenario_value, base_value, higher_is_better=True):
+                        """Return indicator and delta for comparison"""
+                        if scenario_value == 'N/A' or base_value == 'N/A':
+                            return '', ''
 
-                    try:
-                        delta = scenario_value - base_value
-                        if delta > 0:
-                            if higher_is_better:
-                                indicator = "🟢 ↑"
+                        try:
+                            delta = scenario_value - base_value
+                            if delta > 0:
+                                if higher_is_better:
+                                    indicator = "🟢 ↑"
+                                else:
+                                    indicator = "🔴 ↑"
+                            elif delta < 0:
+                                if higher_is_better:
+                                    indicator = "🔴 ↓"
+                                else:
+                                    indicator = "🟢 ↓"
                             else:
-                                indicator = "🔴 ↑"
-                        elif delta < 0:
-                            if higher_is_better:
-                                indicator = "🔴 ↓"
-                            else:
-                                indicator = "🟢 ↓"
-                        else:
-                            indicator = "⚪ →"
-                            delta = 0
-                        return indicator, delta
-                    except:
-                        return '', ''
+                                indicator = "⚪ →"
+                                delta = 0
+                            return indicator, delta
+                        except:
+                            return '', ''
 
-                # Build comparison table
-                import pandas as pd
+                    # Build comparison table
+                    import pandas as pd
 
-                comparison_data = []
+                    comparison_data = []
 
-                # Row 1: Scenario Name
-                comparison_data.append({
-                    'Metric': '📝 Scenario Name',
-                    **{f'Scenario {i+1}': s['name'] for i, s in enumerate(detailed_scenarios)}
-                })
+                    # Row 1: Scenario Name
+                    comparison_data.append({
+                        'Metric': '📝 Scenario Name',
+                        **{f'Scenario {i+1}': s['name'] for i, s in enumerate(detailed_scenarios)}
+                    })
 
-                # Section: Key Results
-                comparison_data.append({
-                    'Metric': '─── 📊 KEY RESULTS ───',
-                    **{f'Scenario {i+1}': '' for i in range(len(detailed_scenarios))}
-                })
+                    # Section: Key Results
+                    comparison_data.append({
+                        'Metric': '─── 📊 KEY RESULTS ───',
+                        **{f'Scenario {i+1}': '' for i in range(len(detailed_scenarios))}
+                    })
 
-                # Get simulation results (if available) with comparisons
-                for metric_key, metric_label, higher_is_better in [
-                    ('final_savings', '💰 Final Savings', True),
-                    ('final_net_worth', '💎 Final Net Worth', True),
-                    ('years_solvent', '⏳ Years Solvent', True),
-                    ('health_score', '❤️ Health Score', True),
-                    ('savings_rate', '📈 Savings Rate', True),
-                ]:
-                    row = {'Metric': metric_label}
+                    # Get simulation results (if available) with comparisons
+                    for metric_key, metric_label, higher_is_better in [
+                        ('final_savings', '💰 Final Savings', True),
+                        ('final_net_worth', '💎 Final Net Worth', True),
+                        ('years_solvent', '⏳ Years Solvent', True),
+                        ('health_score', '❤️ Health Score', True),
+                        ('savings_rate', '📈 Savings Rate', True),
+                    ]:
+                        row = {'Metric': metric_label}
 
-                    # Get base value (first scenario)
-                    base_sim_results = detailed_scenarios[0].get('simulation_results', {})
-                    base_value = base_sim_results.get(metric_key, 'N/A')
+                        # Get base value (first scenario)
+                        base_sim_results = detailed_scenarios[0].get('simulation_results', {})
+                        base_value = base_sim_results.get(metric_key, 'N/A')
 
-                    for i, s in enumerate(detailed_scenarios):
-                        sim_results = s.get('simulation_results', {})
-                        value = sim_results.get(metric_key, 'N/A')
+                        for i, s in enumerate(detailed_scenarios):
+                            sim_results = s.get('simulation_results', {})
+                            value = sim_results.get(metric_key, 'N/A')
 
-                        # Format the value
-                        if value == 'N/A':
-                            formatted = 'N/A'
-                        elif metric_key in ['final_savings', 'final_net_worth']:
-                            formatted = f"${value:,.0f}"
-                            # Add comparison for non-base scenarios
-                            if i > 0 and value != 'N/A' and base_value != 'N/A':
-                                indicator, delta = compare_to_base(value, base_value, higher_is_better)
-                                if delta != 0:
-                                    formatted += f"\n{indicator} ${abs(delta):,.0f}"
-                        elif metric_key == 'years_solvent':
-                            formatted = f"{value} years"
-                            if i > 0 and value != 'N/A' and base_value != 'N/A':
-                                indicator, delta = compare_to_base(value, base_value, higher_is_better)
-                                if delta != 0:
-                                    formatted += f"\n{indicator} {abs(delta):.0f} yrs"
-                        elif metric_key == 'health_score':
-                            formatted = f"{value}/100"
-                            if i > 0 and value != 'N/A' and base_value != 'N/A':
-                                indicator, delta = compare_to_base(value, base_value, higher_is_better)
-                                if delta != 0:
-                                    formatted += f"\n{indicator} {abs(delta):.0f} pts"
-                        elif metric_key == 'savings_rate':
-                            formatted = f"{value:.1f}%"
-                            if i > 0 and value != 'N/A' and base_value != 'N/A':
-                                indicator, delta = compare_to_base(value, base_value, higher_is_better)
-                                if delta != 0:
-                                    formatted += f"\n{indicator} {abs(delta):.1f}%"
-                        else:
-                            formatted = str(value)
-
-                        row[f'Scenario {i+1}'] = formatted
-
-                    comparison_data.append(row)
-
-                # Section: Income & Expenses
-                comparison_data.append({
-                    'Metric': '─── 💰 INCOME & EXPENSES ───',
-                    **{f'Scenario {i+1}': '' for i in range(len(detailed_scenarios))}
-                })
-
-                for adj_key, adj_label in [
-                    ('salary_wages', '💵 Salary/Wages'),
-                    ('social_security_income', '🏛️ Social Security'),
-                    ('pension_income', '🎖️ Pension'),
-                    ('housing_expenses', '🏠 Housing'),
-                    ('healthcare_expenses', '⚕️ Healthcare'),
-                ]:
-                    row = {'Metric': adj_label}
-                    for i, s in enumerate(detailed_scenarios):
-                        adjustments = s.get('adjustments', {})
-                        value = adjustments.get(adj_key, 'N/A')
-                        row[f'Scenario {i+1}'] = f"${value:,.0f}" if value != 'N/A' else 'N/A'
-                    comparison_data.append(row)
-
-                # Section: Investment Strategy
-                comparison_data.append({
-                    'Metric': '─── 📈 INVESTMENT STRATEGY ───',
-                    **{f'Scenario {i+1}': '' for i in range(len(detailed_scenarios))}
-                })
-
-                for adj_key, adj_label in [
-                    ('return_rate', '📊 Return Rate'),
-                    ('inflation_rate', '📉 Inflation Rate'),
-                    ('stocks_allocation', '📈 Stocks %'),
-                    ('bonds_allocation', '🔒 Bonds %'),
-                ]:
-                    row = {'Metric': adj_label}
-                    for i, s in enumerate(detailed_scenarios):
-                        adjustments = s.get('adjustments', {})
-                        value = adjustments.get(adj_key, 'N/A')
-
-                        if value != 'N/A':
-                            if 'rate' in adj_key:
-                                formatted = f"{value * 100:.1f}%"
-                            elif 'allocation' in adj_key:
-                                formatted = f"{value}%"
+                            # Format the value
+                            if value == 'N/A':
+                                formatted = 'N/A'
+                            elif metric_key in ['final_savings', 'final_net_worth']:
+                                formatted = f"${value:,.0f}"
+                                # Add comparison for non-base scenarios
+                                if i > 0 and value != 'N/A' and base_value != 'N/A':
+                                    indicator, delta = compare_to_base(value, base_value, higher_is_better)
+                                    if delta != 0:
+                                        formatted += f"\n{indicator} ${abs(delta):,.0f}"
+                            elif metric_key == 'years_solvent':
+                                formatted = f"{value} years"
+                                if i > 0 and value != 'N/A' and base_value != 'N/A':
+                                    indicator, delta = compare_to_base(value, base_value, higher_is_better)
+                                    if delta != 0:
+                                        formatted += f"\n{indicator} {abs(delta):.0f} yrs"
+                            elif metric_key == 'health_score':
+                                formatted = f"{value}/100"
+                                if i > 0 and value != 'N/A' and base_value != 'N/A':
+                                    indicator, delta = compare_to_base(value, base_value, higher_is_better)
+                                    if delta != 0:
+                                        formatted += f"\n{indicator} {abs(delta):.0f} pts"
+                            elif metric_key == 'savings_rate':
+                                formatted = f"{value:.1f}%"
+                                if i > 0 and value != 'N/A' and base_value != 'N/A':
+                                    indicator, delta = compare_to_base(value, base_value, higher_is_better)
+                                    if delta != 0:
+                                        formatted += f"\n{indicator} {abs(delta):.1f}%"
                             else:
                                 formatted = str(value)
-                        else:
-                            formatted = 'N/A'
 
-                        row[f'Scenario {i+1}'] = formatted
-                    comparison_data.append(row)
+                            row[f'Scenario {i+1}'] = formatted
 
-                # Create DataFrame and display
-                # DEFENSIVE FIX: Ensure all rows have same columns (handles edge cases)
-                if comparison_data:
-                    expected_columns = set(comparison_data[0].keys())
-                    for row in comparison_data:
-                        row_columns = set(row.keys())
-                        if row_columns != expected_columns:
-                            # Add missing columns with 'N/A'
-                            for col in expected_columns - row_columns:
-                                row[col] = 'N/A'
+                        comparison_data.append(row)
 
-                df = pd.DataFrame(comparison_data)
+                    # Section: Income & Expenses
+                    comparison_data.append({
+                        'Metric': '─── 💰 INCOME & EXPENSES ───',
+                        **{f'Scenario {i+1}': '' for i in range(len(detailed_scenarios))}
+                    })
 
-                st.dataframe(
-                    df,
-                    width='stretch',
-                    hide_index=True,
-                    height=600
-                )
+                    for adj_key, adj_label in [
+                        ('salary_wages', '💵 Salary/Wages'),
+                        ('social_security_income', '🏛️ Social Security'),
+                        ('pension_income', '🎖️ Pension'),
+                        ('housing_expenses', '🏠 Housing'),
+                        ('healthcare_expenses', '⚕️ Healthcare'),
+                    ]:
+                        row = {'Metric': adj_label}
+                        for i, s in enumerate(detailed_scenarios):
+                            adjustments = s.get('adjustments', {})
+                            value = adjustments.get(adj_key, 'N/A')
+                            row[f'Scenario {i+1}'] = f"${value:,.0f}" if value != 'N/A' else 'N/A'
+                        comparison_data.append(row)
 
-                st.success("✅ Comparison complete! Scroll to see all metrics.")
+                    # Section: Investment Strategy
+                    comparison_data.append({
+                        'Metric': '─── 📈 INVESTMENT STRATEGY ───',
+                        **{f'Scenario {i+1}': '' for i in range(len(detailed_scenarios))}
+                    })
+
+                    for adj_key, adj_label in [
+                        ('return_rate', '📊 Return Rate'),
+                        ('inflation_rate', '📉 Inflation Rate'),
+                        ('stocks_allocation', '📈 Stocks %'),
+                        ('bonds_allocation', '🔒 Bonds %'),
+                    ]:
+                        row = {'Metric': adj_label}
+                        for i, s in enumerate(detailed_scenarios):
+                            adjustments = s.get('adjustments', {})
+                            value = adjustments.get(adj_key, 'N/A')
+
+                            if value != 'N/A':
+                                if 'rate' in adj_key:
+                                    formatted = f"{value * 100:.1f}%"
+                                elif 'allocation' in adj_key:
+                                    formatted = f"{value}%"
+                                else:
+                                    formatted = str(value)
+                            else:
+                                formatted = 'N/A'
+
+                            row[f'Scenario {i+1}'] = formatted
+                        comparison_data.append(row)
+
+                    # Create DataFrame and display
+                    # DEFENSIVE FIX: Ensure all rows have same columns (handles edge cases)
+                    if comparison_data:
+                        expected_columns = set(comparison_data[0].keys())
+                        for row in comparison_data:
+                            row_columns = set(row.keys())
+                            if row_columns != expected_columns:
+                                # Add missing columns with 'N/A'
+                                for col in expected_columns - row_columns:
+                                    row[col] = 'N/A'
+
+                    df = pd.DataFrame(comparison_data)
+
+                    st.dataframe(
+                        df,
+                        width='stretch',
+                        hide_index=True,
+                        height=600
+                    )
+
+                    st.success("✅ Comparison complete! Scroll to see all metrics.")
+
+                except Exception as table_error:
+                    st.error(f"❌ Error building comparison table: {str(table_error)}")
+                    print(f"[COMPARISON ERROR] {type(table_error).__name__}: {table_error}")
+                    import traceback
+                    traceback.print_exc()
+
+                    # Show partial debug info
+                    st.warning("📊 Debug info for troubleshooting:")
+                    st.write(f"- Number of scenarios: {len(detailed_scenarios)}")
+                    for idx, scen in enumerate(detailed_scenarios):
+                        st.write(f"- Scenario {idx+1}: {scen.get('name', 'UNNAMED')}")
+                        st.write(f"  - Has adjustments: {'adjustments' in scen}")
+                        st.write(f"  - Has simulation_results: {'simulation_results' in scen}")
 
                 # WINNER BADGES SECTION
                 st.markdown("---")
                 st.markdown("### 🏆 Top Performers")
 
-                col_w1, col_w2, col_w3 = st.columns(3)
+                try:
+                    col_w1, col_w2, col_w3 = st.columns(3)
 
-                # Find winners for key metrics
-                valid_scenarios = [s for s in detailed_scenarios if s.get('simulation_results', {}).get('final_savings', 'N/A') != 'N/A']
+                    # Find winners for key metrics
+                    # DEFENSIVE: Filter out scenarios with 'N/A' or invalid final_savings
+                    valid_scenarios = []
+                    for s in detailed_scenarios:
+                        final_savings = s.get('simulation_results', {}).get('final_savings', 'N/A')
+                        # Check if it's a valid number (not 'N/A' string and not None)
+                        if final_savings != 'N/A' and final_savings is not None and isinstance(final_savings, (int, float)):
+                            valid_scenarios.append(s)
 
-                if valid_scenarios:
-                    # Best Final Savings
-                    best_savings = max(valid_scenarios, key=lambda x: x.get('simulation_results', {}).get('final_savings', 0))
-                    with col_w1:
-                        st.metric(
-                            "🏆 Highest Final Savings",
-                            best_savings['name'],
-                            f"${best_savings['simulation_results']['final_savings']:,.0f}"
-                        )
+                    print(f"[WINNER BADGES] Found {len(valid_scenarios)} valid scenarios out of {len(detailed_scenarios)}")
 
-                    # Best Health Score
-                    best_health = max(valid_scenarios, key=lambda x: x.get('simulation_results', {}).get('health_score', 0))
-                    with col_w2:
-                        st.metric(
-                            "💪 Best Financial Health",
-                            best_health['name'],
-                            f"{best_health['simulation_results']['health_score']}/100"
-                        )
+                    if valid_scenarios:
+                        # Best Final Savings
+                        best_savings = max(valid_scenarios, key=lambda x: x.get('simulation_results', {}).get('final_savings', 0))
+                        with col_w1:
+                            st.metric(
+                                "🏆 Highest Final Savings",
+                                best_savings['name'],
+                                f"${best_savings['simulation_results']['final_savings']:,.0f}"
+                            )
 
-                    # Most Years Solvent
-                    best_solvent = max(valid_scenarios, key=lambda x: x.get('simulation_results', {}).get('years_solvent', 0))
-                    with col_w3:
-                        st.metric(
-                            "⏳ Most Years Solvent",
-                            best_solvent['name'],
-                            f"{best_solvent['simulation_results']['years_solvent']} years"
-                        )
+                        # Best Health Score
+                        best_health = max(valid_scenarios, key=lambda x: x.get('simulation_results', {}).get('health_score', 0))
+                        with col_w2:
+                            st.metric(
+                                "💪 Best Financial Health",
+                                best_health['name'],
+                                f"{best_health['simulation_results']['health_score']}/100"
+                            )
+
+                        # Most Years Solvent
+                        best_solvent = max(valid_scenarios, key=lambda x: x.get('simulation_results', {}).get('years_solvent', 0))
+                        with col_w3:
+                            st.metric(
+                                "⏳ Most Years Solvent",
+                                best_solvent['name'],
+                                f"{best_solvent['simulation_results']['years_solvent']} years"
+                            )
+
+                except Exception as winner_error:
+                    st.warning(f"⚠️ Could not display winner badges: {str(winner_error)}")
+                    print(f"[WINNER BADGES ERROR] {type(winner_error).__name__}: {winner_error}")
 
                 # =============================================================================
                 # CHARTS & VISUALIZATIONS SECTION
@@ -1723,6 +1799,15 @@ def render_scenario_studio_page():
                 try:
                     import plotly.graph_objects as go
                     import plotly.express as px
+
+                    # DEFENSIVE: Re-calculate valid_scenarios if not defined (in case winner badges failed)
+                    if 'valid_scenarios' not in locals() or not valid_scenarios:
+                        valid_scenarios = []
+                        for s in detailed_scenarios:
+                            final_savings = s.get('simulation_results', {}).get('final_savings', 'N/A')
+                            if final_savings != 'N/A' and final_savings is not None and isinstance(final_savings, (int, float)):
+                                valid_scenarios.append(s)
+                        print(f"[CHARTS] Re-calculated valid_scenarios: {len(valid_scenarios)} scenarios")
 
                     # Prepare data for bar chart
                     chart_data = []
