@@ -215,7 +215,7 @@ def show_assets_page(existing, save_payload, go_to_page):
     # Navigation with manual save
     col1, col2 = st.columns([1, 1])
     with col1:
-        if st.button("← BACK to Custom Expenses", use_container_width=True):
+        if st.button("← BACK to Custom Income", use_container_width=True):
             go_to_page('custom_expenses')
     with col2:
         if st.button("NEXT →", type="primary", use_container_width=True):

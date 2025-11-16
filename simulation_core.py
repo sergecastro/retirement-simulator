@@ -153,6 +153,11 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         custom_expenses_total = safe_float(custom_expenses_total, 0.0)  # Added for custom expenses
         custom_income_total = safe_float(custom_income_total, 0.0)  # Added for custom income sources
 
+        # DEBUG: Check what values we received
+        print(f"[SIM DEBUG] custom_income_total (monthly) received: ${custom_income_total:,.2f}")
+        print(f"[SIM DEBUG] custom_expenses_total (monthly) received: ${custom_expenses_total:,.2f}")
+        print(f"[SIM DEBUG] custom_income_total * 12 = ${custom_income_total * 12:,.2f}/year")
+
         # Track retirement balances for RMD calculations
         user_retirement_balance = ira_balance + four01k_403b_balance
         partner_retirement_balance = partner_ira_balance + partner_four01k_403b_balance
@@ -284,6 +289,11 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
 
             # Custom income (grows with inflation like regular income)
             custom_income_annual = custom_income_total * 12 * (1 + inflation_rate / 100) ** year_idx
+
+            # DEBUG: Log first year only
+            if year_idx == 0:
+                print(f"[SIM DEBUG] Year {year}: custom_income_annual = ${custom_income_annual:,.2f}")
+                print(f"[SIM DEBUG] Formula: {custom_income_total} * 12 * (1 + {inflation_rate}/100)^{year_idx}")
 
             # Total income including RMDs AND custom income
             total_income = salary_wages + rental_income + investment_income + social_security + pension_income + other_income + total_rmd + custom_income_annual

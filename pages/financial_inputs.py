@@ -203,11 +203,39 @@ def collect_financial_data():
         )
     
     # ============================================
+    # CUSTOM INCOME SECTION (NEW!)
+    # ============================================
+    st.markdown("---")
+    st.subheader("💰 Custom Income Sources")
+
+    # Get custom income from session state (loaded from intake app)
+    custom_income_display = st.session_state.get('custom_income', [])
+
+    if custom_income_display:
+        st.info(f"ℹ️ {len(custom_income_display)} custom income source(s) imported from intake app")
+
+        # Display custom income in a nice format
+        for idx, income in enumerate(custom_income_display):
+            col1, col2, col3 = st.columns([3, 2, 2])
+            with col1:
+                st.write(f"**{income.get('Name', 'N/A')}**")
+            with col2:
+                st.write(f"${income.get('Monthly Amount', 0):,.2f}/month")
+            with col3:
+                st.write(f"*{income.get('Category', 'N/A')}*")
+
+        # Calculate total custom income
+        custom_income_display_total = sum(inc.get('Monthly Amount', 0) for inc in custom_income_display)
+        st.success(f"📊 **Total Custom Income: ${custom_income_display_total:,.2f}/month**")
+    else:
+        st.caption("No custom income sources defined. You can add them in the intake app.")
+
+    # ============================================
     # CUSTOM EXPENSES SECTION (NEW!)
     # ============================================
     st.markdown("---")
     st.subheader("📝 Custom Monthly Expenses")
-    
+
     # Get custom expenses from session state (loaded from intake JSON)
     custom_expenses = st.session_state.get('custom_expenses', [])
     
@@ -579,6 +607,13 @@ def collect_financial_data():
     # Get custom income from session state
     custom_income = st.session_state.get('custom_income', [])
     custom_income_total = sum(item.get('Monthly Amount', 0) for item in custom_income) if custom_income else 0.0
+
+    # DEBUG: Check custom income calculation
+    if custom_income:
+        print(f"[FINANCIAL_INPUTS DEBUG] custom_income list has {len(custom_income)} items")
+        for idx, item in enumerate(custom_income):
+            print(f"  Item {idx}: {item.get('Name', 'N/A')} = ${item.get('Monthly Amount', 0):,.2f}/month")
+        print(f"[FINANCIAL_INPUTS DEBUG] custom_income_total (MONTHLY) = ${custom_income_total:,.2f}")
 
     # Return all data (including custom expenses AND custom income)
     return {
