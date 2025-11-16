@@ -297,7 +297,7 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
     # SECTION 2B: COMPARISON SCENARIOS (Sub-Phase 2A)
     # ============================================
     print("[DEBUG SIDEBAR] Reached SECTION 2B: Comparison Scenarios")
-    st.sidebar.write("🔍 [DEBUG] Section 2B Loading...")
+    # DEBUG message removed - was showing in UI
     st.sidebar.subheader("🔀 Comparison Scenarios")
 
     # Only show if we have a current base plan loaded
@@ -305,7 +305,7 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
     if current_snapshot_id:
         print("[DEBUG SIDEBAR] Base plan exists, loading comparisons...")
         with st.sidebar.expander("🔀 View & Manage Comparisons", expanded=False):
-            st.write("🔍 [DEBUG] Expander opened")
+            # DEBUG message removed - was showing in UI
             try:
                 # CACHE comparisons in session state to prevent rerun loop
                 cache_key = f'comparisons_cache_{current_snapshot_id}'
@@ -328,7 +328,7 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
 
                 comparisons = st.session_state[cache_key]
                 print(f"[DEBUG SIDEBAR] Found {len(comparisons)} comparisons")
-                st.write(f"🔍 [DEBUG] Found {len(comparisons)} comparisons")
+                # DEBUG message removed - was showing in UI
 
                 if not comparisons:
                     st.caption("💡 No saved comparisons yet")

@@ -1151,6 +1151,11 @@ def show_intake_questionnaire():
         st.header("📋 Review & Complete Your Intake")
         st.caption("Review all your information before completing - click any section to edit")
 
+        # Navigation: Back to Family button at top
+        if st.button("← Back to Family Events", key="back_to_family_top"):
+            go_to_page('family')
+        st.divider()
+
         # Collect data from session_state (what user just typed in forms)
         review_data = collect_current_form_data()
 
