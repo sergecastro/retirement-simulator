@@ -1649,6 +1649,16 @@ def render_scenario_studio_page():
                     comparison_data.append(row)
 
                 # Create DataFrame and display
+                # DEFENSIVE FIX: Ensure all rows have same columns (handles edge cases)
+                if comparison_data:
+                    expected_columns = set(comparison_data[0].keys())
+                    for row in comparison_data:
+                        row_columns = set(row.keys())
+                        if row_columns != expected_columns:
+                            # Add missing columns with 'N/A'
+                            for col in expected_columns - row_columns:
+                                row[col] = 'N/A'
+
                 df = pd.DataFrame(comparison_data)
 
                 st.dataframe(
