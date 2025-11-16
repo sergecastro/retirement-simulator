@@ -123,7 +123,9 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             partner_ira_balance=financial_data.get('partner_ira_balance', 0),
             partner_four01k_403b_balance=financial_data.get('partner_four01k_403b_balance', 0),
             monthly_surplus=financial_data.get('monthly_surplus', 0),
-            combined_total_liabilities=financial_data['total_liabilities']
+            combined_total_liabilities=financial_data['total_liabilities'],
+            custom_expenses_total=financial_data.get('custom_expenses_total', 0.0),  # ✅ CRITICAL FIX: Pass custom expenses to simulation
+            custom_income_total=financial_data.get('custom_income_total', 0.0)  # ✅ CRITICAL FIX: Pass custom income to simulation
         )
 
     if not results:

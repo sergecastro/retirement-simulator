@@ -148,7 +148,9 @@ def load_template_data():
         "goals_list": scenario.get("goals_list", []),
         "goals_data": scenario.get("goals_data", []),
         "custom_expenses": [],
-        "custom_expenses_list": []
+        "custom_expenses_list": [],
+        "custom_income": [],
+        "custom_income_list": []
     }
 
     # CRITICAL FIX: Copy template data into session_state
@@ -242,7 +244,9 @@ def collect_current_form_data():
         "goals_list": st.session_state.get("goals_list", []),
         "goals_data": st.session_state.get("goals_data", []),
         "custom_expenses": st.session_state.get("custom_expenses", []),
-        "custom_expenses_list": st.session_state.get("custom_expenses_list", [])
+        "custom_expenses_list": st.session_state.get("custom_expenses_list", []),
+        "custom_income": st.session_state.get("custom_income", []),
+        "custom_income_list": st.session_state.get("custom_income_list", [])
     }
 
     print(f"[DEBUG] Collected current form data: {data.get('input_user_name', 'NO NAME')} age {data.get('input_age', 'NO AGE')}")
@@ -1027,91 +1031,91 @@ def show_intake_questionnaire():
                 st.session_state['input_total_expenses'] = total_expenses
                 go_to_page('custom_expenses')
 
-    # ===== PAGE 3.5: CUSTOM MONTHLY EXPENSES =====
+    # ===== PAGE 3.5: CUSTOM MONTHLY INCOME SOURCES =====
     elif current_page == 'custom_expenses':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
         st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
-        st.header("📝 Custom Monthly Expenses")
-        st.markdown("*Add any special recurring expenses not covered in standard categories (tutoring, special needs care, therapy, etc.)*")
+        st.header("💰 Custom Income Sources")
+        st.markdown("*Add income sources not covered above (business income, consulting fees, bonuses, side gigs, investment income, etc.)*")
 
-        # Initialize custom expenses list in session state
-        if 'custom_expenses_list' not in st.session_state:
+        # Initialize custom income list in session state
+        if 'custom_income_list' not in st.session_state:
             # Load from existing data if available
-            st.session_state['custom_expenses_list'] = []
+            st.session_state['custom_income_list'] = []
 
-        # Add custom expense button
-        if st.button("➕ Add Custom Expense", key="add_custom_expense_btn"):
-            st.session_state['custom_expenses_list'].append({
+        # Add custom income button
+        if st.button("➕ Add Income Source", key="add_custom_income_btn"):
+            st.session_state['custom_income_list'].append({
                 'Name': '',
                 'Monthly Amount': 0.0,
                 'Category': 'Other'
             })
             st.rerun()
 
-        if len(st.session_state['custom_expenses_list']) == 0:
-            st.info("Click 'Add Custom Expense' to add special recurring expenses, or click 'Next' to skip this section")
+        if len(st.session_state['custom_income_list']) == 0:
+            st.info("Click 'Add Income Source' to add additional income sources, or click 'Next' to skip this section")
         else:
-            st.write(f"**{len(st.session_state['custom_expenses_list'])} custom expense(s) configured**")
+            st.write(f"**{len(st.session_state['custom_income_list'])} custom income source(s) configured**")
 
-            expenses_to_remove = []
+            income_to_remove = []
 
-            for idx, expense_data in enumerate(st.session_state['custom_expenses_list']):
-                st.markdown(f"#### Custom Expense {idx + 1}")
+            for idx, income_data in enumerate(st.session_state['custom_income_list']):
+                st.markdown(f"#### Income Source {idx + 1}")
 
                 col1, col2, col3 = st.columns([3, 2, 1])
 
                 with col1:
                     name = st.text_input(
-                        "Expense Name:",
-                        value=expense_data.get('Name', ''),
-                        key=f"custom_exp_name_{idx}",
-                        placeholder="e.g., Tutoring, Therapy, Special care"
+                        "Income Source Name:",
+                        value=income_data.get('Name', ''),
+                        key=f"custom_income_name_{idx}",
+                        placeholder="e.g., Consulting, Side Gig, Bonuses"
                     )
-                    st.session_state['custom_expenses_list'][idx]['Name'] = name
+                    st.session_state['custom_income_list'][idx]['Name'] = name
 
                 with col2:
                     amount = st.number_input(
                         "Monthly Amount:",
-                        value=float(expense_data.get('Monthly Amount', 0.0)),
+                        value=float(income_data.get('Monthly Amount', 0.0)),
                         min_value=0.0,
                         step=50.0,
-                        key=f"custom_exp_amount_{idx}"
+                        key=f"custom_income_amount_{idx}"
                     )
-                    st.session_state['custom_expenses_list'][idx]['Monthly Amount'] = amount
+                    st.session_state['custom_income_list'][idx]['Monthly Amount'] = amount
 
                     # SAFE category index lookup (handles missing/invalid categories)
-                    category_options = ["Education", "Healthcare", "Special Needs", "Childcare", "Other"]
-                    saved_category = expense_data.get('Category', 'Other')
+                    category_options = ["Business", "Consulting", "Freelance", "Investment", "Other"]
+                    saved_category = income_data.get('Category', 'Other')
                     try:
                         category_index = category_options.index(saved_category)
                     except ValueError:
                         # If saved category not in list, default to "Other"
                         category_index = category_options.index("Other")
-                        print(f"[WARN] Invalid category '{saved_category}' for expense, defaulting to 'Other'")
+                        print(f"[WARN] Invalid category '{saved_category}' for income, defaulting to 'Other'")
 
                     category = st.selectbox(
                         "Category:",
                         category_options,
                         index=category_index,
-                        key=f"custom_exp_category_{idx}"
+                        key=f"custom_income_category_{idx}"
                     )
-                    st.session_state['custom_expenses_list'][idx]['Category'] = category
+                    st.session_state['custom_income_list'][idx]['Category'] = category
 
                 with col3:
                     st.write("")  # Spacer
                     st.write("")  # Spacer
-                    if st.button("🗑️", key=f"delete_custom_exp_{idx}", help="Delete this expense"):
-                        expenses_to_remove.append(idx)
+                    if st.button("🗑️", key=f"delete_custom_income_{idx}", help="Delete this income source"):
+                        income_to_remove.append(idx)
 
                 st.markdown("---")
 
-            # Remove deleted expenses
-            for idx in reversed(expenses_to_remove):
-                st.session_state['custom_expenses_list'].pop(idx)
+            # Remove deleted income sources
+            for idx in reversed(income_to_remove):
+                st.session_state['custom_income_list'].pop(idx)
 
             # Show total
-            total_custom = sum(exp.get('Monthly Amount', 0.0) for exp in st.session_state['custom_expenses_list'])
-            st.metric("Total Custom Monthly Expenses", f"${total_custom:,.2f}")
+            total_custom_income = sum(inc.get('Monthly Amount', 0.0) for inc in st.session_state['custom_income_list'])
+            st.metric("Total Custom Monthly Income", f"${total_custom_income:,.2f}")
 
         # Navigation with BACK button
         st.divider()
@@ -1123,8 +1127,8 @@ def show_intake_questionnaire():
 
         with col2:
             if st.button("NEXT →", type="primary", use_container_width=True):
-                # Custom expenses are already saved directly to session_state during input
-                st.session_state['custom_expenses'] = st.session_state.get('custom_expenses_list', [])
+                # Custom income is already saved directly to session_state during input
+                st.session_state['custom_income'] = st.session_state.get('custom_income_list', [])
                 go_to_page('assets')
 
     # ===== PAGES 4-6: ASSETS, LIABILITIES, FAMILY =====
@@ -1198,7 +1202,21 @@ def show_intake_questionnaire():
 
         st.divider()
 
-        # Custom Expenses - READ FROM COLLECTED DATA
+        # Custom Income Sources - READ FROM COLLECTED DATA
+        custom_income = review_data.get("custom_income", [])
+        if custom_income:
+            st.subheader("💰 Custom Income Sources")
+            total_custom_income = sum(inc.get('Monthly Amount', 0.0) for inc in custom_income)
+            st.metric("Total Custom Income", f"${total_custom_income:,.2f}/month")
+            with st.expander(f"View {len(custom_income)} custom income source(s)"):
+                for inc in custom_income:
+                    st.write(f"• **{inc.get('Name', 'N/A')}**: ${inc.get('Monthly Amount', 0):,.2f} ({inc.get('Category', 'N/A')})")
+            if st.button("✏️ Edit Custom Income", key="edit_custom_income", use_container_width=True):
+                st.session_state.intake_from_review = True
+                go_to_page('custom_expenses')  # Still uses 'custom_expenses' as page name for routing
+            st.divider()
+
+        # Custom Expenses (Family Support) - READ FROM COLLECTED DATA
         custom_expenses = review_data.get("custom_expenses", [])
         if custom_expenses:
             st.subheader("📝 Custom Monthly Expenses")
@@ -1207,9 +1225,9 @@ def show_intake_questionnaire():
             with st.expander(f"View {len(custom_expenses)} custom expense(s)"):
                 for exp in custom_expenses:
                     st.write(f"• **{exp.get('Name', 'N/A')}**: ${exp.get('Monthly Amount', 0):,.2f} ({exp.get('Category', 'N/A')})")
-            if st.button("✏️ Edit Custom Expenses", key="edit_custom", use_container_width=True):
+            if st.button("✏️ Edit Custom Expenses", key="edit_custom_expenses", use_container_width=True):
                 st.session_state.intake_from_review = True
-                go_to_page('custom_expenses')
+                go_to_page('family')  # Custom expenses are on family page now
             st.divider()
 
         # Assets & Liabilities Summary - READ FROM COLLECTED DATA

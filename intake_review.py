@@ -587,17 +587,23 @@ def show_family_page(existing, save_payload, go_to_page):
     st.caption("Add major financial milestones you're planning for")
 
     # Initialize temp_goals from saved data
-    # CRITICAL FIX: Check session_state FIRST (for returning users), then fall back to existing
+    # CRITICAL FIX: ALWAYS load from saved data if temp_goals is empty but saved data exists
+    # This handles the case where user returns to INTAKE and temp_goals was left empty
+    saved_goals = (
+        st.session_state.get("goals_list") or
+        st.session_state.get("goals_data") or
+        existing.get("goals_list", existing.get("goals_data", [])) or
+        []
+    )
+
     if 'temp_goals' not in st.session_state:
-        # Priority: session_state goals_list > session_state goals_data > existing > empty list
-        st.session_state.temp_goals = (
-            st.session_state.get("goals_list") or
-            st.session_state.get("goals_data") or
-            existing.get("goals_list", existing.get("goals_data", [])) or
-            []
-        )
+        st.session_state.temp_goals = saved_goals
         if st.session_state.temp_goals:
             print(f"[GOALS LOAD] Loaded {len(st.session_state.temp_goals)} goals from saved data")
+    elif len(st.session_state.temp_goals) == 0 and len(saved_goals) > 0:
+        # temp_goals exists but is empty, while saved data has goals - RELOAD!
+        st.session_state.temp_goals = saved_goals
+        print(f"[GOALS RELOAD] Reloaded {len(st.session_state.temp_goals)} goals from saved data (temp was empty)")
 
     # Add new goal button
     if st.button("➕ Add Goal", key="add_goal_btn", use_container_width=False):
@@ -672,17 +678,23 @@ def show_family_page(existing, save_payload, go_to_page):
     st.caption("Add special monthly expenses not covered in standard categories")
 
     # Initialize temp_custom_expenses from saved data
-    # CRITICAL FIX: Check session_state FIRST (for returning users), then fall back to existing
+    # CRITICAL FIX: ALWAYS load from saved data if temp_custom_expenses is empty but saved data exists
+    # This handles the case where user returns to INTAKE and temp_custom_expenses was left empty
+    saved_custom_expenses = (
+        st.session_state.get("custom_expenses") or
+        st.session_state.get("custom_expenses_list") or
+        existing.get("custom_expenses", []) or
+        []
+    )
+
     if 'temp_custom_expenses' not in st.session_state:
-        # Priority: session_state custom_expenses > session_state custom_expenses_list > existing > empty list
-        st.session_state.temp_custom_expenses = (
-            st.session_state.get("custom_expenses") or
-            st.session_state.get("custom_expenses_list") or
-            existing.get("custom_expenses", []) or
-            []
-        )
+        st.session_state.temp_custom_expenses = saved_custom_expenses
         if st.session_state.temp_custom_expenses:
             print(f"[CUSTOM EXPENSES LOAD] Loaded {len(st.session_state.temp_custom_expenses)} custom expenses from saved data")
+    elif len(st.session_state.temp_custom_expenses) == 0 and len(saved_custom_expenses) > 0:
+        # temp_custom_expenses exists but is empty, while saved data has expenses - RELOAD!
+        st.session_state.temp_custom_expenses = saved_custom_expenses
+        print(f"[CUSTOM EXPENSES RELOAD] Reloaded {len(st.session_state.temp_custom_expenses)} custom expenses from saved data (temp was empty)")
 
     # Add new custom expense button
     if st.button("➕ Add Custom Expense", key="add_custom_expense_btn", use_container_width=False):

@@ -576,7 +576,11 @@ def collect_financial_data():
         else:
             st.warning("Fill in goal names and amounts for simulation")
     
-    # Return all data (including custom expenses)
+    # Get custom income from session state
+    custom_income = st.session_state.get('custom_income', [])
+    custom_income_total = sum(item.get('Monthly Amount', 0) for item in custom_income) if custom_income else 0.0
+
+    # Return all data (including custom expenses AND custom income)
     return {
         'total_income': total_income,
         'total_expenses': total_expenses,
@@ -593,5 +597,7 @@ def collect_financial_data():
         'goal_costs': goal_costs,
         'partner_liabilities': 0,
         'custom_expenses': custom_expenses,
-        'custom_expenses_total': custom_expenses_total
+        'custom_expenses_total': custom_expenses_total,
+        'custom_income': custom_income,
+        'custom_income_total': custom_income_total
     }

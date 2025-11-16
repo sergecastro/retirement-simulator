@@ -105,7 +105,7 @@ def optimize_roth_conversions(year_idx, current_magi, ira_balance, roth_conversi
     
     return max(0, optimal)
 
-def run_simulation(age, partner_exists, partner_age, total_income, total_expenses, combined_financial_assets, primary_residence_value, secondary_residence_value, combined_other_assets_total, total_liabilities_local, partner_liabilities, tax_rate, inflation_rate, investment_return_rate, simulation_years, mc_iterations, goal_costs, college_inflation_pct, base_public_in, base_public_out, base_private, ira_balance, four01k_403b_balance, partner_ira_balance, partner_four01k_403b_balance, monthly_surplus, combined_total_liabilities, roth_conversion_annual=0, itemize_deductions=True, five29_plan_balance=0.0, tax_exempt_interest=0.0, custom_expenses_total=0.0):
+def run_simulation(age, partner_exists, partner_age, total_income, total_expenses, combined_financial_assets, primary_residence_value, secondary_residence_value, combined_other_assets_total, total_liabilities_local, partner_liabilities, tax_rate, inflation_rate, investment_return_rate, simulation_years, mc_iterations, goal_costs, college_inflation_pct, base_public_in, base_public_out, base_private, ira_balance, four01k_403b_balance, partner_ira_balance, partner_four01k_403b_balance, monthly_surplus, combined_total_liabilities, roth_conversion_annual=0, itemize_deductions=True, five29_plan_balance=0.0, tax_exempt_interest=0.0, custom_expenses_total=0.0, custom_income_total=0.0):
     
     # Initialize results dictionary at the start
     results = {
@@ -151,7 +151,8 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         
         tax_exempt_interest = safe_float(tax_exempt_interest, 0.0)  # Added for MAGI
         custom_expenses_total = safe_float(custom_expenses_total, 0.0)  # Added for custom expenses
-        
+        custom_income_total = safe_float(custom_income_total, 0.0)  # Added for custom income sources
+
         # Track retirement balances for RMD calculations
         user_retirement_balance = ira_balance + four01k_403b_balance
         partner_retirement_balance = partner_ira_balance + partner_four01k_403b_balance
@@ -207,7 +208,8 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         travel_list = []
         other_expenses_list = []
         custom_expenses_list = []
-        
+        custom_income_list = []
+
         # Special expenses
         college_expenses_list = []
         inheritance_inflow_list = []
@@ -279,10 +281,13 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
                 partner_retirement_balance -= partner_rmd
             
             total_rmd = user_rmd + partner_rmd
-            
-            # Total income including RMDs
-            total_income = salary_wages + rental_income + investment_income + social_security + pension_income + other_income + total_rmd
-            
+
+            # Custom income (grows with inflation like regular income)
+            custom_income_annual = custom_income_total * 12 * (1 + inflation_rate / 100) ** year_idx
+
+            # Total income including RMDs AND custom income
+            total_income = salary_wages + rental_income + investment_income + social_security + pension_income + other_income + total_rmd + custom_income_annual
+
             # Expense components (simplified - use total expenses for now)
             housing_expenses = annual_expenses * 0.3
             utilities = annual_expenses * 0.1
@@ -342,7 +347,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
                           combined_other_assets_total
             net_worth = total_assets - combined_total_liabilities
             
-            # Goal progress
+            # Goal progress - CHECK AND DEDUCT
             goal_progress = {}
             for goal, data in goal_costs.items():
                 if data['year'] == year:
@@ -354,7 +359,18 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
                         'actual': actual,
                         'achieved': achieved
                     }
-            
+                    # ✅ CRITICAL FIX: Actually DEDUCT goal amount from savings when achieved
+                    # This represents spending on the goal (vacation, new car, etc.)
+                    if achieved:
+                        savings -= data['amount']
+                        print(f"[GOAL PAID] {goal}: Deducted ${data['amount']:,.0f} from savings in {year}")
+
+            # Recalculate total_assets and net_worth AFTER goal deductions
+            total_assets = savings + primary_residence_value * (1 + 2.0 / 100) ** year_idx + \
+                          secondary_residence_value * (1 + 2.0 / 100) ** year_idx + \
+                          combined_other_assets_total
+            net_worth = total_assets - combined_total_liabilities
+
             # Store results
             total_income_list.append(total_income)
             salary_wages_list.append(salary_wages)
@@ -381,7 +397,8 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             travel_list.append(travel)
             other_expenses_list.append(other_expenses)
             custom_expenses_list.append(custom_expenses)
-            
+            custom_income_list.append(custom_income_annual)
+
             college_expenses_list.append(family_expense)
             inheritance_inflow_list.append(family_inflow)
             
@@ -412,10 +429,12 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             'Social_Security': social_security_list,
             'Pension_Income': pension_income_list,
             'Other_Income': other_income_list,
-            'Base_Income_Subtotal': [salary_wages_list[i] + rental_income_list[i] + investment_income_list[i] + 
-                                    social_security_list[i] + pension_income_list[i] + other_income_list[i] 
+            'Custom_Income': custom_income_list,
+            'Base_Income_Subtotal': [salary_wages_list[i] + rental_income_list[i] + investment_income_list[i] +
+                                    social_security_list[i] + pension_income_list[i] + other_income_list[i] +
+                                    custom_income_list[i]
                                     for i in range(simulation_years)],
-            
+
             'User_RMD': user_rmd_list,
             'Partner_RMD': partner_rmd_list,
             'Total_RMD': total_rmd_list,
