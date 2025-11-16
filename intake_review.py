@@ -347,8 +347,15 @@ def show_family_page(existing, save_payload, go_to_page):
     st.caption("Add each child and their college planning details")
 
     # Initialize temp_children from saved data
+    # CRITICAL FIX: Check session_state FIRST (for returning users), then fall back to existing
     if 'temp_children' not in st.session_state:
-        legacy_children = existing.get("children_list", existing.get("children_rows", [])) or []
+        # Priority: session_state children_list > session_state children_rows > existing > empty list
+        legacy_children = (
+            st.session_state.get("children_list") or
+            st.session_state.get("children_rows") or
+            existing.get("children_list", existing.get("children_rows", [])) or
+            []
+        )
         st.session_state.temp_children = []
         for r in legacy_children:
             st.session_state.temp_children.append({
@@ -360,6 +367,8 @@ def show_family_page(existing, save_payload, go_to_page):
                 "Start Age": _to_int_or_none(r.get("Start Age") or r.get("start_age") or 18),
                 "Years": _to_int_or_none(r.get("Years") or r.get("years") or 4),
             })
+        if st.session_state.temp_children:
+            print(f"[CHILDREN LOAD] Loaded {len(st.session_state.temp_children)} children from saved data")
 
     # Add new child button
     if st.button("➕ Add Child", key="add_child_btn", use_container_width=False):
@@ -486,8 +495,15 @@ def show_family_page(existing, save_payload, go_to_page):
     st.caption("Add any expected inheritances with year and amount")
 
     # Initialize temp_inherit from saved data
+    # CRITICAL FIX: Check session_state FIRST (for returning users), then fall back to existing
     if 'temp_inherit' not in st.session_state:
-        legacy_inherit = existing.get("inheritance_list", existing.get("inherit_rows", [])) or []
+        # Priority: session_state inheritance_list > session_state inherit_rows > existing > empty list
+        legacy_inherit = (
+            st.session_state.get("inheritance_list") or
+            st.session_state.get("inherit_rows") or
+            existing.get("inheritance_list", existing.get("inherit_rows", [])) or
+            []
+        )
         st.session_state.temp_inherit = []
         for r in legacy_inherit:
             st.session_state.temp_inherit.append({
@@ -495,6 +511,8 @@ def show_family_page(existing, save_payload, go_to_page):
                 "Amount": _to_float(r.get("Amount") or r.get("amount") or 0.0),
                 "Taxable?": bool(r.get("Taxable?") if "Taxable?" in r else r.get("taxable", False)),
             })
+        if st.session_state.temp_inherit:
+            print(f"[INHERITANCES LOAD] Loaded {len(st.session_state.temp_inherit)} inheritances from saved data")
 
     # Add new inheritance button
     if st.button("➕ Add Inheritance", key="add_inherit_btn", use_container_width=False):
@@ -569,8 +587,17 @@ def show_family_page(existing, save_payload, go_to_page):
     st.caption("Add major financial milestones you're planning for")
 
     # Initialize temp_goals from saved data
+    # CRITICAL FIX: Check session_state FIRST (for returning users), then fall back to existing
     if 'temp_goals' not in st.session_state:
-        st.session_state.temp_goals = existing.get("goals_list", existing.get("goals_data", [])) or []
+        # Priority: session_state goals_list > session_state goals_data > existing > empty list
+        st.session_state.temp_goals = (
+            st.session_state.get("goals_list") or
+            st.session_state.get("goals_data") or
+            existing.get("goals_list", existing.get("goals_data", [])) or
+            []
+        )
+        if st.session_state.temp_goals:
+            print(f"[GOALS LOAD] Loaded {len(st.session_state.temp_goals)} goals from saved data")
 
     # Add new goal button
     if st.button("➕ Add Goal", key="add_goal_btn", use_container_width=False):
@@ -645,8 +672,17 @@ def show_family_page(existing, save_payload, go_to_page):
     st.caption("Add special monthly expenses not covered in standard categories")
 
     # Initialize temp_custom_expenses from saved data
+    # CRITICAL FIX: Check session_state FIRST (for returning users), then fall back to existing
     if 'temp_custom_expenses' not in st.session_state:
-        st.session_state.temp_custom_expenses = existing.get("custom_expenses", [])
+        # Priority: session_state custom_expenses > session_state custom_expenses_list > existing > empty list
+        st.session_state.temp_custom_expenses = (
+            st.session_state.get("custom_expenses") or
+            st.session_state.get("custom_expenses_list") or
+            existing.get("custom_expenses", []) or
+            []
+        )
+        if st.session_state.temp_custom_expenses:
+            print(f"[CUSTOM EXPENSES LOAD] Loaded {len(st.session_state.temp_custom_expenses)} custom expenses from saved data")
 
     # Add new custom expense button
     if st.button("➕ Add Custom Expense", key="add_custom_expense_btn", use_container_width=False):
