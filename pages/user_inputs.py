@@ -16,30 +16,28 @@ def setup_sidebar(is_trusted_user):
 def collect_user_inputs():
     """Collect user inputs with session state integration for scenario loading"""
     st.header("👤 User Profile")
-    
+
     # CRITICAL FIX: Age group options must match your JSON scenarios
     age_group_options = ["25-55", "56-69", "70+"]  # Fixed to match scenarios
-    current_age_group = st.session_state.get('input_age_group', '25-55')
-    
-    # Handle old format in scenarios
-    age_group_mapping = {
-        "Under 25": "25-55",
-        "25-55": "25-55", 
-        "55-70": "56-69",
-        "56-69": "56-69",
-        "70+": "70+"
-    }
-    current_age_group = age_group_mapping.get(current_age_group, '25-55')
-    
-    try:
-        age_group_index = age_group_options.index(current_age_group)
-    except ValueError:
-        age_group_index = 0
-    
+
+    # Handle old format in scenarios - initialize session state if not set
+    if 'input_age_group' not in st.session_state:
+        st.session_state['input_age_group'] = '25-55'
+    else:
+        # Normalize old format values
+        age_group_mapping = {
+            "Under 25": "25-55",
+            "25-55": "25-55",
+            "55-70": "56-69",
+            "56-69": "56-69",
+            "70+": "70+"
+        }
+        current_val = st.session_state.get('input_age_group', '25-55')
+        st.session_state['input_age_group'] = age_group_mapping.get(current_val, '25-55')
+
     age_group = st.selectbox(
         "Age Group:",
         age_group_options,
-        index=age_group_index,
         key="input_age_group",
         disabled=True,
         help="📝 Edit in INTAKE mode"

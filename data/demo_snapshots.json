@@ -7,7 +7,7 @@
       "is_demo": true,
       "metadata": {
         "user_name": "John Smith",
-        "user_age": 45,
+        "user_age": 50,
         "partner_exists": true,
         "partner_name": "Jane Smith",
         "partner_age": 43,
@@ -15,7 +15,7 @@
         "monthly_surplus": 1500.0
       },
       "user_data": {
-        "age": 45,
+        "age": 50,
         "partner_exists": true,
         "partner_age": 43
       },
@@ -42,7 +42,7 @@
       },
       "snapshot_data": {
         "input_user_name": "John Smith",
-        "input_age": 45,
+        "input_age": 50,
         "input_retirement_age": 67,
         "input_life_expectancy": 85,
         "input_partner_exists": true,

@@ -1553,8 +1553,7 @@ def render_scenario_studio_page():
                 💡 For accurate comparisons, recreate scenarios using "Reset to Base Plan" in SS Optimizer.
                 """)
 
-            st.markdown("### 🔍 DEBUG: Input Parameter Comparison")
-            st.warning("⚠️ **DEBUGGING MODE** - Compare these values to find calculation errors!")
+            st.markdown("### 🔍 Input Parameter Comparison")
 
             debug_cols = st.columns(len(detailed_scenarios))
             for idx, scen in enumerate(detailed_scenarios):
@@ -1865,17 +1864,6 @@ def render_scenario_studio_page():
 
                 except Exception as table_error:
                     st.error(f"❌ Error building comparison table: {str(table_error)}")
-                    print(f"[COMPARISON ERROR] {type(table_error).__name__}: {table_error}")
-                    import traceback
-                    traceback.print_exc()
-
-                    # Show partial debug info
-                    st.warning("📊 Debug info for troubleshooting:")
-                    st.write(f"- Number of scenarios: {len(detailed_scenarios)}")
-                    for idx, scen in enumerate(detailed_scenarios):
-                        st.write(f"- Scenario {idx+1}: {scen.get('name', 'UNNAMED')}")
-                        st.write(f"  - Has adjustments: {'adjustments' in scen}")
-                        st.write(f"  - Has simulation_results: {'simulation_results' in scen}")
 
                 # WINNER BADGES SECTION
                 st.markdown("---")

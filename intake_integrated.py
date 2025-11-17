@@ -1473,3 +1473,4 @@ def show_intake_questionnaire():
     # Footer
     st.divider()
     st.caption("📁 **Data location:** Your browser's localStorage (encrypted, private)")
+    st.caption("🔐 **Coming Soon:** Plaid for secure bank data import • Stripe for premium features")

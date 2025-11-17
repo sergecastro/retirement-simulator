@@ -743,11 +743,8 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
     # Only show if a comparison was run and data exists in session state
     if 'last_comparison_adjustments' in st.session_state and 'last_comparison_results' in st.session_state:
         st.markdown("---")
-        print("[DEBUG RESULTS] ===== Reached Save Comparison Section (OUTSIDE comparison form) =====")
 
         with st.expander("💾 Save This Comparison Scenario", expanded=False):
-            print("[DEBUG SAVE] Expander opened")
-            st.write("🔍 [DEBUG] Save Comparison expander opened")
 
             # CHECK FOR SUCCESS MESSAGE FROM PREVIOUS SAVE (after reload)
             if "comparison_save_success" in st.session_state:
@@ -758,7 +755,6 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                 st.info(f"📊 Comparison ID: `{success_data['id']}`\n\nYou can now load this comparison from the sidebar.")
                 # Clear the flag so it doesn't show again
                 del st.session_state.comparison_save_success
-                print("[DEBUG SAVE] ✓ Success message displayed and cleared from session state")
 
             st.markdown("""
             Save this comparison to review later or compare with other scenarios.
@@ -771,8 +767,6 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
 
             # WRAP IN FORM to prevent auto-reload
             with st.form(key="save_comparison_form", clear_on_submit=False):
-                print("[DEBUG SAVE] Form initialized")
-
                 col1, col2 = st.columns([2, 1])
 
                 with col1:
@@ -781,7 +775,6 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                         placeholder="e.g., Retire at 67, Save 10% More, Lower Expenses",
                         help="Give this comparison a memorable name"
                     )
-                    print(f"[DEBUG SAVE] Name input widget created")
 
                     comparison_description = st.text_area(
                         "Description (Optional)",
@@ -789,7 +782,6 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                         help="Add notes about this comparison",
                         height=100
                     )
-                    print(f"[DEBUG SAVE] Description textarea widget created")
 
                 with col2:
                     st.markdown("**Current Adjustments:**")
@@ -798,9 +790,7 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                         st.caption(f"Expenses: ${adjustments_data['adj_expenses']:,.0f}")
                         st.caption(f"Return Rate: {adjustments_data['adj_return'] * 100:.1f}%")
                         st.caption(f"Inflation: {adjustments_data['adj_inflation'] * 100:.1f}%")
-                        print(f"[DEBUG SAVE] Adjustments displayed from session state")
                     except Exception as e:
-                        print(f"[DEBUG SAVE ERROR] Could not display adjustments: {e}")
                         st.error(f"Error displaying adjustments: {e}")
 
                 # FORM SUBMIT BUTTON (prevents auto-reload)
@@ -809,49 +799,27 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                     type="primary",
                     use_container_width=True
                 )
-                print(f"[DEBUG SAVE] Submit button rendered, save_submitted={save_submitted}")
 
             # ONLY PROCESS when button is ACTUALLY CLICKED
             if save_submitted:
-                print("="*60)
-                print("[DEBUG SAVE] ===== SAVE BUTTON CLICKED =====")
-                print(f"[DEBUG SAVE] Comparison name: '{comparison_name}'")
-                print(f"[DEBUG SAVE] Description: '{comparison_description}'")
-                print("="*60)
-                st.write(f"🔍 [DEBUG] Button clicked! Name: '{comparison_name}'")
 
                 if not comparison_name:
-                    print("[DEBUG SAVE] ERROR: No name provided")
                     st.error("⚠️ Please enter a name for this comparison")
                 else:
-                    print("[DEBUG SAVE] ✓ Name provided, proceeding to save...")
-                    st.write("🔍 [DEBUG] Name validated, proceeding...")
-
                     # Get current base plan ID
                     try:
                         from utils.snapshot_manager import get_snapshots_index
-                        print("[DEBUG SAVE] ✓ Imported get_snapshots_index")
 
                         index = get_snapshots_index()
-                        print(f"[DEBUG SAVE] ✓ Got snapshots index: {list(index.keys())}")
 
                         current_plan_id = index.get('current_snapshot_id')
-                        print(f"[DEBUG SAVE] Current base plan ID: '{current_plan_id}'")
-                        st.write(f"🔍 [DEBUG] Base plan ID: '{current_plan_id}'")
                     except Exception as e:
-                        print(f"[DEBUG SAVE ERROR] Failed to get plan ID: {e}")
-                        import traceback
-                        traceback.print_exc()
                         st.error(f"Error getting plan ID: {e}")
                         current_plan_id = None
 
                     if not current_plan_id:
-                        print("[DEBUG SAVE] ERROR: No base plan ID found")
                         st.error("⚠️ No base plan found. Please save a base plan first in INTAKE mode.")
                     else:
-                        print("[DEBUG SAVE] ✓ Base plan found, building adjustments...")
-                        st.write("🔍 [DEBUG] Building adjustments dict...")
-
                         # Build adjustments dict from session state
                         try:
                             adjustments = {
@@ -860,9 +828,7 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                                 "adjusted_return_rate": float(adjustments_data['adj_return']),
                                 "adjusted_inflation_rate": float(adjustments_data['adj_inflation'])
                             }
-                            print(f"[DEBUG SAVE] ✓ Adjustments dict: {adjustments}")
                         except Exception as e:
-                            print(f"[DEBUG SAVE ERROR] Failed to build adjustments: {e}")
                             st.error(f"Error building adjustments: {e}")
                             adjustments = None
 
@@ -876,18 +842,12 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                                     "years_solvent": comp_results.get('years_solvent', 0),
                                     "health_score": comp_results.get('health_score', 0)
                                 }
-                                print(f"[DEBUG SAVE] ✓ Simulation results: {simulation_results}")
                             except Exception as result_err:
-                                print(f"[DEBUG SAVE] ⚠ Could not capture simulation results: {result_err}")
                                 simulation_results = {}
 
                             # Save comparison scenario
-                            print("[DEBUG SAVE] ===== Calling save_comparison_scenario() =====")
-                            st.write("🔍 [DEBUG] Calling save function...")
-
                             try:
                                 from utils.comparison_scenarios import save_comparison_scenario
-                                print("[DEBUG SAVE] ✓ Imported save_comparison_scenario")
 
                                 comparison_id = save_comparison_scenario(
                                     base_plan_id=current_plan_id,

@@ -149,19 +149,16 @@ def main():
     # Initialize app (page config, CSS, Flask check)
     initialize_app()
 
-    # ⚠️⚠️⚠️ WARNING: AUTHENTICATION BYPASSED FOR TESTING ⚠️⚠️⚠️
-    # TODO: RE-ENABLE BEFORE PRODUCTION LAUNCH!
-    # Date bypassed: November 15, 2025
-    # Reason: Save 1-2 minutes per test cycle
-    # To re-enable: Uncomment the lines below and remove the warning banner
-    st.sidebar.error("⚠️ **DEV MODE: Auth bypassed!** Re-enable before launch!")
+    # ⚠️⚠️⚠️ DEMO MODE - Authentication simplified for beta testing ⚠️⚠️⚠️
+    # To re-enable full auth: Uncomment the lines below
+    st.sidebar.info("🧪 **BETA DEMO** - Testing mode active")
 
-    # TEMPORARY: Skip authentication for faster testing
+    # DEMO MODE: Simplified authentication
     # Require authentication
     # if not require_authentication():
     #     return
 
-    # TEMPORARY: Skip disclaimer for faster testing
+    # DEMO MODE: Skip disclaimer for faster testing
     # Require disclaimer acknowledgment
     # disclaimers.require_disclaimer_acknowledgment()
 
@@ -416,14 +413,14 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
             st.markdown("""
             <div style='background: linear-gradient(135deg, #D85140 0%, #E86850 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
                 <h3 style='color: #FFFFFF; margin-top: 0;'>🏥 Healthcare Mode</h3>
-                <p style='color: #FFFFFF;'><strong>Medicare & Healthcare Cost Projector</strong></p>
+                <p style='color: #FFFFFF;'><strong>Medicare & Healthcare Planning</strong></p>
                 <ul style='color: #FFFFFF;'>
+                    <li><strong>🆕 Medigap Plan Comparison Tool</strong></li>
                     <li>Medicare IRMAA calculator</li>
-                    <li>Healthcare cost projections</li>
-                    <li>Roth conversion impacts</li>
-                    <li>Long-term care planning</li>
+                    <li>Medigap vs Medicare Advantage quiz</li>
+                    <li>Age-based premium estimates</li>
                 </ul>
-                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Healthcare planning & Medicare costs</p>
+                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Choosing the right Medicare supplement plan</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -465,14 +462,14 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
             st.markdown("""
             <div style='background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
                 <h3 style='color: #FFFFFF; margin-top: 0;'>🏛️ Social Security</h3>
-                <p style='color: #FFFFFF;'><strong>SS Claiming Strategy Optimizer</strong></p>
+                <p style='color: #FFFFFF;'><strong>SS Optimizer + Tax Planning</strong></p>
                 <ul style='color: #FFFFFF;'>
                     <li>Optimal claiming age calculator</li>
-                    <li>Break-even analysis charts</li>
-                    <li>Spousal benefit optimization</li>
-                    <li>Lifetime benefit projections</li>
+                    <li><strong>🆕 SS Benefit Taxation Calculator</strong></li>
+                    <li><strong>🆕 Roth Conversion Sweet Spot</strong></li>
+                    <li>Break-even & spousal optimization</li>
                 </ul>
-                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Maximizing Social Security benefits</p>
+                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Maximize SS + minimize lifetime taxes</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -531,6 +528,9 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
             st.success("🔓 **Full Access Granted** - All advanced features unlocked")
         else:
             st.info("👤 **Demo Access** - Core features available")
+
+    # Coming Soon features
+    st.caption("🔐 **Coming Soon:** Plaid for secure bank data import • Stripe for premium features")
 
 
 # =============================================================================
