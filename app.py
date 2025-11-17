@@ -210,6 +210,13 @@ def main():
         from ui.scenario_studio_page import render_scenario_studio_page
         render_scenario_studio_page()
 
+    elif st.session_state.current_mode == "social_security":
+        # Load INTAKE data first
+        load_intake_data_to_session()
+        show_sidebar_footer(is_trusted)
+        from pages.social_security_optimizer import show_social_security_optimizer
+        show_social_security_optimizer()
+
     elif st.session_state.current_mode == "Analysis":
         # ✅ FIXED: Load INTAKE data into session state if available
         load_intake_data_to_session()
@@ -226,7 +233,7 @@ def main():
             st.markdown("---")
             st.markdown("### 🎯 Quick Mode Switch")
 
-            mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Healthcare"]
+            mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Social Security", "Healthcare"]
             current_idx = 1  # Analysis is current
 
             # Mode selector radio buttons
@@ -235,7 +242,7 @@ def main():
                 options=mode_options,
                 index=current_idx,
                 key="mode_selector_analysis",
-                help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Healthcare: Cost planning"
+                help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
             )
 
             # Handle mode change
@@ -246,6 +253,8 @@ def main():
 
                 if mode == "Scenario Studio":
                     st.session_state.current_mode = "scenario_studio"
+                elif mode == "Social Security":
+                    st.session_state.current_mode = "social_security"
                 else:
                     st.session_state.current_mode = mode
                 st.session_state.mode_selected = True
@@ -336,9 +345,10 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     # Mode selection header
     st.markdown("### 🎯 Choose Your Starting Point")
 
-    # Four big buttons for mode selection (or fewer if modules unavailable)
+    # Five big buttons for mode selection (or fewer if modules unavailable)
     if HEALTHCARE_AVAILABLE:
-        col1, col2, col3, col4 = st.columns(4)
+        # First row: 3 main cards
+        col1, col2, col3 = st.columns(3)
     else:
         col1, col2 = st.columns(2)
         st.warning("⚠️ Healthcare module temporarily unavailable")
@@ -410,6 +420,9 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
                 st.session_state.current_mode = "Healthcare"
                 st.rerun()
 
+        # Second row: Scenario Studio and Social Security
+        col4, col5, col_empty = st.columns(3)
+
         # Card 4: Scenario Studio
         with col4:
             st.markdown("""
@@ -431,6 +444,29 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
             if st.button("🚀 Enter Scenario Studio", type="primary", use_container_width=True, key="btn_scenario_studio"):
                 st.session_state.mode_selected = True
                 st.session_state.current_mode = "scenario_studio"
+                st.rerun()
+
+        # Card 5: Social Security Optimizer
+        with col5:
+            st.markdown("""
+            <div style='background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
+                <h3 style='color: #FFFFFF; margin-top: 0;'>🏛️ Social Security</h3>
+                <p style='color: #FFFFFF;'><strong>SS Claiming Strategy Optimizer</strong></p>
+                <ul style='color: #FFFFFF;'>
+                    <li>Optimal claiming age calculator</li>
+                    <li>Break-even analysis charts</li>
+                    <li>Spousal benefit optimization</li>
+                    <li>Lifetime benefit projections</li>
+                </ul>
+                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Maximizing Social Security benefits</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("")  # Spacing
+
+            if st.button("🚀 Optimize Social Security", type="primary", use_container_width=True, key="btn_social_security"):
+                st.session_state.mode_selected = True
+                st.session_state.current_mode = "social_security"
                 st.rerun()
 
     st.markdown("---")
@@ -463,6 +499,12 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
         - 📊 You want to compare different retirement strategies side-by-side
         - 🔍 You need to see the differences between scenarios at a glance
         - 🤔 You're deciding between multiple retirement paths
+
+        **Choose Social Security Optimizer if:**
+        - 🏛️ You want to determine the optimal age to claim SS benefits
+        - 💰 You need to see break-even analysis for different claiming ages
+        - 👥 You want to optimize spousal benefits
+        - 📊 You want to maximize lifetime Social Security income
 
         **💡 Pro Tip:** You can always switch between modes later using the sidebar button!
         """)
@@ -504,7 +546,7 @@ def show_intake_mode():
         st.markdown("---")
         st.markdown("### 🎯 Quick Mode Switch")
 
-        mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Healthcare"]
+        mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Social Security", "Healthcare"]
         current_idx = 0  # INTAKE is current
 
         mode = st.radio(
@@ -512,7 +554,7 @@ def show_intake_mode():
             options=mode_options,
             index=current_idx,
             key="mode_selector_intake",
-            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Healthcare: Cost planning"
+            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
         )
 
         # Handle mode change
@@ -523,6 +565,8 @@ def show_intake_mode():
 
             if mode == "Scenario Studio":
                 st.session_state.current_mode = "scenario_studio"
+            elif mode == "Social Security":
+                st.session_state.current_mode = "social_security"
             else:
                 st.session_state.current_mode = mode
             st.session_state.mode_selected = True
@@ -562,14 +606,19 @@ def show_healthcare_mode():
 
         mode = st.radio(
             "Choose mode:",
-            options=["INTAKE", "Analysis", "Healthcare"],
-            index=2,  # Healthcare is index 2
+            options=["INTAKE", "Analysis", "Scenario Studio", "Social Security", "Healthcare"],
+            index=4,  # Healthcare is index 4
             key="mode_selector_healthcare",
-            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Healthcare: Cost planning"
+            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
         )
 
         if mode != st.session_state.current_mode:
-            st.session_state.current_mode = mode
+            if mode == "Scenario Studio":
+                st.session_state.current_mode = "scenario_studio"
+            elif mode == "Social Security":
+                st.session_state.current_mode = "social_security"
+            else:
+                st.session_state.current_mode = mode
             st.session_state.mode_selected = True
             st.rerun()
 

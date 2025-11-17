@@ -1,0 +1,29 @@
+{
+  "full_retirement_age": {
+    "1943-1954": 66.0,
+    "1955": 66.17,
+    "1956": 66.33,
+    "1957": 66.5,
+    "1958": 66.67,
+    "1959": 66.83,
+    "1960+": 67.0
+  },
+  "early_reduction_factors": {
+    "first_36_months": 0.00556,
+    "beyond_36_months": 0.00417
+  },
+  "delayed_credits": {
+    "per_year": 0.08,
+    "per_month": 0.00667
+  },
+  "spousal_benefit": {
+    "max_percent": 0.50,
+    "minimum_marriage_years": 10
+  },
+  "survivor_benefit": {
+    "max_percent": 1.00,
+    "minimum_marriage_years": 9
+  },
+  "cola_average": 0.025,
+  "minimum_credits": 40
+}

@@ -263,7 +263,7 @@ def render_scenario_studio_page():
         st.markdown("---")
         st.markdown("### 🎯 Quick Mode Switch")
 
-        mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Healthcare"]
+        mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Social Security", "Healthcare"]
         current_idx = 2  # Scenario Studio is current
 
         mode = st.radio(
@@ -271,7 +271,7 @@ def render_scenario_studio_page():
             options=mode_options,
             index=current_idx,
             key="mode_selector_scenario_studio",
-            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Healthcare: Cost planning"
+            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
         )
 
         # Handle mode change
@@ -280,7 +280,10 @@ def render_scenario_studio_page():
             if 'current_snapshot_id' in st.session_state:
                 st.session_state['preserved_snapshot_id'] = st.session_state['current_snapshot_id']
 
-            st.session_state.current_mode = mode
+            if mode == "Social Security":
+                st.session_state.current_mode = "social_security"
+            else:
+                st.session_state.current_mode = mode
             st.session_state.mode_selected = True
             st.rerun()
 
@@ -1482,10 +1485,22 @@ def render_scenario_studio_page():
                                 'transportation_expenses': base_transportation,
                                 'other_expenses': base_other_expenses,
                                 'age': base_age,
+                                'life_expectancy': base_life_expectancy,
+                                'retirement_age': int(get_value('retirement_age', 65)),
+                                'simulation_years': simulation_years,
                                 'return_rate': base_return_rate,
                                 'inflation_rate': base_inflation_rate,
                                 'stocks_allocation': int(get_value('stocks_allocation', 60)),
                                 'bonds_allocation': int(get_value('bonds_allocation', 40)),
+                                # Add account balances for debug comparison
+                                'ira_balance': base_ira,
+                                'four01k_403b_balance': base_401k,
+                                'roth_balance': base_roth,
+                                'hsa_balance': base_hsa,
+                                'taxable_investment_accounts': base_taxable,
+                                'high_yield_savings_account': base_savings_acct,
+                                'partner_ira_balance': base_partner_ira,
+                                'partner_four01k_403b_balance': base_partner_401k,
                             },
                             'simulation_results': serializable_results
                         }
@@ -1511,6 +1526,135 @@ def render_scenario_studio_page():
                     print(f"    - Adjustment keys: {list(scen['adjustments'].keys())}")
                 if 'simulation_results' in scen:
                     print(f"    - Result keys: {list(scen['simulation_results'].keys())[:5]}...")
+
+            # ============================================================
+            # CRITICAL DEBUG: FULL INPUT PARAMETER COMPARISON
+            # This helps identify why scenarios have vastly different results
+            # ============================================================
+            # =================================================================
+            # CHECK FOR DIVERGENT SCENARIOS (Orangutan Detection)
+            # =================================================================
+            divergent_scenarios = []
+            for scen in detailed_scenarios:
+                adjustments = scen.get('adjustments', {})
+                if adjustments.get('parameter_divergence', []):
+                    divergent_scenarios.append(scen.get('name', 'Unknown'))
+
+            if divergent_scenarios:
+                st.error("### 🦧 DIVERGENT SCENARIO WARNING")
+                st.warning(f"""
+                **{len(divergent_scenarios)} scenario(s) use modified parameters:**
+
+                {', '.join(divergent_scenarios)}
+
+                ⚠️ **These scenarios were created with different assumptions** than your Base Plan.
+                Comparison results may be misleading due to changed parameters, not just strategy differences.
+
+                💡 For accurate comparisons, recreate scenarios using "Reset to Base Plan" in SS Optimizer.
+                """)
+
+            st.markdown("### 🔍 DEBUG: Input Parameter Comparison")
+            st.warning("⚠️ **DEBUGGING MODE** - Compare these values to find calculation errors!")
+
+            debug_cols = st.columns(len(detailed_scenarios))
+            for idx, scen in enumerate(detailed_scenarios):
+                with debug_cols[idx]:
+                    scen_name = scen.get('name', 'UNNAMED')
+                    adjustments = scen.get('adjustments', {})
+                    sim_results = scen.get('simulation_results', {})
+
+                    # Check if this scenario has divergent parameters
+                    if adjustments.get('parameter_divergence', []):
+                        st.markdown(f"**🦧 {scen_name}**")
+                        st.caption("⚠️ Modified parameters!")
+                    else:
+                        st.markdown(f"**{scen_name}**")
+
+                    # Key simulation parameters
+                    st.markdown("**📊 Simulation Setup:**")
+                    age = adjustments.get('age', adjustments.get('current_age', 'N/A'))
+                    st.text(f"Current Age: {age}")
+                    st.text(f"Retirement Age: {adjustments.get('retirement_age', 'N/A')}")
+                    st.text(f"Life Expectancy: {adjustments.get('life_expectancy', 'N/A')}")
+                    sim_years = adjustments.get('simulation_years', 'N/A')
+                    if sim_years == 'N/A' and age != 'N/A' and adjustments.get('life_expectancy', 'N/A') != 'N/A':
+                        sim_years = adjustments.get('life_expectancy', 85) - age
+                    st.text(f"Simulation Years: {sim_years}")
+
+                    # Income sources - check BOTH naming conventions
+                    st.markdown("**💵 Income Sources:**")
+                    # Try aggregated first (SS optimizer), then itemized (Scenario Studio)
+                    annual_income = adjustments.get('annual_income', 0)
+                    if annual_income == 0:
+                        # Calculate from itemized fields (Scenario Studio format)
+                        salary = adjustments.get('salary_wages', 0)
+                        ss = adjustments.get('social_security_income', 0)
+                        pension = adjustments.get('pension_income', 0)
+                        inv = adjustments.get('investment_income', 0)
+                        other = adjustments.get('other_income', 0)
+                        annual_income = salary + ss + pension + inv + other
+                        st.text(f"Salary: ${salary:,.0f}")
+                        st.text(f"Social Security: ${ss:,.0f}")
+                        st.text(f"Other Income: ${pension + inv + other:,.0f}")
+                    st.text(f"**TOTAL INCOME: ${annual_income:,.0f}**")
+
+                    ss_income = adjustments.get('ss_income_annual', adjustments.get('social_security_income', 0))
+                    if ss_income:
+                        st.text(f"(SS component: ${ss_income:,.0f})")
+
+                    # Starting balances - check BOTH naming conventions
+                    st.markdown("**🏦 Starting Savings:**")
+                    ira = adjustments.get('ira_balance', 0)
+                    four01k = adjustments.get('401k_balance', adjustments.get('four01k_403b_balance', 0))
+                    roth = adjustments.get('roth_balance', 0)
+                    hsa = adjustments.get('hsa_balance', 0)
+                    taxable = adjustments.get('taxable_balance', adjustments.get('taxable_investment_accounts', 0))
+                    savings = adjustments.get('high_yield_savings_account', 0)
+                    partner_ira = adjustments.get('partner_ira_balance', 0)
+                    partner_401k = adjustments.get('partner_four01k_403b_balance', 0)
+
+                    st.text(f"IRA: ${ira:,.0f}")
+                    st.text(f"401k: ${four01k:,.0f}")
+                    st.text(f"Roth: ${roth:,.0f}")
+                    st.text(f"HSA: ${hsa:,.0f}")
+                    st.text(f"Taxable: ${taxable:,.0f}")
+                    if savings:
+                        st.text(f"Savings: ${savings:,.0f}")
+                    if partner_ira or partner_401k:
+                        st.text(f"Partner IRA: ${partner_ira:,.0f}")
+                        st.text(f"Partner 401k: ${partner_401k:,.0f}")
+                    total_savings = ira + four01k + roth + hsa + taxable + savings + partner_ira + partner_401k
+                    st.text(f"**TOTAL: ${total_savings:,.0f}**")
+
+                    # Expenses - check BOTH naming conventions
+                    st.markdown("**💸 Expenses:**")
+                    annual_expenses = adjustments.get('annual_expenses', 0)
+                    if annual_expenses == 0:
+                        # Calculate from itemized fields
+                        housing = adjustments.get('housing_expenses', 0)
+                        healthcare = adjustments.get('healthcare_expenses', 0)
+                        groceries = adjustments.get('groceries_expenses', 0)
+                        transport = adjustments.get('transportation_expenses', 0)
+                        other_exp = adjustments.get('other_expenses', 0)
+                        annual_expenses = housing + healthcare + groceries + transport + other_exp
+                        st.text(f"Housing: ${housing:,.0f}")
+                        st.text(f"Healthcare: ${healthcare:,.0f}")
+                        st.text(f"Other: ${groceries + transport + other_exp:,.0f}")
+                    st.text(f"**TOTAL EXPENSES: ${annual_expenses:,.0f}**")
+
+                    # Rates - check BOTH naming conventions
+                    st.markdown("**📈 Growth Rates:**")
+                    inv_return = adjustments.get('investment_return', adjustments.get('return_rate', 'N/A'))
+                    st.text(f"Investment Return: {inv_return}%")
+                    infl_rate = adjustments.get('inflation_rate', 'N/A')
+                    st.text(f"Inflation Rate: {infl_rate}%")
+                    st.text(f"Stock Allocation: {adjustments.get('stocks_allocation', 'N/A')}%")
+
+                    # Final result (for comparison)
+                    st.markdown("**🎯 Final Result:**")
+                    st.text(f"Final Savings: ${sim_results.get('final_savings', 0):,.0f}")
+
+            st.markdown("---")
 
             # DEFENSIVE FIX: Ensure all scenarios have same adjustment keys (fill missing with 'N/A')
             # This fixes the issue with 3+ scenarios + BASE plan

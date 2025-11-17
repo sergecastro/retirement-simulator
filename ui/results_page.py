@@ -705,6 +705,38 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                 st.session_state.mode_selected = True
                 st.rerun()
 
+        # =============================================================================
+        # SOCIAL SECURITY OPTIMIZER CROSS-LINK
+        # =============================================================================
+        st.markdown("---")
+        st.info("🏛️ **Optimize your Social Security claiming strategy** for maximum lifetime benefits")
+
+        with st.expander("💡 Why Social Security Timing Matters", expanded=False):
+            st.markdown("""
+            ### 📊 The Power of Delayed Claiming
+
+            Claiming Social Security at the right age can mean **tens of thousands of dollars** more in lifetime benefits!
+
+            **Example:**
+            - **Age 62**: $1,800/month = $21,600/year
+            - **Age 67 (FRA)**: $2,500/month = $30,000/year
+            - **Age 70**: $3,100/month = $37,200/year
+
+            **Lifetime difference can exceed $100,000+!**
+
+            ### 🎯 What You'll Learn:
+            - Your optimal claiming age based on life expectancy
+            - Break-even analysis (when delayed claiming pays off)
+            - Spousal optimization strategies
+            - How to apply your SS income to your retirement plan
+            """)
+
+            st.markdown("---")
+            if st.button("🏛️ Open Social Security Optimizer", key="go_to_ss_optimizer"):
+                st.session_state.current_mode = "social_security"
+                st.session_state.mode_selected = True
+                st.rerun()
+
     # =============================================================================
     # OLD SAVE COMPARISON SCENARIO (DEPRECATED - keeping for backward compatibility)
     # =============================================================================
