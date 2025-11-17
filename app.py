@@ -214,8 +214,22 @@ def main():
         # Load INTAKE data first
         load_intake_data_to_session()
         show_sidebar_footer(is_trusted)
+
+        # Check if user wants to open Roth Calculator
+        if st.session_state.get('show_roth_calculator', False):
+            st.session_state['show_roth_calculator'] = False
+            st.session_state.current_mode = "roth_calculator"
+            st.rerun()
+
         from pages.social_security_optimizer import show_social_security_optimizer
         show_social_security_optimizer()
+
+    elif st.session_state.current_mode == "roth_calculator":
+        # Roth Conversion Calculator
+        load_intake_data_to_session()
+        show_sidebar_footer(is_trusted)
+        from pages.roth_calculator import show_roth_calculator
+        show_roth_calculator()
 
     elif st.session_state.current_mode == "Analysis":
         # ✅ FIXED: Load INTAKE data into session state if available
