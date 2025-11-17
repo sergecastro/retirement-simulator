@@ -296,7 +296,7 @@ def render_scenario_studio_page():
 
     with col_h2:
         st.markdown("")  # Spacing
-        if st.button("🔄 Reload", key="reload_studio", help="Refresh page to see latest changes", width='stretch'):
+        if st.button("🔄 Reload", key="reload_studio", help="Refresh page to see latest changes", use_container_width=True):
             # Clear any cached data
             if 'pending_scenario' in st.session_state:
                 del st.session_state['pending_scenario']
@@ -359,27 +359,27 @@ def render_scenario_studio_page():
     col_t1, col_t2, col_t3, col_t4, col_t5 = st.columns(5)
 
     with col_t1:
-        if st.button("🌅 Early Retirement", width='stretch', help="Retire at 60"):
+        if st.button("🌅 Early Retirement", use_container_width=True, help="Retire at 60"):
             st.session_state['template'] = 'early_retirement'
             st.rerun()
 
     with col_t2:
-        if st.button("💰 High Income", width='stretch', help="3x salary increase"):
+        if st.button("💰 High Income", use_container_width=True, help="3x salary increase"):
             st.session_state['template'] = 'high_income'
             st.rerun()
 
     with col_t3:
-        if st.button("🛡️ Conservative", width='stretch', help="Low risk, bonds heavy"):
+        if st.button("🛡️ Conservative", use_container_width=True, help="Low risk, bonds heavy"):
             st.session_state['template'] = 'conservative'
             st.rerun()
 
     with col_t4:
-        if st.button("🚀 Aggressive", width='stretch', help="High risk, stocks heavy"):
+        if st.button("🚀 Aggressive", use_container_width=True, help="High risk, stocks heavy"):
             st.session_state['template'] = 'aggressive'
             st.rerun()
 
     with col_t5:
-        if st.button("💵 Frugal Living", width='stretch', help="Reduced expenses"):
+        if st.button("💵 Frugal Living", use_container_width=True, help="Reduced expenses"):
             st.session_state['template'] = 'frugal'
             st.rerun()
 
@@ -1242,7 +1242,7 @@ def render_scenario_studio_page():
                 st.markdown(f"**{comp['name']}**")
                 st.caption(f"Created: {comp['created_at'][:16].replace('T', ' ')}")
             with col2:
-                if st.button("🗑️ Delete", key=f"delete_single_{idx}_{comp['id']}", type="secondary", width='stretch'):
+                if st.button("🗑️ Delete", key=f"delete_single_{idx}_{comp['id']}", type="secondary", use_container_width=True):
                     from utils.comparison_scenarios import delete_comparison_scenario
                     if delete_comparison_scenario(comp['id']):
                         st.success(f"✅ Deleted: {comp['name']}")
@@ -1265,7 +1265,7 @@ def render_scenario_studio_page():
                     st.markdown(f"**{comp['name']}**")
                     st.caption(f"Created: {comp['created_at'][:16].replace('T', ' ')} | ID: {comp['id'][:8]}...")
                 with col2:
-                    if st.button("🗑️ Delete", key=f"delete_{idx}_{comp['id']}", type="secondary", width='stretch'):
+                    if st.button("🗑️ Delete", key=f"delete_{idx}_{comp['id']}", type="secondary", use_container_width=True):
                         from utils.comparison_scenarios import delete_comparison_scenario
                         if delete_comparison_scenario(comp['id']):
                             st.success(f"✅ Deleted: {comp['name']}")
@@ -2163,7 +2163,7 @@ def render_scenario_studio_page():
                 col_exp1, col_exp2, col_exp3 = st.columns(3)
 
                 with col_exp1:
-                    if st.button("📄 Export to PDF", width='stretch', type="secondary"):
+                    if st.button("📄 Export to PDF", use_container_width=True, type="secondary"):
                         try:
                             from io import BytesIO
                             import datetime
@@ -2177,7 +2177,7 @@ def render_scenario_studio_page():
                                     data=pdf_bytes,
                                     file_name=f"scenario_comparison_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
                                     mime="application/pdf",
-                                    width='stretch'
+                                    use_container_width=True
                                 )
                                 st.success("✅ PDF generated! Click Download above.")
                         except ImportError as e:
@@ -2186,7 +2186,7 @@ def render_scenario_studio_page():
                             st.error(f"❌ Error generating PDF: {e}")
 
                 with col_exp2:
-                    if st.button("📊 Export to Excel", width='stretch', type="secondary"):
+                    if st.button("📊 Export to Excel", use_container_width=True, type="secondary"):
                         try:
                             from io import BytesIO
                             import datetime
@@ -2200,14 +2200,14 @@ def render_scenario_studio_page():
                                     data=excel_bytes,
                                     file_name=f"scenario_comparison_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
                                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                    width='stretch'
+                                    use_container_width=True
                                 )
                                 st.success("✅ Excel file generated! Click Download above.")
                         except Exception as e:
                             st.error(f"❌ Error generating Excel: {e}")
 
                 with col_exp3:
-                    if st.button("📋 Export to CSV", width='stretch', type="secondary"):
+                    if st.button("📋 Export to CSV", use_container_width=True, type="secondary"):
                         try:
                             import datetime
 
