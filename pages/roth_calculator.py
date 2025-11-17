@@ -415,21 +415,30 @@ This is educational only - not financial advice.
     # COMING SOON TEASER
     # =============================================================================
     st.markdown("---")
-    st.markdown("### 📊 FULL TAX OPTIMIZER - COMING DECEMBER 2")
+    st.markdown("## 🚀 COMING SOON: FULL TAX OPTIMIZATION SUITE")
+    st.markdown("### *Launching December 2nd for Founding Members*")
+
+    st.success("""
+    We're building the **most comprehensive tax planning tools** in retirement planning:
+
+    ✅ **Multi-Year Tax Strategy** - Optimize conversions across 5-10 year windows
+    ✅ **Withdrawal Sequence Optimizer** - Perfect order: taxable → deferred → Roth
+    ✅ **Capital Gains Harvesting** - Maximize 0% bracket opportunities
+    ✅ **QCD Planning** - Tax-free charitable giving (age 70.5+)
+    ✅ **IRMAA Threshold Manager** - Stay below Medicare surcharge triggers
+    ✅ **State Tax Optimization** - Multi-state retirement strategies
+    ✅ **Estate Tax Planning** - Minimize taxes for your heirs
+
+    **Plus:** Interactive year-by-year tax dashboard showing your lifetime tax savings
+    """)
 
     st.info("""
-    The **complete Tax Optimization Dashboard** includes:
+    💎 **Join as a Founding Member** today to lock in **lifetime early-bird pricing**
+    and get **first access** to these premium features.
 
-    ✅ **Multi-year conversion strategies** - Optimize across different scenarios
-    ✅ **Withdrawal order optimization** - Which accounts to tap first
-    ✅ **Capital gains harvesting** - Take advantage of 0% gains bracket
-    ✅ **QCD planning** (age 70+) - Tax-free charitable giving from IRA
-    ✅ **State tax optimization** - Move to low-tax states
-    ✅ **IRMAA threshold management** - Avoid Medicare premium surcharges
+    **Founding Member Price: $119/year for LIFE** (Regular: $199/year)
 
-    **Reserve your Founding Member discount: $119/year for life**
-
-    [Join Waitlist] (coming soon)
+    [Contact us to reserve your spot]
     """)
 
     # =============================================================================
