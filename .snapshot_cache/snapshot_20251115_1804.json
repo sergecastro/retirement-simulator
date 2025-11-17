@@ -1,0 +1,109 @@
+{
+  "schema_version": "1.0",
+  "input_user_name": "TEST INTAKE 1",
+  "input_age": 65,
+  "input_age_group": "70+",
+  "input_partner_exists": true,
+  "input_partner_name": "Jane Smith",
+  "input_partner_age": 63,
+  "input_salary_wages": 0.0,
+  "input_self_employment_income": 0.0,
+  "input_rental_income": 0.0,
+  "input_investment_income": 2000.0,
+  "input_social_security_income": 3000.0,
+  "input_pension_income": 3000.0,
+  "input_other_income": 0.0,
+  "input_total_income": 8000.0,
+  "input_housing_expenses": 1500.0,
+  "input_utilities_expenses": 300.0,
+  "input_groceries_expenses": 600.0,
+  "input_transportation_expenses": 400.0,
+  "input_healthcare_expenses": 500.0,
+  "input_insurance_expenses": 300.0,
+  "input_property_tax_expenses": 400.0,
+  "input_entertainment_expenses": 200.0,
+  "input_restaurant_expenses": 300.0,
+  "input_travel_expenses": 400.0,
+  "input_education_expenses": 0.0,
+  "input_childcare_expenses": 0.0,
+  "input_clothing_expenses": 100.0,
+  "input_charitable_donations": 200.0,
+  "input_miscellaneous_expenses": 200.0,
+  "input_other_expenses": 100.0,
+  "input_total_expenses": 5500.0,
+  "input_ira_balance": 250000.0,
+  "input_four01k_403b_balance": 250000.0,
+  "input_pension_fund_value": 0.0,
+  "input_partner_ira_balance": 150000.0,
+  "input_partner_four01k_403b_balance": 150000.0,
+  "input_taxable_investment_accounts": 100000.0,
+  "input_high_yield_savings_account": 50000.0,
+  "input_hsa_balance": 10000.0,
+  "input_five29_plan_balance": 0.0,
+  "input_primary_residence_value": 400000.0,
+  "input_secondary_residence_value": 0.0,
+  "input_vehicles_value": 30000.0,
+  "input_jewelry_collectibles_value": 10000.0,
+  "input_business_ownership_value": 0.0,
+  "input_cryptocurrency_holdings": 0.0,
+  "input_other_assets": 0.0,
+  "input_mortgage_balance": 150000.0,
+  "input_secondary_mortgage_balance": 0.0,
+  "input_auto_loan_balance": 0.0,
+  "input_student_loan_balance": 0.0,
+  "input_credit_card_debt": 0.0,
+  "input_personal_loans": 0.0,
+  "input_other_liabilities": 0.0,
+  "children_list": [],
+  "children_rows": [],
+  "inheritance_list": [],
+  "inherit_rows": [],
+  "goals_list": [
+    {
+      "goal": "NEW CAR",
+      "amount": 40000.0,
+      "year": 2030
+    },
+    {
+      "goal": "TRAVEL ABROAD",
+      "amount": 20000.0,
+      "year": 2026
+    }
+  ],
+  "goals_data": [
+    {
+      "goal": "NEW CAR",
+      "amount": 40000.0,
+      "year": 2030
+    },
+    {
+      "goal": "TRAVEL ABROAD",
+      "amount": 20000.0,
+      "year": 2026
+    }
+  ],
+  "custom_expenses": [
+    {
+      "Name": "GMOLY DOCTOR",
+      "Monthly Amount": 1500.0,
+      "Category": "Childcare"
+    },
+    {
+      "Name": "TUTORING",
+      "Monthly Amount": 800.0,
+      "Category": "Other"
+    }
+  ],
+  "custom_expenses_list": [
+    {
+      "Name": "GMOLY DOCTOR",
+      "Monthly Amount": 1500.0,
+      "Category": "Childcare"
+    },
+    {
+      "Name": "TUTORING",
+      "Monthly Amount": 800.0,
+      "Category": "Other"
+    }
+  ]
+}

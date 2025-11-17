@@ -1,1 +1,47 @@
-{"current_snapshot_id": null, "snapshots": []}
+{
+  "current_snapshot_id": "20251115_1922",
+  "snapshots": [
+    {
+      "id": "20251115_1804",
+      "name": "TEST INTAKE 1",
+      "created": "2025-11-15T18:04:14.629610",
+      "metadata": {
+        "user_name": "TEST INTAKE 1",
+        "user_age": 65,
+        "partner_exists": true,
+        "partner_name": "Jane Smith",
+        "partner_age": 63,
+        "net_worth": 1250000.0,
+        "monthly_surplus": 2500.0
+      }
+    },
+    {
+      "id": "20251115_1904",
+      "name": "TEST INTAKE 3 - AFTER BIG CHANGES",
+      "created": "2025-11-15T19:04:02.876798",
+      "metadata": {
+        "user_name": "TEST INTAKE 1",
+        "user_age": 65,
+        "partner_exists": true,
+        "partner_name": "Jane Smith",
+        "partner_age": 63,
+        "net_worth": 1250000.0,
+        "monthly_surplus": 2500.0
+      }
+    },
+    {
+      "id": "20251115_1922",
+      "name": "TESST INTAKE 4 ",
+      "created": "2025-11-15T19:22:11.069996",
+      "metadata": {
+        "user_name": "TEST INTAKE 1",
+        "user_age": 65,
+        "partner_exists": true,
+        "partner_name": "Jane Smith",
+        "partner_age": 63,
+        "net_worth": 1250000.0,
+        "monthly_surplus": 2500.0
+      }
+    }
+  ]
+}
