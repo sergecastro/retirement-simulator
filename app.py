@@ -86,6 +86,26 @@ SCROLL_TO_TOP_JS = """
 </script>
 """
 
+# =============================================================================
+# ANALYTICS TRACKING (Plausible/Cloudflare/Google Analytics)
+# =============================================================================
+# INSTRUCTIONS: Replace the placeholder below with your actual tracking code
+#
+# For PLAUSIBLE (recommended - privacy-focused):
+#   <script defer data-domain="yourdomain.com" src="https://plausible.io/js/script.js"></script>
+#
+# For CLOUDFLARE Web Analytics (free):
+#   <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "YOUR_TOKEN"}'></script>
+#
+# For GOOGLE Analytics:
+#   <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
+#   <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-XXXXXXX');</script>
+
+ANALYTICS_TRACKING_CODE = """
+<!-- ANALYTICS: Uncomment and add your tracking code here -->
+<!-- <script defer data-domain="yourdomain.com" src="https://plausible.io/js/script.js"></script> -->
+"""
+
 
 # =============================================================================
 # INTAKE DATA LOADING HELPER
@@ -148,6 +168,9 @@ def main():
 
     # Initialize app (page config, CSS, Flask check)
     initialize_app()
+
+    # Inject analytics tracking code (invisible to users)
+    st.markdown(ANALYTICS_TRACKING_CODE, unsafe_allow_html=True)
 
     # ⚠️⚠️⚠️ DEMO MODE - Authentication simplified for beta testing ⚠️⚠️⚠️
     # To re-enable full auth: Uncomment the lines below
@@ -352,6 +375,17 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
         st.info("ℹ️ **First time here?** Get started by creating your retirement plan.\n\n**Recommended:** Start with INTAKE to enter your financial information, or explore Analysis mode with demo data.")
 
     st.markdown("---")
+
+    # BETA AGREEMENT CHECKBOX - Must acknowledge before proceeding
+    beta_agreement = st.checkbox(
+        "I understand this is **BETA software for educational purposes only**. "
+        "This is NOT financial advice and I should consult qualified professionals.",
+        key="beta_agreement"
+    )
+
+    if not beta_agreement:
+        st.warning("⚠️ Please acknowledge the beta terms above to continue.")
+        st.stop()
 
     # Mode selection header
     st.markdown("### 🎯 Choose Your Starting Point")

@@ -1,5 +1,5 @@
 {
-  "current_snapshot_id": "20251115_1922",
+  "current_snapshot_id": "20251117_0842",
   "snapshots": [
     {
       "id": "20251115_1804",
@@ -33,6 +33,20 @@
       "id": "20251115_1922",
       "name": "TESST INTAKE 4 ",
       "created": "2025-11-15T19:22:11.069996",
+      "metadata": {
+        "user_name": "TEST INTAKE 1",
+        "user_age": 65,
+        "partner_exists": true,
+        "partner_name": "Jane Smith",
+        "partner_age": 63,
+        "net_worth": 1250000.0,
+        "monthly_surplus": 2500.0
+      }
+    },
+    {
+      "id": "20251117_0842",
+      "name": "Plan - Nov 17, 2025 @ 08:42:43 AM",
+      "created": "2025-11-17T08:42:43.914131",
       "metadata": {
         "user_name": "TEST INTAKE 1",
         "user_age": 65,
