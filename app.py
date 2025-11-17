@@ -102,11 +102,26 @@ SCROLL_TO_TOP_JS = """
 #   <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-XXXXXXX');</script>
 
 ANALYTICS_TRACKING_CODE = """
-<!-- Privacy-friendly analytics by Plausible -->
-<script async src="https://plausible.io/js/pa-3npHKPHg2kmQuG1mgMbMw.js"></script>
+<!-- Privacy-friendly analytics by Plausible - Injected into HEAD via JavaScript -->
 <script>
-  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-  plausible.init()
+(function() {
+  // Inject Plausible script into HEAD (required for proper tracking)
+  if (!document.querySelector('script[src*="plausible.io"]')) {
+    var script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://plausible.io/js/pa-3npHKPHg2kmQuG1mgMbMw.js';
+    document.head.appendChild(script);
+
+    // Initialize Plausible
+    window.plausible = window.plausible || function() {
+      (window.plausible.q = window.plausible.q || []).push(arguments);
+    };
+    window.plausible.init = window.plausible.init || function(i) {
+      window.plausible.o = i || {};
+    };
+    window.plausible.init();
+  }
+})();
 </script>
 """
 
