@@ -416,29 +416,22 @@ This is educational only - not financial advice.
     # =============================================================================
     st.markdown("---")
     st.markdown("## 🚀 COMING SOON: FULL TAX OPTIMIZATION SUITE")
-    st.markdown("### *Launching December 2nd for Founding Members*")
+    st.markdown("### *Launching Early December - Founding Members Get First Access*")
 
     st.success("""
     We're building the **most comprehensive tax planning tools** in retirement planning:
 
-    ✅ **Multi-Year Tax Strategy** - Optimize conversions across 5-10 year windows
-    ✅ **Withdrawal Sequence Optimizer** - Perfect order: taxable → deferred → Roth
-    ✅ **Capital Gains Harvesting** - Maximize 0% bracket opportunities
-    ✅ **QCD Planning** - Tax-free charitable giving (age 70.5+)
-    ✅ **IRMAA Threshold Manager** - Stay below Medicare surcharge triggers
-    ✅ **State Tax Optimization** - Multi-state retirement strategies
-    ✅ **Estate Tax Planning** - Minimize taxes for your heirs
-
-    **Plus:** Interactive year-by-year tax dashboard showing your lifetime tax savings
+    ✅ **Multi-Year Tax Strategy**
+    ✅ **Withdrawal Sequence Optimizer**
+    ✅ **Capital Gains Harvesting**
+    ✅ **QCD Planning**
+    ✅ **IRMAA Threshold Manager**
+    ✅ **State Tax Optimization**
+    ✅ **Estate Tax Planning**
     """)
 
     st.info("""
-    💎 **Join as a Founding Member** today to lock in **lifetime early-bird pricing**
-    and get **first access** to these premium features.
-
-    **Founding Member Price: $119/year for LIFE** (Regular: $199/year)
-
-    [Contact us to reserve your spot]
+    💎 **Join as a Founding Member** today to lock in **lifetime early-bird pricing.**
     """)
 
     # =============================================================================
