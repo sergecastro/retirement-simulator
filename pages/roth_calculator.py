@@ -47,30 +47,47 @@ def show_roth_calculator():
     st.markdown("---")
 
     # =============================================================================
-    # EXAMPLE SCENARIOS SECTION - EDUCATIONAL GUIDANCE
+    # EXAMPLE SCENARIOS SECTION - EDUCATIONAL GUIDANCE (EXPANDED BY DEFAULT)
     # =============================================================================
-    with st.expander("📚 How to Use This Calculator - Common Scenarios", expanded=False):
-        st.markdown("""
-        This tool helps you find the optimal amount to convert from Traditional IRA to Roth IRA each year.
+    st.markdown("## 📚 HOW TO USE THIS CALCULATOR")
+    st.info("""
+    **What this tool does:** Calculates how much to convert from Traditional IRA to Roth IRA each year to minimize your lifetime taxes.
 
-        **Common Scenarios:**
+    **Why it matters:** Pay lower taxes NOW (while income is low) to avoid higher taxes LATER (when RMDs force you into higher brackets).
+    """)
 
-        **Scenario 1: Recently Retired (Age 62-65)**
-        - ✅ **IDEAL timing** - low income, years before RMDs
-        - Convert $40,000-$60,000/year
-        - Stay in 22% bracket
-        - Save $100,000+ in lifetime taxes
+    with st.expander("🎯 CLICK HERE: Common Scenarios - Which One Are You?", expanded=True):
+        col_scen1, col_scen2, col_scen3 = st.columns(3)
 
-        **Scenario 2: Still Working (Age 55-60)**
-        - ⚠️ High income makes conversions expensive
-        - Wait until retirement OR
-        - Convert smaller amounts ($10,000-$20,000/year)
+        with col_scen1:
+            st.markdown("### ✅ IDEAL: Recently Retired")
+            st.markdown("**Age 62-65**")
+            st.markdown("""
+            - Low income = low tax bracket
+            - Years before RMDs start
+            - Convert $40K-$60K/year
+            - **Save $100K+ in taxes!**
+            """)
 
-        **Scenario 3: Late Starter (Age 68-70)**
-        - ⚠️ Limited time before RMDs
-        - Convert larger amounts quickly OR
-        - Accept higher future RMD taxes
-        """)
+        with col_scen2:
+            st.markdown("### ⚠️ WAIT: Still Working")
+            st.markdown("**Age 55-60**")
+            st.markdown("""
+            - High income = expensive conversions
+            - Better to wait until retirement
+            - OR convert small amounts ($10K-$20K/year)
+            """)
+
+        with col_scen3:
+            st.markdown("### ⏰ URGENT: Late Starter")
+            st.markdown("**Age 68-70**")
+            st.markdown("""
+            - Limited time before RMDs (age 73)
+            - Convert larger amounts quickly
+            - Every year counts!
+            """)
+
+    st.markdown("---")
 
     # =============================================================================
     # INPUT SECTION - Pre-filled from INTAKE
@@ -95,6 +112,7 @@ def show_roth_calculator():
             help="Your age today. This determines how many years you have for Roth conversions before RMDs begin at age 73.",
             key="roth_current_age"
         )
+        st.caption("📌 **Best conversion window: Ages 60-72** (after retirement, before RMDs)")
 
         trad_ira_balance = st.number_input(
             "Traditional IRA/401k balance ($)",
@@ -105,10 +123,11 @@ def show_roth_calculator():
             help="Total amount in all tax-deferred accounts (Traditional IRA, 401k, 403b, etc.). This is the money you'll be converting.",
             key="roth_trad_balance"
         )
+        st.caption("📌 **Include:** Traditional IRA + 401k + 403b + SEP IRA (all tax-deferred accounts)")
 
         # Warning for low balance
         if trad_ira_balance < 50000 and trad_ira_balance > 0:
-            st.info("💡 Your Traditional IRA balance is relatively low. Roth conversions may have limited benefit. Focus on maximizing contributions to Roth accounts going forward instead.")
+            st.warning("⚠️ Low balance - Roth conversions may have limited benefit. Focus on maximizing Roth contributions instead.")
 
         roth_balance = st.number_input(
             "Current Roth balance ($)",
@@ -119,6 +138,7 @@ def show_roth_calculator():
             help="Current Roth IRA/401k balance (already tax-free). This is money that grows tax-free forever.",
             key="roth_current_balance"
         )
+        st.caption("📌 This money already grows **tax-free forever** - no RMDs required!")
 
     with col2:
         # Get income defaults
@@ -137,10 +157,11 @@ def show_roth_calculator():
             help="""Include ALL income sources: Wages/salary (if still working), Business income, Rental income, Pension payments, Part-time work. If fully retired with no income, enter $0. Example: If you earn $85,000/year from work, enter 85000""",
             key="roth_current_income"
         )
+        st.caption("📌 **Retired with $0 income?** That's GREAT for conversions - more room in low brackets!")
 
         # Warning for high income with early conversion plans
         if current_income > 100000:
-            st.info("💡 High income detected. Consider waiting until retirement (lower income = lower tax bracket) to maximize conversion efficiency.")
+            st.warning("⚠️ High income - conversions may be expensive. Consider waiting until retirement.")
 
         filing_status = st.radio(
             "Tax Filing Status",
@@ -149,6 +170,7 @@ def show_roth_calculator():
             key="roth_filing_status",
             help="Your tax filing status affects your tax brackets and optimal conversion amounts. Single: Lower bracket thresholds. Married Filing Jointly: Higher bracket thresholds (can convert more)."
         )
+        st.caption("📌 **Married = Bigger brackets** = Can convert more at lower tax rates")
 
         filing_code = "married" if "Married" in filing_status else "single"
 
