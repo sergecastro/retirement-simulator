@@ -493,16 +493,24 @@ def show_social_security_optimizer():
 
                 **This is a complex decision - consult a tax professional or fee-only financial advisor.**
                 """)
-
-                # Link to Roth Calculator
-                if st.button("💰 Open Roth Conversion Calculator", key="open_roth_calc", type="secondary"):
-                    st.session_state['show_roth_calculator'] = True
-                    st.rerun()
             elif taxable_pct >= 50:
                 st.info(f"ℹ️ **{taxable_pct:.0f}% of your SS is taxable.** You're in the middle bracket - some planning opportunities may exist.")
                 st.caption("💡 **Tip:** Ask your accountant about Roth conversions before claiming SS to potentially reduce taxable income.")
             else:
                 st.success(f"✅ **Only {taxable_pct:.0f}% taxable!** Your combined income is low enough to minimize SS taxation.")
+
+            # PROMINENT Roth Calculator button - show for ANY taxation level
+            st.markdown("---")
+            st.markdown("### 🎯 Reduce Your Tax Burden with Roth Conversions")
+            st.markdown("**Calculate your optimal Roth conversion strategy to minimize lifetime taxes.**")
+
+            col_roth1, col_roth2 = st.columns([2, 1])
+            with col_roth1:
+                if st.button("💰 OPEN ROTH CONVERSION CALCULATOR", key="open_roth_calc", type="primary", use_container_width=True):
+                    st.session_state['show_roth_calculator'] = True
+                    st.rerun()
+            with col_roth2:
+                st.caption("Free tool - See how much you could save")
 
         # COLA Information Box
         with st.expander("ℹ️ What's included in these calculations?", expanded=False):
