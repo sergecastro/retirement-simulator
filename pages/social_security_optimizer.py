@@ -482,8 +482,20 @@ def show_social_security_optimizer():
             # Warning if high taxation
             if taxable_pct >= 85:
                 st.warning(f"⚠️ **85% of your SS benefits will be taxable.** Consider strategies to reduce other income or Roth conversions before claiming.")
+                st.info("""
+                💡 **ASK YOUR ACCOUNTANT:** Consider Roth IRA conversions BEFORE you start claiming Social Security.
+
+                Converting traditional IRA/401k to Roth *before* SS starts can:
+                - Reduce future taxable income (Roth withdrawals are tax-free)
+                - Lower your "combined income" when SS begins
+                - Keep more of your SS benefits tax-free
+                - This strategy works best in years when your income is lower (early retirement)
+
+                **This is a complex decision - consult a tax professional or fee-only financial advisor.**
+                """)
             elif taxable_pct >= 50:
                 st.info(f"ℹ️ **{taxable_pct:.0f}% of your SS is taxable.** You're in the middle bracket - some planning opportunities may exist.")
+                st.caption("💡 **Tip:** Ask your accountant about Roth conversions before claiming SS to potentially reduce taxable income.")
             else:
                 st.success(f"✅ **Only {taxable_pct:.0f}% taxable!** Your combined income is low enough to minimize SS taxation.")
 
