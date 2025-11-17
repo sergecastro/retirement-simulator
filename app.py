@@ -207,6 +207,15 @@ def main():
     # Show sidebar header
     show_sidebar_header()
 
+    # Initialize landing page flag
+    if 'seen_landing_page' not in st.session_state:
+        st.session_state.seen_landing_page = False
+
+    # SHOW HTML LANDING PAGE FIRST (for new visitors)
+    if not st.session_state.seen_landing_page:
+        show_html_landing_page()
+        st.stop()  # Stop here until they click "Enter App"
+
     # Initialize mode selection in session state
     if 'mode_selected' not in st.session_state:
         st.session_state.mode_selected = False
@@ -327,6 +336,56 @@ def main():
 
     # Show footer
     show_footer()
+
+
+# =============================================================================
+# HTML MARKETING LANDING PAGE
+# =============================================================================
+
+def show_html_landing_page():
+    """Show the full marketing landing page from static/landing.html"""
+    import streamlit.components.v1 as components
+
+    # Read the landing page HTML
+    landing_html_path = Path(__file__).parent / "static" / "landing.html"
+
+    if landing_html_path.exists():
+        with open(landing_html_path, 'r', encoding='utf-8') as f:
+            landing_html = f.read()
+
+        # Add a button to enter the app (inject at the end of body)
+        app_entry_button = """
+        <script>
+        // Override all CTA links to go to app
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctaButtons = document.querySelectorAll('.cta-primary');
+            ctaButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Signal Streamlit to proceed
+                    window.parent.postMessage({type: 'enter_app'}, '*');
+                });
+            });
+        });
+        </script>
+        """
+
+        landing_html = landing_html.replace('</body>', app_entry_button + '</body>')
+
+        # Render full-page HTML
+        components.html(landing_html, height=4000, scrolling=True)
+
+        # Add a Streamlit button below for those who scroll
+        st.markdown("---")
+        if st.button("🚀 Enter Family Forecast App", type="primary", use_container_width=True, key="enter_app"):
+            st.session_state.seen_landing_page = True
+            st.rerun()
+    else:
+        st.error(f"Landing page not found at {landing_html_path}")
+        # Fallback - proceed to app
+        st.session_state.seen_landing_page = True
+        if st.button("Continue to App"):
+            st.rerun()
 
 
 # =============================================================================

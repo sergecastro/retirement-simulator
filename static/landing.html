@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Forecast - Privacy-First Retirement Planning</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #fff;
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Header with Logo & Navigation */
+        .header {
+            background: #003D5B;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo img {
+            height: 40px;
+            width: auto;
+        }
+        
+        .logo-text {
+            color: #fff;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 15px;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: #E8B541;
+        }
+        
+        .support-email {
+            color: #E8B541;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        /* Launch Banner - Scarcity */
+        .launch-banner {
+            background: #E8B541;
+            color: #003D5B;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        
+        /* Hero Section - ABOVE THE FOLD */
+        .hero {
+            background: linear-gradient(135deg, #003D5B 0%, #005a7f 100%);
+            color: white;
+            padding: 80px 20px 60px 20px;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 52px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        
+        .hero .subtitle {
+            font-size: 24px;
+            margin-bottom: 30px;
+            opacity: 0.95;
+            line-height: 1.4;
+        }
+        
+        .hero .founder-intro {
+            font-size: 18px;
+            max-width: 800px;
+            margin: 0 auto 40px auto;
+            line-height: 1.7;
+            opacity: 0.9;
+        }
+        
+        .cta-primary {
+            display: inline-block;
+            padding: 20px 50px;
+            background: #E8B541;
+            color: #003D5B;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: 700;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        
+        .cta-primary:hover {
+            background: #d4a135;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+        
+        .trust-signal {
+            margin-top: 25px;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        /* Three Moats Section - Scannable */
+        .three-moats {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 20px;
+        }
+        
+        .three-moats h2 {
+            font-size: 42px;
+            text-align: center;
+            margin-bottom: 60px;
+            color: #003D5B;
+        }
+        
+        .moats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 40px;
+        }
+        
+        .moat-card {
+            padding: 40px 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 5px solid #E8B541;
+        }
+        
+        .moat-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .moat-card h3 {
+            font-size: 26px;
+            margin-bottom: 15px;
+            color: #003D5B;
+        }
+        
+        .moat-card p {
+            font-size: 17px;
+            line-height: 1.7;
+            color: #555;
+            margin-bottom: 12px;
+        }
+        
+        .moat-highlight {
+            color: #E8B541;
+            font-weight: 600;
+            font-style: italic;
+            margin-top: 15px;
+        }
+        
+        /* Email Signup - After 3 Moats */
+        .email-signup {
+            background: linear-gradient(135deg, #003D5B 0%, #005a7f 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        
+        .email-signup h2 {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+        
+        .email-signup p {
+            font-size: 20px;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+        
+        .signup-form {
+            display: flex;
+            gap: 10px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .signup-form input {
+            flex: 1;
+            padding: 18px;
+            font-size: 17px;
+            border: none;
+            border-radius: 6px;
+        }
+        
+        .signup-form button {
+            padding: 18px 35px;
+            background: #E8B541;
+            color: #003D5B;
+            border: none;
+            border-radius: 6px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            white-space: nowrap;
+        }
+        
+        .signup-form button:hover {
+            background: #d4a135;
+        }
+        
+        .success-message {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(40, 167, 69, 0.2);
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        /* Content Sections - BELOW THE FOLD */
+        .section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 20px;
+        }
+        
+        .section h2 {
+            font-size: 42px;
+            margin-bottom: 50px;
+            color: #003D5B;
+            text-align: center;
+        }
+        
+        .section-alt {
+            background: #f8f9fa;
+        }
+        
+        /* How It Works */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+        
+        .step-card {
+            padding: 35px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .step-card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #003D5B;
+        }
+        
+        .step-card p {
+            font-size: 17px;
+            line-height: 1.7;
+            color: #555;
+            margin-bottom: 12px;
+        }
+        
+        .demo-highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            color: #856404;
+            font-weight: 600;
+        }
+        
+        /* Features List */
+        .features-list {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .features-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .features-list li {
+            padding: 20px;
+            border-bottom: 2px solid #e9ecef;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-icon {
+            color: #E8B541;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        /* Competitive Table */
+        .comparison-table {
+            overflow-x: auto;
+            margin: 40px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        th, td {
+            padding: 18px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        th {
+            background: #003D5B;
+            color: white;
+            font-weight: 600;
+        }
+        
+        td:first-child {
+            font-weight: 600;
+            color: #003D5B;
+        }
+        
+        /* Founder Story */
+        .founder-story {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .founder-story p {
+            font-size: 19px;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 25px;
+        }
+        
+        .founder-story strong {
+            color: #003D5B;
+        }
+        
+        /* FAQ */
+        .faq-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .faq-item {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+        
+        .faq-question {
+            font-size: 20px;
+            font-weight: 600;
+            color: #003D5B;
+            margin-bottom: 12px;
+        }
+        
+        .faq-answer {
+            font-size: 17px;
+            line-height: 1.7;
+            color: #555;
+        }
+        
+        /* Final CTA */
+        .final-cta {
+            text-align: center;
+            padding: 100px 20px;
+            background: linear-gradient(135deg, #003D5B 0%, #005a7f 100%);
+            color: white;
+        }
+        
+        .final-cta h2 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .final-cta p {
+            font-size: 22px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #003D5B;
+            color: white;
+            padding: 50px 20px 30px 20px;
+            text-align: center;
+        }
+        
+        .footer p {
+            margin-bottom: 15px;
+            line-height: 1.7;
+            opacity: 0.9;
+        }
+        
+        .footer a {
+            color: #E8B541;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 36px;
+            }
+            
+            .hero .subtitle {
+                font-size: 20px;
+            }
+            
+            .nav-links {
+                display: none; /* Hide nav on mobile, can add hamburger menu later */
+            }
+            
+            .signup-form {
+                flex-direction: column;
+            }
+            
+            .moats-grid,
+            .steps-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .launch-banner {
+                font-size: 15px;
+                padding: 12px;
+            }
+            
+            .section h2 {
+                font-size: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with Logo & Navigation -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="logo.png" alt="Family Forecast Logo" id="logo-img" style="display:none;">
+                <span class="logo-text">Family Forecast</span>
+            </div>
+            <nav class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#about">About</a>
+                <a href="#faq">FAQ</a>
+                <a href="mailto:support@familyforecast.ai" class="support-email">support@familyforecast.ai</a>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Launch Banner - Scarcity -->
+    <div class="launch-banner">
+        🚀 LAUNCHING TONIGHT at 8 PM PT | First 500 Users Get Founding Member Status - Lock In 20% Off Forever
+    </div>
+    
+    <!-- ========================================= -->
+    <!-- ABOVE THE FOLD - SCANNER CONVERSION ZONE -->
+    <!-- ========================================= -->
+    
+    <!-- Hero Section -->
+    <div class="hero">
+        <h1>Your Retirement. Your Data. Your Control.</h1>
+        
+        <p class="subtitle">
+            Family Forecast is the privacy-first retirement planner that gives you<br>
+            AI-driven answers you can actually understand.
+        </p>
+        
+        <p class="founder-intro">
+            <strong>Background:</strong> I'm Serge Castro—a CPA, economist, and business owner. 
+            I built this because the tool I wanted for my own family didn't exist: 
+            one that puts privacy first and doesn't require a Ph.D. to understand.
+        </p>
+        
+        <a href="#signup" class="cta-primary">Get Free Access - Launching Tonight</a>
+        
+        <p class="trust-signal">
+            No credit card required. Your data never leaves your browser.
+        </p>
+    </div>
+    
+    <!-- Three Moats - Scannable with Icons -->
+    <div class="three-moats">
+        <h2>Stop Guessing. Start Planning.</h2>
+        
+        <div class="moats-grid">
+            <!-- Moat #1: Privacy -->
+            <div class="moat-card">
+                <div class="moat-icon">🔒</div>
+                <h3>#1: You Control Your Data. Period.</h3>
+                <p>
+                    Your plan is encrypted and stays in your browser. We can't see it, sell it, or lock you out. Ever.
+                </p>
+                <p class="moat-highlight">
+                    While competitors are locking users out of their own data, our privacy-first design 
+                    gives you complete control.
+                </p>
+            </div>
+            
+            <!-- Moat #2: AI Advisor -->
+            <div class="moat-card">
+                <div class="moat-icon">🤖</div>
+                <h3>#2: Your Personal AI Advisor</h3>
+                <p>
+                    Don't just see charts—get answers. Ask "Should I retire at 62?" or "How do I lower my taxes?" 
+                    and get personalized, 24/7 advice.
+                </p>
+                <p class="moat-highlight">
+                    This isn't just a tooltip; it's a full conversational advisor that understands your unique plan.
+                </p>
+            </div>
+            
+            <!-- Moat #3: Healthcare -->
+            <div class="moat-card">
+                <div class="moat-icon">🏥</div>
+                <h3>#3: The Complete Healthcare Hub</h3>
+                <p>
+                    Plan for your biggest unknown. Our hub includes powerful tools to model Medicare, 
+                    avoid costly IRMAA surcharges, and compare Medigap plans.
+                </p>
+                <p class="moat-highlight">
+                    Don't be surprised by healthcare costs in retirement.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Email Signup - AFTER 3 Moats -->
+    <div class="email-signup" id="signup">
+        <h2>Join the Launch - Tonight at 8 PM PT</h2>
+        <p>Be the first to know when we go live. Get your Founding Member access.</p>
+        
+        <form class="signup-form" id="email-form">
+            <input 
+                type="email" 
+                id="email-input"
+                placeholder="Enter your email address" 
+                required
+            >
+            <button type="submit">Notify Me</button>
+        </form>
+        
+        <div id="success-message" class="success-message" style="display:none;">
+            ✅ Success! We'll email you at 8 PM when we launch. Check your inbox for confirmation.
+        </div>
+    </div>
+    
+    <!-- ========================================= -->
+    <!-- BELOW THE FOLD - RESEARCHER CONTENT -->
+    <!-- ========================================= -->
+    
+    <!-- How It Works -->
+    <div class="section section-alt" id="how-it-works">
+        <h2>How Family Forecast Works</h2>
+        
+        <div class="steps-grid">
+            <div class="step-card">
+                <h3>Step 1: Build Your Plan (15 minutes)</h3>
+                <p>
+                    Complete our guided questionnaire: income, expenses, assets, Social Security, and goals. 
+                    Your data is encrypted in your browser as you type.
+                </p>
+                <div class="demo-highlight">
+                    💡 Or skip this and try our demo profile to explore the app instantly - no data entry required!
+                </div>
+            </div>
+            
+            <div class="step-card">
+                <h3>Step 2: See Your Complete Picture</h3>
+                <p>
+                    Get instant analysis of your probability of success (Monte Carlo), cash flow, 
+                    tax implications, and healthcare costs.
+                </p>
+                <p>
+                    Every chart has a "?" button for an instant AI explanation.
+                </p>
+            </div>
+            
+            <div class="step-card">
+                <h3>Step 3: Explore & Optimize</h3>
+                <p>
+                    Use our tools to improve your plan. Compare retirement ages in the Scenario Studio, 
+                    optimize your Social Security, and plan Roth conversions.
+                </p>
+                <p>
+                    <strong>Have a question? Just ask the AI.</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- What's Included -->
+    <div class="section" id="features">
+        <h2>Everything You Need. Nothing You Don't.</h2>
+        
+        <div class="features-list">
+            <h3 style="font-size: 28px; margin-bottom: 30px; color: #003D5B;">Core Planning Tools:</h3>
+            <ul>
+                <li><span class="feature-icon">✅</span> <strong>Complete Retirement Simulation</strong> - 1,000 Monte Carlo scenarios</li>
+                <li><span class="feature-icon">✅</span> <strong>Cash Flow Projections</strong> - Year-by-year income vs. expenses</li>
+                <li><span class="feature-icon">✅</span> <strong>Social Security Optimizer</strong> - Find your optimal claiming strategy</li>
+                <li><span class="feature-icon">✅</span> <strong>Tax Planning</strong> - RMD calculations, Roth conversion optimizer</li>
+                <li><span class="feature-icon">✅</span> <strong>Healthcare Hub</strong> - Medicare, IRMAA, Medigap planning</li>
+            </ul>
+            
+            <h3 style="font-size: 28px; margin: 50px 0 30px 0; color: #003D5B;">Advanced Features:</h3>
+            <ul>
+                <li><span class="feature-icon">✅</span> <strong>Scenario Studio</strong> - Compare 2-4 strategies side-by-side</li>
+                <li><span class="feature-icon">✅</span> <strong>AI Conversational Advisor</strong> - Ask anything, get instant answers</li>
+                <li><span class="feature-icon">✅</span> <strong>Privacy-First Architecture</strong> - Your data never leaves your browser</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Competitive Comparison - Anonymized -->
+    <div class="section section-alt">
+        <h2>How We Compare to the Top 3 Retirement Planning Tools</h2>
+        
+        <div class="comparison-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Family Forecast</th>
+                        <th>Competitor A</th>
+                        <th>Competitor B</th>
+                        <th>Competitor C</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Privacy-First (Local Storage)</td>
+                        <td>✅ YES</td>
+                        <td>❌ Cloud Only</td>
+                        <td>❌ Cloud Only</td>
+                        <td>❌ Cloud Only</td>
+                    </tr>
+                    <tr>
+                        <td>AI Conversational Advisor</td>
+                        <td>✅ YES</td>
+                        <td>❌ No</td>
+                        <td>❌ No</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td>Healthcare Planning</td>
+                        <td>✅ Full Hub</td>
+                        <td>⚠️ Basic</td>
+                        <td>⚠️ Basic</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td>Current Status</td>
+                        <td>✅ Working</td>
+                        <td>❌ Down/Broken</td>
+                        <td>✅ Working</td>
+                        <td>✅ Working</td>
+                    </tr>
+                    <tr>
+                        <td>Free Access</td>
+                        <td>✅ Beta Free</td>
+                        <td>❌ Paid Plans</td>
+                        <td>⚠️ Limited Free</td>
+                        <td>❌ Paid Only</td>
+                    </tr>
+                    <tr>
+                        <td>Annual Cost</td>
+                        <td><strong>FREE (beta)</strong></td>
+                        <td>$0-89/mo</td>
+                        <td>$144/year</td>
+                        <td>$149/year</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <p style="text-align: center; margin-top: 30px; font-style: italic; color: #666;">
+            Users who know the market will recognize these competitors. We're not naming names—just showing you the facts.
+        </p>
+    </div>
+    
+    <!-- Founder Story -->
+    <div class="section" id="about">
+        <h2>Built By Someone Who Gets It</h2>
+        
+        <div class="founder-story">
+            <p>
+                I'm <strong>Serge Castro</strong> — CPA, economist, and business owner turned retirement planner builder.
+            </p>
+            <p>
+                After closing my last company and entering retirement myself, I realized the existing tools had critical flaws:
+            </p>
+            <p style="font-size: 21px; color: #E8B541; font-weight: 600;">
+                • They hold your data hostage in the cloud<br>
+                • They give you complex charts with no explanation<br>
+                • They don't respect your privacy
+            </p>
+            <p>
+                So I built something better. <strong>Family Forecast is the tool I wanted for my own retirement planning. 
+                Now I'm sharing it with you.</strong>
+            </p>
+        </div>
+    </div>
+    
+    <!-- FAQ -->
+    <div class="section section-alt" id="faq">
+        <h2>Frequently Asked Questions</h2>
+        
+        <div class="faq-container">
+            <div class="faq-item">
+                <div class="faq-question">Q: Is my data really private?</div>
+                <div class="faq-answer">
+                    <strong>A:</strong> Yes. 100% of your financial data stays encrypted in your browser using AES-256 encryption. 
+                    We never send it to our servers. We can't see it, sell it, or access it. You have complete control.
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: How is the AI advisor different from other tools?</div>
+                <div class="faq-answer">
+                    <strong>A:</strong> Most tools just show you charts. Our AI advisor (powered by Claude) can answer ANY question 
+                    about your retirement plan in plain English. It's like having a financial advisor available 24/7, included free.
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: Do I need to be a financial expert to use this?</div>
+                <div class="faq-answer">
+                    <strong>A:</strong> No! That's the point. The AI explains everything in simple terms. 
+                    If you see something confusing, just click the "?" button or ask the AI advisor.
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: What if I need help from a human advisor?</div>
+                <div class="faq-answer">
+                    <strong>A:</strong> We provide export features so you can share your plan with your financial advisor, CPA, or family. 
+                    We complement professional advice, not replace it.
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: How long is it free?</div>
+                <div class="faq-answer">
+                    <strong>A:</strong> All features are completely free during our beta period (November-December). 
+                    Founding Members who join during beta will get permanent discounts (20% off forever) when we introduce paid plans.
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: Can I trust the calculations?</div>
+                <div class="faq-answer">
+                    <strong>A:</strong> All calculations are based on current IRS rules, SSA guidelines, and standard financial planning practices. 
+                    However, this is an educational tool - always consult a licensed professional for personalized advice.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Final CTA -->
+    <div class="final-cta">
+        <h2>Ready to Take Control of Your Retirement?</h2>
+        <p>
+            Join our launch tonight at 8 PM PT.<br>
+            Free access. No credit card. Complete privacy.
+        </p>
+        <a href="#signup" class="cta-primary">Get Notified When We Launch</a>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <p style="max-width: 900px; margin: 0 auto 25px auto; font-size: 14px;">
+            <strong>Important Disclosure:</strong> Family Forecast is an educational planning tool. 
+            I (Serge Castro) am a CPA and economist by training, but I am not a practicing financial advisor 
+            and do not provide personalized financial advice. This tool provides projections and information 
+            for educational purposes only. For personalized financial advice, please consult a licensed financial 
+            advisor, CPA, or other qualified professional.
+        </p>
+        
+        <p style="font-size: 16px; margin: 25px 0;">
+            <a href="mailto:support@familyforecast.ai">support@familyforecast.ai</a>
+        </p>
+        
+        <p style="font-size: 14px; opacity: 0.8;">
+            © 2025 Family Forecast. All rights reserved.
+        </p>
+        
+        <p style="margin-top: 20px; font-size: 14px;">
+            Made with ❤️ for the retirement planning community
+        </p>
+    </div>
+    
+    <!-- JavaScript -->
+    <script>
+        // Email form submission
+        document.getElementById('email-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email-input').value;
+            const timestamp = new Date().toISOString();
+            
+            // Save to localStorage
+            let signups = JSON.parse(localStorage.getItem('beta_signups') || '[]');
+            signups.push({
+                email: email,
+                timestamp: timestamp,
+                source: 'landing_page'
+            });
+            localStorage.setItem('beta_signups', JSON.stringify(signups));
+            
+            // Show success message
+            document.getElementById('success-message').style.display = 'block';
+            document.getElementById('email-form').style.display = 'none';
+            
+            // Log to console for testing
+            console.log('Email captured:', email);
+            console.log('Total signups:', signups.length);
+            
+            // TODO: Send to backend API when ready
+            // fetch('/api/signup', {
+            //     method: 'POST',
+            //     headers: {'Content-Type': 'application/json'},
+            //     body: JSON.stringify({email: email, timestamp: timestamp})
+            // });
+        });
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Logo fallback if image not found
+        const logoImg = document.getElementById('logo-img');
+        if (logoImg) {
+            logoImg.onerror = function() {
+                this.style.display = 'none';
+            };
+            // Try to load, if exists show it
+            logoImg.onload = function() {
+                this.style.display = 'block';
+            };
+        }
+    </script>
+</body>
+</html>
