@@ -102,8 +102,12 @@ SCROLL_TO_TOP_JS = """
 #   <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-XXXXXXX');</script>
 
 ANALYTICS_TRACKING_CODE = """
-<!-- ANALYTICS: Uncomment and add your tracking code here -->
-<!-- <script defer data-domain="yourdomain.com" src="https://plausible.io/js/script.js"></script> -->
+<!-- Privacy-friendly analytics by Plausible -->
+<script async src="https://plausible.io/js/pa-3npHKPHg2kmQuG1mgMbMw.js"></script>
+<script>
+  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+  plausible.init()
+</script>
 """
 
 
