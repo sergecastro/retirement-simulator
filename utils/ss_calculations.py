@@ -432,3 +432,154 @@ def generate_claiming_comparison_table(
         })
 
     return table
+
+
+# =============================================================================
+# SS BENEFIT TAXATION (IRS RULES)
+# =============================================================================
+
+def calculate_ss_taxable_portion(
+    ss_income: float,
+    other_income: float,
+    filing_status: str = "single"
+) -> Dict[str, float]:
+    """
+    Calculate the taxable portion of Social Security benefits.
+
+    IRS uses "combined income" to determine taxation:
+    Combined Income = AGI + 50% of SS benefits + tax-exempt interest
+
+    Taxation thresholds (2025):
+    Single:
+        - $0-$25,000: 0% taxable
+        - $25,000-$34,000: Up to 50% taxable
+        - >$34,000: Up to 85% taxable
+
+    Married Filing Jointly:
+        - $0-$32,000: 0% taxable
+        - $32,000-$44,000: Up to 50% taxable
+        - >$44,000: Up to 85% taxable
+
+    Args:
+        ss_income: Annual Social Security benefits
+        other_income: Other income (wages, pensions, investments, etc.)
+        filing_status: "single" or "married" (Married Filing Jointly)
+
+    Returns:
+        Dict with taxable_percentage, taxable_amount, and tax_bracket
+    """
+    # Calculate combined income (simplified - assumes no tax-exempt interest)
+    combined_income = other_income + (ss_income * 0.5)
+
+    # Thresholds based on filing status
+    if filing_status.lower() in ["married", "married filing jointly", "mfj"]:
+        threshold_1 = 32000  # 50% taxable threshold
+        threshold_2 = 44000  # 85% taxable threshold
+    else:  # Single, Head of Household, etc.
+        threshold_1 = 25000
+        threshold_2 = 34000
+
+    # Determine taxable percentage
+    if combined_income <= threshold_1:
+        # No SS benefits are taxable
+        taxable_pct = 0.0
+        tax_bracket = "0% (below threshold)"
+    elif combined_income <= threshold_2:
+        # Up to 50% taxable - use the lesser of:
+        # 1. 50% of excess over first threshold, OR
+        # 2. 50% of SS benefits
+        excess = combined_income - threshold_1
+        taxable_from_excess = excess * 0.5
+        max_50_pct = ss_income * 0.5
+
+        taxable_amount = min(taxable_from_excess, max_50_pct)
+        taxable_pct = (taxable_amount / ss_income) if ss_income > 0 else 0
+        tax_bracket = "50% bracket"
+    else:
+        # Up to 85% taxable - use the lesser of:
+        # 1. 85% of SS benefits, OR
+        # 2. Sum of:
+        #    a. 50% of excess between thresholds (capped at 50% of SS), PLUS
+        #    b. 85% of excess above second threshold
+
+        # Amount from 50% bracket (excess between threshold_1 and threshold_2)
+        excess_50_bracket = threshold_2 - threshold_1
+        taxable_from_50_bracket = min(excess_50_bracket * 0.5, ss_income * 0.5)
+
+        # Amount from 85% bracket (excess above threshold_2)
+        excess_85_bracket = combined_income - threshold_2
+        taxable_from_85_bracket = excess_85_bracket * 0.85
+
+        # Total potentially taxable
+        total_taxable = taxable_from_50_bracket + taxable_from_85_bracket
+
+        # Cap at 85% of SS benefits
+        max_85_pct = ss_income * 0.85
+        taxable_amount = min(total_taxable, max_85_pct)
+
+        taxable_pct = (taxable_amount / ss_income) if ss_income > 0 else 0
+        tax_bracket = "85% bracket"
+
+    # Ensure percentage is valid
+    taxable_pct = min(max(taxable_pct, 0), 0.85)
+    taxable_amount = ss_income * taxable_pct
+
+    return {
+        'taxable_percentage': taxable_pct,
+        'taxable_amount': taxable_amount,
+        'non_taxable_amount': ss_income - taxable_amount,
+        'combined_income': combined_income,
+        'tax_bracket': tax_bracket,
+        'threshold_1': threshold_1,
+        'threshold_2': threshold_2
+    }
+
+
+def calculate_ss_after_tax(
+    ss_income: float,
+    other_income: float,
+    federal_tax_rate: float = 0.22,
+    state_tax_rate: float = 0.0,
+    filing_status: str = "single"
+) -> Dict[str, float]:
+    """
+    Calculate Social Security income after federal and state taxes.
+
+    Args:
+        ss_income: Annual Social Security benefits
+        other_income: Other income (wages, pensions, etc.)
+        federal_tax_rate: Marginal federal tax rate (default 22%)
+        state_tax_rate: State income tax rate (some states don't tax SS)
+        filing_status: "single" or "married"
+
+    Returns:
+        Dict with before/after tax amounts and effective tax rate
+    """
+    taxation = calculate_ss_taxable_portion(ss_income, other_income, filing_status)
+
+    taxable_amount = taxation['taxable_amount']
+
+    # Federal tax on taxable portion
+    federal_tax = taxable_amount * federal_tax_rate
+
+    # State tax (many states don't tax SS - 37 states fully exempt)
+    state_tax = taxable_amount * state_tax_rate
+
+    total_tax = federal_tax + state_tax
+    after_tax_ss = ss_income - total_tax
+
+    # Effective tax rate on total SS income
+    effective_rate = (total_tax / ss_income) if ss_income > 0 else 0
+
+    return {
+        'gross_ss_income': ss_income,
+        'taxable_ss': taxable_amount,
+        'non_taxable_ss': ss_income - taxable_amount,
+        'federal_tax': federal_tax,
+        'state_tax': state_tax,
+        'total_tax': total_tax,
+        'after_tax_ss': after_tax_ss,
+        'effective_tax_rate': effective_rate,
+        'taxable_percentage': taxation['taxable_percentage'],
+        'tax_bracket': taxation['tax_bracket']
+    }

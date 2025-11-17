@@ -15,7 +15,9 @@ from utils.ss_calculations import (
     optimize_claiming_strategy,
     estimate_pia_from_income,
     generate_claiming_comparison_table,
-    get_fra
+    get_fra,
+    calculate_ss_taxable_portion,
+    calculate_ss_after_tax
 )
 
 
@@ -107,18 +109,15 @@ def show_social_security_optimizer():
         base_income = st.session_state.get('ss_base_income', 75000)
         base_life = st.session_state.get('ss_base_life_exp', 85)
 
-        # Force widget values to reset by deleting them (Streamlit will recreate with defaults)
-        if 'ss_income' in st.session_state:
-            del st.session_state['ss_income']
-        if 'ss_life_exp' in st.session_state:
-            del st.session_state['ss_life_exp']
+        # FIX: DIRECTLY SET the widget key values (don't delete - Streamlit will use these)
+        st.session_state['ss_income'] = base_income
+        st.session_state['ss_life_exp'] = base_life
 
-        # Set flags for next render
-        st.session_state['ss_force_base_values'] = True
-        st.session_state['ss_reset_income_value'] = base_income
-        st.session_state['ss_reset_life_exp_value'] = base_life
+        # Also reset years worked to default
+        st.session_state['ss_years_worked'] = 35
 
         st.success(f"✅ Reset to Base Plan values! Income: ${base_income:,.0f}, Life Exp: {base_life} years")
+        st.rerun()  # Force immediate rerun to reflect changes
 
     # Navigation back to Analysis (quick button in main content)
     col_nav1, col_nav2 = st.columns([1, 3])
@@ -202,17 +201,15 @@ def show_social_security_optimizer():
 
             if estimation_method == "Estimate from income":
                 # Ensure valid default (must be >= min_value)
-                # Use reset value if just reset, otherwise use session state or salary
-                if st.session_state.get('ss_force_base_values', False):
-                    # Use the reset value
-                    default_income = max(int(st.session_state.get('ss_reset_income_value', salary_wages)), 10000)
-                elif 'ss_income' in st.session_state:
-                    # Use existing widget value
-                    default_income = max(int(st.session_state['ss_income']), 10000)
-                else:
-                    # First load - use base plan income
+                # If widget key exists in session state, Streamlit will use it automatically
+                # Otherwise, use base plan income for first load
+                if 'ss_income' not in st.session_state:
+                    # First load - initialize with base plan income
                     base_inc = st.session_state.get('ss_base_income', salary_wages)
                     default_income = max(int(base_inc), 10000) if base_inc else 75000
+                else:
+                    # Session state already has value - use it (Streamlit handles this automatically)
+                    default_income = max(int(st.session_state['ss_income']), 10000)
 
                 income_for_ss = st.number_input(
                     "Your highest annual income ($)",
@@ -278,16 +275,14 @@ def show_social_security_optimizer():
                 st.info(f"📍 Claiming at **Full Retirement Age (FRA)**")
 
             # Adjust life expectancy
-            # Use reset value if just reset, otherwise use session state
-            if st.session_state.get('ss_force_base_values', False):
-                default_life_exp = st.session_state.get('ss_reset_life_exp_value', life_expectancy)
-                st.session_state['ss_force_base_values'] = False  # Clear flag after use
-            elif 'ss_life_exp' in st.session_state:
-                # Use existing widget value (already set by Streamlit)
-                default_life_exp = st.session_state['ss_life_exp']
-            else:
-                # First load - use base plan life expectancy
+            # If widget key exists in session state, Streamlit uses it automatically
+            # Otherwise, initialize with base plan life expectancy
+            if 'ss_life_exp' not in st.session_state:
+                # First load - initialize with base plan life expectancy
                 default_life_exp = st.session_state.get('ss_base_life_exp', life_expectancy)
+            else:
+                # Session state already has value - use it (Streamlit handles this automatically)
+                default_life_exp = st.session_state['ss_life_exp']
 
             adjusted_life_exp = st.slider(
                 "Adjust life expectancy",
@@ -376,6 +371,122 @@ def show_social_security_optimizer():
                 help=f"From age {claiming_age} to {adjusted_life_exp}"
             )
 
+        # SS TAXATION CALCULATOR - NEW FEATURE!
+        st.markdown("---")
+        st.markdown("### 💸 Social Security Taxation Impact")
+        st.info("📊 **NEW:** See how much of your SS benefits will be taxable based on your total income.")
+
+        with st.expander("📋 Calculate Your SS Tax Liability", expanded=True):
+            col_tax1, col_tax2 = st.columns(2)
+
+            with col_tax1:
+                # Get other income (non-SS income in retirement)
+                other_retirement_income = st.number_input(
+                    "Other retirement income (pensions, investments, etc.)",
+                    min_value=0,
+                    max_value=500000,
+                    value=30000,
+                    step=5000,
+                    help="Include pension, IRA withdrawals, investment income, part-time work, etc.",
+                    key="ss_other_income"
+                )
+
+                filing_status = st.selectbox(
+                    "Filing status",
+                    options=["Single", "Married Filing Jointly"],
+                    index=1 if partner_exists else 0,
+                    key="ss_filing_status",
+                    help="This affects the taxation thresholds"
+                )
+
+            with col_tax2:
+                federal_rate = st.slider(
+                    "Your marginal federal tax rate (%)",
+                    min_value=10,
+                    max_value=37,
+                    value=22,
+                    step=2,
+                    help="Common brackets: 12%, 22%, 24%, 32%",
+                    key="ss_fed_rate"
+                )
+
+                state_rate = st.slider(
+                    "State income tax rate (%) - 0 if exempt",
+                    min_value=0.0,
+                    max_value=15.0,
+                    value=0.0,
+                    step=0.5,
+                    help="37 states don't tax SS. Check your state's rules.",
+                    key="ss_state_rate"
+                )
+
+            # Calculate taxation
+            annual_ss = monthly_benefit * 12
+            filing_status_code = "married" if "Married" in filing_status else "single"
+
+            taxation_result = calculate_ss_taxable_portion(
+                annual_ss, other_retirement_income, filing_status_code
+            )
+
+            after_tax_result = calculate_ss_after_tax(
+                annual_ss, other_retirement_income,
+                federal_rate / 100, state_rate / 100,
+                filing_status_code
+            )
+
+            # Display results
+            st.markdown("#### 📊 Your SS Taxation Summary")
+
+            col_res1, col_res2, col_res3, col_res4 = st.columns(4)
+
+            with col_res1:
+                st.metric(
+                    "Combined Income",
+                    f"${taxation_result['combined_income']:,.0f}",
+                    help="Other income + 50% of SS benefits"
+                )
+
+            with col_res2:
+                taxable_pct = taxation_result['taxable_percentage'] * 100
+                st.metric(
+                    "SS Taxable %",
+                    f"{taxable_pct:.0f}%",
+                    help=f"Based on {taxation_result['tax_bracket']}"
+                )
+
+            with col_res3:
+                st.metric(
+                    "Annual Tax on SS",
+                    f"${after_tax_result['total_tax']:,.0f}",
+                    help=f"Federal: ${after_tax_result['federal_tax']:,.0f}, State: ${after_tax_result['state_tax']:,.0f}"
+                )
+
+            with col_res4:
+                st.metric(
+                    "Net SS (After Tax)",
+                    f"${after_tax_result['after_tax_ss']:,.0f}",
+                    help=f"Effective tax rate: {after_tax_result['effective_tax_rate']*100:.1f}%"
+                )
+
+            # Detailed breakdown
+            st.markdown(f"""
+            **Tax Bracket:** {taxation_result['tax_bracket']}
+            - Gross SS benefits: **${annual_ss:,.0f}/year** (${monthly_benefit:,.0f}/month)
+            - Taxable portion: **${after_tax_result['taxable_ss']:,.0f}** ({taxable_pct:.0f}%)
+            - Non-taxable portion: **${after_tax_result['non_taxable_ss']:,.0f}**
+            - Federal tax: **${after_tax_result['federal_tax']:,.0f}**
+            - State tax: **${after_tax_result['state_tax']:,.0f}**
+            - **Net annual SS: ${after_tax_result['after_tax_ss']:,.0f}** (${after_tax_result['after_tax_ss']/12:,.0f}/month)
+            """)
+
+            # Warning if high taxation
+            if taxable_pct >= 85:
+                st.warning(f"⚠️ **85% of your SS benefits will be taxable.** Consider strategies to reduce other income or Roth conversions before claiming.")
+            elif taxable_pct >= 50:
+                st.info(f"ℹ️ **{taxable_pct:.0f}% of your SS is taxable.** You're in the middle bracket - some planning opportunities may exist.")
+            else:
+                st.success(f"✅ **Only {taxable_pct:.0f}% taxable!** Your combined income is low enough to minimize SS taxation.")
+
         # COLA Information Box
         with st.expander("ℹ️ What's included in these calculations?", expanded=False):
             st.markdown("""
@@ -385,9 +496,9 @@ def show_social_security_optimizer():
             - **Delayed retirement credits** (8% per year after FRA, up to age 70)
             - **Break-even analysis** (when delayed claiming "pays off")
             - **Present value calculations** (discounted to today's dollars)
+            - **SS Taxation** (0%, 50%, or 85% taxable based on combined income) ✨ NEW!
 
             **❌ NOT included (for simplicity):**
-            - Federal/state income taxes on SS benefits
             - Medicare premium impacts (IRMAA)
             - Earnings test if still working
             - Spousal survivor benefits after death
