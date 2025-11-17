@@ -441,9 +441,14 @@ def main():
 
     elif 'healthcare_page' in st.session_state and st.session_state['healthcare_page'] == 'medigap_comparison':
         # Import and show Medigap comparison tool
-        from healthcare.medicare_comparison import show_comparison_page
+        from pages.medigap_comparison import show_medigap_comparison
 
-        show_comparison_page()
+        # Add back button
+        if st.button("← Back to Healthcare Hub"):
+            st.session_state['healthcare_page'] = 'hub'
+            st.rerun()
+
+        show_medigap_comparison()
         return
 
     # Show main hub page
