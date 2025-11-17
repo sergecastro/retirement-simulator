@@ -497,9 +497,145 @@
                 font-size: 32px;
             }
         }
+
+        /* Modal Popup for User Capture */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            margin: 8% auto;
+            padding: 50px;
+            border-radius: 12px;
+            max-width: 550px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s;
+            position: relative;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #003D5B;
+        }
+
+        .modal h2 {
+            color: #003D5B;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .modal p {
+            color: #555;
+            margin-bottom: 30px;
+            font-size: 17px;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-form input {
+            padding: 18px;
+            font-size: 17px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            transition: border-color 0.3s;
+        }
+
+        .modal-form input:focus {
+            outline: none;
+            border-color: #E8B541;
+        }
+
+        .modal-form button {
+            padding: 20px;
+            background: #E8B541;
+            color: #003D5B;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .modal-form button:hover {
+            background: #d4a135;
+        }
+
+        .modal-trust {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
+    <!-- Modal Popup for User Capture -->
+    <div id="signup-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <h2>Create Your Free Account</h2>
+            <p>Get instant access to Family Forecast. No credit card required.</p>
+
+            <form class="modal-form" id="modal-signup-form">
+                <input
+                    type="text"
+                    id="modal-name-input"
+                    placeholder="First Name"
+                    required
+                >
+                <input
+                    type="email"
+                    id="modal-email-input"
+                    placeholder="Email Address"
+                    required
+                >
+                <button type="submit">Create Account & Enter App →</button>
+            </form>
+
+            <div class="modal-trust">
+                🔒 Your data stays private in your browser • No credit card required
+            </div>
+
+            <div id="modal-user-count" style="text-align: center; margin-top: 20px; color: #E8B541; font-weight: 600;">
+                Join <span id="modal-count">0</span> users already planning their retirement
+            </div>
+        </div>
+    </div>
+
     <!-- Header with Logo & Navigation -->
     <div class="header">
         <div class="header-content">
@@ -596,22 +732,34 @@
     
     <!-- Email Signup - AFTER 3 Moats -->
     <div class="email-signup" id="signup">
-        <h2>Join the Launch - Tonight at 8 PM PT</h2>
-        <p>Be the first to know when we go live. Get your Founding Member access.</p>
-        
+        <h2>Create Your Free Account - Launching Tonight!</h2>
+        <p>Join <span id="user-count" style="font-weight: 700; color: #E8B541;">0</span> users planning their retirement</p>
+
         <form class="signup-form" id="email-form">
-            <input 
-                type="email" 
-                id="email-input"
-                placeholder="Enter your email address" 
+            <input
+                type="text"
+                id="name-input"
+                placeholder="First Name"
                 required
+                style="flex: 0.8;"
             >
-            <button type="submit">Notify Me</button>
+            <input
+                type="email"
+                id="email-input"
+                placeholder="Email Address"
+                required
+                style="flex: 1.2;"
+            >
+            <button type="submit">Create Account & Enter App →</button>
         </form>
-        
+
         <div id="success-message" class="success-message" style="display:none;">
-            ✅ Success! We'll email you at 8 PM when we launch. Check your inbox for confirmation.
+            ✅ Account created! Entering app now...
         </div>
+
+        <p style="margin-top: 15px; font-size: 14px; opacity: 0.9;">
+            No credit card required • Your data stays private in your browser
+        </p>
     </div>
     
     <!-- ========================================= -->
@@ -861,36 +1009,112 @@
     
     <!-- JavaScript -->
     <script>
-        // Email form submission
-        document.getElementById('email-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email-input').value;
+        // Initialize user count from localStorage
+        function updateUserCount() {
+            const signups = JSON.parse(localStorage.getItem('beta_signups') || '[]');
+            const count = signups.length;
+            document.getElementById('user-count').textContent = count;
+            document.getElementById('modal-count').textContent = count;
+        }
+
+        // Show modal
+        function showModal() {
+            document.getElementById('signup-modal').style.display = 'block';
+            updateUserCount();
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('signup-modal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('signup-modal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Save user and proceed to app
+        function saveUserAndProceed(name, email, source) {
             const timestamp = new Date().toISOString();
-            
+
             // Save to localStorage
             let signups = JSON.parse(localStorage.getItem('beta_signups') || '[]');
             signups.push({
+                name: name,
                 email: email,
                 timestamp: timestamp,
-                source: 'landing_page'
+                source: source
             });
             localStorage.setItem('beta_signups', JSON.stringify(signups));
-            
-            // Show success message
-            document.getElementById('success-message').style.display = 'block';
-            document.getElementById('email-form').style.display = 'none';
-            
-            // Log to console for testing
-            console.log('Email captured:', email);
+
+            // Also save current user info for app
+            localStorage.setItem('current_user', JSON.stringify({
+                name: name,
+                email: email,
+                joined: timestamp
+            }));
+
+            console.log('User captured:', name, email);
             console.log('Total signups:', signups.length);
-            
+
             // TODO: Send to backend API when ready
             // fetch('/api/signup', {
             //     method: 'POST',
             //     headers: {'Content-Type': 'application/json'},
-            //     body: JSON.stringify({email: email, timestamp: timestamp})
+            //     body: JSON.stringify({name, email, timestamp})
             // });
+
+            // Proceed to app (Streamlit will handle this)
+            return true;
+        }
+
+        // Main email form submission (mid-page)
+        document.getElementById('email-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('name-input').value;
+            const email = document.getElementById('email-input').value;
+
+            if (saveUserAndProceed(name, email, 'landing_page_form')) {
+                // Show success message briefly
+                document.getElementById('success-message').style.display = 'block';
+                document.getElementById('email-form').style.display = 'none';
+
+                // Redirect to app after 1 second
+                setTimeout(function() {
+                    window.parent.postMessage({type: 'enter_app'}, '*');
+                }, 1000);
+            }
+        });
+
+        // Modal form submission
+        document.getElementById('modal-signup-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('modal-name-input').value;
+            const email = document.getElementById('modal-email-input').value;
+
+            if (saveUserAndProceed(name, email, 'landing_page_modal')) {
+                // Close modal and proceed to app
+                closeModal();
+                window.parent.postMessage({type: 'enter_app'}, '*');
+            }
+        });
+
+        // Override CTA button clicks to show modal
+        document.addEventListener('DOMContentLoaded', function() {
+            updateUserCount();
+
+            const ctaButtons = document.querySelectorAll('.cta-primary');
+            ctaButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showModal();
+                });
+            });
         });
         
         // Smooth scroll for anchor links
