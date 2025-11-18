@@ -209,17 +209,18 @@ def main():
 
     # Initialize landing page flag
     if 'seen_landing_page' not in st.session_state:
-        st.session_state.seen_landing_page = False
+        # TEMPORARILY DISABLED - Skip landing page for everyone during launch
+        st.session_state.seen_landing_page = True
 
     # Check for URL parameter to skip landing (e.g., ?app=1)
     query_params = st.query_params
     if query_params.get('app') == '1':
         st.session_state.seen_landing_page = True
 
-    # SHOW HTML LANDING PAGE FIRST (for new visitors)
-    if not st.session_state.seen_landing_page:
-        show_html_landing_page()
-        st.stop()  # Stop here until they click "Enter App"
+    # SHOW HTML LANDING PAGE FIRST (for new visitors) - DISABLED FOR LAUNCH
+    # if not st.session_state.seen_landing_page:
+    #     show_html_landing_page()
+    #     st.stop()  # Stop here until they click "Enter App"
 
     # Initialize mode selection in session state
     if 'mode_selected' not in st.session_state:
