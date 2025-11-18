@@ -207,19 +207,10 @@ def main():
     # Show sidebar header
     show_sidebar_header()
 
-    # Initialize landing page flag
+    # LANDING PAGE DISABLED FOR LAUNCH - Go straight to app
+    # The app's beta checkbox screen is clean enough
     if 'seen_landing_page' not in st.session_state:
-        st.session_state.seen_landing_page = False
-
-    # Check for URL parameter to skip landing (e.g., ?app=1)
-    query_params = st.query_params
-    if query_params.get('app') == '1':
-        st.session_state.seen_landing_page = True
-
-    # SHOW HTML LANDING PAGE FIRST (for new visitors)
-    if not st.session_state.seen_landing_page:
-        show_html_landing_page()
-        st.stop()  # Stop here until they click "Enter App"
+        st.session_state.seen_landing_page = True  # Always skip landing page
 
     # Initialize mode selection in session state
     if 'mode_selected' not in st.session_state:
