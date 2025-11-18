@@ -209,18 +209,17 @@ def main():
 
     # Initialize landing page flag
     if 'seen_landing_page' not in st.session_state:
-        # TEMPORARILY DISABLED - Skip landing page for everyone during launch
-        st.session_state.seen_landing_page = True
+        st.session_state.seen_landing_page = False
 
     # Check for URL parameter to skip landing (e.g., ?app=1)
     query_params = st.query_params
     if query_params.get('app') == '1':
         st.session_state.seen_landing_page = True
 
-    # SHOW HTML LANDING PAGE FIRST (for new visitors) - DISABLED FOR LAUNCH
-    # if not st.session_state.seen_landing_page:
-    #     show_html_landing_page()
-    #     st.stop()  # Stop here until they click "Enter App"
+    # SHOW HTML LANDING PAGE FIRST (for new visitors)
+    if not st.session_state.seen_landing_page:
+        show_html_landing_page()
+        st.stop()  # Stop here until they click "Enter App"
 
     # Initialize mode selection in session state
     if 'mode_selected' not in st.session_state:
@@ -352,13 +351,28 @@ def show_html_landing_page():
     """Show the full marketing landing page from static/landing.html"""
     import streamlit.components.v1 as components
 
-    # Add a prominent button at the top to enter app
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("🚀 ENTER APP (No Signup Required)", type="primary", use_container_width=True, key="enter_app_top"):
-            st.session_state.seen_landing_page = True
-            st.rerun()
+    # Add a HUGE visible button at the top
+    st.markdown("""
+    <style>
+    .stButton > button {
+        background-color: #E8B541 !important;
+        color: #003D5B !important;
+        font-size: 24px !important;
+        font-weight: bold !important;
+        padding: 20px 40px !important;
+        border-radius: 10px !important;
+        border: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
+    st.markdown("### 👇 Click Here to Try the App (No Signup Needed)")
+    if st.button("🚀 START PLANNING NOW - FREE", type="primary", use_container_width=True, key="enter_app_top"):
+        st.session_state.seen_landing_page = True
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("*Or scroll down to read more about Family Forecast...*")
     st.markdown("---")
 
     # Read the landing page HTML
