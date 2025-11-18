@@ -346,6 +346,15 @@ def show_html_landing_page():
     """Show the full marketing landing page from static/landing.html"""
     import streamlit.components.v1 as components
 
+    # Add a prominent button at the top to enter app
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🚀 ENTER APP (No Signup Required)", type="primary", use_container_width=True, key="enter_app_top"):
+            st.session_state.seen_landing_page = True
+            st.rerun()
+
+    st.markdown("---")
+
     # Read the landing page HTML
     landing_html_path = Path(__file__).parent / "static" / "landing.html"
 
@@ -353,33 +362,16 @@ def show_html_landing_page():
         with open(landing_html_path, 'r', encoding='utf-8') as f:
             landing_html = f.read()
 
-        # Add a button to enter the app (inject at the end of body)
-        app_entry_button = """
-        <script>
-        // Override all CTA links to go to app
-        document.addEventListener('DOMContentLoaded', function() {
-            const ctaButtons = document.querySelectorAll('.cta-primary');
-            ctaButtons.forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    // Signal Streamlit to proceed
-                    window.parent.postMessage({type: 'enter_app'}, '*');
-                });
-            });
-        });
-        </script>
-        """
-
-        landing_html = landing_html.replace('</body>', app_entry_button + '</body>')
-
         # Render full-page HTML
         components.html(landing_html, height=4000, scrolling=True)
 
-        # Add a Streamlit button below for those who scroll
+        # Add a Streamlit button at bottom too
         st.markdown("---")
-        if st.button("🚀 Enter Family Forecast App", type="primary", use_container_width=True, key="enter_app"):
-            st.session_state.seen_landing_page = True
-            st.rerun()
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🚀 ENTER APP (No Signup Required)", type="primary", use_container_width=True, key="enter_app_bottom"):
+                st.session_state.seen_landing_page = True
+                st.rerun()
     else:
         st.error(f"Landing page not found at {landing_html_path}")
         # Fallback - proceed to app
