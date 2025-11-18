@@ -653,9 +653,9 @@
         </div>
     </div>
     
-    <!-- Launch Banner - Scarcity -->
+    <!-- Status Banner -->
     <div class="launch-banner">
-        🚀 LAUNCHING TONIGHT at 8 PM PT | First 500 Users Get Founding Member Status - Lock In 20% Off Forever
+        Open Beta - Free to Use | Looking for Feedback to Improve Calculations
     </div>
     
     <!-- ========================================= -->
@@ -672,15 +672,14 @@
         </p>
         
         <p class="founder-intro">
-            <strong>Background:</strong> I'm Serge Castro—a CPA, economist, and business owner. 
-            I built this because the tool I wanted for my own family didn't exist: 
-            one that puts privacy first and doesn't require a Ph.D. to understand.
+            <strong>Background:</strong> I'm a retired CPA who didn't want to upload my net worth to the cloud.
+            I built a tool that runs entirely in your browser—no servers, no data mining, 100% local encryption.
         </p>
-        
-        <a href="#signup" class="cta-primary">Get Free Access - Launching Tonight</a>
-        
+
+        <a href="#" class="cta-primary" onclick="event.preventDefault(); window.parent.postMessage({type: 'enter_app'}, '*');">Try Demo (No Signup Required)</a>
+
         <p class="trust-signal">
-            No credit card required. Your data never leaves your browser.
+            No email required to try it. Your data never leaves your browser.
         </p>
     </div>
     
@@ -702,16 +701,16 @@
                 </p>
             </div>
             
-            <!-- Moat #2: AI Advisor -->
+            <!-- Moat #2: AI Interface -->
             <div class="moat-card">
                 <div class="moat-icon">🤖</div>
-                <h3>#2: Your Personal AI Advisor</h3>
+                <h3>#2: AI Assistant That Explains the Math</h3>
                 <p>
-                    Don't just see charts—get answers. Ask "Should I retire at 62?" or "How do I lower my taxes?" 
-                    and get personalized, 24/7 advice.
+                    Don't understand what IRMAA means? Click the "?" button and the AI explains the tax rule
+                    using your specific numbers. It's an interface to help you understand the calculations.
                 </p>
                 <p class="moat-highlight">
-                    This isn't just a tooltip; it's a full conversational advisor that understands your unique plan.
+                    Not a magic advisor—just plain English explanations of the underlying math.
                 </p>
             </div>
             
@@ -730,35 +729,33 @@
         </div>
     </div>
     
-    <!-- Email Signup - AFTER 3 Moats -->
+    <!-- Optional Signup - AFTER 3 Moats -->
     <div class="email-signup" id="signup">
-        <h2>Create Your Free Account - Launching Tonight!</h2>
-        <p>Join <span id="user-count" style="font-weight: 700; color: #E8B541;">0</span> users planning their retirement</p>
+        <h2>Want Updates? (Optional)</h2>
+        <p>The tool is 100% free to use. If you want notifications about calculation improvements, leave your email.</p>
 
         <form class="signup-form" id="email-form">
             <input
                 type="text"
                 id="name-input"
-                placeholder="First Name"
-                required
+                placeholder="First Name (optional)"
                 style="flex: 0.8;"
             >
             <input
                 type="email"
                 id="email-input"
-                placeholder="Email Address"
-                required
+                placeholder="Email Address (optional)"
                 style="flex: 1.2;"
             >
-            <button type="submit">Create Account & Enter App →</button>
+            <button type="submit">Subscribe to Updates</button>
         </form>
 
         <div id="success-message" class="success-message" style="display:none;">
-            ✅ Account created! Entering app now...
+            ✅ Thanks! We'll keep you posted on improvements.
         </div>
 
         <p style="margin-top: 15px; font-size: 14px; opacity: 0.9;">
-            No credit card required • Your data stays private in your browser
+            Or <a href="#" onclick="event.preventDefault(); window.parent.postMessage({type: 'enter_app'}, '*');" style="color: #E8B541; text-decoration: underline;">skip this and try the app now</a>
         </p>
     </div>
     
@@ -853,8 +850,8 @@
                         <td>❌ Cloud Only</td>
                     </tr>
                     <tr>
-                        <td>AI Conversational Advisor</td>
-                        <td>✅ YES</td>
+                        <td>AI Explanation Interface</td>
+                        <td>✅ Built-in</td>
                         <td>❌ No</td>
                         <td>❌ No</td>
                         <td>❌ No</td>
@@ -867,11 +864,11 @@
                         <td>❌ No</td>
                     </tr>
                     <tr>
-                        <td>Current Status</td>
-                        <td>✅ Working</td>
-                        <td>❌ Down/Broken</td>
-                        <td>✅ Working</td>
-                        <td>✅ Working</td>
+                        <td>Data Storage</td>
+                        <td>✅ Local Browser</td>
+                        <td>☁️ Cloud-Hosted</td>
+                        <td>☁️ Cloud-Hosted</td>
+                        <td>☁️ Cloud-Hosted</td>
                     </tr>
                     <tr>
                         <td>Free Access</td>
@@ -976,12 +973,12 @@
     
     <!-- Final CTA -->
     <div class="final-cta">
-        <h2>Ready to Take Control of Your Retirement?</h2>
+        <h2>Try It Now - No Signup Required</h2>
         <p>
-            Join our launch tonight at 8 PM PT.<br>
-            Free access. No credit card. Complete privacy.
+            100% free. No email needed. Your data stays in your browser.<br>
+            Looking for feedback to improve the calculation engine.
         </p>
-        <a href="#signup" class="cta-primary">Get Notified When We Launch</a>
+        <a href="#" class="cta-primary" onclick="event.preventDefault(); window.parent.postMessage({type: 'enter_app'}, '*');">Start Planning</a>
     </div>
     
     <!-- Footer -->
@@ -1074,23 +1071,21 @@
             return true;
         }
 
-        // Main email form submission (mid-page)
+        // Main email form submission (mid-page) - OPTIONAL
         document.getElementById('email-form').addEventListener('submit', function(e) {
             e.preventDefault();
 
             const name = document.getElementById('name-input').value;
             const email = document.getElementById('email-input').value;
 
-            if (saveUserAndProceed(name, email, 'landing_page_form')) {
-                // Show success message briefly
-                document.getElementById('success-message').style.display = 'block';
-                document.getElementById('email-form').style.display = 'none';
-
-                // Redirect to app after 1 second
-                setTimeout(function() {
-                    window.parent.postMessage({type: 'enter_app'}, '*');
-                }, 1000);
+            // Only save if user provided email
+            if (email && email.trim() !== '') {
+                saveUserAndProceed(name, email, 'landing_page_form');
             }
+
+            // Show success message
+            document.getElementById('success-message').style.display = 'block';
+            document.getElementById('email-form').style.display = 'none';
         });
 
         // Modal form submission
@@ -1107,17 +1102,10 @@
             }
         });
 
-        // Override CTA button clicks to show modal
+        // Initialize on page load (modal disabled for Reddit-friendly experience)
         document.addEventListener('DOMContentLoaded', function() {
             updateUserCount();
-
-            const ctaButtons = document.querySelectorAll('.cta-primary');
-            ctaButtons.forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showModal();
-                });
-            });
+            // Modal disabled - CTA buttons now go directly to app
         });
         
         // Smooth scroll for anchor links
