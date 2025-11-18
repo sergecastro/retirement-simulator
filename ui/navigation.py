@@ -164,6 +164,56 @@ def show_sidebar_footer(is_trusted):
     with st.sidebar:
         st.markdown("---")
 
+        # User Guide Button
+        with st.expander("📚 User Guide & About"):
+            st.markdown("""
+            ### Welcome to Family Forecast!
+
+            **What makes us different:**
+
+            🔒 **#1: You Control Your Data. Period.**
+            Your plan is encrypted and stays in your browser. We can't see it, sell it, or lock you out. Ever.
+
+            🤖 **#2: AI Assistant That Explains the Math**
+            Don't understand what IRMAA means? Click the "?" button and the AI explains the tax rule using your specific numbers.
+
+            🏥 **#3: The Complete Healthcare Hub**
+            Plan for your biggest unknown. Our hub includes tools to model Medicare, avoid costly IRMAA surcharges, and compare Medigap plans.
+
+            ---
+
+            ### How It Works
+
+            **Step 1: Build Your Plan** (15 minutes)
+            Complete our guided questionnaire: income, expenses, assets, Social Security, and goals. Your data is encrypted as you type.
+
+            **Step 2: See Your Complete Picture**
+            Get instant analysis of your probability of success (Monte Carlo), cash flow, tax implications, and healthcare costs.
+
+            **Step 3: Explore & Optimize**
+            Use our tools to improve your plan. Compare retirement ages in the Scenario Studio, optimize your Social Security, and plan Roth conversions.
+
+            ---
+
+            ### What's Included
+
+            ✅ Complete Retirement Simulation - 1,000 Monte Carlo scenarios
+            ✅ Cash Flow Projections - Year-by-year income vs. expenses
+            ✅ Social Security Optimizer - Find your optimal claiming strategy
+            ✅ Tax Planning - RMD calculations, Roth conversion optimizer
+            ✅ Healthcare Hub - Medicare, IRMAA, Medigap planning
+            ✅ Scenario Studio - Compare 2-4 strategies side-by-side
+            ✅ AI Conversational Advisor - Ask anything, get instant answers
+            ✅ Privacy-First Architecture - Your data never leaves your browser
+
+            ---
+
+            **Built by:** Serge Castro, CPA
+            **Contact:** support@familyforecast.ai
+            """)
+
+        st.markdown("---")
+
         if is_trusted:
             st.success("✅ Full Access")
         else:
