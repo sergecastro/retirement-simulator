@@ -211,6 +211,11 @@ def main():
     if 'seen_landing_page' not in st.session_state:
         st.session_state.seen_landing_page = False
 
+    # Check for URL parameter to skip landing (e.g., ?app=1)
+    query_params = st.query_params
+    if query_params.get('app') == '1':
+        st.session_state.seen_landing_page = True
+
     # SHOW HTML LANDING PAGE FIRST (for new visitors)
     if not st.session_state.seen_landing_page:
         show_html_landing_page()
