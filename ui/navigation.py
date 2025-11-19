@@ -148,7 +148,7 @@ def show_sidebar_header():
         # Centered logo (subtle)
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.image("assets/branding/logo familyforecast.png", width=80)
+            st.image("assets/branding/logo-familyforecast.png", width=80)
         st.title("🏠 Family Forecast")
         st.markdown("*Retirement Planning Suite*")
         st.markdown("---")

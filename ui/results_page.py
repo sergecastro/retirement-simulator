@@ -45,7 +45,7 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
     # Header with logo (medium size)
     col_logo, col_title = st.columns([1, 6])
     with col_logo:
-        st.image("assets/branding/logo familyforecast.png", width=100)
+        st.image("assets/branding/logo-familyforecast.png", width=100)
     with col_title:
         st.title("📊 Retirement Analysis Results")
 

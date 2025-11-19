@@ -406,7 +406,7 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     # Welcome header with logo
     col_logo, col_title = st.columns([1, 4])
     with col_logo:
-        st.image("assets/branding/logo familyforecast.png", width=120)
+        st.image("assets/branding/logo-familyforecast.png", width=120)
     with col_title:
         st.title("Welcome to Family Forecast!")
         st.markdown("## *Family Lifecycle Retirement Planner*")
