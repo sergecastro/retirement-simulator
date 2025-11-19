@@ -4,15 +4,40 @@ Family Forecast - Retirement Planning Tool
 Main application entry point and navigation.
 
 Author: Family Forecast Development Team
-Last Updated: November 6, 2025 - 7:30 PM EST
-Version: 3.1.1 (Healthcare Hub)
+Last Updated: November 18, 2025
+Version: 3.2.0 (Production Hardening)
 """
+
+# =============================================================================
+# ERROR MONITORING SETUP (Must be first!)
+# =============================================================================
+import os
+from pathlib import Path
+
+# Initialize Sentry for error tracking (optional - only if DSN is set)
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.flask import FlaskIntegration
+
+    SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+    if SENTRY_DSN:
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            traces_sample_rate=0.1,  # 10% performance monitoring
+            profiles_sample_rate=0.1,  # 10% profiling
+            environment=os.getenv("RENDER_GIT_BRANCH", "development"),
+            release=os.getenv("RENDER_GIT_COMMIT", "dev"),
+            integrations=[FlaskIntegration()],
+        )
+        print("✅ Sentry error monitoring initialized")
+    else:
+        print("ℹ️ Sentry DSN not set - error monitoring disabled")
+except ImportError:
+    print("ℹ️ Sentry not installed - error monitoring disabled")
 
 # =============================================================================
 # STARTUP: Create empty secrets.toml to prevent warning
 # =============================================================================
-import os
-from pathlib import Path
 
 # Create .streamlit directory and empty secrets.toml if they don't exist
 streamlit_dir = Path.home() / ".streamlit"
@@ -184,6 +209,19 @@ def load_intake_data_to_session():
 
 def main():
     """Main application entry point"""
+
+    # =============================================================================
+    # HEALTH CHECK ENDPOINT - For monitoring/uptime services
+    # =============================================================================
+    # Usage: https://yourapp.com?health=check
+    # Returns: Simple OK message and stops (doesn't load full app)
+    if st.query_params.get("health") == "check":
+        from datetime import datetime
+        st.write("✅ OK")
+        st.write(f"Version: 3.2.0")
+        st.write(f"Status: Running")
+        st.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        st.stop()
 
     # Initialize app (page config, CSS, Flask check)
     initialize_app()
