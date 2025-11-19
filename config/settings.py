@@ -67,6 +67,23 @@ CUSTOM_CSS = """
         margin-top: 1rem !important;
         margin-bottom: 1rem !important;
     }
+
+    /* Fix tooltip/popover display issues */
+    [data-testid="stTooltipIcon"] {
+        cursor: pointer !important;
+        z-index: 999999 !important;
+    }
+
+    .stTooltipContent {
+        z-index: 999999 !important;
+        pointer-events: auto !important;
+    }
+
+    /* Ensure tooltips are clickable and visible */
+    div[role="tooltip"] {
+        z-index: 999999 !important;
+        pointer-events: auto !important;
+    }
 </style>
 """
 
