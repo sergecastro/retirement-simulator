@@ -403,9 +403,13 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
         has_intake_data: Whether INTAKE data exists
         is_trusted: Whether user has trusted access
     """
-    # Welcome header
-    st.title("🏠 Welcome to Family Forecast!")
-    st.markdown("## *Family Lifecycle Retirement Planner*")
+    # Welcome header with logo
+    col_logo, col_title = st.columns([1, 4])
+    with col_logo:
+        st.image("assets/branding/logo familyforecast.png", width=120)
+    with col_title:
+        st.title("Welcome to Family Forecast!")
+        st.markdown("## *Family Lifecycle Retirement Planner*")
 
     # "What's New" banner (dismissible)
     if 'whats_new_dismissed' not in st.session_state:

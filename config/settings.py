@@ -197,6 +197,12 @@ FOOTER_HTML = f"""
 def show_footer():
     """Display application footer"""
     st.markdown("---")
+
+    # Footer with subtle centered logo
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+        st.image("assets/branding/logo familyforecast.png", width=60)
+
     st.markdown(FOOTER_HTML, unsafe_allow_html=True)
 
 

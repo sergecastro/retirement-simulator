@@ -145,6 +145,10 @@ def get_navigation_state():
 def show_sidebar_header():
     """Display sidebar header with app info"""
     with st.sidebar:
+        # Centered logo (subtle)
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.image("assets/branding/logo familyforecast.png", width=80)
         st.title("🏠 Family Forecast")
         st.markdown("*Retirement Planning Suite*")
         st.markdown("---")

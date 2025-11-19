@@ -42,7 +42,12 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         financial_data: Financial data
         sim_params: Simulation parameters
     """
-    st.title("📊 Retirement Analysis Results")
+    # Header with logo (medium size)
+    col_logo, col_title = st.columns([1, 6])
+    with col_logo:
+        st.image("assets/branding/logo familyforecast.png", width=100)
+    with col_title:
+        st.title("📊 Retirement Analysis Results")
 
     # Ensure sim_params has defaults for all values
     if sim_params is None:
