@@ -17,13 +17,16 @@ Created: November 19, 2025
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import json
 from datetime import datetime
 from typing import List, Dict
 from utils.historical_snapshots import (
     list_historical_snapshots,
     load_historical_snapshot,
     delete_historical_snapshot,
-    get_snapshot_count
+    get_snapshot_count,
+    export_all_snapshots,
+    import_snapshots
 )
 
 
@@ -88,6 +91,24 @@ def render():
 
     # Sort by timestamp
     loaded_snapshots.sort(key=lambda x: x["timestamp"])
+
+    # Export Comparison Report Button
+    st.markdown("---")
+    col_export, col_spacer = st.columns([2, 3])
+    with col_export:
+        if st.button("📊 Export This Comparison as JSON", use_container_width=True, type="secondary"):
+            report = export_comparison_report(loaded_snapshots)
+            json_str = json.dumps(report, indent=2)
+
+            st.download_button(
+                label="💾 Download Comparison Report",
+                data=json_str,
+                file_name=f"comparison_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json",
+                use_container_width=True,
+                key="download_comparison_report"
+            )
+            st.success("✅ Comparison report ready to download!")
 
     # Show comparison sections
     st.markdown("---")
@@ -363,6 +384,94 @@ def show_snapshot_management(snapshots: List[Dict]):
                     st.rerun()
                 else:
                     st.error("❌ Failed to delete snapshot")
+
+    # Export/Import Section
+    st.markdown("---")
+    st.markdown("### 📦 Backup & Restore")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**Export All Snapshots**")
+        st.markdown("Download all your snapshots as a JSON file for backup or transfer.")
+
+        if st.button("📥 Export All Snapshots", use_container_width=True, type="secondary"):
+            export_data = export_all_snapshots()
+
+            # Convert to JSON string
+            json_str = json.dumps(export_data, indent=2)
+
+            # Create download button
+            st.download_button(
+                label="💾 Download JSON File",
+                data=json_str,
+                file_name=f"family_forecast_snapshots_{datetime.now().strftime('%Y%m%d')}.json",
+                mime="application/json",
+                use_container_width=True
+            )
+
+            st.success(f"✅ Ready to download {export_data['snapshot_count']} snapshots!")
+
+    with col2:
+        st.markdown("**Import Snapshots**")
+        st.markdown("Upload a previously exported JSON file to restore your snapshots.")
+
+        uploaded_file = st.file_uploader(
+            "Choose a JSON file",
+            type=["json"],
+            key="import_snapshots_uploader",
+            help="Upload a file exported from this app"
+        )
+
+        if uploaded_file is not None:
+            try:
+                # Read the uploaded file
+                import_data = json.loads(uploaded_file.read())
+
+                # Show preview
+                st.info(f"📄 Found {import_data.get('snapshot_count', 0)} snapshots in file")
+
+                if st.button("⬆️ Import Snapshots", use_container_width=True, type="primary"):
+                    imported_count = import_snapshots(import_data)
+                    st.success(f"✅ Successfully imported {imported_count} snapshots!")
+                    st.balloons()
+                    st.rerun()
+
+            except json.JSONDecodeError:
+                st.error("❌ Invalid JSON file. Please upload a valid export file.")
+            except Exception as e:
+                st.error(f"❌ Error reading file: {str(e)}")
+
+
+def export_comparison_report(snapshots: List[Dict]) -> Dict:
+    """
+    Export the current comparison as a report
+
+    Args:
+        snapshots: List of loaded snapshots being compared
+
+    Returns:
+        Dictionary containing comparison report data
+    """
+    report = {
+        "report_type": "historical_comparison",
+        "generated_date": datetime.now().isoformat(),
+        "snapshot_count": len(snapshots),
+        "snapshots": snapshots,
+        "summary": {
+            "date_range": {
+                "first": snapshots[0]["timestamp"][:10],
+                "last": snapshots[-1]["timestamp"][:10]
+            },
+            "metrics": {
+                "success_rate_change": snapshots[-1]["simulation_results"]["success_rate"] - snapshots[0]["simulation_results"]["success_rate"],
+                "net_worth_change": snapshots[-1]["simulation_results"]["median_final_balance"] - snapshots[0]["simulation_results"]["median_final_balance"],
+                "years_solvent_change": snapshots[-1]["simulation_results"]["years_of_solvency"] - snapshots[0]["simulation_results"]["years_of_solvency"]
+            }
+        }
+    }
+
+    return report
 
 
 # =============================================================================
