@@ -932,6 +932,75 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
     except Exception as e:
         st.error(f"Download options error: {str(e)}")
 
+    # =============================================================================
+    # HISTORICAL SNAPSHOT - Save current plan for future comparison
+    # =============================================================================
+
+    st.markdown("---")
+    st.subheader("📸 Save Historical Snapshot")
+    st.markdown("Track your progress over time by saving snapshots quarterly or yearly.")
+
+    col1, col2 = st.columns([3, 1])
+
+    with col1:
+        snapshot_name = st.text_input(
+            "Snapshot Name",
+            value=f"Snapshot {datetime.now().strftime('%B %Y')}",
+            help="Give this snapshot a memorable name",
+            key="snapshot_name_input"
+        )
+
+        snapshot_notes = st.text_area(
+            "Notes (Optional)",
+            placeholder="E.g., 'After 10% raise' or 'Post home purchase'",
+            help="Add context about what changed since your last snapshot",
+            key="snapshot_notes_input"
+        )
+
+    with col2:
+        st.write("")  # Spacing
+        st.write("")  # Spacing
+        if st.button("💾 Save Snapshot", use_container_width=True, key="save_snapshot_btn"):
+            try:
+                from utils.historical_snapshots import save_historical_snapshot
+                from datetime import datetime
+
+                # Collect current user data
+                user_data = {
+                    "name": st.session_state.get("user_name", ""),
+                    "age": st.session_state.get("current_age", 0),
+                    "retirement_age": st.session_state.get("retirement_age", 67),
+                    "life_expectancy": st.session_state.get("life_expectancy", 85),
+                    "income": st.session_state.get("annual_income", 0),
+                    "expenses": st.session_state.get("monthly_expenses", 0) * 12,
+                    "savings": st.session_state.get("current_savings", 0),
+                    "contributions": st.session_state.get("annual_contribution", 0),
+                }
+
+                # Collect simulation results
+                simulation_results = {
+                    "success_rate": results.get("success_rate", 0),
+                    "median_final_balance": results.get("median_final_balance", 0),
+                    "years_of_solvency": results.get("years_of_solvency", 0),
+                    "final_age": results.get("final_age", 85),
+                    "total_years_simulated": results.get("total_years_simulated", 0),
+                }
+
+                # Save snapshot
+                snapshot_id = save_historical_snapshot(
+                    user_data,
+                    simulation_results,
+                    snapshot_name,
+                    snapshot_notes
+                )
+
+                st.success(f"✅ Snapshot saved successfully! ID: {snapshot_id}")
+                st.info("💡 Visit **Historical Tracking** from the main menu to compare your progress over time!")
+                st.balloons()
+
+            except Exception as e:
+                st.error(f"❌ Failed to save snapshot: {str(e)}")
+
 
 # =============================================================================
 # TESTING
