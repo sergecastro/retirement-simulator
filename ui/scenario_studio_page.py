@@ -930,7 +930,7 @@ def render_scenario_studio_page():
             run_scenario = st.form_submit_button(
                 "🔍 Run This Scenario",
                 type="primary",
-                width='stretch'
+                use_container_width=True
             )
 
     # =============================================================================
@@ -1159,7 +1159,7 @@ def render_scenario_studio_page():
             if st.button(
                 "💾 Save Scenario",
                 type="primary",
-                width='stretch',
+                use_container_width=True,
                 key=save_button_key
             ):
                 from utils.comparison_scenarios import save_comparison_scenario
@@ -1322,7 +1322,7 @@ def render_scenario_studio_page():
                         button_label,
                         key=f"select_compare_{comp['id']}",
                         type=button_type,
-                        width='stretch',
+                        use_container_width=True,
                         help=f"Created: {comp['created_at'][:16].replace('T', ' ')}"
                     ):
                         # Toggle selection
@@ -1855,7 +1855,7 @@ def render_scenario_studio_page():
 
                     st.dataframe(
                         df,
-                        width='stretch',
+                        use_container_width=True,
                         hide_index=True,
                         height=600
                     )
@@ -1972,7 +1972,7 @@ def render_scenario_studio_page():
                         showlegend=False,
                     )
 
-                    st.plotly_chart(fig1, width='stretch')
+                    st.plotly_chart(fig1, use_container_width=True)
 
                 except ImportError:
                     st.warning("📊 Plotly not available. Install with: pip install plotly")
@@ -2017,7 +2017,7 @@ def render_scenario_studio_page():
                         )
                     )
 
-                    st.plotly_chart(fig2, width='stretch')
+                    st.plotly_chart(fig2, use_container_width=True)
 
                 except Exception as e:
                     st.error(f"Error creating trajectory chart: {e}")
@@ -2081,7 +2081,7 @@ def render_scenario_studio_page():
                         )
                     )
 
-                    st.plotly_chart(fig3, width='stretch')
+                    st.plotly_chart(fig3, use_container_width=True)
 
                 except Exception as e:
                     st.error(f"Error creating income/expenses chart: {e}")
@@ -2135,7 +2135,7 @@ def render_scenario_studio_page():
                         showlegend=False,
                     )
 
-                    st.plotly_chart(fig4, width='stretch')
+                    st.plotly_chart(fig4, use_container_width=True)
 
                 except Exception as e:
                     st.error(f"Error creating health score chart: {e}")
@@ -2220,7 +2220,7 @@ def render_scenario_studio_page():
                                     data=csv_data,
                                     file_name=f"scenario_comparison_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.csv",
                                     mime="text/csv",
-                                    width='stretch'
+                                    use_container_width=True
                                 )
                                 st.success("✅ CSV file generated! Click Download above.")
                         except Exception as e:

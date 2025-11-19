@@ -337,7 +337,7 @@ def show_medigap_comparison():
             table_data[plan_name] = plan_coverage
 
         df_comparison = pd.DataFrame(table_data)
-        st.dataframe(df_comparison, width='stretch', hide_index=True, height=400)
+        st.dataframe(df_comparison, use_container_width=True, hide_index=True, height=400)
 
         # Note about Plan C and F
         st.warning("""
@@ -429,7 +429,7 @@ def show_medigap_comparison():
             })
 
         df_premiums = pd.DataFrame(premium_data)
-        st.dataframe(df_premiums, width='stretch', hide_index=True)
+        st.dataframe(df_premiums, use_container_width=True, hide_index=True)
 
         # Highlight recommendation
         st.success(f"""
@@ -490,7 +490,7 @@ def show_medigap_comparison():
             })
 
         df_projection = pd.DataFrame(projection_data)
-        st.dataframe(df_projection, width='stretch', hide_index=True)
+        st.dataframe(df_projection, use_container_width=True, hide_index=True)
 
         st.info(f"**10-Year Total Cost Estimate:** ${cumulative:,.0f} for {plan_to_project}")
 
