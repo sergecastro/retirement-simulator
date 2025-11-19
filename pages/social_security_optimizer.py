@@ -556,7 +556,7 @@ def show_social_security_optimizer():
         # Highlight selected age
         st.dataframe(
             df[['Claim Age', 'Monthly ($)', 'Annual ($)', '% of FRA', 'Lifetime Total ($)', 'Break-Even Age']],
-            width='stretch',
+            use_container_width=True,
             hide_index=True,
             height=350
         )
