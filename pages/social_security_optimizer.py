@@ -704,7 +704,7 @@ def show_social_security_optimizer():
                 hovermode='x unified'
             )
 
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
 
         except ImportError:
             st.warning("📊 Install Plotly for interactive charts: pip install plotly")
@@ -724,7 +724,7 @@ def show_social_security_optimizer():
                 })
 
         df_be = pd.DataFrame(be_data)
-        st.dataframe(df_be, width='stretch', hide_index=True)
+        st.dataframe(df_be, use_container_width=True, hide_index=True)
 
         if adjusted_life_exp > be_70_vs_62:
             st.success(f"🎉 **Based on your life expectancy of {adjusted_life_exp}, delaying to age 70 is projected to be beneficial!**")
