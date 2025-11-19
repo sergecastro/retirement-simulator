@@ -16,6 +16,7 @@ __pycache__/
 # Local/private data files (keep out of repo)
 family_scenarios.json
 family_scenarios_backup.json
+.snapshot_cache/
 
 # Claude Code
 .claude/
