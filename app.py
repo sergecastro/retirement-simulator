@@ -179,20 +179,7 @@ SCROLL_TO_TOP_JS = """
 #   <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-XXXXXXX');</script>
 
 ANALYTICS_TRACKING_CODE = """
-<!-- Privacy-friendly analytics by Plausible - Injected into HEAD via JavaScript -->
-<script>
-(function() {
-  // Inject Plausible script into HEAD (required for proper tracking)
-  if (!document.querySelector('script[src*="plausible.io"]')) {
-    var script = document.createElement('script');
-    script.defer = true;
-    script.setAttribute('data-domain', 'familyforecast.ai');
-    // Using standard script.js for better verification compatibility
-    script.src = 'https://plausible.io/js/script.js';
-    document.head.appendChild(script);
-  }
-})();
-</script>
+<script defer data-domain="familyforecast.ai" src="https://plausible.io/js/script.js"></script>
 """
 
 
@@ -272,7 +259,8 @@ def main():
     initialize_app()
 
     # Inject analytics tracking code (invisible to users)
-    st.markdown(ANALYTICS_TRACKING_CODE, unsafe_allow_html=True)
+    # Using components.html instead of markdown for better script injection
+    st.components.v1.html(ANALYTICS_TRACKING_CODE, height=0)
 
     # ⚠️⚠️⚠️ DEMO MODE - Authentication simplified for beta testing ⚠️⚠️⚠️
     # To re-enable full auth: Uncomment the lines below
