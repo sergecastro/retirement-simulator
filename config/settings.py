@@ -31,6 +31,9 @@ def setup_page_config():
 # =============================================================================
 
 CUSTOM_CSS = """
+<!-- Plausible Analytics -->
+<script defer data-domain="familyforecast.ai" src="https://plausible.io/js/script.js"></script>
+
 <style>
     /* Compact headers */
     h1 {
