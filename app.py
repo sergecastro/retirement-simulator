@@ -19,6 +19,57 @@ try:
     import sentry_sdk
     from sentry_sdk.integrations.flask import FlaskIntegration
 
+    def before_send(event, hint):
+        """
+        Filter out bot noise and non-critical errors before sending to Sentry.
+
+        Filters:
+        - 404 errors (file not found) - usually bots scanning for vulnerabilities
+        - Legacy browsers (pre-2020) - typically bots with fake user agents
+        - Known bot patterns in URLs
+
+        Returns None to drop the event, or the event to send it to Sentry.
+        """
+        # Get the exception if available
+        if 'exception' in event:
+            exc_values = event['exception'].get('values', [])
+            for exc in exc_values:
+                exc_type = exc.get('type', '')
+                exc_value = exc.get('value', '')
+
+                # Filter: Missing file errors (404s)
+                if 'Missing file' in exc_value or 'MediaFileHandler' in exc_type:
+                    return None  # Drop this event
+
+        # Get request info if available
+        if 'request' in event:
+            request = event['request']
+            url = request.get('url', '')
+            headers = request.get('headers', {})
+
+            # Filter: Bot-like paths (common vulnerability scans)
+            bot_paths = [
+                '/media/system/', '/wp-admin/', '/admin/',
+                '/phpmyadmin/', '/.env', '/config.php',
+                '/core.js', '/jquery.js', '/.git/'
+            ]
+            if any(bot_path in url for bot_path in bot_paths):
+                return None  # Drop this event
+
+            # Filter: Ancient browsers (likely bots)
+            user_agent = headers.get('User-Agent', '')
+            if user_agent:
+                # Check for very old Chrome versions (pre-2020)
+                if 'Chrome/3' in user_agent or 'Chrome/4' in user_agent:
+                    return None  # Drop this event
+
+                # Check for very old Firefox versions
+                if 'Firefox/3' in user_agent or 'Firefox/4' in user_agent:
+                    return None  # Drop this event
+
+        # Keep all other errors (real user issues)
+        return event
+
     SENTRY_DSN = os.getenv("SENTRY_DSN", "")
     if SENTRY_DSN:
         sentry_sdk.init(
@@ -28,8 +79,9 @@ try:
             environment=os.getenv("RENDER_GIT_BRANCH", "development"),
             release=os.getenv("RENDER_GIT_COMMIT", "dev"),
             integrations=[FlaskIntegration()],
+            before_send=before_send,  # Apply our smart filter
         )
-        print("✅ Sentry error monitoring initialized")
+        print("✅ Sentry error monitoring initialized (with bot filters)")
     else:
         print("ℹ️ Sentry DSN not set - error monitoring disabled")
 except ImportError:
