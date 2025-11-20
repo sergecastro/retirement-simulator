@@ -185,7 +185,8 @@ ANALYTICS_TRACKING_CODE = """
   // Inject Plausible script into HEAD (required for proper tracking)
   if (!document.querySelector('script[src*="plausible.io"]')) {
     var script = document.createElement('script');
-    script.async = true;
+    script.defer = true;  // Use defer instead of async for proper loading
+    script.setAttribute('data-domain', 'familyforecast.ai');  // CRITICAL: Tell Plausible which domain to track
     script.src = 'https://plausible.io/js/pa-3npHKPHg2kmQuG1mgMbMw.js';
     document.head.appendChild(script);
 
@@ -193,10 +194,6 @@ ANALYTICS_TRACKING_CODE = """
     window.plausible = window.plausible || function() {
       (window.plausible.q = window.plausible.q || []).push(arguments);
     };
-    window.plausible.init = window.plausible.init || function(i) {
-      window.plausible.o = i || {};
-    };
-    window.plausible.init();
   }
 })();
 </script>
