@@ -195,6 +195,48 @@ ANALYTICS_TRACKING_CODE = """
 </script>
 """
 
+# =============================================================================
+# MOBILE SIDEBAR AUTO-COLLAPSE FIX
+# =============================================================================
+# Force sidebar to stay collapsed on mobile devices (< 768px width)
+# while keeping normal behavior on desktop/laptop screens
+MOBILE_SIDEBAR_CSS = """
+<style>
+/* Auto-collapse sidebar on mobile devices */
+@media (max-width: 768px) {
+    /* Force sidebar to collapsed state on mobile */
+    section[data-testid="stSidebar"] {
+        width: 0px !important;
+        min-width: 0px !important;
+    }
+
+    /* Hide sidebar content when collapsed on mobile */
+    section[data-testid="stSidebar"] > div {
+        width: 0px !important;
+        margin-left: -300px !important;
+    }
+
+    /* Ensure main content takes full width on mobile */
+    .main .block-container {
+        max-width: 100% !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    /* Keep the collapse/expand button visible */
+    button[kind="header"] {
+        display: block !important;
+    }
+}
+
+/* Desktop and tablet - normal sidebar behavior */
+@media (min-width: 769px) {
+    section[data-testid="stSidebar"] {
+        /* Default Streamlit behavior - no changes */
+    }
+}
+</style>
+"""
 
 # =============================================================================
 # INTAKE DATA LOADING HELPER
@@ -273,6 +315,9 @@ def main():
 
     # Inject analytics tracking code (invisible to users)
     st.markdown(ANALYTICS_TRACKING_CODE, unsafe_allow_html=True)
+
+    # Inject mobile-responsive sidebar CSS (auto-collapse on mobile devices)
+    st.markdown(MOBILE_SIDEBAR_CSS, unsafe_allow_html=True)
 
     # ⚠️⚠️⚠️ DEMO MODE - Authentication simplified for beta testing ⚠️⚠️⚠️
     # To re-enable full auth: Uncomment the lines below
