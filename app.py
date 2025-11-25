@@ -182,6 +182,48 @@ ANALYTICS_TRACKING_CODE = """
 <script defer data-domain="familyforecast.ai" src="https://plausible.io/js/script.js"></script>
 """
 
+# =============================================================================
+# MOBILE SIDEBAR AUTO-COLLAPSE FIX
+# =============================================================================
+# Force sidebar to stay collapsed on mobile devices (< 768px width)
+# while keeping normal behavior on desktop/laptop screens
+MOBILE_SIDEBAR_CSS = """
+<style>
+/* Auto-collapse sidebar on mobile devices */
+@media (max-width: 768px) {
+    /* Force sidebar to collapsed state on mobile */
+    section[data-testid="stSidebar"] {
+        width: 0px !important;
+        min-width: 0px !important;
+    }
+
+    /* Hide sidebar content when collapsed on mobile */
+    section[data-testid="stSidebar"] > div {
+        width: 0px !important;
+        margin-left: -300px !important;
+    }
+
+    /* Ensure main content takes full width on mobile */
+    .main .block-container {
+        max-width: 100% !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    /* Keep the collapse/expand button visible */
+    button[kind="header"] {
+        display: block !important;
+    }
+}
+
+/* Desktop and tablet - normal sidebar behavior */
+@media (min-width: 769px) {
+    section[data-testid="stSidebar"] {
+        /* Default Streamlit behavior - no changes */
+    }
+}
+</style>
+"""
 
 # =============================================================================
 # INTAKE DATA LOADING HELPER
@@ -262,6 +304,9 @@ def main():
     # Using components.html instead of markdown for better script injection
     st.components.v1.html(ANALYTICS_TRACKING_CODE, height=0)
 
+    # Inject mobile-responsive sidebar CSS (auto-collapse on mobile devices)
+    st.markdown(MOBILE_SIDEBAR_CSS, unsafe_allow_html=True)
+
     # ⚠️⚠️⚠️ DEMO MODE - Authentication simplified for beta testing ⚠️⚠️⚠️
     # To re-enable full auth: Uncomment the lines below
     st.sidebar.info("🧪 **BETA DEMO** - Testing mode active")
@@ -324,6 +369,10 @@ def main():
     elif st.session_state.current_mode == "scenario_studio":
         from ui.scenario_studio_page import render_scenario_studio_page
         render_scenario_studio_page()
+
+    elif st.session_state.current_mode == "historical_tracking":
+        from ui import historical_tracking_page
+        historical_tracking_page.render()
 
     elif st.session_state.current_mode == "social_security":
         # Load INTAKE data first
@@ -494,10 +543,10 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
                 <h4 style='margin-top: 0; color: #155724;'>🎉 What's New - November 2025</h4>
                 <p style='font-size: 15px; color: #155724; margin-bottom: 8px;'><strong>NEW:</strong></p>
                 <ul style='margin: 0; padding-left: 20px; color: #155724;'>
+                    <li><strong>📊 Historical Tracking</strong> - Save quarterly snapshots and track your retirement plan progress over time!</li>
                     <li><strong>🎬 Scenario Studio</strong> - Compare 2-4 retirement scenarios side-by-side with interactive charts!</li>
                     <li><strong>🏥 Medicare Comparison Tool</strong> - Analyze Medigap vs Medicare Advantage plans</li>
                     <li><strong>📊 Enhanced Exports</strong> - Download comparisons as PDF, Excel, or CSV</li>
-                    <li><strong>💬 AI-Powered Insights</strong> - Get intelligent analysis of your retirement projections</li>
                 </ul>
             </div>
             """, unsafe_allow_html=True)
@@ -621,8 +670,8 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
                 st.session_state.current_mode = "Healthcare"
                 st.rerun()
 
-        # Second row: Scenario Studio and Social Security
-        col4, col5, col_empty = st.columns(3)
+        # Second row: Scenario Studio, Social Security, Historical Tracking
+        col4, col5, col6 = st.columns(3)
 
         # Card 4: Scenario Studio
         with col4:
@@ -668,6 +717,29 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
             if st.button("🚀 Optimize Social Security", type="primary", use_container_width=True, key="btn_social_security"):
                 st.session_state.mode_selected = True
                 st.session_state.current_mode = "social_security"
+                st.rerun()
+
+        # Card 6: Historical Tracking
+        with col6:
+            st.markdown("""
+            <div style='background: linear-gradient(135deg, #00D9FF 0%, #0099CC 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
+                <h3 style='color: #FFFFFF; margin-top: 0;'>📊 Historical Tracking</h3>
+                <p style='color: #FFFFFF;'><strong>Track Progress Over Time</strong></p>
+                <ul style='color: #FFFFFF;'>
+                    <li><strong>🆕 Save plan snapshots quarterly/yearly</strong></li>
+                    <li>Compare 2-5 snapshots side-by-side</li>
+                    <li>View progress metrics & trends</li>
+                    <li>Beautiful timeline charts</li>
+                </ul>
+                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Monitoring retirement plan improvements</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("")  # Spacing
+
+            if st.button("🚀 View Historical Tracking", type="primary", use_container_width=True, key="btn_historical_tracking"):
+                st.session_state.mode_selected = True
+                st.session_state.current_mode = "historical_tracking"
                 st.rerun()
 
     st.markdown("---")
