@@ -575,7 +575,7 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
     # Show status based on whether user has saved snapshots
     if has_intake_data:
         # User has saved snapshots (returning user with data)
-        st.success("✅ **Welcome back!** You have saved retirement plans ready to analyze.\n\n**Your choices:**\n\n1️⃣ **Go to Analysis** to review and simulate your saved plans\n\n2️⃣ **Start INTAKE** to create a new plan or update existing data")
+        st.success("✅ **Welcome back!** You have saved retirement plans ready to analyze.\n\n**Start INTAKE** to create a new plan or update existing data.")
     else:
         # No saved snapshots (new user)
         st.info("ℹ️ **First time here?** Get started by creating your retirement plan.\n\n**Recommended:** Start with INTAKE to enter your financial information, or explore Analysis mode with demo data.")
