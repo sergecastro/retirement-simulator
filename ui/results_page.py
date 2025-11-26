@@ -43,8 +43,6 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         financial_data: Financial data
         sim_params: Simulation parameters
     """
-    render_top_navigation(current="Analysis")
-
     # Header with logo (medium size)
     col_logo, col_title = st.columns([1, 6])
     with col_logo:

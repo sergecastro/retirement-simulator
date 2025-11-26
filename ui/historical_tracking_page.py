@@ -16,6 +16,7 @@ Created: November 19, 2025
 
 import streamlit as st
 import pandas as pd
+from ui.components.top_navigation import render_top_navigation
 import plotly.graph_objects as go
 import json
 from datetime import datetime
@@ -32,6 +33,7 @@ from utils.historical_snapshots import (
 
 def render():
     """Main render function for Historical Tracking page"""
+    render_top_navigation(current="historical_tracking")
 
     st.title("📊 Historical Tracking")
     st.markdown("Track your retirement plan progress over time")

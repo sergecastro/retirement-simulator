@@ -22,6 +22,7 @@ def render_top_navigation(current: str = "intake"):
         ("🏥", "Health", "Healthcare"),
         ("🎬", "Scenarios", "scenario_studio"),
         ("💰", "SS", "social_security"),
+        ("📈", "History", "historical_tracking"),
     ]
 
     # Add some spacing and a container

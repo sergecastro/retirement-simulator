@@ -120,6 +120,7 @@ from ui.navigation import (
 
 # Import pages
 from ui.results_page import show_results_page
+from ui.components.top_navigation import render_top_navigation
 
 # Import data collection
 from pages.user_inputs import setup_sidebar as collect_user_data
@@ -949,6 +950,8 @@ def show_analysis_mode(nav_state):
 
     # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
     st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
+
+    render_top_navigation(current="Analysis")
 
     st.title("📊 Retirement Analysis")
     st.markdown("*Advanced simulation and planning tools*")
