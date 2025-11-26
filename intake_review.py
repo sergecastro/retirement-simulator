@@ -72,39 +72,43 @@ def show_assets_page(existing, save_payload, go_to_page):
     st.header("💎 Assets & Accounts")
     st.caption("Enter current balances for all your accounts and assets")
 
-    # Retirement Accounts - widgets WITHOUT key= - we'll manually save on button click
+    # Retirement Accounts
     st.subheader("🏦 Retirement Accounts")
     ira = st.number_input(
         "Your IRA Balance",
         min_value=0.0,
-        value=st.session_state.get("input_ira_balance", 0.0),
         step=1000.0,
-        help="Traditional IRA balance"
+        help="Traditional IRA balance",
+        key="input_ira_balance",
+        value=float(existing.get("input_ira_balance", 0.0))
     )
 
     k401 = st.number_input(
         "Your 401k/403b Balance",
         min_value=0.0,
-        value=st.session_state.get("input_four01k_403b_balance", 0.0),
         step=1000.0,
-        help="Current 401k or 403b balance"
+        help="Current 401k or 403b balance",
+        key="input_four01k_403b_balance",
+        value=float(existing.get("input_four01k_403b_balance", 0.0))
     )
-
+    
     # Partner accounts (if couple)
-    partner_exists = st.session_state.get("input_partner_exists", False)
+    partner_exists = existing.get("input_partner_exists", False)
     if partner_exists:
         st.caption("Partner Retirement Accounts")
         partner_ira = st.number_input(
             "Partner IRA Balance",
             min_value=0.0,
-            value=st.session_state.get("input_partner_ira_balance", 0.0),
-            step=1000.0
+            step=1000.0,
+            key="input_partner_ira_balance",
+            value=float(existing.get("input_partner_ira_balance", 0.0))
         )
         partner_k401 = st.number_input(
             "Partner 401k/403b Balance",
             min_value=0.0,
-            value=st.session_state.get("input_partner_four01k_403b_balance", 0.0),
-            step=1000.0
+            step=1000.0,
+            key="input_partner_four01k_403b_balance",
+            value=float(existing.get("input_partner_four01k_403b_balance", 0.0))
         )
     else:
         partner_ira = 0.0
@@ -115,33 +119,37 @@ def show_assets_page(existing, save_payload, go_to_page):
     taxable = st.number_input(
         "Taxable Investment Accounts",
         min_value=0.0,
-        value=st.session_state.get("input_taxable_investment_accounts", 0.0),
         step=1000.0,
-        help="Brokerage accounts, mutual funds"
+        help="Brokerage accounts, mutual funds",
+        key="input_taxable_investment_accounts",
+        value=float(existing.get("input_taxable_investment_accounts", 0.0))
     )
 
     savings = st.number_input(
         "High-Yield Savings Account",
         min_value=0.0,
-        value=st.session_state.get("input_high_yield_savings_account", 0.0),
         step=1000.0,
-        help="Emergency fund, savings accounts"
+        help="Emergency fund, savings accounts",
+        key="input_high_yield_savings_account",
+        value=float(existing.get("input_high_yield_savings_account", 0.0))
     )
 
     hsa = st.number_input(
         "HSA Balance",
         min_value=0.0,
-        value=st.session_state.get("input_hsa_balance", 0.0),
         step=500.0,
-        help="Health Savings Account"
+        help="Health Savings Account",
+        key="input_hsa_balance",
+        value=float(existing.get("input_hsa_balance", 0.0))
     )
 
     plan529 = st.number_input(
         "529 Plan Balance",
         min_value=0.0,
-        value=st.session_state.get("input_five29_plan_balance", 0.0),
         step=500.0,
-        help="Education savings plan"
+        help="Education savings plan",
+        key="input_five29_plan_balance",
+        value=float(existing.get("input_five29_plan_balance", 0.0))
     )
 
     # Real Estate
@@ -149,17 +157,19 @@ def show_assets_page(existing, save_payload, go_to_page):
     primary_home = st.number_input(
         "Primary Residence Value",
         min_value=0.0,
-        value=st.session_state.get("input_primary_residence_value", 0.0),
         step=10000.0,
-        help="Current market value of your home"
+        help="Current market value of your home",
+        key="input_primary_residence_value",
+        value=float(existing.get("input_primary_residence_value", 0.0))
     )
 
     secondary_home = st.number_input(
         "Secondary Residence Value",
         min_value=0.0,
-        value=st.session_state.get("input_secondary_residence_value", 0.0),
         step=10000.0,
-        help="Vacation home, rental property value"
+        help="Vacation home, rental property value",
+        key="input_secondary_residence_value",
+        value=float(existing.get("input_secondary_residence_value", 0.0))
     )
 
     # Other Assets
@@ -167,41 +177,46 @@ def show_assets_page(existing, save_payload, go_to_page):
     vehicles = st.number_input(
         "Vehicles Value",
         min_value=0.0,
-        value=st.session_state.get("input_vehicles_value", 0.0),
         step=1000.0,
-        help="Cars, boats, RVs - current market value"
+        help="Cars, boats, RVs - current market value",
+        key="input_vehicles_value",
+        value=float(existing.get("input_vehicles_value", 0.0))
     )
 
     jewelry = st.number_input(
         "Jewelry & Collectibles",
         min_value=0.0,
-        value=st.session_state.get("input_jewelry_collectibles_value", 0.0),
         step=500.0,
-        help="Valuable jewelry, art, collectibles"
+        help="Valuable jewelry, art, collectibles",
+        key="input_jewelry_collectibles_value",
+        value=float(existing.get("input_jewelry_collectibles_value", 0.0))
     )
 
     business = st.number_input(
         "Business Ownership Value",
         min_value=0.0,
-        value=st.session_state.get("input_business_ownership_value", 0.0),
         step=5000.0,
-        help="Your stake in a business"
+        help="Your stake in a business",
+        key="input_business_ownership_value",
+        value=float(existing.get("input_business_ownership_value", 0.0))
     )
 
     crypto = st.number_input(
         "Cryptocurrency Holdings",
         min_value=0.0,
-        value=st.session_state.get("input_cryptocurrency_holdings", 0.0),
         step=500.0,
-        help="Bitcoin, Ethereum, etc. - current value"
+        help="Bitcoin, Ethereum, etc. - current value",
+        key="input_cryptocurrency_holdings",
+        value=float(existing.get("input_cryptocurrency_holdings", 0.0))
     )
 
     other_assets = st.number_input(
         "Other Assets",
         min_value=0.0,
-        value=st.session_state.get("input_other_assets", 0.0),
         step=500.0,
-        help="Any other valuable assets"
+        help="Any other valuable assets",
+        key="input_other_assets",
+        value=float(existing.get("input_other_assets", 0.0))
     )
     
     # Calculate total
@@ -212,29 +227,32 @@ def show_assets_page(existing, save_payload, go_to_page):
     st.divider()
     st.metric("Total Assets", f"${total_assets:,.2f}")
     
-    # Navigation with manual save
-    col1, col2 = st.columns([1, 1])
+    # Navigation
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        if st.button("← BACK to Custom Income", use_container_width=True):
-            go_to_page('custom_expenses')
-    with col2:
-        if st.button("NEXT →", type="primary", use_container_width=True):
-            # CRITICAL: Explicitly save to session_state BEFORE navigating
-            st.session_state['input_ira_balance'] = float(ira)
-            st.session_state['input_four01k_403b_balance'] = float(k401)
-            st.session_state['input_partner_ira_balance'] = float(partner_ira)
-            st.session_state['input_partner_four01k_403b_balance'] = float(partner_k401)
-            st.session_state['input_taxable_investment_accounts'] = float(taxable)
-            st.session_state['input_high_yield_savings_account'] = float(savings)
-            st.session_state['input_hsa_balance'] = float(hsa)
-            st.session_state['input_five29_plan_balance'] = float(plan529)
-            st.session_state['input_primary_residence_value'] = float(primary_home)
-            st.session_state['input_secondary_residence_value'] = float(secondary_home)
-            st.session_state['input_vehicles_value'] = float(vehicles)
-            st.session_state['input_jewelry_collectibles_value'] = float(jewelry)
-            st.session_state['input_business_ownership_value'] = float(business)
-            st.session_state['input_cryptocurrency_holdings'] = float(crypto)
-            st.session_state['input_other_assets'] = float(other_assets)
+        if st.button("← Back to Expenses", use_container_width=True):
+            go_to_page('expenses')
+    with col3:
+        if st.button("Next: Liabilities →", type="primary", use_container_width=True):
+            # Save asset data
+            data = existing.copy()
+            data["input_ira_balance"] = float(ira)
+            data["input_four01k_403b_balance"] = float(k401)
+            data["input_partner_ira_balance"] = float(partner_ira)
+            data["input_partner_four01k_403b_balance"] = float(partner_k401)
+            data["input_taxable_investment_accounts"] = float(taxable)
+            data["input_high_yield_savings_account"] = float(savings)
+            data["input_hsa_balance"] = float(hsa)
+            data["input_five29_plan_balance"] = float(plan529)
+            data["input_primary_residence_value"] = float(primary_home)
+            data["input_secondary_residence_value"] = float(secondary_home)
+            data["input_vehicles_value"] = float(vehicles)
+            data["input_jewelry_collectibles_value"] = float(jewelry)
+            data["input_business_ownership_value"] = float(business)
+            data["input_cryptocurrency_holdings"] = float(crypto)
+            data["input_other_assets"] = float(other_assets)
+            # REMOVED: Auto-save on navigation (user must explicitly save)
+            # save_payload(data)
             go_to_page('liabilities')
 
 
@@ -246,45 +264,49 @@ def show_liabilities_page(existing, save_payload, go_to_page):
     st.header("💳 Liabilities & Debts")
     st.caption("Enter outstanding balances (leave at $0 if you don't have these)")
 
-    # Liability fields - widgets WITHOUT key= - we'll manually save on button click
     mortgage = st.number_input(
         "Mortgage Balance",
         min_value=0.0,
-        value=st.session_state.get("input_mortgage_balance", 0.0),
         step=5000.0,
-        help="Remaining mortgage principal"
+        help="Remaining mortgage principal",
+        key="input_mortgage_balance",
+        value=float(existing.get("input_mortgage_balance", 0.0))
     )
 
     auto_loan = st.number_input(
         "Auto Loans",
         min_value=0.0,
-        value=st.session_state.get("input_auto_loan_balance", 0.0),
         step=500.0,
-        help="Car loans, leases"
+        help="Car loans, leases",
+        key="input_auto_loan_balance",
+        value=float(existing.get("input_auto_loan_balance", 0.0))
     )
 
     student_loan = st.number_input(
         "Student Loans",
         min_value=0.0,
-        value=st.session_state.get("input_student_loan_balance", 0.0),
         step=500.0,
-        help="Education debt"
+        help="Education debt",
+        key="input_student_loan_balance",
+        value=float(existing.get("input_student_loan_balance", 0.0))
     )
 
     credit_card = st.number_input(
         "Credit Card Debt",
         min_value=0.0,
-        value=st.session_state.get("input_credit_card_debt", 0.0),
         step=100.0,
-        help="Outstanding credit card balances"
+        help="Outstanding credit card balances",
+        key="input_credit_card_debt",
+        value=float(existing.get("input_credit_card_debt", 0.0))
     )
 
     other_debt = st.number_input(
         "Other Liabilities",
         min_value=0.0,
-        value=st.session_state.get("input_other_liabilities", 0.0),
         step=500.0,
-        help="Personal loans, HELOCs, other debts"
+        help="Personal loans, HELOCs, other debts",
+        key="input_other_liabilities",
+        value=float(existing.get("input_other_liabilities", 0.0))
     )
     
     total_liabilities = mortgage + auto_loan + student_loan + credit_card + other_debt
@@ -317,19 +339,22 @@ def show_liabilities_page(existing, save_payload, go_to_page):
         if net_worth < 0:
             st.warning("⚠️ Your liabilities exceed your assets. This is important to address.")
     
-    # Navigation with manual save
-    col1, col2 = st.columns([1, 1])
+    # Navigation
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        if st.button("← BACK to Assets", use_container_width=True):
+        if st.button("← Back to Assets", use_container_width=True):
             go_to_page('assets')
-    with col2:
-        if st.button("NEXT →", type="primary", use_container_width=True):
-            # CRITICAL: Explicitly save to session_state BEFORE navigating
-            st.session_state['input_mortgage_balance'] = float(mortgage)
-            st.session_state['input_auto_loan_balance'] = float(auto_loan)
-            st.session_state['input_student_loan_balance'] = float(student_loan)
-            st.session_state['input_credit_card_debt'] = float(credit_card)
-            st.session_state['input_other_liabilities'] = float(other_debt)
+    with col3:
+        if st.button("Next: Family Events →", type="primary", use_container_width=True):
+            # Save liability data
+            data = existing.copy()
+            data["input_mortgage_balance"] = float(mortgage)
+            data["input_auto_loan_balance"] = float(auto_loan)
+            data["input_student_loan_balance"] = float(student_loan)
+            data["input_credit_card_debt"] = float(credit_card)
+            data["input_other_liabilities"] = float(other_debt)
+            # REMOVED: Auto-save on navigation (user must explicitly save)
+            # save_payload(data)
             go_to_page('family')
 
 
@@ -341,21 +366,13 @@ def show_family_page(existing, save_payload, go_to_page):
     st.caption("Add children, college plans, and expected inheritances - skip if not applicable")
     
     # ============================================
-    # CHILDREN SECTION (PROPERLY PERSISTENT!)
+    # CHILDREN SECTION (columns match simulator)
     # ============================================
-    st.subheader("👶 Children & College Plans")
-    st.caption("Add each child and their college planning details")
-
-    # Initialize temp_children from saved data
-    # CRITICAL FIX: Check session_state FIRST (for returning users), then fall back to existing
+    st.subheader("Children & College Plans")
+    st.caption("Add rows for each child. Use calendar Birth Year.")
     if 'temp_children' not in st.session_state:
-        # Priority: session_state children_list > session_state children_rows > existing > empty list
-        legacy_children = (
-            st.session_state.get("children_list") or
-            st.session_state.get("children_rows") or
-            existing.get("children_list", existing.get("children_rows", [])) or
-            []
-        )
+        # Accept any legacy keys; store canonical columns
+        legacy_children = existing.get("children_list", existing.get("children_rows", [])) or []
         st.session_state.temp_children = []
         for r in legacy_children:
             st.session_state.temp_children.append({
@@ -367,143 +384,49 @@ def show_family_page(existing, save_payload, go_to_page):
                 "Start Age": _to_int_or_none(r.get("Start Age") or r.get("start_age") or 18),
                 "Years": _to_int_or_none(r.get("Years") or r.get("years") or 4),
             })
-        if st.session_state.temp_children:
-            print(f"[CHILDREN LOAD] Loaded {len(st.session_state.temp_children)} children from saved data")
+    children_df = pd.DataFrame(st.session_state.temp_children)
+    children_df = _ensure_columns(children_df, [
+        ("Name","str"),("Birth Year","Int64"),("College Plan","str"),
+        ("Scholarship %","Int64"),("Use 529 First?","bool"),
+        ("Start Age","Int64"),("Years","Int64")
+    ])
 
-    # Add new child button
-    if st.button("➕ Add Child", key="add_child_btn", use_container_width=False):
-        st.session_state.temp_children.append({
-            "Name": "",
-            "Birth Year": 2020,
-            "College Plan": "None",
-            "Scholarship %": 0,
-            "Use 529 First?": True,
-            "Start Age": 18,
-            "Years": 4
-        })
-        st.rerun()
-
-    # Show each child in an expander with direct input binding
-    children_to_delete = []
-    for idx, child in enumerate(st.session_state.temp_children):
-        with st.expander(f"👶 Child #{idx + 1}: {child.get('Name', 'Unnamed')}", expanded=(idx == len(st.session_state.temp_children) - 1)):
-            col1, col2 = st.columns([5, 1])
-
-            with col1:
-                # Use key= with direct session_state binding for GUARANTEED persistence
-                name = st.text_input(
-                    "Child's Name:",
-                    value=child.get("Name", ""),
-                    key=f"child_name_{idx}",
-                    placeholder="Enter child's name"
-                )
-                st.session_state.temp_children[idx]["Name"] = name
-
-                col_a, col_b, col_c = st.columns(3)
-                with col_a:
-                    birth_year = st.number_input(
-                        "Birth Year:",
-                        min_value=1900,
-                        max_value=2045,
-                        value=int(child.get("Birth Year") or 2020),
-                        step=1,
-                        key=f"child_birth_{idx}"
-                    )
-                    st.session_state.temp_children[idx]["Birth Year"] = birth_year
-
-                with col_b:
-                    # SAFE college plan index lookup (handles invalid plans)
-                    college_options = ["None", "Public In-State", "Public Out-of-State", "Private Nonprofit"]
-                    saved_plan = child.get("College Plan", "None")
-                    try:
-                        plan_index = college_options.index(saved_plan)
-                    except ValueError:
-                        # If saved plan not in list, default to "None"
-                        plan_index = 0
-                        print(f"[WARN] Invalid college plan '{saved_plan}' for child, defaulting to 'None'")
-
-                    college_plan = st.selectbox(
-                        "College Plan:",
-                        options=college_options,
-                        index=plan_index,
-                        key=f"child_college_{idx}"
-                    )
-                    st.session_state.temp_children[idx]["College Plan"] = college_plan
-
-                with col_c:
-                    scholarship = st.number_input(
-                        "Scholarship %:",
-                        min_value=0,
-                        max_value=100,
-                        value=int(child.get("Scholarship %") or 0),
-                        step=5,
-                        key=f"child_scholarship_{idx}"
-                    )
-                    st.session_state.temp_children[idx]["Scholarship %"] = scholarship
-
-                col_d, col_e, col_f = st.columns(3)
-                with col_d:
-                    use_529 = st.checkbox(
-                        "Use 529 First?",
-                        value=bool(child.get("Use 529 First?", True)),
-                        key=f"child_529_{idx}"
-                    )
-                    st.session_state.temp_children[idx]["Use 529 First?"] = use_529
-
-                with col_e:
-                    start_age = st.number_input(
-                        "Start Age:",
-                        min_value=0,
-                        max_value=30,
-                        value=int(child.get("Start Age") or 18),
-                        step=1,
-                        key=f"child_start_{idx}"
-                    )
-                    st.session_state.temp_children[idx]["Start Age"] = start_age
-
-                with col_f:
-                    years = st.number_input(
-                        "Years:",
-                        min_value=0,
-                        max_value=10,
-                        value=int(child.get("Years") or 4),
-                        step=1,
-                        key=f"child_years_{idx}"
-                    )
-                    st.session_state.temp_children[idx]["Years"] = years
-
-            with col2:
-                st.write("")  # Spacer
-                st.write("")  # Spacer
-                if st.button("🗑️", key=f"delete_child_{idx}", help="Delete this child"):
-                    children_to_delete.append(idx)
-
-    # Delete marked children
-    for idx in reversed(children_to_delete):
-        st.session_state.temp_children.pop(idx)
-        st.rerun()
-
-    if len(st.session_state.temp_children) == 0:
-        st.info("No children added yet. Click 'Add Child' to get started.")
+    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
+    edited_children = st.data_editor(
+        children_df,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="children_editor",
+        column_config={
+            "Name": st.column_config.TextColumn("Child Name", required=True),
+            "Birth Year": st.column_config.NumberColumn("Birth Year", min_value=1900, max_value=2045, step=1, help="Child's birth year (1900-2045)"),
+            "College Plan": st.column_config.SelectboxColumn(
+                "College Plan",
+                options=["None","Public In-State","Public Out-of-State","Private Nonprofit"]
+            ),
+            "Scholarship %": st.column_config.NumberColumn("Scholarship %", min_value=0, max_value=100, step=5),
+            "Use 529 First?": st.column_config.CheckboxColumn("Use 529 First?"),
+            "Start Age": st.column_config.NumberColumn("Start Age", min_value=0, max_value=30, step=1),
+            "Years": st.column_config.NumberColumn("Years", min_value=0, max_value=10, step=1),
+        },
+    )
+    # normalize dtypes before persisting
+    if not edited_children.empty:
+        edited_children["Birth Year"] = pd.to_numeric(edited_children["Birth Year"], errors="coerce").astype("Int64")
+        edited_children["Scholarship %"] = pd.to_numeric(edited_children["Scholarship %"], errors="coerce").astype("Int64")
+        edited_children["Start Age"] = pd.to_numeric(edited_children["Start Age"], errors="coerce").astype("Int64")
+        edited_children["Years"] = pd.to_numeric(edited_children["Years"], errors="coerce").astype("Int64")
+    st.session_state.temp_children = edited_children.to_dict("records") if not edited_children.empty else []
 
     st.divider()
 
     # ============================================
-    # INHERITANCES SECTION (PROPERLY PERSISTENT!)
+    # INHERITANCES SECTION (columns match simulator)
     # ============================================
-    st.subheader("💰 Expected Inheritances")
-    st.caption("Add any expected inheritances with year and amount")
-
-    # Initialize temp_inherit from saved data
-    # CRITICAL FIX: Check session_state FIRST (for returning users), then fall back to existing
+    st.subheader("Expected Inheritances")
+    st.caption("Enter calendar Year and Amount. (The simulator uses Year rather than 'Age at receipt'.)")
     if 'temp_inherit' not in st.session_state:
-        # Priority: session_state inheritance_list > session_state inherit_rows > existing > empty list
-        legacy_inherit = (
-            st.session_state.get("inheritance_list") or
-            st.session_state.get("inherit_rows") or
-            existing.get("inheritance_list", existing.get("inherit_rows", [])) or
-            []
-        )
+        legacy_inherit = existing.get("inheritance_list", existing.get("inherit_rows", [])) or []
         st.session_state.temp_inherit = []
         for r in legacy_inherit:
             st.session_state.temp_inherit.append({
@@ -511,262 +434,93 @@ def show_family_page(existing, save_payload, go_to_page):
                 "Amount": _to_float(r.get("Amount") or r.get("amount") or 0.0),
                 "Taxable?": bool(r.get("Taxable?") if "Taxable?" in r else r.get("taxable", False)),
             })
-        if st.session_state.temp_inherit:
-            print(f"[INHERITANCES LOAD] Loaded {len(st.session_state.temp_inherit)} inheritances from saved data")
+    inherit_df = pd.DataFrame(st.session_state.temp_inherit)
+    inherit_df = _ensure_columns(inherit_df, [("Year","Int64"),("Amount","float"),("Taxable?","bool")])
+    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
 
-    # Add new inheritance button
-    if st.button("➕ Add Inheritance", key="add_inherit_btn", use_container_width=False):
-        st.session_state.temp_inherit.append({
-            "Year": 2025,
-            "Amount": 0.0,
-            "Taxable?": False
-        })
-        st.rerun()
-
-    # Show each inheritance in an expander
-    inherit_to_delete = []
-    for idx, inherit in enumerate(st.session_state.temp_inherit):
-        with st.expander(f"💰 Inheritance #{idx + 1}: ${inherit.get('Amount', 0):,.0f} in {inherit.get('Year', 'N/A')}", expanded=(idx == len(st.session_state.temp_inherit) - 1)):
-            col1, col2 = st.columns([5, 1])
-
-            with col1:
-                col_a, col_b, col_c = st.columns(3)
-
-                with col_a:
-                    year = st.number_input(
-                        "Year:",
-                        min_value=2020,
-                        max_value=2075,
-                        value=int(inherit.get("Year") or 2025),
-                        step=1,
-                        key=f"inherit_year_{idx}",
-                        help="Calendar year of expected inheritance"
-                    )
-                    st.session_state.temp_inherit[idx]["Year"] = year
-
-                with col_b:
-                    amount = st.number_input(
-                        "Amount ($):",
-                        min_value=0.0,
-                        value=float(inherit.get("Amount") or 0.0),
-                        step=1000.0,
-                        key=f"inherit_amount_{idx}",
-                        format="%.0f"
-                    )
-                    st.session_state.temp_inherit[idx]["Amount"] = amount
-
-                with col_c:
-                    taxable = st.checkbox(
-                        "Taxable?",
-                        value=bool(inherit.get("Taxable?", False)),
-                        key=f"inherit_taxable_{idx}",
-                        help="Is this inheritance subject to income tax?"
-                    )
-                    st.session_state.temp_inherit[idx]["Taxable?"] = taxable
-
-            with col2:
-                st.write("")  # Spacer
-                st.write("")  # Spacer
-                if st.button("🗑️", key=f"delete_inherit_{idx}", help="Delete this inheritance"):
-                    inherit_to_delete.append(idx)
-
-    # Delete marked inheritances
-    for idx in reversed(inherit_to_delete):
-        st.session_state.temp_inherit.pop(idx)
-        st.rerun()
-
-    if len(st.session_state.temp_inherit) == 0:
-        st.info("No inheritances added yet. Click 'Add Inheritance' if you expect any.")
+    edited_inherit = st.data_editor(
+        inherit_df,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="inherit_editor",
+        column_config={
+            "Year": st.column_config.NumberColumn("Year", min_value=2020, max_value=2075, step=1, help="Year of expected inheritance (2020-2075)"),
+            "Amount": st.column_config.NumberColumn("Amount ($)", min_value=0, step=1000, format="$%.0f"),
+            "Taxable?": st.column_config.CheckboxColumn("Taxable?"),
+        },
+    )
+    if not edited_inherit.empty:
+        edited_inherit["Year"] = pd.to_numeric(edited_inherit["Year"], errors="coerce").astype("Int64")
+        # Allow users to type $… strings; convert when present
+        edited_inherit["Amount"] = edited_inherit["Amount"].apply(_to_float)
+    st.session_state.temp_inherit = edited_inherit.to_dict("records") if not edited_inherit.empty else []
 
     st.divider()
 
     # ============================================
-    # FINANCIAL GOALS SECTION (PROPERLY PERSISTENT!)
+    # FINANCIAL GOALS SECTION (persists while typing)
     # ============================================
     st.subheader("🎯 Financial Goals")
-    st.caption("Add major financial milestones you're planning for")
-
-    # Initialize temp_goals from saved data
-    # CRITICAL FIX: ALWAYS load from saved data if temp_goals is empty but saved data exists
-    # This handles the case where user returns to INTAKE and temp_goals was left empty
-    saved_goals = (
-        st.session_state.get("goals_list") or
-        st.session_state.get("goals_data") or
-        existing.get("goals_list", existing.get("goals_data", [])) or
-        []
-    )
-
+    st.caption("Major financial milestones you're planning for")
     if 'temp_goals' not in st.session_state:
-        st.session_state.temp_goals = saved_goals
-        if st.session_state.temp_goals:
-            print(f"[GOALS LOAD] Loaded {len(st.session_state.temp_goals)} goals from saved data")
-    elif len(st.session_state.temp_goals) == 0 and len(saved_goals) > 0:
-        # temp_goals exists but is empty, while saved data has goals - RELOAD!
-        st.session_state.temp_goals = saved_goals
-        print(f"[GOALS RELOAD] Reloaded {len(st.session_state.temp_goals)} goals from saved data (temp was empty)")
+        # accept both 'goals_list' and 'goals_data'
+        st.session_state.temp_goals = existing.get("goals_list", existing.get("goals_data", [])) or []
+    goals_df = pd.DataFrame(st.session_state.temp_goals)
+    goals_df = _ensure_columns(goals_df, [("goal","str"),("amount","float"),("year","Int64")])
+    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
 
-    # Add new goal button
-    if st.button("➕ Add Goal", key="add_goal_btn", use_container_width=False):
-        st.session_state.temp_goals.append({
-            "goal": "",
-            "amount": 0.0,
-            "year": 2030
-        })
-        st.rerun()
-
-    # Show each goal in an expander
-    goals_to_delete = []
-    for idx, goal in enumerate(st.session_state.temp_goals):
-        with st.expander(f"🎯 Goal #{idx + 1}: {goal.get('goal', 'Unnamed')} - ${goal.get('amount', 0):,.0f}", expanded=(idx == len(st.session_state.temp_goals) - 1)):
-            col1, col2 = st.columns([5, 1])
-
-            with col1:
-                goal_name = st.text_input(
-                    "Goal Name:",
-                    value=goal.get("goal", ""),
-                    key=f"goal_name_{idx}",
-                    placeholder="e.g., New Car, World Travel, Home Renovation",
-                    help="What are you saving for?"
-                )
-                st.session_state.temp_goals[idx]["goal"] = goal_name
-
-                col_a, col_b = st.columns(2)
-
-                with col_a:
-                    amount = st.number_input(
-                        "Target Amount ($):",
-                        min_value=0.0,
-                        value=float(goal.get("amount") or 0.0),
-                        step=1000.0,
-                        key=f"goal_amount_{idx}",
-                        format="%.0f"
-                    )
-                    st.session_state.temp_goals[idx]["amount"] = amount
-
-                with col_b:
-                    year = st.number_input(
-                        "Target Year:",
-                        min_value=2020,
-                        max_value=2075,
-                        value=int(goal.get("year") or 2030),
-                        step=1,
-                        key=f"goal_year_{idx}",
-                        help="When do you want to achieve this goal?"
-                    )
-                    st.session_state.temp_goals[idx]["year"] = year
-
-            with col2:
-                st.write("")  # Spacer
-                st.write("")  # Spacer
-                if st.button("🗑️", key=f"delete_goal_{idx}", help="Delete this goal"):
-                    goals_to_delete.append(idx)
-
-    # Delete marked goals
-    for idx in reversed(goals_to_delete):
-        st.session_state.temp_goals.pop(idx)
-        st.rerun()
-
-    if len(st.session_state.temp_goals) == 0:
-        st.info("No goals added yet. Click 'Add Goal' to add financial milestones.")
+    edited_goals = st.data_editor(
+        goals_df,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="goals_editor",
+        column_config={
+            "goal": st.column_config.TextColumn("Goal Name", required=True, help="e.g., Retirement Fund, Down Payment, World Travel"),
+            "amount": st.column_config.NumberColumn("Target Amount", min_value=0, step=1000, format="$%.0f"),
+            "year": st.column_config.NumberColumn("Target Year", min_value=2020, max_value=2075, step=1),
+        },
+    )
+    if not edited_goals.empty:
+        edited_goals["amount"] = edited_goals["amount"].apply(_to_float)
+        edited_goals["year"] = pd.to_numeric(edited_goals["year"], errors="coerce").astype("Int64")
+    st.session_state.temp_goals = edited_goals.to_dict('records') if not edited_goals.empty else []
 
     st.divider()
 
     # ============================================
-    # CUSTOM EXPENSES SECTION (PROPERLY PERSISTENT!)
+    # CUSTOM EXPENSES SECTION (NEW!)
     # ============================================
     st.subheader("📝 Custom Monthly Expenses")
-    st.caption("Add special monthly expenses not covered in standard categories")
-
-    # Initialize temp_custom_expenses from saved data
-    # CRITICAL FIX: ALWAYS load from saved data if temp_custom_expenses is empty but saved data exists
-    # This handles the case where user returns to INTAKE and temp_custom_expenses was left empty
-    saved_custom_expenses = (
-        st.session_state.get("custom_expenses") or
-        st.session_state.get("custom_expenses_list") or
-        existing.get("custom_expenses", []) or
-        []
-    )
-
+    st.caption("Add any special monthly expenses not covered in standard categories (e.g., Autism School Costs, Special Therapy)")
+    
     if 'temp_custom_expenses' not in st.session_state:
-        st.session_state.temp_custom_expenses = saved_custom_expenses
-        if st.session_state.temp_custom_expenses:
-            print(f"[CUSTOM EXPENSES LOAD] Loaded {len(st.session_state.temp_custom_expenses)} custom expenses from saved data")
-    elif len(st.session_state.temp_custom_expenses) == 0 and len(saved_custom_expenses) > 0:
-        # temp_custom_expenses exists but is empty, while saved data has expenses - RELOAD!
-        st.session_state.temp_custom_expenses = saved_custom_expenses
-        print(f"[CUSTOM EXPENSES RELOAD] Reloaded {len(st.session_state.temp_custom_expenses)} custom expenses from saved data (temp was empty)")
-
-    # Add new custom expense button
-    if st.button("➕ Add Custom Expense", key="add_custom_expense_btn", use_container_width=False):
-        st.session_state.temp_custom_expenses.append({
-            "Name": "",
-            "Monthly Amount": 0.0,
-            "Category": "Other"
-        })
-        st.rerun()
-
-    # Show each custom expense in an expander
-    expenses_to_delete = []
-    for idx, expense in enumerate(st.session_state.temp_custom_expenses):
-        with st.expander(f"📝 Expense #{idx + 1}: {expense.get('Name', 'Unnamed')} - ${expense.get('Monthly Amount', 0):,.2f}/mo", expanded=(idx == len(st.session_state.temp_custom_expenses) - 1)):
-            col1, col2 = st.columns([5, 1])
-
-            with col1:
-                name = st.text_input(
-                    "Expense Name:",
-                    value=expense.get("Name", ""),
-                    key=f"custom_expense_name_{idx}",
-                    placeholder="e.g., Autism School, Special Therapy, Tutoring",
-                    help="What is this expense for?"
-                )
-                st.session_state.temp_custom_expenses[idx]["Name"] = name
-
-                col_a, col_b = st.columns(2)
-
-                with col_a:
-                    amount = st.number_input(
-                        "Monthly Amount ($):",
-                        min_value=0.0,
-                        value=float(expense.get("Monthly Amount") or 0.0),
-                        step=50.0,
-                        key=f"custom_expense_amount_{idx}",
-                        format="%.2f"
-                    )
-                    st.session_state.temp_custom_expenses[idx]["Monthly Amount"] = amount
-
-                with col_b:
-                    # SAFE category index lookup (handles missing/invalid categories)
-                    category_options = ["Education", "Healthcare", "Special Needs", "Childcare", "Other"]
-                    saved_category = expense.get("Category", "Other")
-                    try:
-                        category_index = category_options.index(saved_category)
-                    except ValueError:
-                        # If saved category not in list, default to "Other"
-                        category_index = category_options.index("Other")
-                        print(f"[WARN] Invalid category '{saved_category}' for expense '{expense.get('Name')}', defaulting to 'Other'")
-
-                    category = st.selectbox(
-                        "Category:",
-                        options=category_options,
-                        index=category_index,
-                        key=f"custom_expense_category_{idx}",
-                        help="Category for organizing expenses"
-                    )
-                    st.session_state.temp_custom_expenses[idx]["Category"] = category
-
-            with col2:
-                st.write("")  # Spacer
-                st.write("")  # Spacer
-                if st.button("🗑️", key=f"delete_custom_expense_{idx}", help="Delete this expense"):
-                    expenses_to_delete.append(idx)
-
-    # Delete marked expenses
-    for idx in reversed(expenses_to_delete):
-        st.session_state.temp_custom_expenses.pop(idx)
-        st.rerun()
-
-    if len(st.session_state.temp_custom_expenses) == 0:
-        st.info("No custom expenses added yet. Click 'Add Custom Expense' if needed.")
+        # Load from existing JSON if available
+        st.session_state.temp_custom_expenses = existing.get("custom_expenses", [])
+    
+    custom_df = pd.DataFrame(st.session_state.temp_custom_expenses)
+    custom_df = _ensure_columns(custom_df, [("Name","str"),("Monthly Amount","float"),("Category","str")])
+    
+    st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
+    
+    edited_custom = st.data_editor(
+        custom_df,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="custom_expenses_editor",
+        column_config={
+            "Name": st.column_config.TextColumn("Expense Name", required=True, help="e.g., Autism School Costs, Special Therapy"),
+            "Monthly Amount": st.column_config.NumberColumn("Monthly Amount ($)", min_value=0, step=50, format="$%.2f"),
+            "Category": st.column_config.SelectboxColumn(
+                "Category",
+                options=["Education", "Healthcare", "Special Needs", "Childcare", "Other"],
+                help="Category for organizing expenses"
+            ),
+        },
+    )
+    
+    if not edited_custom.empty:
+        edited_custom["Monthly Amount"] = edited_custom["Monthly Amount"].apply(_to_float)
+    st.session_state.temp_custom_expenses = edited_custom.to_dict("records") if not edited_custom.empty else []
 
     # Show total of custom expenses
     if st.session_state.temp_custom_expenses:
@@ -801,36 +555,31 @@ def show_family_page(existing, save_payload, go_to_page):
 
     st.info("ℹ️ These fields are completely optional. Leave blank if not applicable.")
 
-    # DEBUG: Show what's currently in temp_custom_expenses
-    print(f"[FAMILY PAGE] temp_custom_expenses has {len(st.session_state.get('temp_custom_expenses', []))} items")
-    for idx, exp in enumerate(st.session_state.get('temp_custom_expenses', [])):
-        print(f"  temp_custom_expenses[{idx}]: {exp.get('Name')} - ${exp.get('Monthly Amount')}")
-
-    # Navigation with manual save
-    col1, col2 = st.columns([1, 1])
+    # Navigation
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        if st.button("← BACK to Liabilities", use_container_width=True):
+        if st.button("← Back to Liabilities", use_container_width=True):
             go_to_page('liabilities')
-    with col2:
-        if st.button("NEXT →", type="primary", use_container_width=True):
-            # CRITICAL: Explicitly save family data to session_state BEFORE navigating
-            # Data editors already update temp_ variables, we just need to save them with proper keys
-            st.session_state['children_list'] = st.session_state.get("temp_children", [])
-            st.session_state['inheritance_list'] = st.session_state.get("temp_inherit", [])
-            st.session_state['goals_list'] = st.session_state.get("temp_goals", [])
-            st.session_state['custom_expenses'] = st.session_state.get("temp_custom_expenses", [])
-
-            # DEBUG: Log what we're saving
-            print(f"[FAMILY PAGE SAVE] Custom Expenses Count: {len(st.session_state['custom_expenses'])}")
-            for idx, exp in enumerate(st.session_state['custom_expenses']):
-                print(f"  Expense {idx+1}: {exp.get('Name')} - ${exp.get('Monthly Amount')}")
+    with col3:
+        if st.button("Next: Review →", type="primary", use_container_width=True):
+            # Save family data using temp arrays (already up-to-date while typing)
+            data = existing.copy()
+            data["children_list"] = st.session_state.get("temp_children", [])
+            data["inheritance_list"] = st.session_state.get("temp_inherit", [])
+            data["goals_list"] = st.session_state.get("temp_goals", [])
+            data["custom_expenses"] = st.session_state.get("temp_custom_expenses", [])
 
             # Backward compatibility keys
-            st.session_state['children_rows'] = st.session_state['children_list']
-            st.session_state['inherit_rows'] = st.session_state['inheritance_list']
-            st.session_state['goals_data'] = st.session_state['goals_list']
-            st.session_state['custom_expenses_list'] = st.session_state['custom_expenses']
+            data["children_rows"] = data["children_list"]
+            data["inherit_rows"] = data["inheritance_list"]
+            data["goals_data"] = data["goals_list"]
+            data["custom_expenses_list"] = data["custom_expenses"]
 
+            # CRITICAL FIX: Save to session_state so data persists across pages
+            for key, value in data.items():
+                st.session_state[key] = value
+            # REMOVED: Auto-save on navigation (user must explicitly save)
+            # save_payload(data)
             go_to_page('review')
         
         
