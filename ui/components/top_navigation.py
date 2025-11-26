@@ -17,11 +17,11 @@ def render_top_navigation(current: str = "intake"):
     """
 
     modules = [
-        ("📝", "Intake", "INTAKE"),
+        ("📝", "INTAKE", "INTAKE"),
         ("📊", "Analysis", "Analysis"),
-        ("🏥", "Health", "Healthcare"),
+        ("🏥", "Healthcare", "Healthcare"),
         ("🎬", "Scenarios", "scenario_studio"),
-        ("💰", "SS", "social_security"),
+        ("💰", "Soc Sec", "social_security"),
         ("📈", "History", "historical_tracking"),
     ]
 
@@ -33,6 +33,10 @@ def render_top_navigation(current: str = "intake"):
             padding: 0.5rem;
             border-radius: 0.5rem;
             margin-bottom: 1rem;
+        }
+        /* Make nav bar scrollable on mobile */
+        [data-testid="column"] {
+            min-width: fit-content !important;
         }
         </style>
     """, unsafe_allow_html=True)
