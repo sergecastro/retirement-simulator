@@ -9,6 +9,7 @@ Last Updated: October 22, 2025
 """
 
 import streamlit as st
+from ui.components.top_navigation import render_top_navigation
 from financial_utils import display_summary_metrics
 from simulation_core import run_simulation
 from household_events import build_child_objects, build_inheritances, make_family_cashflows
@@ -42,6 +43,8 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         financial_data: Financial data
         sim_params: Simulation parameters
     """
+    render_top_navigation(current="analysis")
+
     # Header with logo (medium size)
     col_logo, col_title = st.columns([1, 6])
     with col_logo:

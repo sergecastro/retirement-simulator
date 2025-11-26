@@ -7,6 +7,7 @@ Standalone module for SS claiming strategy optimization.
 
 import streamlit as st
 import pandas as pd
+from ui.components.top_navigation import render_top_navigation
 from datetime import date
 from utils.ss_calculations import (
     calculate_benefit_at_age,
@@ -25,6 +26,8 @@ def show_social_security_optimizer():
     """
     Main Social Security Optimizer page.
     """
+    render_top_navigation(current="social_security")
+
     # Add mode selector to sidebar FIRST
     with st.sidebar:
         st.markdown("---")

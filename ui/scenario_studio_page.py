@@ -4,6 +4,7 @@ Self-contained scenario creation and side-by-side comparison
 """
 
 import streamlit as st
+from ui.components.top_navigation import render_top_navigation
 from utils.comparison_scenarios import get_comparisons_for_plan, load_comparison_scenario
 from utils.snapshot_manager import get_current_snapshot
 
@@ -257,6 +258,7 @@ def export_comparison_to_pdf(scenarios, base_plan_id):
 
 def render_scenario_studio_page():
     """Render the Scenario Studio page - Full self-contained experience"""
+    render_top_navigation(current="scenario_studio")
 
     # Add Quick Mode Switch in sidebar
     with st.sidebar:

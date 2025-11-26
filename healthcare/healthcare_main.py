@@ -10,6 +10,7 @@ Last Updated: October 22, 2025
 
 import streamlit as st
 from datetime import datetime
+from ui.components.top_navigation import render_top_navigation
 
 # Import disclaimers
 from healthcare.healthcare_disclaimers import (
@@ -394,6 +395,7 @@ def show_important_disclaimers():
 
 def main():
     """Main healthcare hub page"""
+    render_top_navigation(current="healthcare")
 
     # Require disclaimer acknowledgment
     require_healthcare_disclaimer_acknowledgment()

@@ -1,6 +1,7 @@
 # intake_integrated.py - Intake Questionnaire Module (called from app.py)
 # This module provides the Data Entry Mode questionnaire
 import os
+from ui.components.top_navigation import render_top_navigation
 import json
 import time
 import streamlit as st
@@ -505,6 +506,7 @@ def transition_to_analysis():
 # ========== MAIN INTAKE QUESTIONNAIRE ==========
 def show_intake_questionnaire():
     """Main function to display the intake questionnaire"""
+    render_top_navigation(current="intake")
 
     # Initialize intake page navigation
     if 'intake_current_page' not in st.session_state:
