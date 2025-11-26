@@ -13,13 +13,13 @@ def render_top_navigation(current: str = "intake"):
 
     Args:
         current: The current module name to highlight
-                 Options: "intake", "analysis", "healthcare", "scenario_studio", "social_security"
+                 Options: "INTAKE", "Analysis", "Healthcare", "scenario_studio", "social_security"
     """
 
     modules = [
-        ("📝", "Intake", "intake"),
-        ("📊", "Analysis", "analysis"),
-        ("🏥", "Health", "healthcare"),
+        ("📝", "Intake", "INTAKE"),
+        ("📊", "Analysis", "Analysis"),
+        ("🏥", "Health", "Healthcare"),
         ("🎬", "Scenarios", "scenario_studio"),
         ("💰", "SS", "social_security"),
     ]
@@ -55,4 +55,5 @@ def render_top_navigation(current: str = "intake"):
                 type=button_type
             ):
                 st.session_state.current_mode = mode_key
+                st.session_state.mode_selected = True
                 st.rerun()

@@ -506,7 +506,7 @@ def transition_to_analysis():
 # ========== MAIN INTAKE QUESTIONNAIRE ==========
 def show_intake_questionnaire():
     """Main function to display the intake questionnaire"""
-    render_top_navigation(current="intake")
+    render_top_navigation(current="INTAKE")
 
     # Initialize intake page navigation
     if 'intake_current_page' not in st.session_state:

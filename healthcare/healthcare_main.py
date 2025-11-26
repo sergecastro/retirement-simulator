@@ -395,7 +395,7 @@ def show_important_disclaimers():
 
 def main():
     """Main healthcare hub page"""
-    render_top_navigation(current="healthcare")
+    render_top_navigation(current="Healthcare")
 
     # Require disclaimer acknowledgment
     require_healthcare_disclaimer_acknowledgment()
