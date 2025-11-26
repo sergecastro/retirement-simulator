@@ -594,154 +594,33 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
         st.stop()
 
     # Mode selection header
-    st.markdown("### 🎯 Choose Your Starting Point")
+    st.markdown("### 🎯 Get Started")
 
-    # Five big buttons for mode selection (or fewer if modules unavailable)
-    if HEALTHCARE_AVAILABLE:
-        # First row: 3 main cards
-        col1, col2, col3 = st.columns(3)
-    else:
-        col1, col2 = st.columns(2)
-        st.warning("⚠️ Healthcare module temporarily unavailable")
+    # SIMPLIFIED: Only show INTAKE card on landing page
+    # Other modules accessible via top navigation bar after entering INTAKE
 
-    with col1:
-        st.markdown("""
-        <div style='background: linear-gradient(135deg, #E8E6E0 0%, #FFFFFF 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
-            <h3 style='color: #003D5B; margin-top: 0;'>📝 INTAKE Mode</h3>
-            <p style='color: #003D5B;'><strong>Guided Questionnaire</strong></p>
-            <ul style='color: #003D5B;'>
-                <li>Step-by-step data collection</li>
-                <li>Profile & demographic questions</li>
-                <li>Financial information gathering</li>
-                <li>Family & lifecycle details</li>
-            </ul>
-            <p style='color: #003D5B; margin-bottom: 0;'><strong>✨ Best for:</strong> First-time users or updating your profile</p>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, #E8E6E0 0%, #FFFFFF 100%); padding: 20px; border-radius: 8px; border: 2px solid #E8B541; max-width: 500px;'>
+        <h3 style='color: #003D5B; margin-top: 0;'>📝 INTAKE Mode</h3>
+        <p style='color: #003D5B;'><strong>Guided Questionnaire</strong></p>
+        <ul style='color: #003D5B;'>
+            <li>Step-by-step data collection</li>
+            <li>Profile & demographic questions</li>
+            <li>Financial information gathering</li>
+            <li>Family & lifecycle details</li>
+        </ul>
+        <p style='color: #003D5B; margin-bottom: 0;'><strong>✨ Best for:</strong> First-time users or updating your profile</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-        st.markdown("")  # Spacing
+    st.markdown("")  # Spacing
 
-        if st.button("🚀 Start INTAKE Questionnaire", type="primary", use_container_width=True, key="btn_intake"):
-            st.session_state.mode_selected = True
-            st.session_state.current_mode = "INTAKE"
-            st.rerun()
+    if st.button("🚀 Start INTAKE Questionnaire", type="primary", use_container_width=True, key="btn_intake"):
+        st.session_state.mode_selected = True
+        st.session_state.current_mode = "INTAKE"
+        st.rerun()
 
-    with col2:
-        st.markdown("""
-        <div style='background: linear-gradient(135deg, #003D5B 0%, #004D73 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
-            <h3 style='color: #FFFFFF; margin-top: 0;'>📊 Analysis Mode</h3>
-            <p style='color: #FFFFFF;'><strong>Advanced Simulation & Planning</strong></p>
-            <ul style='color: #FFFFFF;'>
-                <li>Retirement trajectory projections</li>
-                <li>Interactive charts & visualizations</li>
-                <li>Monte Carlo probability analysis</li>
-                <li>AI-powered financial advisor</li>
-            </ul>
-            <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Returning users or quick simulations</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("")  # Spacing
-
-        if st.button("🚀 Go to Analysis Tools", type="primary", use_container_width=True, key="btn_analysis"):
-            st.session_state.mode_selected = True
-            st.session_state.current_mode = "Analysis"
-            st.rerun()
-
-    if HEALTHCARE_AVAILABLE:
-        with col3:
-            st.markdown("""
-            <div style='background: linear-gradient(135deg, #D85140 0%, #E86850 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
-                <h3 style='color: #FFFFFF; margin-top: 0;'>🏥 Healthcare Mode</h3>
-                <p style='color: #FFFFFF;'><strong>Medicare & Healthcare Planning</strong></p>
-                <ul style='color: #FFFFFF;'>
-                    <li><strong>🆕 Medigap Plan Comparison Tool</strong></li>
-                    <li>Medicare IRMAA calculator</li>
-                    <li>Medigap vs Medicare Advantage quiz</li>
-                    <li>Age-based premium estimates</li>
-                </ul>
-                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Choosing the right Medicare supplement plan</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("")  # Spacing
-
-            if st.button("🚀 Open Healthcare Hub", type="primary", use_container_width=True, key="btn_healthcare"):
-                st.session_state.mode_selected = True
-                st.session_state.current_mode = "Healthcare"
-                st.rerun()
-
-        # Second row: Scenario Studio, Social Security, Historical Tracking
-        col4, col5, col6 = st.columns(3)
-
-        # Card 4: Scenario Studio
-        with col4:
-            st.markdown("""
-            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
-                <h3 style='color: #FFFFFF; margin-top: 0;'>🎬 Scenario Studio</h3>
-                <p style='color: #FFFFFF;'><strong>Multi-Scenario Comparison</strong></p>
-                <ul style='color: #FFFFFF;'>
-                    <li>Compare 2-4 scenarios side-by-side</li>
-                    <li>Visual difference highlighting</li>
-                    <li>AI-powered recommendations</li>
-                    <li>Export comparison reports</li>
-                </ul>
-                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Exploring "what-if" retirement strategies</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("")  # Spacing
-
-            if st.button("🚀 Enter Scenario Studio", type="primary", use_container_width=True, key="btn_scenario_studio"):
-                st.session_state.mode_selected = True
-                st.session_state.current_mode = "scenario_studio"
-                st.rerun()
-
-        # Card 5: Social Security Optimizer
-        with col5:
-            st.markdown("""
-            <div style='background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
-                <h3 style='color: #FFFFFF; margin-top: 0;'>🏛️ Social Security</h3>
-                <p style='color: #FFFFFF;'><strong>SS Optimizer + Tax Planning</strong></p>
-                <ul style='color: #FFFFFF;'>
-                    <li>Optimal claiming age calculator</li>
-                    <li><strong>🆕 SS Benefit Taxation Calculator</strong></li>
-                    <li><strong>🆕 Roth Conversion Sweet Spot</strong></li>
-                    <li>Break-even & spousal optimization</li>
-                </ul>
-                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Maximize SS + minimize lifetime taxes</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("")  # Spacing
-
-            if st.button("🚀 Optimize Social Security", type="primary", use_container_width=True, key="btn_social_security"):
-                st.session_state.mode_selected = True
-                st.session_state.current_mode = "social_security"
-                st.rerun()
-
-        # Card 6: Historical Tracking
-        with col6:
-            st.markdown("""
-            <div style='background: linear-gradient(135deg, #00D9FF 0%, #0099CC 100%); padding: 15px; border-radius: 8px; height: 280px; border: 2px solid #E8B541;'>
-                <h3 style='color: #FFFFFF; margin-top: 0;'>📊 Historical Tracking</h3>
-                <p style='color: #FFFFFF;'><strong>Track Progress Over Time</strong></p>
-                <ul style='color: #FFFFFF;'>
-                    <li><strong>🆕 Save plan snapshots quarterly/yearly</strong></li>
-                    <li>Compare 2-5 snapshots side-by-side</li>
-                    <li>View progress metrics & trends</li>
-                    <li>Beautiful timeline charts</li>
-                </ul>
-                <p style='color: #FFFFFF; margin-bottom: 0;'><strong>✨ Best for:</strong> Monitoring retirement plan improvements</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("")  # Spacing
-
-            if st.button("🚀 View Historical Tracking", type="primary", use_container_width=True, key="btn_historical_tracking"):
-                st.session_state.mode_selected = True
-                st.session_state.current_mode = "historical_tracking"
-                st.rerun()
+    st.caption("💡 After completing INTAKE, use the navigation bar at the top to access Analysis, Healthcare, Scenarios, and more.")
 
     st.markdown("---")
 

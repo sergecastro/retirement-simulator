@@ -598,6 +598,38 @@ def show_intake_questionnaire():
 *After completing INTAKE, you'll automatically see your Analysis results.*
 """)
 
+        # Mode selector - only show if not already selected
+        if "intake_mode" not in st.session_state:
+            st.markdown("### Choose Your Experience:")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown("""
+**📝 FULL MODE**
+
+Complete data entry for accurate projections.
+Best for: Serious planning
+Time: 15-20 minutes
+""")
+                if st.button("Start FULL MODE", key="btn_full_mode", use_container_width=True):
+                    st.session_state.intake_mode = "full"
+                    st.rerun()
+
+            with col2:
+                st.markdown("""
+**🚀 BETA MODE**
+
+Quick test with minimal fields.
+Best for: Exploring the app
+Time: 2-3 minutes
+""")
+                if st.button("Start BETA MODE", key="btn_beta_mode", use_container_width=True):
+                    st.session_state.intake_mode = "beta"
+                    st.rerun()
+
+            st.stop()  # Don't show the rest of the form until mode is selected
+
         # SIMPLIFIED: Just show a simple welcome message
         # Check if user has entered their name yet
         has_user_name = st.session_state.get("input_user_name", "") != ""
