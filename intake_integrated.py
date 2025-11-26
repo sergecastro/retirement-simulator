@@ -584,20 +584,6 @@ def show_intake_questionnaire():
 
         st.header("👤 Your Profile")
 
-        # What's Next roadmap - show users their journey
-        st.info("""
-**📍 Your Journey Through Family Forecast:**
-
-1. **📝 INTAKE** (you are here) — Enter your financial details
-2. **📊 Analysis** — See retirement projections & Monte Carlo simulations
-3. **🏥 Healthcare** — Medicare costs & IRMAA calculator
-4. **🎬 Scenarios** — Compare different retirement strategies
-5. **💰 Soc Sec** — Optimize Social Security claiming strategy
-6. **📈 History** — Track your progress over time
-
-*After completing INTAKE, you'll automatically see your Analysis results.*
-""")
-
         # Mode selector - only show if not already selected
         if "intake_mode" not in st.session_state:
             st.markdown("### Choose Your Experience:")
@@ -629,6 +615,20 @@ Time: 2-3 minutes
                     st.rerun()
 
             st.stop()  # Don't show the rest of the form until mode is selected
+
+        # What's Next roadmap - show users their journey
+        st.info("""
+**📍 Your Journey Through Family Forecast:**
+
+1. **📝 INTAKE** (you are here) — Enter your financial details
+2. **📊 Analysis** — See retirement projections & Monte Carlo simulations
+3. **🏥 Healthcare** — Medicare costs & IRMAA calculator
+4. **🎬 Scenarios** — Compare different retirement strategies
+5. **💰 Soc Sec** — Optimize Social Security claiming strategy
+6. **📈 History** — Track your progress over time
+
+*After completing INTAKE, you'll automatically see your Analysis results.*
+""")
 
         # SIMPLIFIED: Just show a simple welcome message
         # Check if user has entered their name yet
