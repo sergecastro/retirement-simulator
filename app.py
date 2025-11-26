@@ -593,86 +593,11 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
         st.warning("⚠️ Please acknowledge the beta terms above to continue.")
         st.stop()
 
-    # Mode selection header
-    st.markdown("### 🎯 Get Started")
-
-    # SIMPLIFIED: Only show INTAKE card on landing page
-    # Other modules accessible via top navigation bar after entering INTAKE
-
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, #E8E6E0 0%, #FFFFFF 100%); padding: 20px; border-radius: 8px; border: 2px solid #E8B541; max-width: 500px;'>
-        <h3 style='color: #003D5B; margin-top: 0;'>📝 INTAKE Mode</h3>
-        <p style='color: #003D5B;'><strong>Guided Questionnaire</strong></p>
-        <ul style='color: #003D5B;'>
-            <li>Step-by-step data collection</li>
-            <li>Profile & demographic questions</li>
-            <li>Financial information gathering</li>
-            <li>Family & lifecycle details</li>
-        </ul>
-        <p style='color: #003D5B; margin-bottom: 0;'><strong>✨ Best for:</strong> First-time users or updating your profile</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("")  # Spacing
-
-    if st.button("🚀 Start INTAKE Questionnaire", type="primary", use_container_width=True, key="btn_intake"):
-        st.session_state.mode_selected = True
-        st.session_state.current_mode = "INTAKE"
-        st.rerun()
-
-    st.caption("💡 After completing INTAKE, use the navigation bar at the top to access Analysis, Healthcare, Scenarios, and more.")
-
-    st.markdown("---")
-
-    # Help section
-    with st.expander("❓ Not sure which mode to choose?"):
-        st.markdown("""
-        ### Making Your Choice
-
-        **Choose INTAKE Mode if:**
-        - 🆕 This is your first time using Family Forecast
-        - 📝 You want guided, step-by-step data collection
-        - 🔄 You want to update or review your profile information
-        - 🤔 You're not sure what information you need
-
-        **Choose Analysis Mode if:**
-        - 🔙 You've already completed INTAKE previously
-        - 💼 You have your financial data ready to input manually
-        - 🎯 You want to jump straight to retirement simulations
-        - ⚡ You're familiar with financial planning tools
-
-        **Choose Healthcare Mode if:**
-        - 🏥 You want to calculate Medicare IRMAA surcharges
-        - 💰 You need to project healthcare costs in retirement
-        - 💊 You're planning Roth conversions and want to see Medicare impacts
-        - 🩺 You want to explore long-term care planning options
-
-        **Choose Scenario Studio if:**
-        - 🎬 You've saved multiple "what-if" comparison scenarios
-        - 📊 You want to compare different retirement strategies side-by-side
-        - 🔍 You need to see the differences between scenarios at a glance
-        - 🤔 You're deciding between multiple retirement paths
-
-        **Choose Social Security Optimizer if:**
-        - 🏛️ You want to determine the optimal age to claim SS benefits
-        - 💰 You need to see break-even analysis for different claiming ages
-        - 👥 You want to optimize spousal benefits
-        - 📊 You want to maximize lifetime Social Security income
-
-        **💡 Pro Tip:** You can always switch between modes later using the sidebar button!
-        """)
-
-    # Footer with user info
-    st.markdown("---")
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if is_trusted:
-            st.success("🔓 **Full Access Granted** - All advanced features unlocked")
-        else:
-            st.info("👤 **Demo Access** - Core features available")
-
-    # Coming Soon features
-    st.caption("🔐 **Coming Soon:** Plaid for secure bank data import • Stripe for premium features")
+    # DIRECT TO INTAKE: After accepting beta disclaimer, go straight to INTAKE
+    # No need to click a card - streamlined flow
+    st.session_state.mode_selected = True
+    st.session_state.current_mode = "INTAKE"
+    st.rerun()
 
 
 # =============================================================================
