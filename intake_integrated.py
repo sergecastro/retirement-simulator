@@ -579,8 +579,8 @@ def show_intake_questionnaire():
             go_to_page('review')
         st.divider()
 
-    # Force scroll to top on every page load
-    st.markdown('<div id="top"></div>', unsafe_allow_html=True)
+    # Force scroll to top on EVERY page load (critical for UX)
+    st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
 
     # Reset flag when reaching review page normally (not from edit)
     if current_page == 'review' and st.session_state.intake_from_review:
