@@ -1166,12 +1166,15 @@ Time: 2-3 minutes
     # These pages use the intake_review module
     # Pass empty dict - data is in session_state
     elif current_page == 'assets':
+        scroll_to_top()
         show_assets_page({}, save_payload, go_to_page)
 
     elif current_page == 'liabilities':
+        scroll_to_top()
         show_liabilities_page({}, save_payload, go_to_page)
 
     elif current_page == 'family':
+        scroll_to_top()
         show_family_page({}, save_payload, go_to_page)
 
     # ===== PAGE 7: REVIEW (FINAL PAGE with edit buttons!) =====
