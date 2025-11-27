@@ -614,10 +614,9 @@ Time: 2-3 minutes
                     st.session_state.intake_mode = "beta"
                     st.rerun()
 
-            st.stop()  # Don't show the rest of the form until mode is selected
 
-        # What's Next roadmap - show users their journey
-        st.info("""
+            # What's Next roadmap - show users their journey
+            st.info("""
 **📍 Your Journey Through Family Forecast:**
 
 1. **📝 INTAKE** (you are here) — Enter your financial details
@@ -629,6 +628,8 @@ Time: 2-3 minutes
 
 *After completing INTAKE, you'll automatically see your Analysis results.*
 """)
+
+            st.stop()  # Don't show the rest of the form until mode is selected
 
         # SIMPLIFIED: Just show a simple welcome message
         # Check if user has entered their name yet
