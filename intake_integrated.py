@@ -24,32 +24,43 @@ from utils.snapshot_manager import (
 from utils.local_storage_browser import load_from_local_storage_encrypted
 
 # ========== SCROLL TO TOP FIX ==========
-# JavaScript to force page scroll to top BEFORE content renders
-# Works in Streamlit's iframe context
-SCROLL_TO_TOP_JS = """
-<script>
-    // Try multiple methods to ensure scroll works in Streamlit
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTo(0, 0);
+import streamlit.components.v1 as components
 
-    // Target Streamlit's main container
-    var mainSection = window.parent.document.querySelector('section.main');
-    if (mainSection) {
-        mainSection.scrollTo(0, 0);
-    }
+def scroll_to_top():
+    """Force scroll to top using components.html for reliable execution"""
+    components.html(
+        """
+        <script>
+            // Immediate scroll
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTo(0, 0);
 
-    // Also try the stApp container
-    var stApp = window.parent.document.querySelector('.stApp');
-    if (stApp) {
-        stApp.scrollTo(0, 0);
-    }
+            // Parent document (Streamlit iframe)
+            if (window.parent) {
+                window.parent.scrollTo(0, 0);
+                var main = window.parent.document.querySelector('section.main');
+                if (main) main.scrollTo(0, 0);
+                var app = window.parent.document.querySelector('.stApp');
+                if (app) app.scrollTo(0, 0);
+            }
 
-    // Fallback: scroll parent window
-    if (window.parent) {
-        window.parent.scrollTo(0, 0);
-    }
-</script>
-"""
+            // Delayed scroll after render
+            setTimeout(function() {
+                window.parent.scrollTo(0, 0);
+                var main = window.parent.document.querySelector('section.main');
+                if (main) main.scrollTo(0, 0);
+            }, 50);
+
+            setTimeout(function() {
+                window.parent.scrollTo(0, 0);
+                var main = window.parent.document.querySelector('section.main');
+                if (main) main.scrollTo(0, 0);
+            }, 150);
+        </script>
+        """,
+        height=0
+    )
+
 
 # ========== EXIT WARNING FOR UNSAVED CHANGES ==========
 UNSAVED_CHANGES_WARNING_JS = """
@@ -580,7 +591,7 @@ def show_intake_questionnaire():
         st.divider()
 
     # Force scroll to top on EVERY page load (critical for UX)
-    st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
+    scroll_to_top()
 
     # Reset flag when reaching review page normally (not from edit)
     if current_page == 'review' and st.session_state.intake_from_review:
@@ -589,7 +600,7 @@ def show_intake_questionnaire():
     # ===== PAGE 1: PROFILE =====
     if current_page == 'profile':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
+        scroll_to_top()
 
         # ⚠️  WARN USER ABOUT UNSAVED CHANGES
         st.markdown(UNSAVED_CHANGES_WARNING_JS, unsafe_allow_html=True)
@@ -728,7 +739,7 @@ Time: 2-3 minutes
     # ===== PAGE 2: INCOME =====
     elif current_page == 'income':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
+        scroll_to_top()
         st.header("💰 Monthly Income")
         st.markdown("*Enter your typical monthly income from all sources. Enter 0 if not applicable.*")
 
@@ -847,7 +858,7 @@ Time: 2-3 minutes
     # ===== PAGE 3: EXPENSES =====
     elif current_page == 'expenses':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
+        scroll_to_top()
 
         st.header("🏠 Monthly Expenses")
         st.markdown("*Enter your typical monthly expenses. Enter 0 if not applicable.*")
@@ -1054,7 +1065,7 @@ Time: 2-3 minutes
     # ===== PAGE 3.5: CUSTOM MONTHLY INCOME SOURCES =====
     elif current_page == 'custom_expenses':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
+        scroll_to_top()
         st.header("💰 Custom Income Sources")
         st.markdown("*Add income sources not covered above (business income, consulting fees, bonuses, side gigs, investment income, etc.)*")
 
@@ -1166,7 +1177,7 @@ Time: 2-3 minutes
     # ===== PAGE 7: REVIEW (FINAL PAGE with edit buttons!) =====
     elif current_page == 'review':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
+        scroll_to_top()
 
         st.header("📋 Review & Complete Your Intake")
         st.caption("Review all your information before completing - click any section to edit")
