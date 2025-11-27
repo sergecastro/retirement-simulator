@@ -25,10 +25,29 @@ from utils.local_storage_browser import load_from_local_storage_encrypted
 
 # ========== SCROLL TO TOP FIX ==========
 # JavaScript to force page scroll to top BEFORE content renders
+# Works in Streamlit's iframe context
 SCROLL_TO_TOP_JS = """
 <script>
+    // Try multiple methods to ensure scroll works in Streamlit
     window.scrollTo(0, 0);
     document.documentElement.scrollTo(0, 0);
+
+    // Target Streamlit's main container
+    var mainSection = window.parent.document.querySelector('section.main');
+    if (mainSection) {
+        mainSection.scrollTo(0, 0);
+    }
+
+    // Also try the stApp container
+    var stApp = window.parent.document.querySelector('.stApp');
+    if (stApp) {
+        stApp.scrollTo(0, 0);
+    }
+
+    // Fallback: scroll parent window
+    if (window.parent) {
+        window.parent.scrollTo(0, 0);
+    }
 </script>
 """
 
@@ -550,13 +569,6 @@ def show_intake_questionnaire():
     display_name = st.session_state.intake_current_page.replace('_', ' ').title()
     st.caption(f"Step {current_idx + 1} of {len(pages)}: {display_name}")
 
-    # Show welcome header with user name and page progress
-    user_name = st.session_state.get('input_user_name', 'New User')
-    if user_name:
-        st.markdown(f"### 👋 Welcome **{user_name}**! You are on Page **{current_idx + 1}** of **{len(pages)}**")
-    else:
-        st.markdown(f"### 📝 INTAKE Questionnaire - Page **{current_idx + 1}** of **{len(pages)}**")
-
     current_page = st.session_state.intake_current_page
 
     # Show "Return to Review" banner if editing from review page
@@ -631,48 +643,7 @@ Time: 2-3 minutes
 
             st.stop()  # Don't show the rest of the form until mode is selected
 
-        # SIMPLIFIED: Just show a simple welcome message
-        # Check if user has entered their name yet
-        has_user_name = st.session_state.get("input_user_name", "") != ""
-
-        if has_user_name:
-            # RETURNING USER or continuing session
-            st.info(f"👋 **Welcome!** Update any fields below and click SAVE & NEXT to continue.")
-        else:
-            # FIRST-TIME USER
-            st.success("🎉 **Welcome to the Ultimate Retirement Planning Tool!**")
-            st.markdown("""
-            This step-by-step questionnaire will guide you through:
-            - Your profile and family information
-            - Income and expenses
-            - Assets and liabilities
-            - Children's education planning
-            - Future goals and inheritances
-
-            **Let's get started!** 🚀
-            """)
-
-        st.divider()
-
-        # Demo Data Loader Button - ONLY show if user has NO saved snapshots
-        from utils.snapshot_manager import has_user_snapshots
-
-        if not has_user_snapshots():
-            # New user - offer demo data
-            if st.button("📋 Load Demo Data (John Smith)", help="Pre-fill all forms with sample data that you can modify"):
-                load_demo_data()
-                st.rerun()
-
-            # Show success message if demo data was just loaded
-            if st.session_state.get('input_user_name') == "John Smith":
-                st.info("ℹ️ Demo data loaded! You can now modify any fields and save as your own.")
-        else:
-            # Returning user - show confirmation that data was loaded
-            loaded_name = st.session_state.get('input_user_name', '')
-            if loaded_name and loaded_name != "John Smith":
-                st.success(f"✅ Loaded your saved data: **{loaded_name}**")
-
-        st.markdown("*Please enter your basic information. You can enter 0 or leave fields empty if not applicable.*")
+        # Clean start - form fields only
 
         # Widgets WITHOUT key= - we'll manually save on button click
         user_name = st.text_input(
