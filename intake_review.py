@@ -417,7 +417,7 @@ def show_family_page(existing, save_payload, go_to_page):
     """Page 6: Family Events (Children & Inheritances)"""
     # ===== CRITICAL: Remove any stale widget keys BEFORE widgets are created =====
     # This prevents 'cannot be modified after widget instantiated' errors
-    widget_keys_to_clean = ['children_editor', 'inherit_editor', 'goals_editor', 'custom_expenses_editor']
+    widget_keys_to_clean = []  # DISABLED - was deleting user data from data_editor widgets
     for wk in widget_keys_to_clean:
         if wk in st.session_state:
             del st.session_state[wk]
@@ -467,6 +467,8 @@ def show_family_page(existing, save_payload, go_to_page):
         ("Scholarship %","Int64"),("Use 529 First?","bool"),
         ("Start Age","Int64"),("Years","Int64")
     ])
+    print(f"[DF DEBUG] children_df BEFORE data_editor: {children_df.to_dict('records')}")
+    print(f"[DF DEBUG] children_df.empty = {children_df.empty}, columns = {list(children_df.columns)}")
 
     st.info("💡 **HOW TO USE:** After entering each value, press ENTER to save. Then move to next cell.")
     edited_children = st.data_editor(
@@ -494,6 +496,9 @@ def show_family_page(existing, save_payload, go_to_page):
         edited_children["Start Age"] = pd.to_numeric(edited_children["Start Age"], errors="coerce").astype("Int64")
         edited_children["Years"] = pd.to_numeric(edited_children["Years"], errors="coerce").astype("Int64")
     st.session_state.temp_children = edited_children.to_dict("records") if not edited_children.empty else []
+    print(f"[FORM DEBUG] edited_children.empty = {edited_children.empty}")
+    print(f"[FORM DEBUG] temp_children after data_editor = {st.session_state.temp_children}")
+    print(f"[WIDGET DEBUG] children_editor in session_state: {st.session_state.get('children_editor', 'NOT FOUND')}")
 
     st.divider()
 
@@ -640,6 +645,10 @@ def show_family_page(existing, save_payload, go_to_page):
             go_to_page('liabilities')
     with col3:
         if st.button("Next: Review →", type="primary", use_container_width=True):
+            print("[PAGE7 DEBUG] NEXT button clicked!")
+            print(f"[PAGE7 DEBUG] temp_children BEFORE save: {st.session_state.get('temp_children', 'NOT FOUND')}")
+            print(f"[PAGE7 DEBUG] temp_inherit BEFORE save: {st.session_state.get('temp_inherit', 'NOT FOUND')}")
+            print(f"[PAGE7 DEBUG] temp_goals BEFORE save: {st.session_state.get('temp_goals', 'NOT FOUND')}")
             # Save family data using temp arrays (already up-to-date while typing)
             data = existing.copy()
             data["children_list"] = st.session_state.get("temp_children", [])
@@ -653,18 +662,18 @@ def show_family_page(existing, save_payload, go_to_page):
             data["goals_data"] = data["goals_list"]
             data["custom_expenses_list"] = data["custom_expenses"]
 
-            # CRITICAL FIX: Save to session_state so data persists across pages
+            # Save data to session_state, but SKIP widget keys that Streamlit protects
+            blocked_prefixes = ('nav_', 'FormSubmitter:', '_editor', 'mode_selector', 'widget_', 'button_', 'selectbox_', 'radio_', 'checkbox_')
+            blocked_exact = ('children_editor', 'inherit_editor', 'goals_editor', 'custom_expenses_editor', 'mode_selector_intake')
             for key, value in data.items():
-                # WHITELIST: Only copy data keys, never widget keys
-                # Safe prefixes: input_* (form data), temp_* (temporary data), 
-                # children_list, inheritance_list, goals_list, custom_expenses, schema_version
-                safe_keys = ('input_', 'temp_', 'children_list', 'children_rows', 
-                             'inheritance_list', 'inherit_rows', 'goals_list', 'goals_data',
-                             'custom_expenses', 'schema_version')
-                if key.startswith(safe_keys) or key in safe_keys:
+                if not key.startswith(blocked_prefixes) and key not in blocked_exact:
                     st.session_state[key] = value
             # REMOVED: Auto-save on navigation (user must explicitly save)
             # save_payload(data)
+            print(f"[PAGE7 DEBUG] children_list AFTER save: {st.session_state.get('children_list', 'NOT FOUND')}")
+            print(f"[PAGE7 DEBUG] children_rows AFTER save: {st.session_state.get('children_rows', 'NOT FOUND')}")
+            print(f"[PAGE7 DEBUG] inherit_rows AFTER save: {st.session_state.get('inherit_rows', 'NOT FOUND')}")
+            print(f"[PAGE7 DEBUG] goals_data AFTER save: {st.session_state.get('goals_data', 'NOT FOUND')}")
             go_to_page('review')
         
         
