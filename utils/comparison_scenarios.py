@@ -23,7 +23,7 @@ import streamlit as st
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from utils.encryption import encrypt_data, decrypt_data
-from streamlit_browser_storage import LocalStorage
+# DISABLED: from streamlit_browser_storage import LocalStorage
 
 
 # =============================================================================
@@ -41,6 +41,10 @@ COMPARISON_KEY_PREFIX = "ff_comparison_"
 @st.cache_resource
 def _get_local_storage():
     """Get localStorage instance (singleton-cached)."""
+    # ========== TEMPORARY DEBUG: DISABLED TO FIND RERUN SOURCE ==========
+    print("[DEBUG] comparison_scenarios._get_local_storage DISABLED")
+    return None
+    # ========== END TEMPORARY DEBUG ==========
     if '_localStorage_singleton' not in st.session_state:
         st.session_state._localStorage_singleton = LocalStorage(key="forecash_local_storage")
     return st.session_state._localStorage_singleton
@@ -128,7 +132,7 @@ def save_comparison_scenario(
         localS = _get_local_storage()
 
         # Save encryption key if it's new (CRITICAL: Must happen before encrypting!)
-        if st.session_state.get('encryption_key_needs_save', False):
+        if localS is not None and st.session_state.get('encryption_key_needs_save', False):
             localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
             st.session_state.encryption_key_needs_save = False
             print("[SAVE COMPARISON] Saved encryption key to localStorage")
@@ -138,20 +142,11 @@ def save_comparison_scenario(
 
         # Save to localStorage
         storage_key = f"{COMPARISON_KEY_PREFIX}{comparison_id}"
-        localS.set(storage_key, encrypted_data)
-        print(f"[SAVE COMPARISON] Saved to localStorage: {storage_key}")
-
-        # SAVE TO DISK CACHE (reliable backup!)
-        try:
-            import os
-            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache', 'comparisons')
-            os.makedirs(cache_dir, exist_ok=True)
-            cache_file = os.path.join(cache_dir, f"{storage_key}.json")
-            with open(cache_file, 'w') as f:
-                json.dump(comparison_data, f, indent=2)
-            print(f"[OK] Saved comparison to disk cache")
-        except Exception as disk_err:
-            print(f"[WARN] Failed to save comparison to disk: {disk_err}")
+        if localS is not None:
+            localS.set(storage_key, encrypted_data)
+            print(f"[SAVE COMPARISON] Saved to localStorage: {storage_key}")
+        else:
+            print(f"[WARN] localStorage disabled - cannot save comparison: {storage_key}")
 
         # Update comparisons index
         _update_comparisons_index(comparison_id, base_plan_id, name)
@@ -191,22 +186,12 @@ def load_comparison_scenario(comparison_id: str) -> Optional[Dict[str, Any]]:
 
     storage_key = f"{COMPARISON_KEY_PREFIX}{comparison_id}"
 
-    # TRY DISK CACHE FIRST (localStorage is unreliable!)
-    try:
-        import os
-        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache', 'comparisons')
-        cache_file = os.path.join(cache_dir, f"{storage_key}.json")
-        if os.path.exists(cache_file):
-            with open(cache_file, 'r') as f:
-                comparison_data = json.load(f)
-            print(f"[DISK CACHE HIT] Loaded comparison from disk: {comparison_data.get('name')}")
-            return comparison_data
-    except Exception as disk_err:
-        print(f"[DISK CACHE] Failed to load from disk: {disk_err}")
 
-    # FALLBACK: Try localStorage
     try:
         localS = _get_local_storage()
+        if localS is None:
+            print(f"[WARN] localStorage disabled - cannot load comparison: {storage_key}")
+            return None
         encrypted_data = localS.get(storage_key)
 
         if not encrypted_data:
@@ -254,27 +239,15 @@ def get_comparisons_index() -> List[Dict[str, str]]:
     """
     print(f"[GET INDEX] Loading comparisons index")
 
-    # TRY DISK CACHE FIRST (localStorage is unreliable!)
-    try:
-        import json
-        import os
-        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
-        cache_file = os.path.join(cache_dir, 'comparisons_index.json')
-        if os.path.exists(cache_file):
-            with open(cache_file, 'r') as f:
-                disk_index = json.load(f)
-            comparisons = disk_index.get("comparisons", [])
-            print(f"[DISK CACHE HIT] Loaded {len(comparisons)} comparisons from disk")
-            return comparisons
-    except Exception as disk_err:
-        print(f"[DISK CACHE] Failed to load from disk: {disk_err}")
 
-    # FALLBACK: Try localStorage (probably won't work, but try anyway)
     try:
         localS = _get_local_storage()
         print(f"[DEBUG GET INDEX] localStorage instance ID: {id(localS)}")
         print(f"[DEBUG GET INDEX] Looking for key: '{COMPARISONS_INDEX_KEY}'")
 
+        if localS is None:
+            print(f"[INFO] localStorage disabled - returning empty comparisons list")
+            return []
         encrypted_index = localS.get(COMPARISONS_INDEX_KEY)
         print(f"[DEBUG GET INDEX] Raw result from localStorage: {type(encrypted_index)} = {encrypted_index}")
 
@@ -352,19 +325,11 @@ def delete_comparison_scenario(comparison_id: str) -> bool:
         localS = _get_local_storage()
 
         # Remove from localStorage
-        localS.delete(storage_key)
-        print(f"[DELETE COMPARISON] Removed from localStorage: {storage_key}")
-
-        # DELETE FROM DISK CACHE
-        try:
-            import os
-            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache', 'comparisons')
-            cache_file = os.path.join(cache_dir, f"{storage_key}.json")
-            if os.path.exists(cache_file):
-                os.remove(cache_file)
-                print(f"[OK] Deleted comparison from disk cache")
-        except Exception as disk_err:
-            print(f"[WARN] Failed to delete from disk cache: {disk_err}")
+        if localS is not None:
+            localS.delete(storage_key)
+            print(f"[DELETE COMPARISON] Removed from localStorage: {storage_key}")
+        else:
+            print(f"[WARN] localStorage disabled - cannot delete: {storage_key}")
 
         # Update index
         _remove_from_comparisons_index(comparison_id)
@@ -448,7 +413,7 @@ def _update_comparisons_index(
         print(f"[DEBUG UPDATE INDEX] Saving to key: '{COMPARISONS_INDEX_KEY}'")
 
         # Save encryption key if it's new (CRITICAL: Must happen before encrypting!)
-        if st.session_state.get('encryption_key_needs_save', False):
+        if localS is not None and st.session_state.get('encryption_key_needs_save', False):
             localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
             st.session_state.encryption_key_needs_save = False
             print("[UPDATE INDEX] Saved encryption key to localStorage")
@@ -460,22 +425,12 @@ def _update_comparisons_index(
         encrypted_index = encrypt_data(index_data, localS)
         print(f"[DEBUG UPDATE INDEX] Encrypted data type: {type(encrypted_index)}, length: {len(str(encrypted_index))}")
 
-        localS.set(COMPARISONS_INDEX_KEY, encrypted_index)
-        print(f"[DEBUG UPDATE INDEX] Called localS.set() - data sent to browser")
+        if localS is not None:
+            localS.set(COMPARISONS_INDEX_KEY, encrypted_index)
+            print(f"[DEBUG UPDATE INDEX] Called localS.set() - data sent to browser")
+        else:
+            print(f"[WARN] localStorage disabled - cannot save comparisons index")
         print(f"[DEBUG UPDATE INDEX] NOTE: Data will be available after next page render")
-
-        # SAVE TO DISK CACHE (because localStorage is unreliable!)
-        try:
-            import json
-            import os
-            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
-            os.makedirs(cache_dir, exist_ok=True)
-            cache_file = os.path.join(cache_dir, 'comparisons_index.json')
-            with open(cache_file, 'w') as f:
-                json.dump(index_data, f, indent=2)
-            print(f"[OK] Saved comparisons index to disk cache: {cache_file}")
-        except Exception as disk_err:
-            print(f"[WARN] Failed to save to disk cache: {disk_err}")
 
         print(f"[OK] Updated comparisons index")
 
@@ -508,21 +463,11 @@ def _remove_from_comparisons_index(comparison_id: str) -> None:
         # Encrypt and save updated index
         index_data = {"comparisons": updated_index}
         encrypted_index = encrypt_data(index_data, localS)
-        localS.set(COMPARISONS_INDEX_KEY, encrypted_index)
-
-        # UPDATE DISK CACHE
-        try:
-            import json
-            import os
-            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
-            cache_file = os.path.join(cache_dir, 'comparisons_index.json')
-            with open(cache_file, 'w') as f:
-                json.dump(index_data, f, indent=2)
-            print(f"[OK] Updated disk cache after deletion")
-        except Exception as disk_err:
-            print(f"[WARN] Failed to update disk cache: {disk_err}")
-
-        print(f"[OK] Removed comparison from index")
+        if localS is not None:
+            localS.set(COMPARISONS_INDEX_KEY, encrypted_index)
+            print(f"[OK] Removed comparison from index")
+        else:
+            print(f"[WARN] localStorage disabled - cannot update comparisons index")
 
     except Exception as e:
         print(f"[ERROR] Failed to remove from comparisons index: {e}")
@@ -561,19 +506,6 @@ def delete_comparison_scenario(comparison_id: str) -> bool:
             print(f"[DELETE] Removed from localStorage: {storage_key}")
         except Exception as ls_err:
             print(f"[WARN] Failed to delete from localStorage: {ls_err}")
-
-        # Delete from disk cache
-        try:
-            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache', 'comparisons')
-            comp_file = os.path.join(cache_dir, f"ff_comparison_{comparison_id}.json")
-
-            if os.path.exists(comp_file):
-                os.remove(comp_file)
-                print(f"[DELETE] Removed from disk: {comp_file}")
-            else:
-                print(f"[WARN] File not found on disk: {comp_file}")
-        except Exception as disk_err:
-            print(f"[WARN] Failed to delete from disk: {disk_err}")
 
         # Remove from index
         _remove_from_comparisons_index(comparison_id)

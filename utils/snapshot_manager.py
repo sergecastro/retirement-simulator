@@ -38,7 +38,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from utils.encryption import encrypt_data, decrypt_data
 import traceback
-from streamlit_browser_storage import LocalStorage
+# DISABLED: from streamlit_browser_storage import LocalStorage
 
 
 # =============================================================================
@@ -161,6 +161,11 @@ def create_snapshot_id() -> str:
 @st.cache_resource
 def _get_local_storage():
     """Get localStorage instance (singleton-cached in session_state)."""
+    # ========== TEMPORARY DEBUG: DISABLED ==========
+    print("[DEBUG] _get_local_storage DISABLED - returning None")
+    return None
+    # ========== END TEMPORARY DEBUG ==========
+    
     # Cache in session_state to prevent creating multiple instances
     if '_localStorage_singleton' not in st.session_state:
         print("[DEBUG] Creating localStorage singleton (FIRST TIME)")
@@ -177,28 +182,27 @@ def get_snapshots_index() -> Dict[str, Any]:
     Returns:
         Index dict with current_snapshot_id and snapshots list
     """
-    # CRITICAL: Check session_state cache FIRST (avoids localStorage race condition)
+    # CRITICAL: Check session_state cache FIRST (avoids localStorage rerun loop!)
+    # This works even when localStorage is disabled!
     if '_cached_snapshots_index' in st.session_state:
         cached = st.session_state['_cached_snapshots_index']
-        print(f"[CACHE HIT] Using cached index with {len(cached.get('snapshots', []))} snapshots")
+        # Silent return - don't print on every render to reduce console spam
         return cached.copy()
 
-    # PERSISTENCE FIX: Try loading from disk cache (survives restarts)
-    try:
-        import json
-        import os
-        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
-        cache_file = os.path.join(cache_dir, 'snapshots_index.json')
-        if os.path.exists(cache_file):
-            with open(cache_file, 'r') as f:
-                disk_index = json.load(f)
-            print(f"[DISK CACHE HIT] Loaded index from disk with {len(disk_index.get('snapshots', []))} snapshots")
-            # Cache it in session_state for next time
-            st.session_state['_cached_snapshots_index'] = disk_index.copy()
-            return disk_index
-    except Exception as disk_err:
-        print(f"[DISK CACHE] Failed to load from disk: {disk_err}")
+    # ========== TEMPORARY DEBUG: BYPASS LOCALSTORAGE READ ==========
+    # localStorage disabled - return empty (but cache was checked above!)
+    print("[DEBUG] localStorage DISABLED - returning empty index (cache was checked)")
+    return {'current_snapshot_id': None, 'snapshots': []}
+    # ========== END TEMPORARY DEBUG ==========
 
+    # CRITICAL: Prevent multiple localStorage reads causing rerun loop
+    # The streamlit-browser-storage component causes reruns when accessed
+    if st.session_state.get('_localStorage_read_in_progress', False):
+        print("[SKIP] localStorage read already in progress, returning empty")
+        return {'current_snapshot_id': None, 'snapshots': []}
+    
+    st.session_state['_localStorage_read_in_progress'] = True
+    
     # Get LocalStorage instance
     localS = _get_local_storage()
 
@@ -246,6 +250,10 @@ def get_snapshots_index() -> Dict[str, Any]:
                         index['current_snapshot_id'] = new_id
                         print(f"[FIX] No current_snapshot_id was set, using most recent user snapshot: {snapshots[-1]['name']} (ID: {new_id})")
 
+                # CACHE the loaded index to prevent future localStorage reads!
+                st.session_state['_cached_snapshots_index'] = index.copy()
+                st.session_state['_localStorage_read_in_progress'] = False
+                print(f"[CACHE] Stored loaded index with {len(index.get('snapshots', []))} snapshots")
                 return index
     except Exception as e:
         print(f"[WARN] Could not load snapshots index: {e}")
@@ -253,11 +261,14 @@ def get_snapshots_index() -> Dict[str, Any]:
         traceback.print_exc()
 
     # Initialize empty index if not found
-    print("[SNAPSHOT] Initialized (empty)")
-    return {
+    empty_index = {
         "current_snapshot_id": None,
         "snapshots": []
     }
+    # Cache the empty index too to prevent repeated failed attempts
+    st.session_state['_cached_snapshots_index'] = empty_index.copy()
+    st.session_state['_localStorage_read_in_progress'] = False
+    return empty_index
 
 
 def save_snapshots_index(index: Dict[str, Any]) -> bool:
@@ -275,19 +286,6 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
         st.session_state['_cached_snapshots_index'] = index.copy()
         print(f"[CACHE] Cached index in session_state with {len(index.get('snapshots', []))} snapshots")
 
-        # PERSISTENCE FIX: Also save to disk as backup (survives restarts)
-        try:
-            import json
-            import os
-            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
-            os.makedirs(cache_dir, exist_ok=True)
-            cache_file = os.path.join(cache_dir, 'snapshots_index.json')
-            with open(cache_file, 'w') as f:
-                json.dump(index, f, indent=2)
-            print(f"[DISK CACHE] Saved index to {cache_file}")
-        except Exception as disk_err:
-            print(f"[DISK CACHE] Failed to save to disk: {disk_err}")
-
         # Get LocalStorage instance
         localS = _get_local_storage()
 
@@ -295,14 +293,17 @@ def save_snapshots_index(index: Dict[str, Any]) -> bool:
         encrypted_str = encrypt_data(index, localS)
 
         # Save encryption key if it's new
-        if st.session_state.get('encryption_key_needs_save', False):
+        if localS is not None and st.session_state.get('encryption_key_needs_save', False):
             localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
             st.session_state.encryption_key_needs_save = False
             print("[OK] Saved encryption key to browser localStorage")
 
         # Save encrypted index
-        localS.set('ff_snapshots_index', encrypted_str)
-        print(f"[OK] Saved snapshots index to browser localStorage ({len(index.get('snapshots', []))} snapshots)")
+        if localS is not None:
+            localS.set('ff_snapshots_index', encrypted_str)
+            print(f"[OK] Saved snapshots index to browser localStorage ({len(index.get('snapshots', []))} snapshots)")
+        else:
+            print(f"[WARN] localStorage disabled - index cached in session_state only ({len(index.get('snapshots', []))} snapshots)")
         return True
 
     except Exception as e:
@@ -542,19 +543,6 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
     st.session_state['_cached_snapshots'][snapshot_id] = data.copy()
     print(f"[CACHE] Cached snapshot data for {snapshot_id}")
 
-    # PERSISTENCE FIX: Also save snapshot to disk as backup (survives restarts)
-    try:
-        import json
-        import os
-        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
-        os.makedirs(cache_dir, exist_ok=True)
-        snapshot_file = os.path.join(cache_dir, f'snapshot_{snapshot_id}.json')
-        with open(snapshot_file, 'w') as f:
-            json.dump(data, f, indent=2)
-        print(f"[DISK CACHE] Saved snapshot to {snapshot_file}")
-    except Exception as disk_err:
-        print(f"[DISK CACHE] Failed to save snapshot to disk: {disk_err}")
-
     # Save snapshot data to browser localStorage (ENCRYPTED)
     try:
         localS = _get_local_storage()
@@ -564,15 +552,17 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
         encrypted_str = encrypt_data(data, localS)
 
         # Save encryption key if it's new
-        if st.session_state.get('encryption_key_needs_save', False):
+        if localS is not None and st.session_state.get('encryption_key_needs_save', False):
             localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
             st.session_state.encryption_key_needs_save = False
             print("[OK] Saved encryption key to browser localStorage")
 
         # Save encrypted snapshot data
-        localS.set(snapshot_key, encrypted_str)
-
-        print(f"[OK] Saved snapshot data to browser localStorage: {snapshot_key}")
+        if localS is not None:
+            localS.set(snapshot_key, encrypted_str)
+            print(f"[OK] Saved snapshot data to browser localStorage: {snapshot_key}")
+        else:
+            print(f"[WARN] localStorage disabled - snapshot cached in session_state only: {snapshot_key}")
 
     except Exception as e:
         print(f"[ERROR] Failed to save snapshot data: {e}")
@@ -628,25 +618,6 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
             print(f"[CACHE HIT] User: {cached_data.get('input_user_name', 'NOT FOUND')}")
             return cached_data.copy()
 
-    # PERSISTENCE FIX: Try loading from disk cache (survives restarts)
-    try:
-        import json
-        import os
-        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
-        snapshot_file = os.path.join(cache_dir, f'snapshot_{snapshot_id}.json')
-        if os.path.exists(snapshot_file):
-            with open(snapshot_file, 'r') as f:
-                disk_data = json.load(f)
-            print(f"[DISK CACHE HIT] Loaded snapshot {snapshot_id} from disk")
-            print(f"[DISK CACHE HIT] User: {disk_data.get('input_user_name', 'NOT FOUND')}")
-            # Cache it in session_state for next time
-            if '_cached_snapshots' not in st.session_state:
-                st.session_state['_cached_snapshots'] = {}
-            st.session_state['_cached_snapshots'][snapshot_id] = disk_data.copy()
-            return disk_data
-    except Exception as disk_err:
-        print(f"[DISK CACHE] Failed to load snapshot from disk: {disk_err}")
-
     # Check if this is a demo scenario (by ID or name from index)
     index = get_snapshots_index()
     for snapshot in index.get('snapshots', []):
@@ -664,6 +635,9 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
         print(f"[DEBUG load_snapshot] Looking for localStorage key: {snapshot_key}")
 
         # Load and decrypt snapshot data
+        if localS is None:
+            print(f"[WARN] localStorage disabled - cannot load snapshot: {snapshot_key}")
+            return None
         encrypted_str = localS.get(snapshot_key)
         if encrypted_str:
             print(f"[DEBUG load_snapshot] Found encrypted data ({len(str(encrypted_str))} chars)")
@@ -722,7 +696,7 @@ def has_user_snapshots() -> bool:
     user_snapshots = [s for s in snapshots if s['id'] != DEMO_SNAPSHOT_ID]
 
     has_snapshots = len(user_snapshots) > 0
-    print(f"[CHECK] has_user_snapshots() = {has_snapshots} ({len(user_snapshots)} user snapshots found)")
+    # print(f"[CHECK] has_user_snapshots() = {has_snapshots} ({len(user_snapshots)} user snapshots found)")  # Suppressed
 
     return has_snapshots
 
@@ -744,8 +718,11 @@ def delete_snapshot(snapshot_id: str) -> bool:
         # Remove from browser localStorage
         localS = _get_local_storage()
         snapshot_key = f"ff_snapshot_{snapshot_id}"
-        localS.delete(snapshot_key)
-        print(f"[OK] Deleted snapshot from browser localStorage: {snapshot_key}")
+        if localS is not None:
+            localS.delete(snapshot_key)
+            print(f"[OK] Deleted snapshot from browser localStorage: {snapshot_key}")
+        else:
+            print(f"[WARN] localStorage disabled - cannot delete from browser: {snapshot_key}")
 
         # Update index
         index = get_snapshots_index()
@@ -905,8 +882,9 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
             # Clear existing snapshots from browser localStorage
             for snapshot in index.get("snapshots", []):
                 snapshot_key = f"ff_snapshot_{snapshot['id']}"
-                localS.delete(snapshot_key)
-                print(f"[OK] Deleted snapshot during replace: {snapshot_key}")
+                if localS is not None:
+                    localS.delete(snapshot_key)
+                    print(f"[OK] Deleted snapshot during replace: {snapshot_key}")
 
             # Clear index
             index = {
@@ -926,13 +904,16 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
             encrypted_str = encrypt_data(data, localS)
 
             # Save encryption key if it's new
-            if st.session_state.get('encryption_key_needs_save', False):
+            if localS is not None and st.session_state.get('encryption_key_needs_save', False):
                 localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
                 st.session_state.encryption_key_needs_save = False
                 print("[OK] Saved encryption key to browser localStorage")
 
-            localS.set(snapshot_key, encrypted_str)
-            print(f"[OK] Imported snapshot to browser localStorage: {snapshot_key}")
+            if localS is not None:
+                localS.set(snapshot_key, encrypted_str)
+                print(f"[OK] Imported snapshot to browser localStorage: {snapshot_key}")
+            else:
+                print(f"[WARN] localStorage disabled - cannot import to browser: {snapshot_key}")
 
             # Add to index (avoid duplicates)
             if not any(s["id"] == snapshot_id for s in index["snapshots"]):

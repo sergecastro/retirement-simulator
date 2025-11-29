@@ -46,6 +46,18 @@ def apply_scenario_data_safe(scenario_data):
 
     UNCHANGED: Same function as data_manager_cloud.py
     """
+    # ===== DEBUG: WHO IS CALLING THIS? =====
+    import traceback
+    print(f"")
+    print(f"!!!!! [DANGER] apply_scenario_data_safe() CALLED !!!!!")
+    print(f"  scenario_data keys: {list(scenario_data.keys())[:5] if scenario_data else 'EMPTY'}...")
+    print(f"  BEFORE: {len([k for k in st.session_state.keys() if k.startswith('input_')])} input_ keys")
+    print(f"  Call stack:")
+    for line in traceback.format_stack()[-6:-1]:
+        print(f"    {line.strip()}")
+    print(f"!!!!! ABOUT TO DELETE ALL input_ KEYS !!!!!")
+    # ===== END DEBUG =====
+    
     # Clear ALL existing widget keys to prevent conflicts
     keys_to_clear = [k for k in st.session_state.keys() if k.startswith('input_')]
     for key in keys_to_clear:
@@ -57,6 +69,12 @@ def apply_scenario_data_safe(scenario_data):
         if key in ["children_data", "inheritance_data", "goals_data",
                    "children_list", "inheritance_list", "goals_list",
                    "children_rows", "inherit_rows", "schema_version", "saved_at"]:
+            continue
+        
+        # WHITELIST: Skip widget keys (editors, buttons, nav, etc.)
+        skip_suffixes = ('_editor', '_button', '_checkbox', '_radio', '_selectbox')
+        skip_prefixes = ('nav_', 'FormSubmitter:', 'children_editor', 'inherit_editor', 'goals_editor', 'custom_expenses_editor')
+        if key.endswith(skip_suffixes) or key.startswith(skip_prefixes):
             continue
 
         # If key already has input_ prefix, use it directly

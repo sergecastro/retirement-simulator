@@ -37,6 +37,12 @@ def apply_scenario_data_safe(scenario_data):
                    "children_rows", "inherit_rows", "schema_version", "saved_at"]:
             continue
 
+        # WHITELIST: Skip widget keys (editors, buttons, nav, etc.)
+        skip_suffixes = ('_editor', '_button', '_checkbox', '_radio', '_selectbox')
+        skip_prefixes = ('nav_', 'FormSubmitter:')
+        if key.endswith(skip_suffixes) or key.startswith(skip_prefixes):
+            continue
+
         # If key already has input_ prefix, use it directly
         if key.startswith("input_"):
             st.session_state[key] = value

@@ -67,6 +67,37 @@ def _ensure_columns(df: pd.DataFrame, columns_with_dtype):
 
 def show_assets_page(existing, save_payload, go_to_page):
     """Page 4: Assets & Accounts"""
+    # ===== PROTECTED DATA STORE =====
+    # Streamlit garbage collects widget keys after ~90 seconds when not rendered.
+    # Solution: Store data in a protected dict that won't be GC'd.
+    if '_protected_asset_data' not in st.session_state:
+        st.session_state._protected_asset_data = {}
+    
+    protected = st.session_state._protected_asset_data
+    
+    # Asset keys we need to protect
+    asset_keys = [
+        'input_ira_balance', 'input_four01k_403b_balance',
+        'input_partner_ira_balance', 'input_partner_four01k_403b_balance',
+        'input_taxable_investment_accounts', 'input_high_yield_savings_account',
+        'input_hsa_balance', 'input_five29_plan_balance',
+        'input_primary_residence_value', 'input_secondary_residence_value',
+        'input_vehicles_value', 'input_jewelry_collectibles_value',
+        'input_business_ownership_value', 'input_cryptocurrency_holdings',
+        'input_other_assets'
+    ]
+    
+    # DEBUG
+    
+    # Initialize protected data from existing if needed
+    for key in asset_keys:
+        if key not in protected:
+            # Try session_state first (in case widget already has value), then existing
+            val = st.session_state.get(key, existing.get(key, 0.0))
+            protected[key] = float(val) if val else 0.0
+        # else: key already in protected, no action needed
+
+
     # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
     st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
     st.header("💎 Assets & Accounts")
@@ -80,7 +111,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=1000.0,
         help="Traditional IRA balance",
         key="input_ira_balance",
-        value=float(existing.get("input_ira_balance", 0.0))
+        value=protected.get("input_ira_balance", 0.0)
     )
 
     k401 = st.number_input(
@@ -89,7 +120,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=1000.0,
         help="Current 401k or 403b balance",
         key="input_four01k_403b_balance",
-        value=float(existing.get("input_four01k_403b_balance", 0.0))
+        value=protected.get("input_four01k_403b_balance", 0.0)
     )
     
     # Partner accounts (if couple)
@@ -101,14 +132,14 @@ def show_assets_page(existing, save_payload, go_to_page):
             min_value=0.0,
             step=1000.0,
             key="input_partner_ira_balance",
-            value=float(existing.get("input_partner_ira_balance", 0.0))
+            value=protected.get("input_partner_ira_balance", 0.0)
         )
         partner_k401 = st.number_input(
             "Partner 401k/403b Balance",
             min_value=0.0,
             step=1000.0,
             key="input_partner_four01k_403b_balance",
-            value=float(existing.get("input_partner_four01k_403b_balance", 0.0))
+            value=protected.get("input_partner_four01k_403b_balance", 0.0)
         )
     else:
         partner_ira = 0.0
@@ -122,7 +153,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=1000.0,
         help="Brokerage accounts, mutual funds",
         key="input_taxable_investment_accounts",
-        value=float(existing.get("input_taxable_investment_accounts", 0.0))
+        value=protected.get("input_taxable_investment_accounts", 0.0)
     )
 
     savings = st.number_input(
@@ -131,7 +162,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=1000.0,
         help="Emergency fund, savings accounts",
         key="input_high_yield_savings_account",
-        value=float(existing.get("input_high_yield_savings_account", 0.0))
+        value=protected.get("input_high_yield_savings_account", 0.0)
     )
 
     hsa = st.number_input(
@@ -140,7 +171,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=500.0,
         help="Health Savings Account",
         key="input_hsa_balance",
-        value=float(existing.get("input_hsa_balance", 0.0))
+        value=protected.get("input_hsa_balance", 0.0)
     )
 
     plan529 = st.number_input(
@@ -149,7 +180,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=500.0,
         help="Education savings plan",
         key="input_five29_plan_balance",
-        value=float(existing.get("input_five29_plan_balance", 0.0))
+        value=protected.get("input_five29_plan_balance", 0.0)
     )
 
     # Real Estate
@@ -160,7 +191,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=10000.0,
         help="Current market value of your home",
         key="input_primary_residence_value",
-        value=float(existing.get("input_primary_residence_value", 0.0))
+        value=protected.get("input_primary_residence_value", 0.0)
     )
 
     secondary_home = st.number_input(
@@ -169,7 +200,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=10000.0,
         help="Vacation home, rental property value",
         key="input_secondary_residence_value",
-        value=float(existing.get("input_secondary_residence_value", 0.0))
+        value=protected.get("input_secondary_residence_value", 0.0)
     )
 
     # Other Assets
@@ -180,7 +211,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=1000.0,
         help="Cars, boats, RVs - current market value",
         key="input_vehicles_value",
-        value=float(existing.get("input_vehicles_value", 0.0))
+        value=protected.get("input_vehicles_value", 0.0)
     )
 
     jewelry = st.number_input(
@@ -189,7 +220,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=500.0,
         help="Valuable jewelry, art, collectibles",
         key="input_jewelry_collectibles_value",
-        value=float(existing.get("input_jewelry_collectibles_value", 0.0))
+        value=protected.get("input_jewelry_collectibles_value", 0.0)
     )
 
     business = st.number_input(
@@ -198,7 +229,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=5000.0,
         help="Your stake in a business",
         key="input_business_ownership_value",
-        value=float(existing.get("input_business_ownership_value", 0.0))
+        value=protected.get("input_business_ownership_value", 0.0)
     )
 
     crypto = st.number_input(
@@ -207,7 +238,7 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=500.0,
         help="Bitcoin, Ethereum, etc. - current value",
         key="input_cryptocurrency_holdings",
-        value=float(existing.get("input_cryptocurrency_holdings", 0.0))
+        value=protected.get("input_cryptocurrency_holdings", 0.0)
     )
 
     other_assets = st.number_input(
@@ -216,8 +247,26 @@ def show_assets_page(existing, save_payload, go_to_page):
         step=500.0,
         help="Any other valuable assets",
         key="input_other_assets",
-        value=float(existing.get("input_other_assets", 0.0))
+        value=protected.get("input_other_assets", 0.0)
     )
+    
+    # ===== SAVE ALL WIDGET VALUES TO PROTECTED DICT =====
+    # This ensures data survives Streamlit's garbage collection
+    protected['input_ira_balance'] = ira
+    protected['input_four01k_403b_balance'] = k401
+    protected['input_partner_ira_balance'] = partner_ira
+    protected['input_partner_four01k_403b_balance'] = partner_k401
+    protected['input_taxable_investment_accounts'] = taxable
+    protected['input_high_yield_savings_account'] = savings
+    protected['input_hsa_balance'] = hsa
+    protected['input_five29_plan_balance'] = plan529
+    protected['input_primary_residence_value'] = primary_home
+    protected['input_secondary_residence_value'] = secondary_home
+    protected['input_vehicles_value'] = vehicles
+    protected['input_jewelry_collectibles_value'] = jewelry
+    protected['input_business_ownership_value'] = business
+    protected['input_cryptocurrency_holdings'] = crypto
+    protected['input_other_assets'] = other_assets
     
     # Calculate total
     total_assets = (ira + k401 + partner_ira + partner_k401 + taxable + savings + 
@@ -230,34 +279,40 @@ def show_assets_page(existing, save_payload, go_to_page):
     # Navigation
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        if st.button("← Back to Expenses", use_container_width=True):
-            go_to_page('expenses')
+        if st.button("← Back to Custom Income", use_container_width=True):
+            go_to_page('custom_expenses')
     with col3:
         if st.button("Next: Liabilities →", type="primary", use_container_width=True):
-            # Save asset data
-            data = existing.copy()
-            data["input_ira_balance"] = float(ira)
-            data["input_four01k_403b_balance"] = float(k401)
-            data["input_partner_ira_balance"] = float(partner_ira)
-            data["input_partner_four01k_403b_balance"] = float(partner_k401)
-            data["input_taxable_investment_accounts"] = float(taxable)
-            data["input_high_yield_savings_account"] = float(savings)
-            data["input_hsa_balance"] = float(hsa)
-            data["input_five29_plan_balance"] = float(plan529)
-            data["input_primary_residence_value"] = float(primary_home)
-            data["input_secondary_residence_value"] = float(secondary_home)
-            data["input_vehicles_value"] = float(vehicles)
-            data["input_jewelry_collectibles_value"] = float(jewelry)
-            data["input_business_ownership_value"] = float(business)
-            data["input_cryptocurrency_holdings"] = float(crypto)
-            data["input_other_assets"] = float(other_assets)
-            # REMOVED: Auto-save on navigation (user must explicitly save)
-            # save_payload(data)
             go_to_page('liabilities')
 
 
 def show_liabilities_page(existing, save_payload, go_to_page):
     """Page 5: Liabilities & Debts"""
+    # ===== PROTECTED DATA STORE FOR LIABILITIES =====
+    if '_protected_liability_data' not in st.session_state:
+        st.session_state._protected_liability_data = {}
+    protected = st.session_state._protected_liability_data
+    
+    # Also ensure asset data is available for net worth calc
+    if '_protected_asset_data' not in st.session_state:
+        st.session_state._protected_asset_data = {}
+    asset_protected = st.session_state._protected_asset_data
+    
+    # Liability keys to protect
+    liability_keys = [
+        'input_mortgage_balance', 'input_auto_loan_balance',
+        'input_student_loan_balance', 'input_credit_card_debt',
+        'input_other_liabilities'
+    ]
+    
+    # Initialize protected data
+    for key in liability_keys:
+        if key not in protected:
+            val = st.session_state.get(key, existing.get(key, 0.0))
+            protected[key] = float(val) if val else 0.0
+    
+    # ===== DEBUG =====
+    
     # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
     st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
 
@@ -270,7 +325,7 @@ def show_liabilities_page(existing, save_payload, go_to_page):
         step=5000.0,
         help="Remaining mortgage principal",
         key="input_mortgage_balance",
-        value=float(existing.get("input_mortgage_balance", 0.0))
+        value=protected.get("input_mortgage_balance", 0.0)
     )
 
     auto_loan = st.number_input(
@@ -279,7 +334,7 @@ def show_liabilities_page(existing, save_payload, go_to_page):
         step=500.0,
         help="Car loans, leases",
         key="input_auto_loan_balance",
-        value=float(existing.get("input_auto_loan_balance", 0.0))
+        value=protected.get("input_auto_loan_balance", 0.0)
     )
 
     student_loan = st.number_input(
@@ -288,7 +343,7 @@ def show_liabilities_page(existing, save_payload, go_to_page):
         step=500.0,
         help="Education debt",
         key="input_student_loan_balance",
-        value=float(existing.get("input_student_loan_balance", 0.0))
+        value=protected.get("input_student_loan_balance", 0.0)
     )
 
     credit_card = st.number_input(
@@ -297,7 +352,7 @@ def show_liabilities_page(existing, save_payload, go_to_page):
         step=100.0,
         help="Outstanding credit card balances",
         key="input_credit_card_debt",
-        value=float(existing.get("input_credit_card_debt", 0.0))
+        value=protected.get("input_credit_card_debt", 0.0)
     )
 
     other_debt = st.number_input(
@@ -306,31 +361,38 @@ def show_liabilities_page(existing, save_payload, go_to_page):
         step=500.0,
         help="Personal loans, HELOCs, other debts",
         key="input_other_liabilities",
-        value=float(existing.get("input_other_liabilities", 0.0))
+        value=protected.get("input_other_liabilities", 0.0)
     )
+    
+    # ===== SAVE TO PROTECTED =====
+    protected['input_mortgage_balance'] = mortgage
+    protected['input_auto_loan_balance'] = auto_loan
+    protected['input_student_loan_balance'] = student_loan
+    protected['input_credit_card_debt'] = credit_card
+    protected['input_other_liabilities'] = other_debt
     
     total_liabilities = mortgage + auto_loan + student_loan + credit_card + other_debt
     
     st.divider()
     st.metric("Total Liabilities", f"${total_liabilities:,.2f}")
     
-    # Calculate net worth preview
+    # Calculate net worth preview using protected asset data
     total_assets = sum([
-        st.session_state.get("input_ira_balance", existing.get("input_ira_balance", 0.0)),
-        st.session_state.get("input_four01k_403b_balance", existing.get("input_four01k_403b_balance", 0.0)),
-        st.session_state.get("input_partner_ira_balance", existing.get("input_partner_ira_balance", 0.0)),
-        st.session_state.get("input_partner_four01k_403b_balance", existing.get("input_partner_four01k_403b_balance", 0.0)),
-        st.session_state.get("input_taxable_investment_accounts", existing.get("input_taxable_investment_accounts", 0.0)),
-        st.session_state.get("input_high_yield_savings_account", existing.get("input_high_yield_savings_account", 0.0)),
-        st.session_state.get("input_hsa_balance", existing.get("input_hsa_balance", 0.0)),
-        st.session_state.get("input_five29_plan_balance", existing.get("input_five29_plan_balance", 0.0)),
-        st.session_state.get("input_primary_residence_value", existing.get("input_primary_residence_value", 0.0)),
-        st.session_state.get("input_secondary_residence_value", existing.get("input_secondary_residence_value", 0.0)),
-        st.session_state.get("input_vehicles_value", existing.get("input_vehicles_value", 0.0)),
-        st.session_state.get("input_jewelry_collectibles_value", existing.get("input_jewelry_collectibles_value", 0.0)),
-        st.session_state.get("input_business_ownership_value", existing.get("input_business_ownership_value", 0.0)),
-        st.session_state.get("input_cryptocurrency_holdings", existing.get("input_cryptocurrency_holdings", 0.0)),
-        st.session_state.get("input_other_assets", existing.get("input_other_assets", 0.0))
+        asset_protected.get("input_ira_balance", 0.0),
+        asset_protected.get("input_four01k_403b_balance", 0.0),
+        asset_protected.get("input_partner_ira_balance", 0.0),
+        asset_protected.get("input_partner_four01k_403b_balance", 0.0),
+        asset_protected.get("input_taxable_investment_accounts", 0.0),
+        asset_protected.get("input_high_yield_savings_account", 0.0),
+        asset_protected.get("input_hsa_balance", 0.0),
+        asset_protected.get("input_five29_plan_balance", 0.0),
+        asset_protected.get("input_primary_residence_value", 0.0),
+        asset_protected.get("input_secondary_residence_value", 0.0),
+        asset_protected.get("input_vehicles_value", 0.0),
+        asset_protected.get("input_jewelry_collectibles_value", 0.0),
+        asset_protected.get("input_business_ownership_value", 0.0),
+        asset_protected.get("input_cryptocurrency_holdings", 0.0),
+        asset_protected.get("input_other_assets", 0.0)
     ])
     
     if total_assets > 0:
@@ -343,23 +405,38 @@ def show_liabilities_page(existing, save_payload, go_to_page):
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
         if st.button("← Back to Assets", use_container_width=True):
+            # Widgets with key= auto-save to session_state
             go_to_page('assets')
     with col3:
         if st.button("Next: Family Events →", type="primary", use_container_width=True):
-            # Save liability data
-            data = existing.copy()
-            data["input_mortgage_balance"] = float(mortgage)
-            data["input_auto_loan_balance"] = float(auto_loan)
-            data["input_student_loan_balance"] = float(student_loan)
-            data["input_credit_card_debt"] = float(credit_card)
-            data["input_other_liabilities"] = float(other_debt)
-            # REMOVED: Auto-save on navigation (user must explicitly save)
-            # save_payload(data)
+            # Widgets with key= auto-save to session_state, just navigate
             go_to_page('family')
 
 
 def show_family_page(existing, save_payload, go_to_page):
     """Page 6: Family Events (Children & Inheritances)"""
+    # ===== CRITICAL: Remove any stale widget keys BEFORE widgets are created =====
+    # This prevents 'cannot be modified after widget instantiated' errors
+    widget_keys_to_clean = ['children_editor', 'inherit_editor', 'goals_editor', 'custom_expenses_editor']
+    for wk in widget_keys_to_clean:
+        if wk in st.session_state:
+            del st.session_state[wk]
+    
+    # ===== PROTECTED DATA STORE FOR FAMILY =====
+    # Family data uses temp_ prefixed keys (lists/dicts, not widget keys)
+    # These are less likely to be GC'd but we protect them anyway
+    if '_protected_family_data' not in st.session_state:
+        st.session_state._protected_family_data = {}
+    protected = st.session_state._protected_family_data
+    
+    # Also get asset/liability protected data for reference
+    if '_protected_asset_data' not in st.session_state:
+        st.session_state._protected_asset_data = {}
+    if '_protected_liability_data' not in st.session_state:
+        st.session_state._protected_liability_data = {}
+    
+    # ===== DEBUG =====
+    
     # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
     st.markdown(SCROLL_TO_TOP_JS, unsafe_allow_html=True)
     st.header("👨‍👩‍👧‍👦 Family Events (Optional)")
@@ -559,6 +636,7 @@ def show_family_page(existing, save_payload, go_to_page):
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
         if st.button("← Back to Liabilities", use_container_width=True):
+            # Widgets with key= auto-save to session_state
             go_to_page('liabilities')
     with col3:
         if st.button("Next: Review →", type="primary", use_container_width=True):
@@ -577,21 +655,61 @@ def show_family_page(existing, save_payload, go_to_page):
 
             # CRITICAL FIX: Save to session_state so data persists across pages
             for key, value in data.items():
-                st.session_state[key] = value
+                # WHITELIST: Only copy data keys, never widget keys
+                # Safe prefixes: input_* (form data), temp_* (temporary data), 
+                # children_list, inheritance_list, goals_list, custom_expenses, schema_version
+                safe_keys = ('input_', 'temp_', 'children_list', 'children_rows', 
+                             'inheritance_list', 'inherit_rows', 'goals_list', 'goals_data',
+                             'custom_expenses', 'schema_version')
+                if key.startswith(safe_keys) or key in safe_keys:
+                    st.session_state[key] = value
             # REMOVED: Auto-save on navigation (user must explicitly save)
             # save_payload(data)
             go_to_page('review')
         
         
 def show_review_page(existing, shared_path, go_to_page):
-    # Always reload the latest JSON so the review reflects recent edits
-    try:
-        with open(shared_path, "r", encoding="utf-8") as _f:
-            latest = json.load(_f)
-        existing = latest if isinstance(latest, dict) else existing
-    except Exception:
-        pass
+    # ===== DEBUG PRINTS =====
 
+    # ===== LOAD PROTECTED DATA =====
+    if '_protected_asset_data' not in st.session_state:
+        st.session_state._protected_asset_data = {}
+    if '_protected_liability_data' not in st.session_state:
+        st.session_state._protected_liability_data = {}
+
+    asset_protected = st.session_state._protected_asset_data
+    liability_protected = st.session_state._protected_liability_data
+
+    # ===== INITIALIZE FROM EXISTING IF EMPTY =====
+    # If user hasn't visited Assets/Liabilities pages yet, load from existing (JSON)
+    asset_keys = [
+        'input_ira_balance', 'input_four01k_403b_balance',
+        'input_partner_ira_balance', 'input_partner_four01k_403b_balance',
+        'input_taxable_investment_accounts', 'input_high_yield_savings_account',
+        'input_hsa_balance', 'input_five29_plan_balance',
+        'input_primary_residence_value', 'input_secondary_residence_value',
+        'input_vehicles_value', 'input_jewelry_collectibles_value',
+        'input_business_ownership_value', 'input_cryptocurrency_holdings',
+        'input_other_assets'
+    ]
+    liability_keys = [
+        'input_mortgage_balance', 'input_auto_loan_balance',
+        'input_student_loan_balance', 'input_credit_card_debt',
+        'input_other_liabilities'
+    ]
+
+    for key in asset_keys:
+        if key not in asset_protected:
+            val = st.session_state.get(key, existing.get(key, 0.0))
+            asset_protected[key] = float(val) if val else 0.0
+
+    for key in liability_keys:
+        if key not in liability_protected:
+            val = st.session_state.get(key, existing.get(key, 0.0))
+            liability_protected[key] = float(val) if val else 0.0
+
+    # DEBUG: After initialization
+    
     """Page 7: Review & Export"""
     # Force scroll to top
     st.markdown('<div id="top"></div>', unsafe_allow_html=True)
@@ -643,22 +761,23 @@ def show_review_page(existing, shared_path, go_to_page):
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("💎 Total Assets")
+        # Use protected data to avoid GC issues
         total_assets = sum([
-            st.session_state.get("input_ira_balance", existing.get("input_ira_balance", 0.0)),
-            st.session_state.get("input_four01k_403b_balance", existing.get("input_four01k_403b_balance", 0.0)),
-            st.session_state.get("input_partner_ira_balance", existing.get("input_partner_ira_balance", 0.0)),
-            st.session_state.get("input_partner_four01k_403b_balance", existing.get("input_partner_four01k_403b_balance", 0.0)),
-            st.session_state.get("input_taxable_investment_accounts", existing.get("input_taxable_investment_accounts", 0.0)),
-            st.session_state.get("input_high_yield_savings_account", existing.get("input_high_yield_savings_account", 0.0)),
-            st.session_state.get("input_hsa_balance", existing.get("input_hsa_balance", 0.0)),
-            st.session_state.get("input_five29_plan_balance", existing.get("input_five29_plan_balance", 0.0)),
-            st.session_state.get("input_primary_residence_value", existing.get("input_primary_residence_value", 0.0)),
-            st.session_state.get("input_secondary_residence_value", existing.get("input_secondary_residence_value", 0.0)),
-            st.session_state.get("input_vehicles_value", existing.get("input_vehicles_value", 0.0)),
-            st.session_state.get("input_jewelry_collectibles_value", existing.get("input_jewelry_collectibles_value", 0.0)),
-            st.session_state.get("input_business_ownership_value", existing.get("input_business_ownership_value", 0.0)),
-            st.session_state.get("input_cryptocurrency_holdings", existing.get("input_cryptocurrency_holdings", 0.0)),
-            st.session_state.get("input_other_assets", existing.get("input_other_assets", 0.0))
+            asset_protected.get("input_ira_balance", 0.0),
+            asset_protected.get("input_four01k_403b_balance", 0.0),
+            asset_protected.get("input_partner_ira_balance", 0.0),
+            asset_protected.get("input_partner_four01k_403b_balance", 0.0),
+            asset_protected.get("input_taxable_investment_accounts", 0.0),
+            asset_protected.get("input_high_yield_savings_account", 0.0),
+            asset_protected.get("input_hsa_balance", 0.0),
+            asset_protected.get("input_five29_plan_balance", 0.0),
+            asset_protected.get("input_primary_residence_value", 0.0),
+            asset_protected.get("input_secondary_residence_value", 0.0),
+            asset_protected.get("input_vehicles_value", 0.0),
+            asset_protected.get("input_jewelry_collectibles_value", 0.0),
+            asset_protected.get("input_business_ownership_value", 0.0),
+            asset_protected.get("input_cryptocurrency_holdings", 0.0),
+            asset_protected.get("input_other_assets", 0.0)
         ])
         st.metric("Assets", f"${total_assets:,.2f}")
         if st.button("✏️ Edit Assets", key="edit_assets", use_container_width=True):
@@ -666,12 +785,13 @@ def show_review_page(existing, shared_path, go_to_page):
     
     with col2:
         st.subheader("💳 Total Liabilities")
+        # Use protected data to avoid GC issues
         total_liabilities = sum([
-            st.session_state.get("input_mortgage_balance", existing.get("input_mortgage_balance", 0.0)),
-            st.session_state.get("input_auto_loan_balance", existing.get("input_auto_loan_balance", 0.0)),
-            st.session_state.get("input_student_loan_balance", existing.get("input_student_loan_balance", 0.0)),
-            st.session_state.get("input_credit_card_debt", existing.get("input_credit_card_debt", 0.0)),
-            st.session_state.get("input_other_liabilities", existing.get("input_other_liabilities", 0.0))
+            liability_protected.get("input_mortgage_balance", 0.0),
+            liability_protected.get("input_auto_loan_balance", 0.0),
+            liability_protected.get("input_student_loan_balance", 0.0),
+            liability_protected.get("input_credit_card_debt", 0.0),
+            liability_protected.get("input_other_liabilities", 0.0)
         ])
         st.metric("Liabilities", f"${total_liabilities:,.2f}")
         if st.button("✏️ Edit Liabilities", key="edit_liabilities", use_container_width=True):
@@ -685,9 +805,19 @@ def show_review_page(existing, shared_path, go_to_page):
     
     # Family Events Summary
     st.subheader("👨‍👩‍👧‍👦 Family Events")
-    children_count = len(st.session_state.get("children_list", existing.get("children_list", existing.get("children_rows", []))))
-    inherit_count = len(st.session_state.get("inheritance_list", existing.get("inheritance_list", existing.get("inherit_rows", []))))
-    custom_count = len(st.session_state.get("custom_expenses", existing.get("custom_expenses", [])))
+    # Read from temp_ (current session) OR children_list/inheritance_list OR existing
+    children_data = st.session_state.get("temp_children", 
+                    st.session_state.get("children_list", 
+                    existing.get("children_list", existing.get("children_rows", []))))
+    inherit_data = st.session_state.get("temp_inheritances", 
+                   st.session_state.get("inheritance_list", 
+                   existing.get("inheritance_list", existing.get("inherit_rows", []))))
+    custom_data = st.session_state.get("temp_custom_expenses", 
+                  st.session_state.get("custom_expenses", 
+                  existing.get("custom_expenses", [])))
+    children_count = len(children_data) if children_data else 0
+    inherit_count = len(inherit_data) if inherit_data else 0
+    custom_count = len(custom_data) if custom_data else 0
     
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -703,7 +833,7 @@ def show_review_page(existing, shared_path, go_to_page):
     # Show custom expenses if any
     if custom_count > 0:
         with st.expander("📝 Custom Monthly Expenses Details"):
-            custom_expenses = st.session_state.get("custom_expenses", existing.get("custom_expenses", []))
+            custom_expenses = custom_data  # Already loaded above
             for item in custom_expenses:
                 st.write(f"• **{item.get('Name', 'N/A')}**: ${item.get('Monthly Amount', 0):,.2f} ({item.get('Category', 'N/A')})")
             total_custom = sum(item.get("Monthly Amount", 0) for item in custom_expenses)
@@ -720,11 +850,30 @@ def show_review_page(existing, shared_path, go_to_page):
             go_to_page('family')
     with col2:
         if st.button("✅ COMPLETE & EXPORT TO SIMULATOR", type="primary", use_container_width=True):
-            # Collect all data from session_state, fallback to existing
+            # Collect all data from protected dicts, session_state, and existing
             data = existing.copy()
+            
+            # Add protected asset data
+            data.update(asset_protected)
+            
+            # Add protected liability data
+            data.update(liability_protected)
+            
+            # Add family data from temp_ variables
+            if children_data:
+                data["children_list"] = children_data
+                data["children_rows"] = children_data
+            if inherit_data:
+                data["inheritance_list"] = inherit_data
+                data["inherit_rows"] = inherit_data
+            if custom_data:
+                data["custom_expenses"] = custom_data
+                data["custom_expenses_list"] = custom_data
+            
+            # Add other input_ keys from session_state
             data.update({
                 k: v for k, v in st.session_state.items() 
-                if k.startswith("input_") or k in ["schema_version", "children_list", "inheritance_list", "goals_list", "custom_expenses", "children_rows", "inherit_rows", "goals_data", "custom_expenses_list"]
+                if k.startswith("input_") or k in ["schema_version", "goals_list", "goals_data"]
             })
             save_payload(data)
             st.success(f"✅ Successfully saved to:\n`{shared_path}`")

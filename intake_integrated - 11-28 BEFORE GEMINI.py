@@ -199,34 +199,24 @@ def load_template_data():
 
 def collect_current_form_data():
     """
-    Collect CURRENT form data from st.session_state.
-    
-    FIXED: 
-    1. Checks protected assets/liabilities first.
-    2. Smartly handles Family data: ignores empty 'temp' widgets when on Review page
-       so data doesn't disappear.
+    Collect CURRENT form data from st.session_state (what user just entered).
+
+    This is used when SAVING - we want to capture what's currently in the form,
+    NOT load old saved data.
+
+    CRITICAL FIX: Also check _protected_asset_data and _protected_liability_data
+    because Assets/Liabilities pages store data there to prevent GC issues.
     """
-    # Get protected data dicts
+    # Get protected data dicts (may be empty if user hasn't visited those pages)
     asset_protected = st.session_state.get('_protected_asset_data', {})
     liability_protected = st.session_state.get('_protected_liability_data', {})
 
+    # Helper to get value: check protected first, then session_state, then default
     def get_asset(key, default=0.0):
         return asset_protected.get(key, st.session_state.get(key, default))
 
     def get_liability(key, default=0.0):
         return liability_protected.get(key, st.session_state.get(key, default))
-
-    # FIXED: Helper that checks ALL possible hiding spots for list data
-    def hunt_for_data(primary_keys):
-        print(f"[HUNT DEBUG] Searching keys: {primary_keys}")
-        for key in primary_keys:
-            data = st.session_state.get(key)
-            print(f"[HUNT DEBUG] {key} = {type(data).__name__} | {data}")
-            if data and isinstance(data, list) and len(data) > 0:
-                print(f"[HUNT DEBUG] FOUND DATA in {key}\!")
-                return data
-        print(f"[HUNT DEBUG] NOTHING FOUND for {primary_keys}")
-        return []
 
     data = {
         "schema_version": "1.0",
@@ -268,7 +258,7 @@ def collect_current_form_data():
         "input_other_expenses": st.session_state.get("input_other_expenses", 0.0),
         "input_total_expenses": st.session_state.get("input_total_expenses", 0.0),
 
-        # Assets - USE PROTECTED DATA
+        # Assets - USE PROTECTED DATA FIRST
         "input_ira_balance": get_asset("input_ira_balance", 0.0),
         "input_four01k_403b_balance": get_asset("input_four01k_403b_balance", 0.0),
         "input_pension_fund_value": get_asset("input_pension_fund_value", 0.0),
@@ -286,7 +276,7 @@ def collect_current_form_data():
         "input_cryptocurrency_holdings": get_asset("input_cryptocurrency_holdings", 0.0),
         "input_other_assets": get_asset("input_other_assets", 0.0),
 
-        # Liabilities - USE PROTECTED DATA
+        # Liabilities - USE PROTECTED DATA FIRST
         "input_mortgage_balance": get_liability("input_mortgage_balance", 0.0),
         "input_secondary_mortgage_balance": get_liability("input_secondary_mortgage_balance", 0.0),
         "input_auto_loan_balance": get_liability("input_auto_loan_balance", 0.0),
@@ -295,27 +285,18 @@ def collect_current_form_data():
         "input_personal_loans": get_liability("input_personal_loans", 0.0),
         "input_other_liabilities": get_liability("input_other_liabilities", 0.0),
 
-        # CRITICAL FIX: Hunt for Family Data in multiple locations
-        "children_list": hunt_for_data(["children_rows", "children_list", "temp_children"]),
-        "children_rows": hunt_for_data(["children_rows", "children_list", "temp_children"]),
-        
-        "inheritance_list": hunt_for_data(["inherit_rows", "inheritance_list", "temp_inherit"]),
-        "inherit_rows": hunt_for_data(["inherit_rows", "inheritance_list", "temp_inherit"]),
-        
-        "goals_list": hunt_for_data(["goals_data", "goals_list", "temp_goals"]),
-        "goals_data": hunt_for_data(["goals_data", "goals_list", "temp_goals"]),
-        
-        "custom_expenses": hunt_for_data(["custom_expenses", "custom_expenses_list"]),
-        "custom_expenses_list": hunt_for_data(["custom_expenses", "custom_expenses_list"]),
-        
-        "custom_income": hunt_for_data(["custom_income", "custom_income_list"]),
-        "custom_income_list": hunt_for_data(["custom_income", "custom_income_list"])
+        # Family data - check temp_ variables first (where Family page stores data)
+        "children_list": st.session_state.get("temp_children", st.session_state.get("children_list", [])),
+        "children_rows": st.session_state.get("temp_children", st.session_state.get("children_rows", [])),
+        "inheritance_list": st.session_state.get("temp_inherit", st.session_state.get("inheritance_list", [])),
+        "inherit_rows": st.session_state.get("temp_inherit", st.session_state.get("inherit_rows", [])),
+        "goals_list": st.session_state.get("temp_goals", st.session_state.get("goals_list", [])),
+        "goals_data": st.session_state.get("temp_goals", st.session_state.get("goals_data", [])),
+        "custom_expenses": st.session_state.get("custom_expenses", st.session_state.get("custom_expenses", [])),
+        "custom_expenses_list": st.session_state.get("custom_expenses", st.session_state.get("custom_expenses_list", [])),
+        "custom_income": st.session_state.get("custom_income", []),
+        "custom_income_list": st.session_state.get("custom_income_list", [])
     }
-
-    # Ensure lists are synced to session state so they don't disappear again
-    if data["children_list"]: st.session_state["children_list"] = data["children_list"]
-    if data["inheritance_list"]: st.session_state["inheritance_list"] = data["inheritance_list"]
-    if data["goals_list"]: st.session_state["goals_list"] = data["goals_list"]
 
     return data
 
@@ -1472,30 +1453,13 @@ def show_intake_questionnaire():
                     st.error(f"❌ Import failed: {e}")
 
         # Show balloons if flag is set (after save rerun)
-# Show balloons if flag is set (after save rerun)
         if st.session_state.get('show_balloons_on_load', False):
             st.balloons()
             del st.session_state['show_balloons_on_load']  # Clear flag
 
-        # ═══════════════════════════════════════════════════════════════
-        # ✅ COMPLETION SECTION (Fixed Visibility)
-        # ═══════════════════════════════════════════════════════════════
-        
-        # Check if plan is saved (either just now OR previously OR any snapshot exists)
-        # Also check session_state cache in case localStorage is disabled
-        snapshots = list_snapshots()
-        cached_index = st.session_state.get('_cached_snapshots_index', {})
-        cached_snapshots = cached_index.get('snapshots', []) if cached_index else []
-        has_any_snapshot = len(snapshots) > 0 or len(cached_snapshots) > 0 or st.session_state.get('just_saved', False)
-        plan_is_saved = st.session_state.get('just_saved', False) or st.session_state.get('intake_data_saved', False) or has_any_snapshot
-
-        if plan_is_saved:
-            # Get the name of the plan to display
-            plan_name = st.session_state.get('saved_snapshot_name', 'Your Plan')
-            
-            # If just saved this second, show success message
-            if st.session_state.get('just_saved', False):
-                st.success(f"✅ Plan saved successfully: **{plan_name}**")
+        # Show success message after save (if just saved)
+        if st.session_state.get('just_saved', False):
+            st.success(f"✅ Plan saved successfully: **{st.session_state.get('saved_snapshot_name', 'Your Plan')}**")
 
             st.divider()
             st.markdown("### 🎉 Ready to Continue?")
@@ -1509,7 +1473,6 @@ def show_intake_questionnaire():
                     st.rerun()
 
             with col2:
-                # This button is now ALWAYS visible if data is saved
                 if st.button(
                     "📊 Go to Analysis",
                     type="primary",
@@ -1537,8 +1500,7 @@ def show_intake_questionnaire():
                     st.rerun()
         else:
             # Show info message when not saved yet
-            st.info("💡 Please **Save your plan** above to enable the 'Go to Analysis' button.")
-
+            st.info("💡 Save your plan above before proceeding to Analysis")
 
     # Footer
     st.divider()

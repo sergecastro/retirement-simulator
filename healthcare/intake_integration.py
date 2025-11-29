@@ -4,21 +4,21 @@ Healthcare Hub - INTAKE Data Integration
 Automatically loads user data from saved INTAKE snapshots to pre-fill
 the Healthcare Hub calculator forms.
 
+STORAGE: Uses browser localStorage via snapshot_manager (NOT disk cache!)
+
 Author: Family Forecast Development Team
 Created: November 14, 2025
+Updated: November 28, 2025 - Removed disk cache, localStorage only
 """
 
-import json
-import os
-from typing import Dict, Optional, Any
+from typing import Dict, Any
 
 
 def load_user_data_for_healthcare() -> Dict[str, Any]:
     """
     Load user's INTAKE data for Healthcare Hub auto-fill.
 
-    Reads the current snapshot from .snapshot_cache and extracts
-    relevant fields for the IRMAA calculator.
+    Uses snapshot_manager to load from browser localStorage (encrypted).
 
     Returns:
         dict: User data with the following keys:
@@ -54,44 +54,19 @@ def load_user_data_for_healthcare() -> Dict[str, Any]:
     }
 
     try:
-        # Step 1: Find the snapshot cache directory
-        # Go up one level from healthcare/ to project root
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        snapshot_cache = os.path.join(project_root, '.snapshot_cache')
+        # Import snapshot_manager to load from browser localStorage
+        from utils.snapshot_manager import get_current_snapshot
 
-        if not os.path.exists(snapshot_cache):
-            print("[HEALTHCARE INTEGRATION] Warning: .snapshot_cache directory not found")
+        # Load current snapshot from localStorage
+        snapshot_data = get_current_snapshot()
+
+        if not snapshot_data:
+            print("[HEALTHCARE INTEGRATION] Warning: No current snapshot found in localStorage")
             return default_data
 
-        # Step 2: Read the snapshots index to get current snapshot ID
-        index_file = os.path.join(snapshot_cache, 'snapshots_index.json')
+        print(f"[HEALTHCARE INTEGRATION] OK - Loaded snapshot from localStorage")
 
-        if not os.path.exists(index_file):
-            print("[HEALTHCARE INTEGRATION] Warning: snapshots_index.json not found")
-            return default_data
-
-        with open(index_file, 'r') as f:
-            index_data = json.load(f)
-
-        current_snapshot_id = index_data.get('current_snapshot_id')
-
-        if not current_snapshot_id:
-            print("[HEALTHCARE INTEGRATION] Warning: No current_snapshot_id in index")
-            return default_data
-
-        # Step 3: Load the current snapshot file
-        snapshot_file = os.path.join(snapshot_cache, f'snapshot_{current_snapshot_id}.json')
-
-        if not os.path.exists(snapshot_file):
-            print(f"[HEALTHCARE INTEGRATION] Warning: Snapshot file not found: {snapshot_file}")
-            return default_data
-
-        with open(snapshot_file, 'r') as f:
-            snapshot_data = json.load(f)
-
-        print(f"[HEALTHCARE INTEGRATION] OK - Loaded snapshot: {current_snapshot_id}")
-
-        # Step 4: Extract relevant fields
+        # Extract relevant fields
         user_age = int(snapshot_data.get('input_age', 65))
         partner_exists = bool(snapshot_data.get('input_partner_exists', False))
         partner_age = int(snapshot_data.get('input_partner_age', 0)) if partner_exists else None
@@ -147,22 +122,16 @@ def get_snapshot_name() -> str:
              or empty string if not found
     """
     try:
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        index_file = os.path.join(project_root, '.snapshot_cache', 'snapshots_index.json')
+        from utils.snapshot_manager import get_snapshots_index
 
-        if not os.path.exists(index_file):
-            return ""
-
-        with open(index_file, 'r') as f:
-            index_data = json.load(f)
-
-        current_snapshot_id = index_data.get('current_snapshot_id')
+        index = get_snapshots_index()
+        current_snapshot_id = index.get('current_snapshot_id')
 
         if not current_snapshot_id:
             return ""
 
         # Find the snapshot with matching ID
-        snapshots = index_data.get('snapshots', [])
+        snapshots = index.get('snapshots', [])
         for snapshot in snapshots:
             if snapshot.get('id') == current_snapshot_id:
                 return snapshot.get('name', '')
@@ -172,19 +141,3 @@ def get_snapshot_name() -> str:
     except Exception as e:
         print(f"[HEALTHCARE INTEGRATION] Error getting snapshot name: {e}")
         return ""
-
-
-# Test function (for debugging)
-if __name__ == "__main__":
-    print("Testing INTAKE Integration...")
-    print("=" * 50)
-
-    data = load_user_data_for_healthcare()
-
-    print("\nLoaded Data:")
-    for key, value in data.items():
-        print(f"  {key}: {value}")
-
-    snapshot_name = get_snapshot_name()
-    if snapshot_name:
-        print(f"\nSnapshot Name: {snapshot_name}")

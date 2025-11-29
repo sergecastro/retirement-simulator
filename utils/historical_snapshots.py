@@ -4,27 +4,36 @@ Historical Snapshot Management
 Stores versioned snapshots of retirement plans over time.
 Enables users to track progress quarterly/yearly and compare improvements.
 
+STORAGE: Uses browser localStorage (NOT disk cache!) for privacy/security.
+
 Author: Family Forecast Development Team
 Created: November 19, 2025
+Updated: November 28, 2025 - Converted to localStorage only
 """
 
 import json
-import os
+import streamlit as st
 from datetime import datetime
 from typing import Dict, List, Optional
 from utils.encryption import encrypt_data, decrypt_data
+# DISABLED: from streamlit_browser_storage import LocalStorage
 
 
-# Storage configuration
-SNAPSHOTS_DIR = ".snapshot_cache/historical/"
-INDEX_FILE = ".snapshot_cache/historical_index.json"
+# localStorage key prefix
+HISTORICAL_INDEX_KEY = "ff_historical_index"
+HISTORICAL_SNAPSHOT_PREFIX = "ff_historical_"
 
 
-def ensure_directories():
-    """Create snapshot directories if they don't exist"""
-    os.makedirs(SNAPSHOTS_DIR, exist_ok=True)
-    if not os.path.exists(INDEX_FILE):
-        save_index([])
+@st.cache_resource
+def _get_local_storage():
+    """Get localStorage instance (singleton-cached)."""
+    # ========== TEMPORARY DEBUG: DISABLED TO FIND RERUN SOURCE ==========
+    print("[DEBUG] historical_snapshots._get_local_storage DISABLED")
+    return None
+    # ========== END TEMPORARY DEBUG ==========
+    if '_localStorage_singleton' not in st.session_state:
+        st.session_state._localStorage_singleton = LocalStorage(key="forecash_local_storage")
+    return st.session_state._localStorage_singleton
 
 
 def save_historical_snapshot(
@@ -34,7 +43,7 @@ def save_historical_snapshot(
     notes: str = ""
 ) -> str:
     """
-    Save a historical snapshot with encryption
+    Save a historical snapshot with encryption to localStorage.
 
     Args:
         user_data: User demographic and financial data
@@ -45,8 +54,6 @@ def save_historical_snapshot(
     Returns:
         snapshot_id: Timestamp-based unique identifier
     """
-    ensure_directories()
-
     # Generate snapshot ID (timestamp-based)
     snapshot_id = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -61,22 +68,38 @@ def save_historical_snapshot(
         "version": "1.0"
     }
 
-    # Encrypt and save to file
-    encrypted = encrypt_data(json.dumps(snapshot))
-    filepath = os.path.join(SNAPSHOTS_DIR, f"{snapshot_id}.json")
+    try:
+        localS = _get_local_storage()
 
-    with open(filepath, 'w') as f:
-        json.dump({"encrypted": encrypted}, f)
+        # Save encryption key if it's new
+        if localS is not None and st.session_state.get('encryption_key_needs_save', False):
+            localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
+            st.session_state.encryption_key_needs_save = False
 
-    # Update index for quick listing
-    _add_to_index(snapshot_id, snapshot_name, snapshot["timestamp"])
+        # Encrypt and save snapshot to localStorage
+        encrypted = encrypt_data(snapshot, localS)
+        storage_key = f"{HISTORICAL_SNAPSHOT_PREFIX}{snapshot_id}"
+        if localS is not None:
+            localS.set(storage_key, encrypted)
+        else:
+            print(f"[WARN] localStorage disabled - cannot save historical snapshot: {storage_key}")
 
-    return snapshot_id
+        # Update index
+        _add_to_index(snapshot_id, snapshot_name, snapshot["timestamp"])
+
+        print(f"[HISTORICAL] Saved snapshot: {snapshot_name} (ID: {snapshot_id})")
+        return snapshot_id
+
+    except Exception as e:
+        print(f"[HISTORICAL] Error saving snapshot: {e}")
+        import traceback
+        traceback.print_exc()
+        return ""
 
 
 def load_historical_snapshot(snapshot_id: str) -> Optional[Dict]:
     """
-    Load a historical snapshot by ID
+    Load a historical snapshot by ID from localStorage.
 
     Args:
         snapshot_id: Unique snapshot identifier
@@ -84,42 +107,60 @@ def load_historical_snapshot(snapshot_id: str) -> Optional[Dict]:
     Returns:
         Decrypted snapshot data or None if not found
     """
-    filepath = os.path.join(SNAPSHOTS_DIR, f"{snapshot_id}.json")
-
-    if not os.path.exists(filepath):
-        return None
-
     try:
-        with open(filepath, 'r') as f:
-            data = json.load(f)
+        localS = _get_local_storage()
+        storage_key = f"{HISTORICAL_SNAPSHOT_PREFIX}{snapshot_id}"
 
-        decrypted = decrypt_data(data["encrypted"])
-        return json.loads(decrypted)
+        if localS is None:
+            print(f"[WARN] localStorage disabled - cannot load historical snapshot: {snapshot_id}")
+            return None
+        encrypted = localS.get(storage_key)
+        if not encrypted:
+            print(f"[HISTORICAL] Snapshot not found: {snapshot_id}")
+            return None
+
+        snapshot = decrypt_data(encrypted, localS)
+        if snapshot:
+            print(f"[HISTORICAL] Loaded snapshot: {snapshot_id}")
+            return snapshot
+        else:
+            print(f"[HISTORICAL] Decryption failed: {snapshot_id}")
+            return None
+
     except Exception as e:
-        print(f"Error loading snapshot {snapshot_id}: {e}")
+        print(f"[HISTORICAL] Error loading snapshot {snapshot_id}: {e}")
         return None
 
 
 def list_historical_snapshots() -> List[Dict]:
     """
-    Get list of all snapshots with metadata (name, date, ID)
+    Get list of all snapshots with metadata (name, date, ID).
 
     Returns:
         List of snapshot metadata dictionaries
     """
-    if not os.path.exists(INDEX_FILE):
+    try:
+        localS = _get_local_storage()
+        if localS is None:
+            return []
+        encrypted = localS.get(HISTORICAL_INDEX_KEY)
+
+        if not encrypted:
+            return []
+
+        index = decrypt_data(encrypted, localS)
+        if index:
+            return index.get("snapshots", [])
         return []
 
-    try:
-        with open(INDEX_FILE, 'r') as f:
-            return json.load(f)
-    except Exception:
+    except Exception as e:
+        print(f"[HISTORICAL] Error loading index: {e}")
         return []
 
 
 def delete_historical_snapshot(snapshot_id: str) -> bool:
     """
-    Delete a snapshot from storage
+    Delete a snapshot from localStorage.
 
     Args:
         snapshot_id: Snapshot to delete
@@ -127,13 +168,25 @@ def delete_historical_snapshot(snapshot_id: str) -> bool:
     Returns:
         True if deleted, False if not found
     """
-    filepath = os.path.join(SNAPSHOTS_DIR, f"{snapshot_id}.json")
+    try:
+        localS = _get_local_storage()
+        storage_key = f"{HISTORICAL_SNAPSHOT_PREFIX}{snapshot_id}"
 
-    if os.path.exists(filepath):
-        os.remove(filepath)
+        # Delete the snapshot
+        if localS is not None:
+            localS.delete(storage_key)
+        else:
+            print(f"[WARN] localStorage disabled - cannot delete: {storage_key}")
+
+        # Update index
         _remove_from_index(snapshot_id)
+
+        print(f"[HISTORICAL] Deleted snapshot: {snapshot_id}")
         return True
-    return False
+
+    except Exception as e:
+        print(f"[HISTORICAL] Error deleting snapshot: {e}")
+        return False
 
 
 def get_snapshot_count() -> int:
@@ -151,25 +204,40 @@ def _add_to_index(snapshot_id: str, name: str, timestamp: str):
     })
     # Sort by timestamp (newest first)
     index.sort(key=lambda x: x["timestamp"], reverse=True)
-    save_index(index)
+    _save_index(index)
 
 
 def _remove_from_index(snapshot_id: str):
     """Remove snapshot from index"""
     index = list_historical_snapshots()
     index = [s for s in index if s["id"] != snapshot_id]
-    save_index(index)
+    _save_index(index)
 
 
-def save_index(index: List[Dict]):
-    """Save index file"""
-    with open(INDEX_FILE, 'w') as f:
-        json.dump(index, f, indent=2)
+def _save_index(index: List[Dict]):
+    """Save index to localStorage"""
+    try:
+        localS = _get_local_storage()
+
+        # Save encryption key if it's new
+        if localS is not None and st.session_state.get('encryption_key_needs_save', False):
+            localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
+            st.session_state.encryption_key_needs_save = False
+
+        index_data = {"snapshots": index}
+        encrypted = encrypt_data(index_data, localS)
+        if localS is not None:
+            localS.set(HISTORICAL_INDEX_KEY, encrypted)
+        else:
+            print("[WARN] localStorage disabled - cannot save historical index")
+
+    except Exception as e:
+        print(f"[HISTORICAL] Error saving index: {e}")
 
 
 def export_all_snapshots() -> Dict:
     """
-    Export all snapshots for backup/transfer
+    Export all snapshots for backup/transfer.
 
     Returns:
         Dictionary with all snapshot data
@@ -192,7 +260,7 @@ def export_all_snapshots() -> Dict:
 
 def import_snapshots(import_data: Dict) -> int:
     """
-    Import snapshots from exported data
+    Import snapshots from exported data.
 
     Args:
         import_data: Dictionary from export_all_snapshots()
@@ -211,9 +279,10 @@ def import_snapshots(import_data: Dict) -> int:
                 snapshot["name"] + " (imported)",
                 snapshot.get("notes", "")
             )
-            imported += 1
+            if snapshot_id:
+                imported += 1
         except Exception as e:
-            print(f"Error importing snapshot: {e}")
+            print(f"[HISTORICAL] Error importing snapshot: {e}")
             continue
 
     return imported
