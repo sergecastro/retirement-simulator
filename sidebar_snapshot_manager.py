@@ -191,18 +191,18 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
                 print(f"[AUTO-LOAD] Using saved snapshot: {most_recent['name']}")
                 # Don't load here - let intake_data_loaded flag handle it
             else:
-                # No saved data - load demo
+                # No saved data - only load for trusted users, others must use INTAKE
                 if is_trusted_user:
                     default_scenario = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
                     default_name = '70+ Retirement (Private - Trusted)'
+                    # ✅ Queue the default scenario for loading
+                    st.session_state['current_scenario'] = default_name
+                    st.session_state['scenario_auto_loaded'] = True
+                    queue_scenario_load(default_scenario)  # This will rerun
                 else:
-                    default_scenario = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
-                    default_name = 'Original 70+ Retirement (Demo)'
-
-                # ✅ Queue the default scenario for loading
-                st.session_state['current_scenario'] = default_name
-                st.session_state['scenario_auto_loaded'] = True
-                queue_scenario_load(default_scenario)  # This will rerun
+                    # Non-trusted users: DO NOT auto-load any scenario
+                    # They must use INTAKE first or have saved scenarios
+                    st.session_state['scenario_auto_loaded'] = True  # Mark as checked, but load nothing
 
     # Get current scenario name - prioritize current_snapshot_id
     if current_snapshot_id:
@@ -256,11 +256,11 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
             display_name = f"{snapshot['name']} [{date_part}]"
             snapshot_options[display_name] = ('snapshot', snapshot['id'])
 
-        # Add embedded options ONLY if no user snapshots exist
+        # Add embedded options ONLY if no user snapshots exist (trusted users only)
         if len(snapshots) == 0:
             if is_trusted_user:
                 snapshot_options['70+ Retirement (Private - Trusted)'] = ('embedded', 'private')
-            snapshot_options['Original 70+ Retirement (Demo)'] = ('embedded', 'demo')
+            # Demo scenario removed - non-trusted users must use INTAKE first
 
         # Dropdown selector
         if snapshot_options:
@@ -292,11 +292,12 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
                         st.error(f"❌ Load error: {e}")
 
                 elif source_type == 'embedded':
-                    # Load embedded scenario
+                    # Load embedded scenario (only private available now)
                     if source_id == 'private':
                         scenario_data = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
                     else:
-                        scenario_data = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
+                        st.error("❌ Unknown embedded scenario requested")
+                        return
 
                     # Clear current_snapshot_id for embedded scenarios
                     index['current_snapshot_id'] = None
@@ -495,17 +496,12 @@ def manage_snapshots_sidebar(is_trusted_user, age_group=None):
                         if success:
                             st.success(f"✅ Deleted: {snapshot_name}")
 
-                            # If we deleted the currently loaded scenario, switch to default
+                            # If we deleted the currently loaded scenario, clear it (no fallback to demo)
                             if st.session_state.get('current_scenario') == snapshot_name:
-                                default = 'Original 70+ Retirement (Demo)'
-                                st.session_state['current_scenario'] = default
-                                need_reload_default = True
+                                st.session_state['current_scenario'] = None
+                                st.session_state.pop('scenario_loaded', None)  # Clear loaded flag
                     except Exception as e:
                         st.error(f"❌ Delete error: {e}")
-
-                # ✅ Queue default scenario load if needed
-                if need_reload_default:
-                    queue_scenario_load(EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO'])
                 else:
                     st.rerun()
 

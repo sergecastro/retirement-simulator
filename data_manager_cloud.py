@@ -265,16 +265,18 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
                 default_scenario = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
                 default_name = '70+ Retirement (Private - Trusted)'
             else:
-                default_scenario = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
-                default_name = 'Original 70+ Retirement (Demo)'
-
-            # ✅ Queue the default scenario for loading
-            st.session_state['current_scenario'] = default_name
-            st.session_state['scenario_auto_loaded'] = True
-            queue_scenario_load(default_scenario)  # This will rerun
+                # Non-trusted users: DO NOT auto-load any scenario
+                # They must use INTAKE first or have saved scenarios
+                st.session_state['scenario_auto_loaded'] = True  # Mark as checked, but load nothing
+                default_scenario = None
+                default_name = None
+            # ✅ Queue the default scenario for loading (only if one was selected)
+            if default_scenario is not None:
+                st.session_state['current_scenario'] = default_name
+                queue_scenario_load(default_scenario)  # This will rerun
 
     # Get current scenario name
-    current = st.session_state.get('current_scenario', 'Original 70+ Retirement (Demo)')
+    current = st.session_state.get('current_scenario', None)
 
     st.sidebar.info(f"📋 **Currently:** {current}")
 
@@ -292,8 +294,7 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
     embedded_options = []
     if is_trusted_user and '70+ Retirement (Private - Trusted)' not in user_scenario_names:
         embedded_options.append('70+ Retirement (Private - Trusted)')
-    if 'Original 70+ Retirement (Demo)' not in user_scenario_names:
-        embedded_options.append('Original 70+ Retirement (Demo)')
+    # Demo scenario removed - users must use INTAKE or saved scenarios
 
     # User scenarios first, then embedded (no duplicates!)
     all_scenarios = user_scenario_names + embedded_options
@@ -310,9 +311,7 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
         # Check if it's a user-saved scenario first
         if selected_scenario in st.session_state.get('user_scenarios', {}):
             scenario_data = st.session_state['user_scenarios'][selected_scenario]
-        # Otherwise load from embedded
-        elif selected_scenario == 'Original 70+ Retirement (Demo)':
-            scenario_data = EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO']
+        # Otherwise load from embedded (trusted users only)
         else:
             scenario_data = EMBEDDED_SCENARIOS['70+_RETIREMENT_SCENARIO_PRIVATE']
 
@@ -434,15 +433,10 @@ def manage_scenarios_cloud(is_trusted_user, age_group=None):
                 for name in scenarios_to_delete:
                     del st.session_state['user_scenarios'][name]
 
-                    # If we deleted the currently loaded scenario, switch to default
+                    # If we deleted the currently loaded scenario, clear it (no fallback to demo)
                     if st.session_state.get('current_scenario') == name:
-                        default = 'Original 70+ Retirement (Demo)'
-                        st.session_state['current_scenario'] = default
-                        need_reload_default = True
-
-                # ✅ Queue default scenario load if needed
-                if need_reload_default:
-                    queue_scenario_load(EMBEDDED_SCENARIOS['ORIGINAL_70+_RETIREMENT_SCENARIO'])
+                        st.session_state['current_scenario'] = None
+                        st.session_state.pop('scenario_loaded', None)  # Clear loaded flag
                 else:
                     st.success(f"✅ Deleted {len(scenarios_to_delete)} scenario(s)")
                     st.rerun()
