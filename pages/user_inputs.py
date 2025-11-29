@@ -48,7 +48,7 @@ def collect_user_inputs():
         "Your Age:",
         min_value=18,
         max_value=120,
-        value=safe_int(st.session_state.get('input_age', 35), 35),
+        value=max(18, safe_int(st.session_state.get('input_age', 55), 55)),
         key="input_age",
         disabled=True,
         help="📝 Edit in INTAKE mode"

@@ -669,7 +669,7 @@ def show_intake_questionnaire():
             "Your age",
             min_value=18,
             max_value=100,
-            value=st.session_state.get("input_age") or 18,
+            value=st.session_state.get("input_age") or 55,
             step=1,
             help="Your current age"
         )
@@ -712,8 +712,22 @@ def show_intake_questionnaire():
             st.button("← BACK", disabled=True, use_container_width=True)
 
         with col2:
-            # NEXT button - explicitly save data before navigating
-            if st.button("NEXT →", type="primary", use_container_width=True):
+            # Validate age before allowing NEXT
+            age_valid = 18 <= your_age <= 100
+            partner_age_valid = True
+            if mode == "Couple":
+                partner_age_valid = 18 <= partner_age <= 100
+            can_proceed = age_valid and partner_age_valid
+
+            # Show validation message if cannot proceed
+            if not can_proceed:
+                if not age_valid:
+                    st.error("⚠️ Your age must be between 18 and 100 to continue.")
+                if not partner_age_valid:
+                    st.error("⚠️ Partner age must be between 18 and 100 to continue.")
+
+            # NEXT button - disabled if validation fails
+            if st.button("NEXT →", type="primary", use_container_width=True, disabled=not can_proceed):
                 # CRITICAL: Explicitly save to session_state BEFORE navigating
                 # (widgets with key= don't save until after script completes)
                 st.session_state['input_user_name'] = user_name
