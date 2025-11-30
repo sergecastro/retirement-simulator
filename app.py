@@ -364,11 +364,41 @@ def main():
     # Get user type
     is_trusted = is_trusted_user()
 
-    # CRITICAL: SHOW LANDING PAGE if mode not selected
+    # CRITICAL: Route based on new vs return user
     if not st.session_state.mode_selected or st.session_state.current_mode is None:
-        show_mode_selection_landing_page(has_saved_data, is_trusted)
-        show_sidebar_footer(is_trusted)
-        st.stop()  # ← STOP EXECUTION HERE!
+        
+        if has_saved_data:
+            # ═══════════════════════════════════════════════════════
+            # RETURN USER: Has snapshots → Auto-load → Analysis
+            # ═══════════════════════════════════════════════════════
+            from utils.snapshot_manager import get_snapshots_index, load_snapshot
+            index = get_snapshots_index()
+            if index.get('snapshots'):
+                most_recent = index['snapshots'][-1]
+                snapshot_data = load_snapshot(most_recent['id'])
+                if snapshot_data:
+                    # Load data into session_state
+                    for key, value in snapshot_data.items():
+                        if key.startswith(('input_', 'temp_', '_protected')) or key in (
+                            'children_list', 'children_rows', 'inheritance_list', 'inherit_rows',
+                            'goals_list', 'goals_data', 'schema_version'
+                        ):
+                            st.session_state[key] = value
+                    st.session_state['current_snapshot_id'] = most_recent['id']
+            
+            # Go directly to Analysis
+            st.session_state["beta_agreement"] = True
+            st.session_state.mode_selected = True
+            st.session_state.current_mode = "Analysis"
+            st.rerun()
+        
+        else:
+            # ═══════════════════════════════════════════════════════
+            # NEW USER: No snapshots → Mode Selection → INTAKE
+            # ═══════════════════════════════════════════════════════
+            show_new_user_mode_selection()
+            show_sidebar_footer(is_trusted)
+            st.stop()
 
     # Route based on selected mode
     # (Mode selector moved below scenario management for better UX)
@@ -532,7 +562,48 @@ def show_html_landing_page():
 
 
 # =============================================================================
-# WELCOME LANDING PAGE
+# NEW USER MODE SELECTION (Compact Full/Quick choice)
+# =============================================================================
+
+def show_new_user_mode_selection():
+    """Compact mode selection for new users - Full vs Quick INTAKE"""
+    st.title("Welcome to Family Forecast!")
+
+    st.markdown("""
+    <div style='background-color: #FFF3CD; padding: 10px; border-radius: 6px; margin-bottom: 15px;'>
+        <span style='color: #856404;'>⚠️ <strong>BETA</strong> — For educational purposes only. Not financial advice.</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### Choose how to enter your information:")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**📋 Full Mode**")
+        st.caption("All fields · Recommended")
+        if st.button("Start Full Mode", type="primary", use_container_width=True, key="new_user_full"):
+            st.session_state["intake_mode"] = "full"
+            st.session_state["beta_agreement"] = True
+            st.session_state.mode_selected = True
+            st.session_state.current_mode = "INTAKE"
+            st.rerun()
+
+    with col2:
+        st.markdown("**⚡ Quick Mode**")
+        st.caption("Essential fields only")
+        if st.button("Start Quick Mode", use_container_width=True, key="new_user_quick"):
+            st.session_state["intake_mode"] = "beta"
+            st.session_state["beta_agreement"] = True
+            st.session_state.mode_selected = True
+            st.session_state.current_mode = "INTAKE"
+            st.rerun()
+
+    st.caption("By clicking either button, you acknowledge this is beta software.")
+
+
+# =============================================================================
+# WELCOME LANDING PAGE (Legacy - kept for reference)
 # =============================================================================
 
 def show_mode_selection_landing_page(has_intake_data, is_trusted):
@@ -691,15 +762,61 @@ def show_intake_mode():
     if 'intake_completed' in st.session_state and st.session_state.intake_completed:
         st.success("✅ INTAKE completed! Switching to Analysis mode...")
         st.info("👉 Please select 'Analysis' mode in the sidebar to view your results.")
-        # Reset the flag
         st.session_state.intake_completed = False
         return
 
+    # =============================================
+    # MODE SELECTION GATEWAY - Must choose before Page 1
+    # =============================================
+    if "intake_mode" not in st.session_state or st.session_state.get("intake_mode") is None:
+        st.markdown("## Choose Your Entry Mode")
+        st.markdown("Select how you'd like to enter your information:")
+        st.markdown("")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("""
+### 📋 Full Mode
+**Complete questionnaire with all fields**
+
+- All income sources
+- Detailed expense categories
+- All asset types
+- Family planning events
+
+*Recommended for accurate projections*
+            """)
+            if st.button("Start Full Mode", type="primary", use_container_width=True, key="btn_full_mode"):
+                st.session_state["intake_mode"] = "full"
+                st.rerun()
+
+        with col2:
+            st.markdown("""
+### ⚡ Quick Mode
+**Essential fields only**
+
+- Core income (SS, pension)
+- Basic expenses
+- Main retirement accounts
+- Simplified entry
+
+*Faster, for quick estimates*
+            """)
+            if st.button("Start Quick Mode", use_container_width=True, key="btn_quick_mode"):
+                st.session_state["intake_mode"] = "beta"
+                st.rerun()
+
+        # Stop here - don't load intake pages until mode is chosen
+        st.stop()
+
+    # Mode is selected - proceed to intake questionnaire
     try:
         show_intake_questionnaire()
     except Exception as e:
         st.error(f"INTAKE error: {str(e)}")
         st.info("💡 Try switching to Analysis mode if you encounter issues.")
+
 
 
 # =============================================================================
