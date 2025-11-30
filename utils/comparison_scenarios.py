@@ -23,7 +23,7 @@ import streamlit as st
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from utils.encryption import encrypt_data, decrypt_data
-from streamlit_browser_storage import LocalStorage
+# DISABLED: from streamlit_browser_storage import LocalStorage
 
 
 # =============================================================================
@@ -41,6 +41,10 @@ COMPARISON_KEY_PREFIX = "ff_comparison_"
 @st.cache_resource
 def _get_local_storage():
     """Get localStorage instance (singleton-cached)."""
+    # ========== TEMPORARY DEBUG: DISABLED TO FIND RERUN SOURCE ==========
+    print("[DEBUG] comparison_scenarios._get_local_storage DISABLED")
+    return None
+    # ========== END TEMPORARY DEBUG ==========
     if '_localStorage_singleton' not in st.session_state:
         st.session_state._localStorage_singleton = LocalStorage(key="forecash_local_storage")
     return st.session_state._localStorage_singleton

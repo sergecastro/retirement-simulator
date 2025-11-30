@@ -38,7 +38,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from utils.encryption import encrypt_data, decrypt_data
 import traceback
-from streamlit_browser_storage import LocalStorage
+# DISABLED: from streamlit_browser_storage import LocalStorage
 
 
 # =============================================================================
@@ -158,143 +158,104 @@ def create_snapshot_id() -> str:
 # SNAPSHOT INDEX MANAGEMENT
 # =============================================================================
 
-@st.cache_resource
 def _get_local_storage():
-    """Get localStorage instance (singleton-cached in session_state)."""
+    """
+    Get localStorage instance - ONLY call this during SAVE operations!
+    Never call during reads (causes rerun loops).
+    """
     # Cache in session_state to prevent creating multiple instances
     if '_localStorage_singleton' not in st.session_state:
-        print("[DEBUG] Creating localStorage singleton (FIRST TIME)")
+        print("[DEBUG] Creating localStorage singleton (user-triggered save)")
         st.session_state._localStorage_singleton = LocalStorage(key="forecash_local_storage")
     return st.session_state._localStorage_singleton
 
 
 def get_snapshots_index() -> Dict[str, Any]:
     """
-    Get snapshots index from browser localStorage (ENCRYPTED).
-
-    Snapshots persist after browser close! 🎉
-
+    Get snapshots index from DISK CACHE only.
+    
+    IMPORTANT: This function NEVER touches localStorage to avoid rerun loops.
+    localStorage is only accessed during save operations (user-triggered).
+    
     Returns:
         Index dict with current_snapshot_id and snapshots list
     """
-    # CRITICAL: Check session_state cache FIRST (avoids localStorage rerun loop!)
-    # This works even when localStorage is disabled!
+    # Check session_state cache FIRST (fastest)
     if '_cached_snapshots_index' in st.session_state:
         cached = st.session_state['_cached_snapshots_index']
-        # Silent return - don't print on every render to reduce console spam
         return cached.copy()
-
-    # CRITICAL: Prevent multiple localStorage reads causing rerun loop
-    # The streamlit-browser-storage component causes reruns when accessed
-    if st.session_state.get('_localStorage_read_in_progress', False):
-        print("[SKIP] localStorage read already in progress, returning empty")
-        return {'current_snapshot_id': None, 'snapshots': []}
     
-    st.session_state['_localStorage_read_in_progress'] = True
-    
-    # Get LocalStorage instance
-    localS = _get_local_storage()
-
-    # Try to load from browser localStorage
+    # Try loading from DISK CACHE (survives browser refresh)
     try:
-        data = localS.get('ff_snapshots_index')
-        if data:
-            print(f"[LS] GET 'ff_snapshots_index' = {type(data).__name__ if data else 'None'}")
-            index = decrypt_data(data, localS)
-            if index:
-                # Filter out demo scenarios (anything with "Demo", "Private", "Retirement", "Original" in name)
-                all_snapshots = index.get('snapshots', [])
-                print(f"[DEBUG] Before filter: {len(all_snapshots)} snapshots")
-                for s in all_snapshots:
-                    name = s.get('name', '')
-                    is_demo = any(keyword in name for keyword in ['Original', 'Demo', 'Private - Trusted', 'Retirement ('])
-                    print(f"  - '{name}' is demo? {is_demo}")
-
-                # Filter out ONLY demo scenarios
-                snapshots = [s for s in all_snapshots
-                             if not any(keyword in s.get('name', '') for keyword in ['Original', 'Demo', 'Private - Trusted', 'Retirement ('])]
-                index['snapshots'] = snapshots
-                print(f"[SNAPSHOT] After filter: {len(snapshots)} snapshots (removed demo scenarios)")
-
-                # CRITICAL FIX: Ensure current_snapshot_id is valid
-                current_id = index.get('current_snapshot_id')
-
-                if current_id:
-                    # Check if current_id is in the filtered list
-                    current_exists = any(s['id'] == current_id for s in snapshots)
-                    if not current_exists:
-                        print(f"[WARN] current_snapshot_id '{current_id}' was filtered out (demo scenario)")
-                        # Set to most recent non-demo snapshot
-                        if snapshots:
-                            new_id = snapshots[-1]['id']
-                            index['current_snapshot_id'] = new_id
-                            print(f"[FIX] Set current_snapshot_id to most recent user snapshot: {snapshots[-1]['name']} (ID: {new_id})")
-                        else:
-                            index['current_snapshot_id'] = None
-                            print(f"[WARN] No non-demo snapshots found, clearing current_snapshot_id")
-                else:
-                    # No current_snapshot_id set at all - use most recent user snapshot if available
-                    if snapshots:
-                        new_id = snapshots[-1]['id']
-                        index['current_snapshot_id'] = new_id
-                        print(f"[FIX] No current_snapshot_id was set, using most recent user snapshot: {snapshots[-1]['name']} (ID: {new_id})")
-
-                # CACHE the loaded index to prevent future localStorage reads!
-                st.session_state['_cached_snapshots_index'] = index.copy()
-                st.session_state['_localStorage_read_in_progress'] = False
-                print(f"[CACHE] Stored loaded index with {len(index.get('snapshots', []))} snapshots")
-                return index
-    except Exception as e:
-        print(f"[WARN] Could not load snapshots index: {e}")
-        import traceback
-        traceback.print_exc()
-
-    # Initialize empty index if not found
-    empty_index = {
-        "current_snapshot_id": None,
-        "snapshots": []
-    }
-    # Cache the empty index too to prevent repeated failed attempts
-    st.session_state['_cached_snapshots_index'] = empty_index.copy()
-    st.session_state['_localStorage_read_in_progress'] = False
-    return empty_index
+        import json
+        import os
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+        cache_file = os.path.join(cache_dir, 'snapshots_index.json')
+        if os.path.exists(cache_file):
+            with open(cache_file, 'r') as f:
+                disk_index = json.load(f)
+            print(f"[DISK CACHE] Loaded index with {len(disk_index.get('snapshots', []))} snapshots")
+            # Cache in session_state for next time
+            st.session_state['_cached_snapshots_index'] = disk_index.copy()
+            return disk_index
+    except Exception as disk_err:
+        print(f"[DISK CACHE] Failed to load: {disk_err}")
+    
+    # No data found - return empty (new user)
+    print("[SNAPSHOT] No disk cache found - new user")
+    return {'current_snapshot_id': None, 'snapshots': []}
 
 
 def save_snapshots_index(index: Dict[str, Any]) -> bool:
     """
-    Save snapshots index to browser localStorage (ENCRYPTED).
-
+    Save snapshots index to DISK CACHE + localStorage.
+    
+    Order: session_state -> disk cache -> localStorage
+    localStorage is safe here because this is user-triggered (save button).
+    
     Args:
         index: Index dict with current_snapshot_id and snapshots list
-
+    
     Returns:
         True if successful
     """
     try:
-        # CRITICAL: Cache in session_state FIRST to avoid race condition
+        # 1. Cache in session_state FIRST (fastest)
         st.session_state['_cached_snapshots_index'] = index.copy()
         print(f"[CACHE] Cached index in session_state with {len(index.get('snapshots', []))} snapshots")
-
-        # Get LocalStorage instance
-        localS = _get_local_storage()
-
-        # Encrypt and save
-        encrypted_str = encrypt_data(index, localS)
-
-        # Save encryption key if it's new
-        if localS is not None and st.session_state.get('encryption_key_needs_save', False):
-            localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
-            st.session_state.encryption_key_needs_save = False
-            print("[OK] Saved encryption key to browser localStorage")
-
-        # Save encrypted index
-        if localS is not None:
+        
+        # 2. Save to DISK CACHE (survives browser refresh)
+        try:
+            import json
+            import os
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+            os.makedirs(cache_dir, exist_ok=True)
+            cache_file = os.path.join(cache_dir, 'snapshots_index.json')
+            with open(cache_file, 'w') as f:
+                json.dump(index, f, indent=2)
+            print(f"[DISK CACHE] Saved index to {cache_file}")
+        except Exception as disk_err:
+            print(f"[DISK CACHE] Failed to save: {disk_err}")
+        
+        # 3. Save to localStorage (backup, user-triggered so safe)
+        try:
+            localS = _get_local_storage()
+            encrypted_str = encrypt_data(index, localS)
+            
+            # Save encryption key if it's new
+            if st.session_state.get('encryption_key_needs_save', False):
+                localS.set('ff_encryption_key', st.session_state.encryption_key_b64)
+                st.session_state.encryption_key_needs_save = False
+                print("[OK] Saved encryption key to localStorage")
+            
+            # Save encrypted index
             localS.set('ff_snapshots_index', encrypted_str)
-            print(f"[OK] Saved snapshots index to browser localStorage ({len(index.get('snapshots', []))} snapshots)")
-        else:
-            print(f"[WARN] localStorage disabled - index cached in session_state only ({len(index.get('snapshots', []))} snapshots)")
+            print(f"[OK] Saved index to localStorage ({len(index.get('snapshots', []))} snapshots)")
+        except Exception as ls_err:
+            print(f"[WARN] localStorage save failed (disk cache is primary): {ls_err}")
+        
         return True
-
+        
     except Exception as e:
         print(f"[ERROR] Failed to save snapshots index: {e}")
         import traceback
