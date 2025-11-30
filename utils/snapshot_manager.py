@@ -38,7 +38,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from utils.encryption import encrypt_data, decrypt_data
 import traceback
-# DISABLED: from streamlit_browser_storage import LocalStorage
+from streamlit_browser_storage import LocalStorage
 
 
 # =============================================================================
@@ -161,11 +161,6 @@ def create_snapshot_id() -> str:
 @st.cache_resource
 def _get_local_storage():
     """Get localStorage instance (singleton-cached in session_state)."""
-    # ========== TEMPORARY DEBUG: DISABLED ==========
-    print("[DEBUG] _get_local_storage DISABLED - returning None")
-    return None
-    # ========== END TEMPORARY DEBUG ==========
-    
     # Cache in session_state to prevent creating multiple instances
     if '_localStorage_singleton' not in st.session_state:
         print("[DEBUG] Creating localStorage singleton (FIRST TIME)")
@@ -188,12 +183,6 @@ def get_snapshots_index() -> Dict[str, Any]:
         cached = st.session_state['_cached_snapshots_index']
         # Silent return - don't print on every render to reduce console spam
         return cached.copy()
-
-    # ========== TEMPORARY DEBUG: BYPASS LOCALSTORAGE READ ==========
-    # localStorage disabled - return empty (but cache was checked above!)
-    print("[DEBUG] localStorage DISABLED - returning empty index (cache was checked)")
-    return {'current_snapshot_id': None, 'snapshots': []}
-    # ========== END TEMPORARY DEBUG ==========
 
     # CRITICAL: Prevent multiple localStorage reads causing rerun loop
     # The streamlit-browser-storage component causes reruns when accessed

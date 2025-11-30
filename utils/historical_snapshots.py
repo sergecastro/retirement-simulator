@@ -16,7 +16,7 @@ import streamlit as st
 from datetime import datetime
 from typing import Dict, List, Optional
 from utils.encryption import encrypt_data, decrypt_data
-# DISABLED: from streamlit_browser_storage import LocalStorage
+from streamlit_browser_storage import LocalStorage
 
 
 # localStorage key prefix
@@ -27,10 +27,6 @@ HISTORICAL_SNAPSHOT_PREFIX = "ff_historical_"
 @st.cache_resource
 def _get_local_storage():
     """Get localStorage instance (singleton-cached)."""
-    # ========== TEMPORARY DEBUG: DISABLED TO FIND RERUN SOURCE ==========
-    print("[DEBUG] historical_snapshots._get_local_storage DISABLED")
-    return None
-    # ========== END TEMPORARY DEBUG ==========
     if '_localStorage_singleton' not in st.session_state:
         st.session_state._localStorage_singleton = LocalStorage(key="forecash_local_storage")
     return st.session_state._localStorage_singleton
