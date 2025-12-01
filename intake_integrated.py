@@ -918,23 +918,31 @@ def show_intake_questionnaire():
             help="Electric, gas, water, internet, phone"
         )
 
-        groceries = st.number_input(
-            "Groceries/Food",
-            min_value=0.0,
-            max_value=10000.0,
-            value=st.session_state.get("input_groceries_expenses", 0.0),
-            step=50.0,
-            help="Food and household supplies"
-        )
+        # QUICK MODE: Hide groceries (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            groceries = st.number_input(
+                "Groceries/Food",
+                min_value=0.0,
+                max_value=10000.0,
+                value=st.session_state.get("input_groceries_expenses", 0.0),
+                step=50.0,
+                help="Food and household supplies"
+            )
+        else:
+            groceries = st.session_state.get('input_groceries_expenses', 0.0)
 
-        transportation = st.number_input(
-            "Transportation",
-            min_value=0.0,
-            max_value=10000.0,
-            value=st.session_state.get("input_transportation_expenses", 0.0),
-            step=50.0,
-            help="Gas, car payments, insurance, public transit"
-        )
+        # QUICK MODE: Hide transportation (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            transportation = st.number_input(
+                "Transportation",
+                min_value=0.0,
+                max_value=10000.0,
+                value=st.session_state.get("input_transportation_expenses", 0.0),
+                step=50.0,
+                help="Gas, car payments, insurance, public transit"
+            )
+        else:
+            transportation = st.session_state.get('input_transportation_expenses', 0.0)
 
         healthcare = st.number_input(
             "Healthcare",
@@ -963,68 +971,100 @@ def show_intake_questionnaire():
             help="Monthly property tax (if not in mortgage)"
         )
 
-        entertainment = st.number_input(
-            "Entertainment",
-            min_value=0.0,
-            max_value=10000.0,
-            value=st.session_state.get("input_entertainment_expenses", 0.0),
-            step=25.0,
-            help="Streaming, hobbies, sports, activities"
-        )
+        # QUICK MODE: Hide entertainment (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            entertainment = st.number_input(
+                "Entertainment",
+                min_value=0.0,
+                max_value=10000.0,
+                value=st.session_state.get("input_entertainment_expenses", 0.0),
+                step=25.0,
+                help="Streaming, hobbies, sports, activities"
+            )
+        else:
+            entertainment = st.session_state.get('input_entertainment_expenses', 0.0)
 
-        restaurants = st.number_input(
-            "Dining Out/Restaurants",
-            min_value=0.0,
-            max_value=10000.0,
-            value=st.session_state.get("input_restaurant_expenses", 0.0),
-            step=25.0,
-            help="Meals at restaurants, takeout, delivery"
-        )
+        # QUICK MODE: Hide restaurants (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            restaurants = st.number_input(
+                "Dining Out/Restaurants",
+                min_value=0.0,
+                max_value=10000.0,
+                value=st.session_state.get("input_restaurant_expenses", 0.0),
+                step=25.0,
+                help="Meals at restaurants, takeout, delivery"
+            )
+        else:
+            restaurants = st.session_state.get('input_restaurant_expenses', 0.0)
 
-        travel = st.number_input(
-            "Travel/Vacation",
-            min_value=0.0,
-            max_value=10000.0,
-            value=st.session_state.get("input_travel_expenses", 0.0),
-            step=50.0,
-            help="Average monthly amount for travel/vacations"
-        )
+        # QUICK MODE: Hide travel (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            travel = st.number_input(
+                "Travel/Vacation",
+                min_value=0.0,
+                max_value=10000.0,
+                value=st.session_state.get("input_travel_expenses", 0.0),
+                step=50.0,
+                help="Average monthly amount for travel/vacations"
+            )
+        else:
+            travel = st.session_state.get('input_travel_expenses', 0.0)
 
-        education = st.number_input(
-            "Education",
-            min_value=0.0,
-            max_value=10000.0,
-            value=st.session_state.get("input_education_expenses", 0.0),
-            step=50.0,
-            help="Tuition, courses, student loans"
-        )
+        # QUICK MODE: Hide education (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            education = st.number_input(
+                "Education",
+                min_value=0.0,
+                max_value=10000.0,
+                value=st.session_state.get("input_education_expenses", 0.0),
+                step=50.0,
+                help="Tuition, courses, student loans"
+            )
+        else:
+            education = st.session_state.get('input_education_expenses', 0.0)
 
-        childcare = st.number_input(
-            "Childcare",
-            min_value=0.0,
-            max_value=10000.0,
-            value=st.session_state.get("input_childcare_expenses", 0.0),
-            step=50.0,
-            help="Daycare, babysitting, child support"
-        )
+        # QUICK MODE: Hide childcare (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            childcare = st.number_input(
+                "Childcare",
+                min_value=0.0,
+                max_value=10000.0,
+                value=st.session_state.get("input_childcare_expenses", 0.0),
+                step=50.0,
+                help="Daycare, babysitting, child support"
+            )
+        else:
+            childcare = st.session_state.get('input_childcare_expenses', 0.0)
 
-        clothing = st.number_input(
-            "Clothing",
-            min_value=0.0,
-            max_value=10000.0,
-            value=st.session_state.get("input_clothing_expenses", 0.0),
-            step=25.0,
-            help="Clothing and personal care items"
-        )
+        # QUICK MODE: Hide clothing (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            clothing = st.number_input(
+                "Clothing",
+                min_value=0.0,
+                max_value=10000.0,
+                value=st.session_state.get("input_clothing_expenses", 0.0),
+                step=25.0,
+                help="Clothing and personal care items"
+            )
+        else:
+            clothing = st.session_state.get('input_clothing_expenses', 0.0)
 
-        charitable = st.number_input(
-            "Charitable Donations",
-            min_value=0.0,
-            max_value=10000.0,
-            value=st.session_state.get("input_charitable_donations", 0.0),
-            step=25.0,
-            help="Regular charitable giving"
-        )
+        # QUICK MODE: Hide charitable donations (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            charitable = st.number_input(
+                "Charitable Donations",
+                min_value=0.0,
+                max_value=10000.0,
+                value=st.session_state.get("input_charitable_donations", 0.0),
+                step=25.0,
+                help="Regular charitable giving"
+            )
+        else:
+            charitable = st.session_state.get('input_charitable_donations', 0.0)
+
+        # Quick Mode caption
+        if st.session_state.get('intake_mode') == 'quick':
+            st.caption("*Additional expense categories available in Full Mode*")
 
         miscellaneous = st.number_input(
             "Miscellaneous",
