@@ -403,6 +403,9 @@ def save_payload(data, snapshot_name=None):
         data: Full INTAKE data dictionary
         snapshot_name: Optional custom name for this version
     """
+    print(f"[DEBUG save_payload] >>>>>> CALLED with name: {snapshot_name}")
+    print(f"[DEBUG save_payload] >>>>>> data type: {type(data)}, keys: {len(data.keys()) if data else 0}")
+    
     # NEW: Save as versioned snapshot
     snapshot_id = save_snapshot(data, snapshot_name)
 

@@ -38,7 +38,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from utils.encryption import encrypt_data, decrypt_data
 import traceback
-# DISABLED: from streamlit_browser_storage import LocalStorage
+from streamlit_browser_storage import LocalStorage
 
 
 # =============================================================================
@@ -446,6 +446,9 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
         >>> snapshot_id = save_snapshot(intake_data, "Initial Plan")
         >>> print(snapshot_id)  # "20251106_0230"
     """
+    print(f"[DEBUG save_snapshot] >>>>>> CALLED with name: {snapshot_name}")
+    print(f"[DEBUG save_snapshot] >>>>>> data keys count: {len(data.keys()) if data else 0}")
+    
     # Create unique ID
     snapshot_id = create_snapshot_id()
 
