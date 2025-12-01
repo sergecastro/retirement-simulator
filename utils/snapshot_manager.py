@@ -516,6 +516,23 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
             print(f"[OK] Saved snapshot data to browser localStorage: {snapshot_key}")
         else:
             print(f"[WARN] localStorage disabled - snapshot cached in session_state only: {snapshot_key}")
+        
+        # DISK CACHE: Save snapshot DATA to disk (survives browser refresh)
+        try:
+            import os
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+            os.makedirs(cache_dir, exist_ok=True)
+            snapshot_data_path = os.path.join(cache_dir, f"snapshot_{snapshot_id}.json")
+            with open(snapshot_data_path, 'w') as f_disk:
+                json.dump({
+                    'encrypted_data': encrypted_str,
+                    'snapshot_id': snapshot_id,
+                    'name': snapshot_name,
+                    'saved_at': datetime.now().isoformat()
+                }, f_disk)
+            print(f"[DISK CACHE] Saved snapshot DATA to {snapshot_data_path}")
+        except Exception as disk_err:
+            print(f"[DISK CACHE] Failed to save snapshot data to disk: {disk_err}")
 
     except Exception as e:
         print(f"[ERROR] Failed to save snapshot data: {e}")
@@ -604,7 +621,30 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
                 print(f"[WARN] Decryption failed for snapshot: {snapshot_key}")
                 return None
         else:
-            print(f"[ERROR] No data found in localStorage for key: {snapshot_key}")
+            print(f"[WARN] No data in localStorage for key: {snapshot_key}, trying disk cache...")
+            
+            # DISK CACHE FALLBACK: Try loading from disk
+            try:
+                import os
+                cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
+                snapshot_data_path = os.path.join(cache_dir, f"snapshot_{snapshot_id}.json")
+                if os.path.exists(snapshot_data_path):
+                    with open(snapshot_data_path, 'r') as f_disk:
+                        cached = json.load(f_disk)
+                    encrypted_str = cached.get('encrypted_data')
+                    if encrypted_str:
+                        print(f"[DISK CACHE] Loaded snapshot DATA from {snapshot_data_path}")
+                        data = decrypt_data(encrypted_str, localS)
+                        if data:
+                            print(f"[DISK CACHE] Decrypted successfully, {len(data.keys())} keys")
+                            return data
+                        else:
+                            print(f"[DISK CACHE] Decryption failed")
+                else:
+                    print(f"[DISK CACHE] No disk cache file found: {snapshot_data_path}")
+            except Exception as disk_err:
+                print(f"[DISK CACHE] Failed to load from disk: {disk_err}")
+            
             return None
 
     except Exception as e:
