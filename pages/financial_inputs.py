@@ -429,8 +429,8 @@ def collect_financial_data():
     with col1:
         primary_mortgage = st.number_input(
             "Primary Mortgage Balance:",
-            value=float(st.session_state.get('input_primary_residence_mortgage', 0.0)),
-            key="input_primary_residence_mortgage",
+            value=float(st.session_state.get('input_mortgage_balance', 0.0)),
+            key="input_mortgage_balance",
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )
@@ -443,8 +443,8 @@ def collect_financial_data():
         )
         auto_loans = st.number_input(
             "Auto Loans:",
-            value=float(st.session_state.get('input_auto_loans', 0.0)),
-            key="input_auto_loans",
+            value=float(st.session_state.get('input_auto_loan_balance', 0.0)),
+            key="input_auto_loan_balance",
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )
@@ -452,8 +452,8 @@ def collect_financial_data():
     with col2:
         student_loans = st.number_input(
             "Student Loans:",
-            value=float(st.session_state.get('input_student_loans', 0.0)),
-            key="input_student_loans",
+            value=float(st.session_state.get('input_student_loan_balance', 0.0)),
+            key="input_student_loan_balance",
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )
@@ -466,8 +466,8 @@ def collect_financial_data():
         )
         personal_loans = st.number_input(
             "Personal Loans:",
-            value=float(st.session_state.get('input_personal_loans', 0.0)),
-            key="input_personal_loans",
+            value=float(st.session_state.get('input_other_liabilities', 0.0)),
+            key="input_other_liabilities",
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )
