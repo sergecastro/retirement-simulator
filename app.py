@@ -593,7 +593,7 @@ def show_new_user_mode_selection():
         st.markdown("**⚡ Quick Mode**")
         st.caption("Essential fields only")
         if st.button("Start Quick Mode", use_container_width=True, key="new_user_quick"):
-            st.session_state["intake_mode"] = "beta"
+            st.session_state["intake_mode"] = "quick"
             st.session_state["beta_agreement"] = True
             st.session_state.mode_selected = True
             st.session_state.current_mode = "INTAKE"
@@ -845,7 +845,7 @@ def show_intake_mode():
 *Faster, for quick estimates*
             """)
             if st.button("Start Quick Mode", use_container_width=True, key="btn_quick_mode"):
-                st.session_state["intake_mode"] = "beta"
+                st.session_state["intake_mode"] = "quick"
                 st.rerun()
 
         # Stop here - don't load intake pages until mode is chosen
