@@ -641,8 +641,12 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
                     # Restore encryption key from disk cache (for cross-browser)
                     saved_key_b64 = cached.get('encryption_key_b64')
                     if saved_key_b64:
+                        import base64
+                        # Store BOTH the b64 string AND the decoded bytes
                         st.session_state['encryption_key_b64'] = saved_key_b64
-                        print(f"[DISK CACHE] Restored encryption key from disk")
+                        st.session_state['encryption_key'] = base64.b64decode(saved_key_b64)
+                        st.session_state['encryption_key_needs_save'] = False
+                        print(f"[DISK CACHE] Restored encryption key from disk (decoded to bytes)")
                     
                     if encrypted_str:
                         print(f"[DISK CACHE] Loaded snapshot DATA from {snapshot_data_path}")
