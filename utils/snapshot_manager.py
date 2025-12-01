@@ -523,9 +523,14 @@ def save_snapshot(data: Dict[str, Any], snapshot_name: Optional[str] = None) -> 
             cache_dir = os.path.join(os.path.dirname(__file__), '..', '.snapshot_cache')
             os.makedirs(cache_dir, exist_ok=True)
             snapshot_data_path = os.path.join(cache_dir, f"snapshot_{snapshot_id}.json")
+            
+            # Get encryption key for cross-browser compatibility
+            encryption_key_b64 = st.session_state.get('encryption_key_b64', '')
+            
             with open(snapshot_data_path, 'w') as f_disk:
                 json.dump({
                     'encrypted_data': encrypted_str,
+                    'encryption_key_b64': encryption_key_b64,  # Include key for cross-browser
                     'snapshot_id': snapshot_id,
                     'name': snapshot_name,
                     'saved_at': datetime.now().isoformat()
@@ -632,6 +637,13 @@ def load_snapshot(snapshot_id: str) -> Optional[Dict[str, Any]]:
                     with open(snapshot_data_path, 'r') as f_disk:
                         cached = json.load(f_disk)
                     encrypted_str = cached.get('encrypted_data')
+                    
+                    # Restore encryption key from disk cache (for cross-browser)
+                    saved_key_b64 = cached.get('encryption_key_b64')
+                    if saved_key_b64:
+                        st.session_state['encryption_key_b64'] = saved_key_b64
+                        print(f"[DISK CACHE] Restored encryption key from disk")
+                    
                     if encrypted_str:
                         print(f"[DISK CACHE] Loaded snapshot DATA from {snapshot_data_path}")
                         data = decrypt_data(encrypted_str, localS)
