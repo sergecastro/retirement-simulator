@@ -763,32 +763,44 @@ def show_intake_questionnaire():
             help="Your regular employment income before any deductions"
         )
 
-        self_employment = st.number_input(
-            "Self-Employment Income (monthly)",
-            min_value=0.0,
-            max_value=1000000.0,
-            value=st.session_state.get("input_self_employment_income", 0.0),
-            step=100.0,
-            help="Net income from business or freelance work"
-        )
+        # QUICK MODE: Hide self-employment (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            self_employment = st.number_input(
+                "Self-Employment Income (monthly)",
+                min_value=0.0,
+                max_value=1000000.0,
+                value=st.session_state.get("input_self_employment_income", 0.0),
+                step=100.0,
+                help="Net income from business or freelance work"
+            )
+        else:
+            self_employment = st.session_state.get('input_self_employment_income', 0.0)
 
-        rental = st.number_input(
-            "Rental Income (monthly)",
-            min_value=0.0,
-            max_value=100000.0,
-            value=st.session_state.get("input_rental_income", 0.0),
-            step=100.0,
-            help="Net rental income after expenses"
-        )
+        # QUICK MODE: Hide rental income (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            rental = st.number_input(
+                "Rental Income (monthly)",
+                min_value=0.0,
+                max_value=100000.0,
+                value=st.session_state.get("input_rental_income", 0.0),
+                step=100.0,
+                help="Net rental income after expenses"
+            )
+        else:
+            rental = st.session_state.get('input_rental_income', 0.0)
 
-        investment = st.number_input(
-            "Investment Income (monthly, before taxes)",
-            min_value=0.0,
-            max_value=100000.0,
-            value=st.session_state.get("input_investment_income", 0.0),
-            step=50.0,
-            help="Dividends, interest, capital gains (average monthly, before taxes)"
-        )
+        # QUICK MODE: Hide investment income (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            investment = st.number_input(
+                "Investment Income (monthly, before taxes)",
+                min_value=0.0,
+                max_value=100000.0,
+                value=st.session_state.get("input_investment_income", 0.0),
+                step=50.0,
+                help="Dividends, interest, capital gains (average monthly, before taxes)"
+            )
+        else:
+            investment = st.session_state.get('input_investment_income', 0.0)
 
         social_security = st.number_input(
             "Social Security (monthly, before taxes)",
@@ -799,23 +811,31 @@ def show_intake_questionnaire():
             help="Your monthly Social Security benefit before any tax withholding"
         )
 
-        pension = st.number_input(
-            "Pension Income (monthly, before taxes)",
-            min_value=0.0,
-            max_value=50000.0,
-            value=st.session_state.get("input_pension_income", 0.0),
-            step=50.0,
-            help="Monthly pension from employer or government, before taxes"
-        )
+        # QUICK MODE: Hide pension income (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            pension = st.number_input(
+                "Pension Income (monthly, before taxes)",
+                min_value=0.0,
+                max_value=50000.0,
+                value=st.session_state.get("input_pension_income", 0.0),
+                step=50.0,
+                help="Monthly pension from employer or government, before taxes"
+            )
+        else:
+            pension = st.session_state.get('input_pension_income', 0.0)
 
-        other_income = st.number_input(
-            "Other Income (monthly)",
-            min_value=0.0,
-            max_value=100000.0,
-            value=st.session_state.get("input_other_income", 0.0),
-            step=50.0,
-            help="Alimony, royalties, or other regular income"
-        )
+        # QUICK MODE: Hide other income (use session_state default)
+        if st.session_state.get('intake_mode') != 'quick':
+            other_income = st.number_input(
+                "Other Income (monthly)",
+                min_value=0.0,
+                max_value=100000.0,
+                value=st.session_state.get("input_other_income", 0.0),
+                step=50.0,
+                help="Alimony, royalties, or other regular income"
+            )
+        else:
+            other_income = st.session_state.get('input_other_income', 0.0)
 
         # Calculate total
         total_income = salary + self_employment + rental + investment + social_security + pension + other_income
