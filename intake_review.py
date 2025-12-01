@@ -123,9 +123,9 @@ def show_assets_page(existing, save_payload, go_to_page):
         value=protected.get("input_four01k_403b_balance", 0.0)
     )
     
-    # Partner accounts (if couple)
+    # Partner accounts (if couple) - QUICK MODE: Hide partner retirement accounts
     partner_exists = existing.get("input_partner_exists", False)
-    if partner_exists:
+    if partner_exists and st.session_state.get('intake_mode') != 'quick':
         st.caption("Partner Retirement Accounts")
         partner_ira = st.number_input(
             "Partner IRA Balance",
@@ -142,8 +142,8 @@ def show_assets_page(existing, save_payload, go_to_page):
             value=protected.get("input_partner_four01k_403b_balance", 0.0)
         )
     else:
-        partner_ira = 0.0
-        partner_k401 = 0.0
+        partner_ira = st.session_state.get('input_partner_ira_balance', 0.0)
+        partner_k401 = st.session_state.get('input_partner_four01k_403b_balance', 0.0)
 
     # Savings & Investments
     st.subheader("💰 Savings & Investments")
@@ -165,23 +165,31 @@ def show_assets_page(existing, save_payload, go_to_page):
         value=protected.get("input_high_yield_savings_account", 0.0)
     )
 
-    hsa = st.number_input(
-        "HSA Balance",
-        min_value=0.0,
-        step=500.0,
-        help="Health Savings Account",
-        key="input_hsa_balance",
-        value=protected.get("input_hsa_balance", 0.0)
-    )
+    # QUICK MODE: Hide HSA
+    if st.session_state.get('intake_mode') != 'quick':
+        hsa = st.number_input(
+            "HSA Balance",
+            min_value=0.0,
+            step=500.0,
+            help="Health Savings Account",
+            key="input_hsa_balance",
+            value=protected.get("input_hsa_balance", 0.0)
+        )
+    else:
+        hsa = st.session_state.get('input_hsa_balance', 0.0)
 
-    plan529 = st.number_input(
-        "529 Plan Balance",
-        min_value=0.0,
-        step=500.0,
-        help="Education savings plan",
-        key="input_five29_plan_balance",
-        value=protected.get("input_five29_plan_balance", 0.0)
-    )
+    # QUICK MODE: Hide 529 Plan
+    if st.session_state.get('intake_mode') != 'quick':
+        plan529 = st.number_input(
+            "529 Plan Balance",
+            min_value=0.0,
+            step=500.0,
+            help="Education savings plan",
+            key="input_five29_plan_balance",
+            value=protected.get("input_five29_plan_balance", 0.0)
+        )
+    else:
+        plan529 = st.session_state.get('input_five29_plan_balance', 0.0)
 
     # Real Estate
     st.subheader("🏡 Real Estate")
@@ -194,52 +202,73 @@ def show_assets_page(existing, save_payload, go_to_page):
         value=protected.get("input_primary_residence_value", 0.0)
     )
 
-    secondary_home = st.number_input(
-        "Secondary Residence Value",
-        min_value=0.0,
-        step=10000.0,
-        help="Vacation home, rental property value",
-        key="input_secondary_residence_value",
-        value=protected.get("input_secondary_residence_value", 0.0)
-    )
+    # QUICK MODE: Hide secondary home
+    if st.session_state.get('intake_mode') != 'quick':
+        secondary_home = st.number_input(
+            "Secondary Residence Value",
+            min_value=0.0,
+            step=10000.0,
+            help="Vacation home, rental property value",
+            key="input_secondary_residence_value",
+            value=protected.get("input_secondary_residence_value", 0.0)
+        )
+    else:
+        secondary_home = st.session_state.get('input_secondary_residence_value', 0.0)
 
     # Other Assets
     st.subheader("🚗 Other Assets")
-    vehicles = st.number_input(
-        "Vehicles Value",
-        min_value=0.0,
-        step=1000.0,
-        help="Cars, boats, RVs - current market value",
-        key="input_vehicles_value",
-        value=protected.get("input_vehicles_value", 0.0)
-    )
 
-    jewelry = st.number_input(
-        "Jewelry & Collectibles",
-        min_value=0.0,
-        step=500.0,
-        help="Valuable jewelry, art, collectibles",
-        key="input_jewelry_collectibles_value",
-        value=protected.get("input_jewelry_collectibles_value", 0.0)
-    )
+    # QUICK MODE: Hide vehicles
+    if st.session_state.get('intake_mode') != 'quick':
+        vehicles = st.number_input(
+            "Vehicles Value",
+            min_value=0.0,
+            step=1000.0,
+            help="Cars, boats, RVs - current market value",
+            key="input_vehicles_value",
+            value=protected.get("input_vehicles_value", 0.0)
+        )
+    else:
+        vehicles = st.session_state.get('input_vehicles_value', 0.0)
 
-    business = st.number_input(
-        "Business Ownership Value",
-        min_value=0.0,
-        step=5000.0,
-        help="Your stake in a business",
-        key="input_business_ownership_value",
-        value=protected.get("input_business_ownership_value", 0.0)
-    )
+    # QUICK MODE: Hide jewelry
+    if st.session_state.get('intake_mode') != 'quick':
+        jewelry = st.number_input(
+            "Jewelry & Collectibles",
+            min_value=0.0,
+            step=500.0,
+            help="Valuable jewelry, art, collectibles",
+            key="input_jewelry_collectibles_value",
+            value=protected.get("input_jewelry_collectibles_value", 0.0)
+        )
+    else:
+        jewelry = st.session_state.get('input_jewelry_collectibles_value', 0.0)
 
-    crypto = st.number_input(
-        "Cryptocurrency Holdings",
-        min_value=0.0,
-        step=500.0,
-        help="Bitcoin, Ethereum, etc. - current value",
-        key="input_cryptocurrency_holdings",
-        value=protected.get("input_cryptocurrency_holdings", 0.0)
-    )
+    # QUICK MODE: Hide business ownership
+    if st.session_state.get('intake_mode') != 'quick':
+        business = st.number_input(
+            "Business Ownership Value",
+            min_value=0.0,
+            step=5000.0,
+            help="Your stake in a business",
+            key="input_business_ownership_value",
+            value=protected.get("input_business_ownership_value", 0.0)
+        )
+    else:
+        business = st.session_state.get('input_business_ownership_value', 0.0)
+
+    # QUICK MODE: Hide crypto
+    if st.session_state.get('intake_mode') != 'quick':
+        crypto = st.number_input(
+            "Cryptocurrency Holdings",
+            min_value=0.0,
+            step=500.0,
+            help="Bitcoin, Ethereum, etc. - current value",
+            key="input_cryptocurrency_holdings",
+            value=protected.get("input_cryptocurrency_holdings", 0.0)
+        )
+    else:
+        crypto = st.session_state.get('input_cryptocurrency_holdings', 0.0)
 
     other_assets = st.number_input(
         "Other Assets",
@@ -275,7 +304,11 @@ def show_assets_page(existing, save_payload, go_to_page):
     
     st.divider()
     st.metric("Total Assets", f"${total_assets:,.2f}")
-    
+
+    # Quick Mode caption
+    if st.session_state.get('intake_mode') == 'quick':
+        st.caption("*Additional asset fields available in Full Mode*")
+
     # Navigation
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
