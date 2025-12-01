@@ -601,6 +601,47 @@ def show_new_user_mode_selection():
 
     st.caption("By clicking either button, you acknowledge this is beta software.")
 
+    # ============ Professional Footer Section ============
+    st.markdown("---")  # Divider line
+
+    st.markdown("""
+### 🔒 Your Privacy Matters
+
+**Your data stays in YOUR browser.** Family Forecast uses bank-grade AES-256 encryption
+and stores all your financial information locally on your device — never on our servers.
+
+---
+
+### ℹ️ What is Family Forecast?
+
+Family Forecast is an **educational retirement planning tool** that helps you:
+- 📊 Run Monte Carlo simulations (1,000+ scenarios)
+- 💰 Project cash flow through retirement
+- 🏥 Calculate Medicare IRMAA costs
+- 📈 Compare different retirement strategies
+
+---
+
+### ⚖️ Important Disclaimers
+
+**Not Financial Advice:** Family Forecast is for educational and informational purposes only.
+It does NOT provide financial, tax, investment, or legal advice. All projections are estimates
+based on your inputs and assumptions.
+
+**Consult Professionals:** Before making any financial decisions, please consult with qualified
+financial advisors, tax professionals, or legal counsel.
+
+**No Guarantee:** Past performance and projections do not guarantee future results.
+Your actual retirement outcomes may differ significantly from any estimates shown.
+
+---
+
+<div style="text-align: center; color: #666; font-size: 0.85em;">
+© 2025 Family Forecast | <a href="mailto:support@familyforecast.ai">support@familyforecast.ai</a>
+</div>
+""", unsafe_allow_html=True)
+    # ============ END OF ADDED CONTENT ============
+
 
 # =============================================================================
 # WELCOME LANDING PAGE (Legacy - kept for reference)
