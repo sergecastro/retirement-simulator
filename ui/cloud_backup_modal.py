@@ -76,27 +76,25 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
 
         with col1:
             st.markdown("""
-            **🕵️ Anonymous Trial**
+            **🕵️ Anonymous Backup**
             - No email required
             - No recovery option
-            - 30 days only
+            - 30 days trial
             - 3 scenarios max
             """)
-            if st.button("Try Anonymous", key="choose_anonymous", use_container_width=True):
+            if st.button("Try Anonymous", key="choose_anonymous", type="primary", use_container_width=True):
                 st.session_state.backup_modal_step = 'anonymous'
                 st.rerun()
 
         with col2:
             st.markdown("""
-            **⭐ Free Account** ← RECOMMENDED
+            **⭐ Free Account**
             - Unlimited access
             - Unlimited scenarios
             - Auto-sync on save
             - Password recovery
             """)
-            if st.button("Create Free Account", key="choose_account", type="primary", use_container_width=True):
-                st.session_state.backup_modal_step = 'account'
-                st.rerun()
+            st.button("Coming Soon", key="choose_account", disabled=True, use_container_width=True)
 
         st.markdown("")
         if st.button("Not now, maybe later", key="skip_backup"):
