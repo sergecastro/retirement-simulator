@@ -23,6 +23,9 @@ from utils.snapshot_manager import (
 # Legacy localStorage support (for backward compatibility)
 from utils.local_storage_browser import load_from_local_storage_encrypted
 
+# Cloud backup (optional Supabase sync)
+from ui.cloud_backup_modal import show_cloud_backup_modal
+
 # ========== SCROLL TO TOP FIX ==========
 import streamlit.components.v1 as components
 
