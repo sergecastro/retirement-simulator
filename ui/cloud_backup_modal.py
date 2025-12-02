@@ -225,14 +225,12 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
         """)
 
         st.error("⚠️ **WRITE THIS DOWN** with your password! You need BOTH to restore your data.")
+        st.code(vault_id, language=None)
 
-        col1, col2 = st.columns(2)
+        st.markdown("---")
+        confirmed = st.checkbox("I have saved my Vault ID and password securely", key="vault_id_confirmed")
 
-        with col1:
-            # Copy button using Streamlit's built-in
-            st.code(vault_id, language=None)
-
-        with col2:
+        if confirmed:
             if st.button("Continue to Analysis →", key="anon_continue", type="primary"):
                 st.session_state.backup_modal_step = 'done'
                 st.session_state.show_backup_modal = False
