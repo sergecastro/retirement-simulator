@@ -112,6 +112,7 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
     elif st.session_state.backup_modal_step == 'anonymous':
         st.markdown("### 🕵️ Anonymous Backup")
         st.markdown("Create a password to protect your data.")
+        st.info("🔑 **Password requirements:** 8+ characters, uppercase, lowercase, and a number")
 
         password = st.text_input("Password", type="password", key="anon_password")
         password_confirm = st.text_input("Confirm Password", type="password", key="anon_password_confirm")
@@ -162,6 +163,7 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
         st.markdown("### ⭐ Create Free Account")
 
         email = st.text_input("Email", key="account_email")
+        st.info("🔑 **Password requirements:** 8+ characters, uppercase, lowercase, and a number")
         password = st.text_input("Password", type="password", key="account_password")
         password_confirm = st.text_input("Confirm Password", type="password", key="account_password_confirm")
 
