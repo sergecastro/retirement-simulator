@@ -1,60 +1,50 @@
 """
-Top Navigation Bar Component
-Provides navigation between all 5 modules on both mobile and desktop.
+Top Navigation Bar Component - Hamburger Menu Version
+Provides navigation between all 6 modules via collapsible menu.
+Works identically on mobile and desktop.
 Created: November 26, 2025
+Updated: December 2, 2025 - Converted to hamburger menu
 """
-
 import streamlit as st
 
 
 def render_top_navigation(current: str = "intake"):
     """
-    Renders a horizontal navigation bar at the top of every page.
+    Renders a hamburger menu navigation at the top of every page.
 
     Args:
         current: The current module name to highlight
-                 Options: "INTAKE", "Analysis", "Healthcare", "scenario_studio", "social_security"
+                 Options: "INTAKE", "Analysis", "Healthcare", "scenario_studio", "social_security", "historical_tracking"
     """
-
     modules = [
         ("📝", "INTAKE", "INTAKE"),
         ("📊", "Analysis", "Analysis"),
         ("🏥", "Healthcare", "Healthcare"),
         ("🎬", "Scenarios", "scenario_studio"),
-        ("💰", "Soc Sec", "social_security"),
+        ("💰", "Social Security", "social_security"),
         ("📈", "History", "historical_tracking"),
     ]
 
-    # Add some spacing and a container
-    st.markdown("""
-        <style>
-        .top-nav-container {
-            background-color: #f0f2f6;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        /* Make nav bar scrollable on mobile */
-        [data-testid="column"] {
-            min-width: fit-content !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # Find current module label for display
+    current_label = "Navigate"
+    for icon, label, mode_key in modules:
+        if current == mode_key:
+            current_label = f"{icon} {label}"
+            break
 
-    cols = st.columns(len(modules))
+    # Hamburger menu using st.popover
+    with st.popover(f"☰ {current_label}", use_container_width=False):
+        st.markdown("**Go to:**")
 
-    for i, (icon, label, mode_key) in enumerate(modules):
-        with cols[i]:
+        for icon, label, mode_key in modules:
             # Highlight current module
             if current == mode_key:
-                button_label = f"**{icon} {label}**"
                 button_type = "primary"
             else:
-                button_label = f"{icon} {label}"
                 button_type = "secondary"
 
             if st.button(
-                button_label,
+                f"{icon} {label}",
                 key=f"nav_{mode_key}",
                 use_container_width=True,
                 type=button_type
