@@ -1,0 +1,97 @@
+Collecting supabase
+  Downloading supabase-2.24.0-py3-none-any.whl.metadata (4.6 kB)
+Collecting realtime==2.24.0 (from supabase)
+  Downloading realtime-2.24.0-py3-none-any.whl.metadata (7.0 kB)
+Collecting supabase-functions==2.24.0 (from supabase)
+  Downloading supabase_functions-2.24.0-py3-none-any.whl.metadata (2.4 kB)
+Collecting storage3==2.24.0 (from supabase)
+  Downloading storage3-2.24.0-py3-none-any.whl.metadata (2.1 kB)
+Collecting supabase-auth==2.24.0 (from supabase)
+  Downloading supabase_auth-2.24.0-py3-none-any.whl.metadata (6.4 kB)
+Collecting postgrest==2.24.0 (from supabase)
+  Downloading postgrest-2.24.0-py3-none-any.whl.metadata (3.4 kB)
+Requirement already satisfied: httpx<0.29,>=0.26 in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from supabase) (0.28.1)
+Collecting deprecation>=2.1.0 (from postgrest==2.24.0->supabase)
+  Downloading deprecation-2.1.0-py2.py3-none-any.whl.metadata (4.6 kB)
+Requirement already satisfied: pydantic<3.0,>=1.9 in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from postgrest==2.24.0->supabase) (2.11.3)
+Collecting yarl>=1.20.1 (from postgrest==2.24.0->supabase)
+  Downloading yarl-1.22.0-cp312-cp312-win_amd64.whl.metadata (77 kB)
+Collecting pydantic<3.0,>=1.9 (from postgrest==2.24.0->supabase)
+  Downloading pydantic-2.12.5-py3-none-any.whl.metadata (90 kB)
+Collecting typing-extensions>=4.14.0 (from realtime==2.24.0->supabase)
+  Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+Requirement already satisfied: websockets<16,>=11 in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from realtime==2.24.0->supabase) (15.0.1)
+Collecting pyjwt>=2.10.1 (from pyjwt[crypto]>=2.10.1->supabase-auth==2.24.0->supabase)
+  Downloading PyJWT-2.10.1-py3-none-any.whl.metadata (4.0 kB)
+Collecting strenum>=0.4.15 (from supabase-functions==2.24.0->supabase)
+  Downloading StrEnum-0.4.15-py3-none-any.whl.metadata (5.3 kB)
+Requirement already satisfied: anyio in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from httpx<0.29,>=0.26->supabase) (3.7.1)
+Requirement already satisfied: certifi in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from httpx<0.29,>=0.26->supabase) (2024.2.2)
+Requirement already satisfied: httpcore==1.* in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from httpx<0.29,>=0.26->supabase) (1.0.9)
+Requirement already satisfied: idna in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from httpx<0.29,>=0.26->supabase) (3.7)
+Requirement already satisfied: h11>=0.16 in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from httpcore==1.*->httpx<0.29,>=0.26->supabase) (0.16.0)
+Collecting h2<5,>=3 (from httpx[http2]<0.29,>=0.26->postgrest==2.24.0->supabase)
+  Downloading h2-4.3.0-py3-none-any.whl.metadata (5.1 kB)
+Collecting hyperframe<7,>=6.1 (from h2<5,>=3->httpx[http2]<0.29,>=0.26->postgrest==2.24.0->supabase)
+  Downloading hyperframe-6.1.0-py3-none-any.whl.metadata (4.3 kB)
+Collecting hpack<5,>=4.1 (from h2<5,>=3->httpx[http2]<0.29,>=0.26->postgrest==2.24.0->supabase)
+  Downloading hpack-4.1.0-py3-none-any.whl.metadata (4.6 kB)
+Requirement already satisfied: annotated-types>=0.6.0 in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from pydantic<3.0,>=1.9->postgrest==2.24.0->supabase) (0.7.0)
+Collecting pydantic-core==2.41.5 (from pydantic<3.0,>=1.9->postgrest==2.24.0->supabase)
+  Downloading pydantic_core-2.41.5-cp312-cp312-win_amd64.whl.metadata (7.4 kB)
+Collecting typing-inspection>=0.4.2 (from pydantic<3.0,>=1.9->postgrest==2.24.0->supabase)
+  Downloading typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+Requirement already satisfied: packaging in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from deprecation>=2.1.0->postgrest==2.24.0->supabase) (24.2)
+Requirement already satisfied: cryptography>=3.4.0 in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from pyjwt[crypto]>=2.10.1->supabase-auth==2.24.0->supabase) (46.0.3)
+Requirement already satisfied: cffi>=2.0.0 in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from cryptography>=3.4.0->pyjwt[crypto]>=2.10.1->supabase-auth==2.24.0->supabase) (2.0.0)
+Requirement already satisfied: pycparser in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from cffi>=2.0.0->cryptography>=3.4.0->pyjwt[crypto]>=2.10.1->supabase-auth==2.24.0->supabase) (2.23)
+Requirement already satisfied: multidict>=4.0 in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from yarl>=1.20.1->postgrest==2.24.0->supabase) (6.0.5)
+Collecting propcache>=0.2.1 (from yarl>=1.20.1->postgrest==2.24.0->supabase)
+  Downloading propcache-0.4.1-cp312-cp312-win_amd64.whl.metadata (14 kB)
+Requirement already satisfied: sniffio>=1.1 in c:\users\serge\appdata\local\programs\python\python312\lib\site-packages (from anyio->httpx<0.29,>=0.26->supabase) (1.3.1)
+Downloading supabase-2.24.0-py3-none-any.whl (16 kB)
+Downloading postgrest-2.24.0-py3-none-any.whl (21 kB)
+Downloading realtime-2.24.0-py3-none-any.whl (22 kB)
+Downloading storage3-2.24.0-py3-none-any.whl (19 kB)
+Downloading supabase_auth-2.24.0-py3-none-any.whl (48 kB)
+Downloading supabase_functions-2.24.0-py3-none-any.whl (8.5 kB)
+Downloading h2-4.3.0-py3-none-any.whl (61 kB)
+Downloading hpack-4.1.0-py3-none-any.whl (34 kB)
+Downloading hyperframe-6.1.0-py3-none-any.whl (13 kB)
+Downloading pydantic-2.12.5-py3-none-any.whl (463 kB)
+Downloading pydantic_core-2.41.5-cp312-cp312-win_amd64.whl (2.0 MB)
+   ---------------------------------------- 2.0/2.0 MB 5.4 MB/s  0:00:00
+Downloading deprecation-2.1.0-py2.py3-none-any.whl (11 kB)
+Downloading PyJWT-2.10.1-py3-none-any.whl (22 kB)
+Downloading StrEnum-0.4.15-py3-none-any.whl (8.9 kB)
+Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+Downloading typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+Downloading yarl-1.22.0-cp312-cp312-win_amd64.whl (87 kB)
+Downloading propcache-0.4.1-cp312-cp312-win_amd64.whl (41 kB)
+Installing collected packages: strenum, typing-extensions, pyjwt, propcache, hyperframe, hpack, deprecation, yarl, typing-inspection, pydantic-core, h2, pydantic, supabase-functions, supabase-auth, storage3, realtime, postgrest, supabase
+  Attempting uninstall: typing-extensions
+    Found existing installation: typing_extensions 4.13.2
+    Uninstalling typing_extensions-4.13.2:
+      Successfully uninstalled typing_extensions-4.13.2
+  Attempting uninstall: pyjwt
+    Found existing installation: PyJWT 2.8.0
+    Uninstalling PyJWT-2.8.0:
+      Successfully uninstalled PyJWT-2.8.0
+  Attempting uninstall: yarl
+    Found existing installation: yarl 1.9.4
+    Uninstalling yarl-1.9.4:
+      Successfully uninstalled yarl-1.9.4
+  Attempting uninstall: typing-inspection
+    Found existing installation: typing-inspection 0.4.0
+    Uninstalling typing-inspection-0.4.0:
+      Successfully uninstalled typing-inspection-0.4.0
+  Attempting uninstall: pydantic-core
+    Found existing installation: pydantic_core 2.33.1
+    Uninstalling pydantic_core-2.33.1:
+      Successfully uninstalled pydantic_core-2.33.1
+  Attempting uninstall: pydantic
+    Found existing installation: pydantic 2.11.3
+    Uninstalling pydantic-2.11.3:
+      Successfully uninstalled pydantic-2.11.3
+
+Successfully installed deprecation-2.1.0 h2-4.3.0 hpack-4.1.0 hyperframe-6.1.0 postgrest-2.24.0 propcache-0.4.1 pydantic-2.12.5 pydantic-core-2.41.5 pyjwt-2.10.1 realtime-2.24.0 storage3-2.24.0 strenum-0.4.15 supabase-2.24.0 supabase-auth-2.24.0 supabase-functions-2.24.0 typing-extensions-4.15.0 typing-inspection-0.4.2 yarl-1.22.0
