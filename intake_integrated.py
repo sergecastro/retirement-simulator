@@ -1585,7 +1585,8 @@ def show_intake_questionnaire():
         has_any_snapshot = len(snapshots) > 0 or len(cached_snapshots) > 0 or st.session_state.get('just_saved', False)
         plan_is_saved = st.session_state.get('just_saved', False) or st.session_state.get('intake_data_saved', False) or has_any_snapshot
 
-        if plan_is_saved:
+        backup_modal_active = st.session_state.get('show_cloud_backup_offer', False) and not st.session_state.get('cloud_backup_enabled', False)
+        if plan_is_saved and not backup_modal_active:
             # Get the name of the plan to display
             plan_name = st.session_state.get('saved_snapshot_name', 'Your Plan')
             
