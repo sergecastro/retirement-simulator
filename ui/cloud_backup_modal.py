@@ -94,7 +94,9 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
             - Auto-sync on save
             - Password recovery
             """)
-            st.button("Coming Soon", key="choose_account", disabled=True, use_container_width=True)
+            if st.button("Create Free Account", key="choose_account", type="primary", use_container_width=True):
+                st.session_state.backup_modal_step = 'account'
+                st.rerun()
 
         st.markdown("")
         if st.button("Not now, maybe later", key="skip_backup"):
