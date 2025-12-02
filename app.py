@@ -640,6 +640,51 @@ Your actual retirement outcomes may differ significantly from any estimates show
 © 2025 Family Forecast | <a href="mailto:support@familyforecast.ai">support@familyforecast.ai</a>
 </div>
 """, unsafe_allow_html=True)
+
+    # ============ CLOUD BACKUP SECTION (Beta) ============
+    st.markdown("---")
+    st.markdown("### ☁️ During Beta: Optional Cloud Backup")
+    st.markdown("""
+    Want to access your plan from **any device**? Create a secure cloud backup.
+    Your data is encrypted before it leaves your browser — we can never see it.
+    """)
+
+    col_anon, col_account = st.columns(2)
+
+    with col_anon:
+        st.markdown("""
+        **🕵️ Anonymous Trial**
+        - No email required
+        - 30 days only
+        - 3 scenarios max
+        - No recovery if forgotten
+        """)
+        if st.button("Try Anonymous", key="welcome_anonymous", use_container_width=True):
+            st.session_state.show_backup_signup = 'anonymous'
+            st.rerun()
+
+    with col_account:
+        st.markdown("""
+        **⭐ Free Account** ← RECOMMENDED
+        - Unlimited access
+        - Unlimited scenarios
+        - Auto-sync on save
+        - Password recovery
+        """)
+        if st.button("Create Free Account", key="welcome_account", type="primary", use_container_width=True):
+            st.session_state.show_backup_signup = 'account'
+            st.rerun()
+
+    st.caption("Or skip for now — you can add cloud backup after completing your plan.")
+
+    # Restore option for returning users
+    with st.expander("🔑 Already have a backup? Restore here"):
+        from ui.cloud_backup_modal import show_restore_modal
+        restored_data = show_restore_modal()
+        if restored_data:
+            st.session_state.intake_data = restored_data
+            st.success("✅ Data restored! Continue to your plan.")
+
     # ============ END OF ADDED CONTENT ============
 
 

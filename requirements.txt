@@ -40,3 +40,6 @@ requests==2.31.0
 sentry-sdk[flask]==2.18.0  # Real-time error tracking for production
 
 gunicorn==21.2.0
+
+# Cloud backup (optional - for cross-browser sync)
+supabase>=2.0.0
