@@ -77,10 +77,10 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
         with col1:
             st.markdown("""
             **🕵️ Anonymous Trial**
-            - 30 days only
-            - 3 scenarios max
             - No email required
             - No recovery option
+            - 30 days only
+            - 3 scenarios max
             """)
             if st.button("Try Anonymous", key="choose_anonymous", use_container_width=True):
                 st.session_state.backup_modal_step = 'anonymous'
