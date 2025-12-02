@@ -1472,6 +1472,8 @@ def show_intake_questionnaire():
 
                     # Set flag to show balloons AFTER rerun
                     st.session_state['show_balloons_on_load'] = True
+                    # Offer cloud backup after save
+                    st.session_state['show_cloud_backup_offer'] = True
 
                     st.rerun()
 
@@ -1479,6 +1481,20 @@ def show_intake_questionnaire():
         if 'snapshot_save_message' in st.session_state:
             st.success(st.session_state['snapshot_save_message'])
             del st.session_state['snapshot_save_message']  # Clear after showing
+
+        # Show cloud backup offer after save (if flag is set and user doesn't have backup yet)
+        if st.session_state.get('show_cloud_backup_offer', False):
+            if not st.session_state.get('cloud_backup_enabled', False):
+                st.markdown("---")
+                user_data = collect_current_form_data()
+                backup_completed = show_cloud_backup_modal(user_data)
+                if backup_completed:
+                    st.session_state['cloud_backup_enabled'] = True
+                    st.session_state['show_cloud_backup_offer'] = False
+                    st.rerun()
+            else:
+                # User already has backup, clear the flag
+                st.session_state['show_cloud_backup_offer'] = False
 
         # List existing snapshots (SHOW ALL, not just last 5!)
         snapshots = list_snapshots()
