@@ -26,6 +26,9 @@ from utils.local_storage_browser import load_from_local_storage_encrypted
 # Cloud backup (optional Supabase sync)
 from ui.cloud_backup_modal import show_cloud_backup_modal
 
+# Welcome Back cookie (stores first name + last save date for returning users)
+from utils.cookie_helper import set_welcome_back_cookie
+
 # ========== SCROLL TO TOP FIX ==========
 import streamlit.components.v1 as components
 
@@ -1474,6 +1477,11 @@ def show_intake_questionnaire():
                     st.session_state['show_balloons_on_load'] = True
                     # Offer cloud backup after save
                     st.session_state['show_cloud_backup_offer'] = True
+
+                    # WELCOME BACK: Save user's first name + timestamp to cookie
+                    user_name = data.get('input_user_name', '')
+                    if user_name:
+                        set_welcome_back_cookie(user_name, datetime.now().isoformat())
 
                     st.rerun()
 
