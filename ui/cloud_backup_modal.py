@@ -101,6 +101,7 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
         st.markdown("")
         if st.button("Not now, maybe later", key="skip_backup"):
             st.session_state.backup_modal_step = 'choose'
+            st.session_state['show_cloud_backup_offer'] = False  # Clear flag so "Go to Analysis" appears
             return False
 
         st.caption("Both options: Bank-grade AES-256 encryption. We never see your data.")

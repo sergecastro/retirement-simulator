@@ -1492,7 +1492,15 @@ def show_intake_questionnaire():
 
         # Show cloud backup offer after save (if flag is set and user doesn't have backup yet)
         if st.session_state.get('show_cloud_backup_offer', False):
-            if not st.session_state.get('cloud_backup_enabled', False):
+            # Skip modal for users who already have cloud backup
+            has_backup = (
+                st.session_state.get('cloud_backup_enabled', False) or
+                st.session_state.get('user_email') or
+                st.session_state.get('vault_id') or
+                st.session_state.get('backup_vault_id') or
+                st.session_state.get('backup_user_email')
+            )
+            if not has_backup:
                 st.markdown("---")
                 user_data = collect_current_form_data()
                 backup_completed = show_cloud_backup_modal(user_data)
