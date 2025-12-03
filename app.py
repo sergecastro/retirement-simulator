@@ -680,6 +680,40 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 def show_intake_mode():
     """Display INTAKE questionnaire mode"""
 
+    # WELCOME BACK: If user clicked "Continue My Plan", load from localStorage (user-triggered, safe)
+    if st.session_state.get('load_from_local_storage', False):
+        st.session_state['load_from_local_storage'] = False  # Clear flag FIRST to prevent loops
+        try:
+            from utils.snapshot_manager import _get_local_storage, decrypt_data
+            localS = _get_local_storage()
+            if localS:
+                # Read encrypted index from localStorage
+                encrypted_index = localS.get('ff_snapshots_index')
+                if encrypted_index:
+                    index = decrypt_data(encrypted_index, localS)
+                    if index and index.get('snapshots'):
+                        # Get most recent snapshot ID
+                        most_recent = index['snapshots'][-1]
+                        snapshot_id = most_recent['id']
+                        # Read encrypted snapshot data
+                        encrypted_data = localS.get(f'ff_snapshot_{snapshot_id}')
+                        if encrypted_data:
+                            snapshot_data = decrypt_data(encrypted_data, localS)
+                            if snapshot_data:
+                                # Load data into session_state
+                                for key, value in snapshot_data.items():
+                                    if key.startswith(('input_', 'temp_', '_protected')) or key in (
+                                        'children_list', 'children_rows', 'inheritance_list', 'inherit_rows',
+                                        'goals_list', 'goals_data', 'custom_expenses', 'custom_expenses_list',
+                                        'custom_income', 'custom_income_list', 'schema_version'
+                                    ):
+                                        st.session_state[key] = value
+                                st.session_state['current_snapshot_id'] = snapshot_id
+                                st.session_state['_intake_autoload_attempted'] = True  # Prevent duplicate load
+                                print(f"[WELCOME BACK] Loaded snapshot from localStorage: {snapshot_id}")
+        except Exception as e:
+            print(f"[WELCOME BACK] Error loading from localStorage: {e}")
+
     # AUTO-LOAD: If user has saved plans but no current plan loaded, load the most recent
     # CRITICAL: Only try loading ONCE per session to prevent localStorage rerun loop
     if st.session_state.get('_intake_autoload_attempted', False):
