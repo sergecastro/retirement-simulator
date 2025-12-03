@@ -43,4 +43,3 @@ gunicorn==21.2.0
 
 # Cloud backup (optional - for cross-browser sync)
 supabase>=2.0.0
-extra-streamlit-components==0.1.71
