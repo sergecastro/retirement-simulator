@@ -27,6 +27,7 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
     """
 
     # Initialize session state for modal
+    print(f"[MODAL DEBUG] backup_modal_step = {st.session_state.get('backup_modal_step', 'NOT SET')}")
     if 'backup_modal_step' not in st.session_state:
         st.session_state.backup_modal_step = 'choose'  # choose, anonymous, account, success
 
@@ -75,27 +76,30 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
         col1, col2 = st.columns(2)
 
         with col1:
+            st.markdown("#### ⭐ Recommended")
             st.markdown("""
-            **🕵️ Anonymous Backup**
-            - No email required
-            - No recovery option
-            - 30 days trial
-            - 3 scenarios max
-            """)
-            if st.button("Try Anonymous", key="choose_anonymous", type="primary", use_container_width=True):
-                st.session_state.backup_modal_step = 'anonymous'
-                st.rerun()
-
-        with col2:
-            st.markdown("""
-            **⭐ Free Account**
-            - Unlimited access
-            - Unlimited scenarios
+            **Free Account** — Unlimited access
             - Auto-sync on save
+            - Unlimited scenarios
             - Password recovery
             """)
             if st.button("Create Free Account", key="choose_account", type="primary", use_container_width=True):
+                print("[MODAL DEBUG] >>> 'Create Free Account' button was CLICKED!")
                 st.session_state.backup_modal_step = 'account'
+                st.rerun()
+
+        with col2:
+            st.markdown("#### Other Option")
+            st.markdown("""
+            **Anonymous Trial** — No email, 30 days
+            - No email required
+            - No recovery option
+            - 3 scenarios max
+            """)
+            print(f"[MODAL DEBUG] About to show 'Try Anonymous' button")
+            if st.button("Try Anonymous", key="choose_anonymous", use_container_width=True):
+                print("[MODAL DEBUG] >>> 'Try Anonymous' button was CLICKED!")
+                st.session_state.backup_modal_step = 'anonymous'
                 st.rerun()
 
         st.markdown("")
@@ -128,30 +132,57 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
                 st.rerun()
 
         with col2:
+            print(f"[MODAL DEBUG] About to show 'Create Backup' button")
+            print(f"[MODAL DEBUG] password length: {len(password) if password else 0}, confirm length: {len(password_confirm) if password_confirm else 0}")
+
             if st.button("Create Backup", key="anon_create", type="primary"):
+                print("[MODAL DEBUG] >>> 'Create Backup' CLICKED!")
                 # Validate
                 if not password:
+                    print("[MODAL DEBUG] Validation failed: no password")
                     st.error("Please enter a password")
                     return False
 
                 if password != password_confirm:
+                    print("[MODAL DEBUG] Validation failed: passwords don't match")
                     st.error("Passwords don't match")
                     return False
 
                 is_valid, msg = validate_password_strength(password)
                 if not is_valid:
+                    print(f"[MODAL DEBUG] Validation failed: {msg}")
                     st.error(msg)
                     return False
 
                 # Create vault
-                with st.spinner("Creating encrypted backup..."):
-                    vault_id, message = create_anonymous_vault(password, user_data)
+                print("[MODAL DEBUG] Validation passed, creating vault...")
+                try:
+                    print(f"[MODAL DEBUG] Calling create_anonymous_vault...")
+                    with st.spinner("Creating encrypted backup..."):
+                        vault_id, message = create_anonymous_vault(password, user_data)
+                    print(f"[MODAL DEBUG] Result: vault_id={vault_id}, message={message}")
+                except Exception as e:
+                    print(f"[MODAL ERROR] Exception during vault creation: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    st.error(f"Error: {e}")
+                    return False
 
                 if vault_id:
+                    print(f"[MODAL DEBUG] Vault created successfully: {vault_id}")
                     st.session_state.backup_vault_id = vault_id
+
+                    # Save vault_id to localStorage for persistence
+                    from utils.snapshot_manager import _get_local_storage
+                    ls = _get_local_storage()
+                    ls.set('ff_vault_id', vault_id)
+                    print(f"[MODAL DEBUG] Saved vault_id to localStorage: {vault_id}")
+
                     st.session_state.backup_modal_step = 'success_anonymous'
+                    print(f"[MODAL DEBUG] Transitioning to success_anonymous, vault_id={vault_id}")
                     st.rerun()
                 else:
+                    print(f"[MODAL DEBUG] Vault creation failed: {message}")
                     st.error(f"Failed: {message}")
                     return False
 
@@ -215,28 +246,28 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
     # SUCCESS: ANONYMOUS
     # =========================================================================
     elif st.session_state.backup_modal_step == 'success_anonymous':
-        st.markdown("### ✅ Backup Created!")
+        print("[MODAL DEBUG] >>> RENDERING success_anonymous screen")
+        st.markdown("### ✅ Vault Created Successfully!")
 
         vault_id = st.session_state.backup_vault_id
 
-        st.markdown(f"""
-        **Your Vault ID:**
+        st.markdown(f"### 🔑 Your Vault ID: `{vault_id}`")
 
-        ### `{vault_id}`
-        """)
-
-        st.error("⚠️ **WRITE THIS DOWN** with your password! You need BOTH to restore your data.")
+        st.warning("⚠️ **WRITE THIS DOWN!** There is no recovery without your Vault ID and password.")
         st.code(vault_id, language=None)
 
         st.markdown("---")
-        confirmed = st.checkbox("I have saved my Vault ID and password securely", key="vault_id_confirmed")
+        confirmed = st.checkbox("I confirm I have saved my Vault ID and password", key="vault_confirm_checkbox")
 
         if confirmed:
             if st.button("Continue to Analysis →", key="anon_continue", type="primary"):
+                st.session_state.show_cloud_backup_offer = False
                 st.session_state.backup_modal_step = 'done'
-                st.session_state.show_backup_modal = False
                 st.session_state.current_mode = "Analysis"
                 st.rerun()
+        else:
+            st.button("Continue to Analysis →", key="anon_continue_disabled", type="primary", disabled=True)
+            st.info("☝️ Please confirm you saved your Vault ID before continuing.")
 
         return False
 
@@ -244,21 +275,22 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
     # SUCCESS: ACCOUNT
     # =========================================================================
     elif st.session_state.backup_modal_step == 'success_account':
-        st.markdown("### ✅ Account Created!")
+        st.markdown("### ✅ Account Created Successfully!")
 
         email = st.session_state.get('backup_user_email', 'your email')
 
-        st.markdown(f"""
-        You're all set! Sign in anytime with:
+        st.success(f"Your account **{email}** is ready!")
 
-        **📧 {email}**
-
-        Your data syncs automatically.
+        st.markdown("""
+        **What's next:**
+        - Your data syncs automatically when you save
+        - Sign in anytime with your email and password
+        - Access your plans from any device
         """)
 
         if st.button("Continue to Analysis →", key="account_continue", type="primary"):
+            st.session_state.show_cloud_backup_offer = False
             st.session_state.backup_modal_step = 'done'
-            st.session_state.show_backup_modal = False
             st.session_state.current_mode = "Analysis"
             st.rerun()
 
