@@ -178,3 +178,127 @@ def show_new_user_mode_selection():
     © 2025 Family Forecast | <a href="mailto:support@familyforecast.ai">support@familyforecast.ai</a>
     </div>
     """, unsafe_allow_html=True)
+
+
+# =============================================================================
+# SIGNUP FORMS (Called when user clicks signup buttons)
+# =============================================================================
+
+def show_account_signup_form():
+    """Show email account signup form"""
+    st.markdown("### 📧 Create Free Account")
+    st.markdown("Your data will sync automatically when you save your plan.")
+
+    with st.form("account_signup_form"):
+        email = st.text_input("Email Address")
+        password = st.text_input("Password (min 8 characters)", type="password")
+        password_confirm = st.text_input("Confirm Password", type="password")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            submit = st.form_submit_button("Create Account", type="primary", use_container_width=True)
+        with col2:
+            cancel = st.form_submit_button("Cancel", use_container_width=True)
+
+        if cancel:
+            st.session_state.show_backup_signup = None
+            st.rerun()
+
+        if submit:
+            # Validation
+            if not email or "@" not in email:
+                st.error("Please enter a valid email address.")
+            elif len(password) < 8:
+                st.error("Password must be at least 8 characters.")
+            elif password != password_confirm:
+                st.error("Passwords do not match.")
+            else:
+                from utils.supabase_sync import signup_user_only
+                success, message = signup_user_only(email, password)
+
+                if success:
+                    st.success(message)
+                    st.session_state.user_email = email
+                    st.balloons()
+                    st.info("✅ Account created! Click below to continue.")
+                else:
+                    st.error(message)
+
+    # Show continue button OUTSIDE the form (after successful signup)
+    if st.session_state.get('user_email') and st.session_state.get('show_backup_signup') == 'account':
+        if st.button("Continue to Welcome Page", type="primary", use_container_width=True, key="account_continue_btn"):
+            st.session_state.show_backup_signup = None
+            st.rerun()
+
+
+def show_anonymous_signup_form():
+    """Show anonymous vault signup form"""
+    st.markdown("### 🕵️ Create Anonymous Vault")
+    st.markdown("**Important:** Save your Vault ID and password — there is NO recovery!")
+
+    with st.form("anonymous_signup_form"):
+        password = st.text_input("Create Password (min 8 characters)", type="password")
+        password_confirm = st.text_input("Confirm Password", type="password")
+
+        st.warning("Anonymous vaults expire after 30 days and are limited to 3 scenarios.")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            submit = st.form_submit_button("Create Vault", type="primary", use_container_width=True)
+        with col2:
+            cancel = st.form_submit_button("Cancel", use_container_width=True)
+
+        if cancel:
+            st.session_state.show_backup_signup = None
+            st.rerun()
+
+        if submit:
+            if len(password) < 8:
+                st.error("Password must be at least 8 characters.")
+            elif password != password_confirm:
+                st.error("Passwords do not match.")
+            else:
+                from utils.supabase_sync import create_anonymous_vault_empty
+                vault_id, message = create_anonymous_vault_empty(password)
+
+                if vault_id:
+                    st.success(message)
+                    st.session_state.vault_id = vault_id
+                    # Keep show_backup_signup = 'anonymous' so we can show continue button
+                    st.info("✅ Vault created! Save your Vault ID below, then click Continue.")
+                else:
+                    st.error(message)
+
+    # Show Vault ID and continue button OUTSIDE the form (after successful creation)
+    if st.session_state.get('vault_id') and st.session_state.get('show_backup_signup') == 'anonymous':
+        vault_id = st.session_state.vault_id
+        st.markdown(f"""
+        <div style='background-color: #d4edda; padding: 15px; border-radius: 6px; margin: 10px 0;'>
+        <strong>YOUR VAULT ID:</strong><br>
+        <span style='font-size: 1.5em; font-family: monospace;'>{vault_id}</span><br><br>
+        <strong>WRITE THIS DOWN!</strong> You need it to restore your data.
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("Continue to Welcome Page", type="primary", use_container_width=True, key="anon_continue_btn"):
+            st.session_state.show_backup_signup = None
+            st.rerun()
+
+
+def show_restore_form(restore_type: str):
+    """Show restore form (email or vault)"""
+    from ui.cloud_backup_modal import show_restore_modal
+
+    st.markdown("### 🔑 Restore Your Plan")
+
+    if st.button("Back to Welcome", key="restore_back"):
+        st.session_state.show_backup_signup = None
+        st.rerun()
+
+    restored_data = show_restore_modal()
+
+    if restored_data:
+        st.session_state.intake_data = restored_data
+        st.session_state.show_backup_signup = None
+        st.success("Data restored successfully!")
+        st.rerun()

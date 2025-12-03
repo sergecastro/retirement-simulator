@@ -397,7 +397,22 @@ def main():
             # ═══════════════════════════════════════════════════════
             # NEW USER: No snapshots → Mode Selection → INTAKE
             # ═══════════════════════════════════════════════════════
-            show_new_user_mode_selection()
+
+            # Check if user clicked a signup/restore button
+            signup_mode = st.session_state.get('show_backup_signup')
+
+            if signup_mode == 'account':
+                from ui.welcome import show_account_signup_form
+                show_account_signup_form()
+            elif signup_mode == 'anonymous':
+                from ui.welcome import show_anonymous_signup_form
+                show_anonymous_signup_form()
+            elif signup_mode in ['restore_email', 'restore_vault']:
+                from ui.welcome import show_restore_form
+                show_restore_form(signup_mode)
+            else:
+                show_new_user_mode_selection()
+
             show_sidebar_footer(is_trusted)
             st.stop()
 

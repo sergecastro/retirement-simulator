@@ -48,6 +48,73 @@ def get_supabase_client() -> Client:
 
 
 # =============================================================================
+# SIGNUP-ONLY FUNCTIONS (No data required - for Welcome page)
+# =============================================================================
+
+def signup_user_only(email: str, password: str) -> Tuple[bool, str]:
+    """
+    Create a Supabase Auth account WITHOUT uploading data.
+    User will sync their data on first save.
+
+    Returns: (success, message)
+    """
+    try:
+        client = get_supabase_client()
+
+        # Create auth account
+        response = client.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+
+        if response.user:
+            return True, f"Account created for {email}! Your data will sync when you save."
+        else:
+            return False, "Failed to create account. Please try again."
+
+    except Exception as e:
+        error_msg = str(e)
+        if "already registered" in error_msg.lower():
+            return False, "This email is already registered. Try signing in instead."
+        return False, f"Error: {error_msg}"
+
+
+def create_anonymous_vault_empty(password: str) -> Tuple[Optional[str], str]:
+    """
+    Create an anonymous vault WITHOUT uploading data.
+    User will sync their data on first save.
+
+    Returns: (vault_id or None, message)
+    """
+    try:
+        client = get_supabase_client()
+
+        # Generate vault ID and salt using existing functions
+        vault_id = generate_vault_id()
+        salt = generate_salt()
+
+        # Store empty vault placeholder
+        # encrypted_data will be empty string - filled on first save
+        from datetime import datetime, timedelta
+        expires_at = (datetime.utcnow() + timedelta(days=TRIAL_DAYS)).isoformat()
+
+        result = client.table('anonymous_vaults').insert({
+            'vault_id': vault_id,
+            'salt': salt,
+            'encrypted_data': '',  # Empty - will be filled on first save
+            'expires_at': expires_at
+        }).execute()
+
+        if result.data:
+            return vault_id, f"Vault created! Your Vault ID is: {vault_id}"
+        else:
+            return None, "Failed to create vault. Please try again."
+
+    except Exception as e:
+        return None, f"Error: {str(e)}"
+
+
+# =============================================================================
 # ANONYMOUS VAULT FUNCTIONS
 # =============================================================================
 
