@@ -187,6 +187,18 @@ def show_new_user_mode_selection():
 def show_account_signup_form():
     """Show email account signup form"""
     st.markdown("### 📧 Create Free Account")
+
+    # If already signed up, show success + continue button ONLY (compact!)
+    if st.session_state.get('account_signup_success'):
+        email = st.session_state.get('user_email', '')
+        st.success(f"✅ Account created for {email}!")
+        if st.button("Continue to Welcome Page", type="primary", use_container_width=True, key="account_continue_btn"):
+            st.session_state.show_backup_signup = None
+            st.session_state.account_signup_success = False
+            st.rerun()
+        return
+
+    # Show signup form
     st.markdown("Your data will sync automatically when you save your plan.")
 
     with st.form("account_signup_form"):
@@ -217,23 +229,35 @@ def show_account_signup_form():
                 success, message = signup_user_only(email, password)
 
                 if success:
-                    st.success(message)
                     st.session_state.user_email = email
+                    st.session_state.account_signup_success = True
                     st.balloons()
-                    st.info("✅ Account created! Click below to continue.")
+                    st.rerun()  # Rerun to show compact success view
                 else:
                     st.error(message)
-
-    # Show continue button OUTSIDE the form (after successful signup)
-    if st.session_state.get('user_email') and st.session_state.get('show_backup_signup') == 'account':
-        if st.button("Continue to Welcome Page", type="primary", use_container_width=True, key="account_continue_btn"):
-            st.session_state.show_backup_signup = None
-            st.rerun()
 
 
 def show_anonymous_signup_form():
     """Show anonymous vault signup form"""
     st.markdown("### 🕵️ Create Anonymous Vault")
+
+    # If already created vault, show Vault ID + continue button ONLY (compact!)
+    if st.session_state.get('anon_signup_success'):
+        vault_id = st.session_state.get('vault_id', '')
+        st.success("✅ Vault created!")
+        st.markdown(f"""
+        <div style='background-color: #d4edda; padding: 12px; border-radius: 6px; margin: 8px 0;'>
+        <strong>YOUR VAULT ID:</strong> <span style='font-size: 1.3em; font-family: monospace;'>{vault_id}</span><br>
+        <small>⚠️ WRITE THIS DOWN with your password!</small>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Continue to Welcome Page", type="primary", use_container_width=True, key="anon_continue_btn"):
+            st.session_state.show_backup_signup = None
+            st.session_state.anon_signup_success = False
+            st.rerun()
+        return
+
+    # Show signup form
     st.markdown("**Important:** Save your Vault ID and password — there is NO recovery!")
 
     with st.form("anonymous_signup_form"):
@@ -262,27 +286,12 @@ def show_anonymous_signup_form():
                 vault_id, message = create_anonymous_vault_empty(password)
 
                 if vault_id:
-                    st.success(message)
                     st.session_state.vault_id = vault_id
-                    # Keep show_backup_signup = 'anonymous' so we can show continue button
-                    st.info("✅ Vault created! Save your Vault ID below, then click Continue.")
+                    st.session_state.anon_signup_success = True
+                    st.balloons()
+                    st.rerun()  # Rerun to show compact success view
                 else:
                     st.error(message)
-
-    # Show Vault ID and continue button OUTSIDE the form (after successful creation)
-    if st.session_state.get('vault_id') and st.session_state.get('show_backup_signup') == 'anonymous':
-        vault_id = st.session_state.vault_id
-        st.markdown(f"""
-        <div style='background-color: #d4edda; padding: 15px; border-radius: 6px; margin: 10px 0;'>
-        <strong>YOUR VAULT ID:</strong><br>
-        <span style='font-size: 1.5em; font-family: monospace;'>{vault_id}</span><br><br>
-        <strong>WRITE THIS DOWN!</strong> You need it to restore your data.
-        </div>
-        """, unsafe_allow_html=True)
-
-        if st.button("Continue to Welcome Page", type="primary", use_container_width=True, key="anon_continue_btn"):
-            st.session_state.show_backup_signup = None
-            st.rerun()
 
 
 def show_restore_form(restore_type: str):
