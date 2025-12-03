@@ -13,16 +13,11 @@ from utils.encryption import encrypt_data, decrypt_data
 import extra_streamlit_components as stx
 
 
-# Global cookie manager (reused across calls for efficiency)
-_cookie_manager = None
-
-
 def get_cookie_manager():
-    """Get or create cookie manager instance."""
-    global _cookie_manager
-    if _cookie_manager is None:
-        _cookie_manager = stx.CookieManager()
-    return _cookie_manager
+    """Get or create cookie manager instance (stored in session_state to prevent duplicate key errors)."""
+    if '_ff_ls_cookie_manager' not in st.session_state:
+        st.session_state['_ff_ls_cookie_manager'] = stx.CookieManager(key="ff_ls_cookies")
+    return st.session_state['_ff_ls_cookie_manager']
 
 
 def save_to_local_storage_encrypted(key: str, data: Dict[str, Any]) -> bool:
