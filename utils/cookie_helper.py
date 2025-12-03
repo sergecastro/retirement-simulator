@@ -7,9 +7,13 @@ import extra_streamlit_components as stx
 from datetime import datetime
 
 def get_cookie_manager():
-    """Get or create cookie manager instance (stored in session_state to prevent duplicate key errors)."""
+    """
+    Get or create THE SINGLE cookie manager instance for the entire app.
+    IMPORTANT: Only ONE CookieManager can exist to prevent duplicate key errors.
+    This is the authoritative source - all other files should import from here.
+    """
     if '_ff_cookie_manager' not in st.session_state:
-        st.session_state['_ff_cookie_manager'] = stx.CookieManager(key="ff_cookie_manager")
+        st.session_state['_ff_cookie_manager'] = stx.CookieManager(key="ff_cookies")
     return st.session_state['_ff_cookie_manager']
 
 def set_welcome_back_cookie(first_name: str, save_timestamp: str = None):
