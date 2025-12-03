@@ -69,51 +69,65 @@ def show_new_user_mode_selection():
             st.rerun()
 
     # ============ SECTION 2: CLOUD BACKUP (OPTIONAL) ============
-    st.markdown("---")
-    st.markdown("### ☁️ Add Encrypted Cloud Backup (Optional)")
+    # Only show if user hasn't already signed up
+    has_account = st.session_state.get('user_email')
+    has_vault = st.session_state.get('vault_id')
 
-    col_account, col_anon = st.columns(2)
+    if not has_account and not has_vault:
+        st.markdown("---")
+        st.markdown("### ☁️ Add Encrypted Cloud Backup (Optional)")
 
-    with col_account:
-        st.markdown("#### ⭐ Recommended")
-        st.markdown("**Free Account** — Cloud backup, unlimited access")
+        st.warning("🚧 **COMING SOON** — Registration on this page is in final testing. For now, complete your plan first and you can register after saving.")
+
+        col_account, col_anon = st.columns(2)
+
+        with col_account:
+            st.markdown("#### ⭐ Recommended")
+            st.markdown("**Free Account** — Cloud backup, unlimited access")
+            st.markdown("""
+            <div style='font-size: 0.9em; color: #555; margin-bottom: 8px;'>
+            ✓ Unlimited scenarios · ✓ Auto-sync · ✓ Password recovery
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("Create Free Account", type="primary", use_container_width=True, key="welcome_account", disabled=True):
+                pass  # Disabled for now
+
+        with col_anon:
+            st.markdown("#### Other Option")
+            st.markdown("**Anonymous Trial** — No email, 30 days, 3 scenarios")
+            st.markdown("""
+            <div style='font-size: 0.9em; color: #888; margin-bottom: 8px;'>
+            ⚠️ No recovery if password forgotten
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("Try Anonymous", use_container_width=True, key="welcome_anonymous", disabled=True):
+                pass  # Disabled for now
+
+        # Skip option
+        st.markdown("")
         st.markdown("""
-        <div style='font-size: 0.9em; color: #555; margin-bottom: 8px;'>
-        ✓ Unlimited scenarios · ✓ Auto-sync · ✓ Password recovery
+        <div style='text-align: center; font-size: 1.1em; color: #666; padding: 15px; background-color: #f8f9fa; border-radius: 6px;'>
+        <strong>Or skip for now</strong> — you can add cloud backup after completing your plan.
         </div>
         """, unsafe_allow_html=True)
-        if st.button("Create Free Account", type="primary", use_container_width=True, key="welcome_account"):
-            st.session_state.show_backup_signup = 'account'
+
+        # Restore option
+        st.markdown("---")
+        st.markdown("### 🔑 Already have a backup?")
+
+        if st.button("Restore My Plan", key="welcome_restore", use_container_width=True):
+            st.session_state.show_backup_signup = 'restore'
             st.rerun()
 
-    with col_anon:
-        st.markdown("#### Other Option")
-        st.markdown("**Anonymous Trial** — No email, 30 days, 3 scenarios")
-        st.markdown("""
-        <div style='font-size: 0.9em; color: #888; margin-bottom: 8px;'>
-        ⚠️ No recovery if password forgotten
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Try Anonymous", use_container_width=True, key="welcome_anonymous"):
-            st.session_state.show_backup_signup = 'anonymous'
-            st.rerun()
+    else:
+        # User already has account/vault - show confirmation
+        st.markdown("---")
+        if has_account:
+            st.success(f"✅ Signed in as **{has_account}** — your data will sync automatically!")
+        elif has_vault:
+            st.success(f"✅ Vault **{has_vault}** ready — your data will sync automatically!")
 
-    # ============ SKIP OPTION (Visible) ============
-    st.markdown("")
-    st.markdown("""
-    <div style='text-align: center; font-size: 1.1em; color: #666; padding: 15px; background-color: #f8f9fa; border-radius: 6px;'>
-    <strong>Or skip for now</strong> — you can add cloud backup after completing your plan.
-    </div>
-    """, unsafe_allow_html=True)
     st.caption("By clicking any button above, you acknowledge this is beta software.")
-
-    # ============ RESTORE OPTION ============
-    st.markdown("---")
-    st.markdown("### 🔑 Already have a backup?")
-
-    if st.button("Restore My Plan", key="welcome_restore", use_container_width=True):
-        st.session_state.show_backup_signup = 'restore'
-        st.rerun()
 
     # ============ PRIVACY SECTION (Strong Security Message) ============
     st.markdown("---")
@@ -238,15 +252,26 @@ def show_anonymous_signup_form():
         vault_id = st.session_state.get('vault_id', '')
         st.success("✅ Vault created!")
         st.markdown(f"""
-        <div style='background-color: #d4edda; padding: 12px; border-radius: 6px; margin: 8px 0;'>
-        <strong>YOUR VAULT ID:</strong> <span style='font-size: 1.3em; font-family: monospace;'>{vault_id}</span><br>
-        <small>⚠️ WRITE THIS DOWN with your password!</small>
+        <div style='background-color: #fff3cd; padding: 15px; border-radius: 6px; margin: 8px 0; border: 2px solid #ffc107;'>
+        <strong>YOUR VAULT ID:</strong> <span style='font-size: 1.3em; font-family: monospace;'>{vault_id}</span><br><br>
+        <strong>⚠️ WRITE THIS DOWN with your password!</strong><br>
+        There is NO recovery if you forget these!
         </div>
         """, unsafe_allow_html=True)
-        if st.button("Go Back to Welcome Page to Enter the App", type="primary", use_container_width=True, key="anon_continue_btn"):
-            st.session_state.show_backup_signup = None
-            st.session_state.anon_signup_success = False
-            st.rerun()
+
+        # Require confirmation before continuing
+        confirmed = st.checkbox(
+            "I have saved my Vault ID and password in a safe place",
+            key="vault_id_confirmed"
+        )
+
+        if confirmed:
+            if st.button("Go Back to Welcome Page to Enter the App", type="primary", use_container_width=True, key="anon_continue_btn"):
+                st.session_state.show_backup_signup = None
+                st.session_state.anon_signup_success = False
+                st.rerun()
+        else:
+            st.warning("☝️ Please confirm you've saved your Vault ID before continuing.")
         return
 
     # Show signup form
