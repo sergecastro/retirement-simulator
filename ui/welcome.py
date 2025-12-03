@@ -10,9 +10,9 @@ from utils.cookie_helper import get_welcome_back_info, clear_welcome_back_cookie
 def show_new_user_mode_selection():
     """Welcome page with mode selection and cloud backup options"""
 
-    # ============ READ WELCOME BACK COOKIE (for returning users) ============
-    init_cookie_reader()      # Inject JS to read cookie into localStorage transfer
-    load_cookie_from_transfer()  # Load from transfer into session_state
+    # ============ CHECK FOR RETURNING USER (reads localStorage once) ============
+    from utils.cookie_helper import check_for_returning_user
+    check_for_returning_user()
 
     # ============ TITLE + BETA WARNING ============
     st.title("Welcome to Family Forecast!")
