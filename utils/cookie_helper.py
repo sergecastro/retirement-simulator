@@ -6,10 +6,11 @@ import streamlit as st
 import extra_streamlit_components as stx
 from datetime import datetime
 
-@st.cache_resource
 def get_cookie_manager():
-    """Get or create cookie manager instance (cached to prevent duplicate key errors)."""
-    return stx.CookieManager(key="ff_cookie_manager")
+    """Get or create cookie manager instance (stored in session_state to prevent duplicate key errors)."""
+    if '_ff_cookie_manager' not in st.session_state:
+        st.session_state['_ff_cookie_manager'] = stx.CookieManager(key="ff_cookie_manager")
+    return st.session_state['_ff_cookie_manager']
 
 def set_welcome_back_cookie(first_name: str, save_timestamp: str = None):
     """
