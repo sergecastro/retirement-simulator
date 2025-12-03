@@ -75,6 +75,20 @@ Supabase Cloud Backup feature completed and deployed to production.
 2. Add "Restore My Plan" flow for returning users
 3. Consider re-enabling email verification with proper redirect URL
 
+## HOW TO TEST AS A NEW USER (See Welcome Page)
+
+The app auto-loads saved data and skips to Analysis for returning users.
+To test the Welcome page as a "new user":
+
+1. Open the app
+2. Go to Sidebar → "Old Plans" (or Saved Plans)
+3. Delete ALL saved plans
+4. Restart Streamlit (or hard refresh)
+5. You'll now see the Welcome page like a first-time visitor
+
+**Note:** Incognito mode and clearing browser localStorage does NOT work
+because saved plans are stored in `.snapshot_cache` folder on disk.
+
 ## PRODUCTION STATUS
 - Deployed to: https://familyforecast.ai
 - Both Anonymous and Account flows working

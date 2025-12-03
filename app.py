@@ -121,6 +121,7 @@ from ui.navigation import (
 # Import pages
 from ui.results_page import show_results_page
 from ui.components.top_navigation import render_top_navigation
+from ui.welcome import show_new_user_mode_selection
 
 # Import data collection
 from pages.user_inputs import setup_sidebar as collect_user_data
@@ -562,130 +563,10 @@ def show_html_landing_page():
 
 
 # =============================================================================
-# NEW USER MODE SELECTION (Compact Full/Quick choice)
+# NEW USER MODE SELECTION - MOVED TO ui/welcome.py (Dec 2, 2025)
 # =============================================================================
-
-def show_new_user_mode_selection():
-    """Compact mode selection for new users - Full vs Quick INTAKE"""
-    st.title("Welcome to Family Forecast!")
-
-    st.markdown("""
-    <div style='background-color: #FFF3CD; padding: 10px; border-radius: 6px; margin-bottom: 15px;'>
-        <span style='color: #856404;'>⚠️ <strong>BETA</strong> — For educational purposes only. Not financial advice.</span>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("### Choose how to enter your information:")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("**📋 Full Mode**")
-        st.caption("All fields · Recommended")
-        if st.button("Start Full Mode", type="primary", use_container_width=True, key="new_user_full"):
-            st.session_state["intake_mode"] = "full"
-            st.session_state["beta_agreement"] = True
-            st.session_state.mode_selected = True
-            st.session_state.current_mode = "INTAKE"
-            st.rerun()
-
-    with col2:
-        st.markdown("**⚡ Quick Mode**")
-        st.caption("Essential fields only")
-        if st.button("Start Quick Mode", use_container_width=True, key="new_user_quick"):
-            st.session_state["intake_mode"] = "quick"
-            st.session_state["beta_agreement"] = True
-            st.session_state.mode_selected = True
-            st.session_state.current_mode = "INTAKE"
-            st.rerun()
-
-    st.caption("By clicking either button, you acknowledge this is beta software.")
-
-    # ============ Professional Footer Section ============
-    st.markdown("---")  # Divider line
-
-    st.markdown("""
-### 🔒 Your Privacy Matters
-
-**Your data stays in YOUR browser.** Family Forecast uses bank-grade AES-256 encryption
-and stores all your financial information locally on your device — never on our servers.
-
----
-
-### ℹ️ What is Family Forecast?
-
-Family Forecast is an **educational retirement planning tool** that helps you:
-- 📊 Run Monte Carlo simulations (1,000+ scenarios)
-- 💰 Project cash flow through retirement
-- 🏥 Calculate Medicare IRMAA costs
-- 📈 Compare different retirement strategies
-
----
-
-### ⚖️ Important Disclaimers
-
-**Not Financial Advice:** Family Forecast is for educational and informational purposes only.
-It does NOT provide financial, tax, investment, or legal advice. All projections are estimates
-based on your inputs and assumptions.
-
-**Consult Professionals:** Before making any financial decisions, please consult with qualified
-financial advisors, tax professionals, or legal counsel.
-
-**No Guarantee:** Past performance and projections do not guarantee future results.
-Your actual retirement outcomes may differ significantly from any estimates shown.
-
----
-
-<div style="text-align: center; color: #666; font-size: 0.85em;">
-© 2025 Family Forecast | <a href="mailto:support@familyforecast.ai">support@familyforecast.ai</a>
-</div>
-""", unsafe_allow_html=True)
-
-    # ============ CLOUD BACKUP SECTION (Beta) ============
-    st.markdown("---")
-    st.markdown("### ☁️ During Beta: Optional Cloud Backup")
-    st.markdown("""
-    Want to access your plan from **any device**? Create a secure cloud backup.
-    Your data is encrypted before it leaves your browser — we can never see it.
-    """)
-
-    col_anon, col_account = st.columns(2)
-
-    with col_anon:
-        st.markdown("""
-        **🕵️ Anonymous Trial**
-        - No email required
-        - 30 days only
-        - 3 scenarios max
-        - No recovery if forgotten
-        """)
-        if st.button("Try Anonymous", key="welcome_anonymous", use_container_width=True):
-            st.session_state.show_backup_signup = 'anonymous'
-            st.rerun()
-
-    with col_account:
-        st.markdown("""
-        **⭐ Free Account** ← RECOMMENDED
-        - Unlimited access
-        - Unlimited scenarios
-        - Auto-sync on save
-        - Password recovery
-        """)
-        if st.button("Create Free Account", key="welcome_account", type="primary", use_container_width=True):
-            st.session_state.show_backup_signup = 'account'
-            st.rerun()
-
-    st.caption("Or skip for now — you can add cloud backup after completing your plan.")
-
-    # Restore option for returning users
-    with st.expander("🔑 Already have a backup? Restore here"):
-        from ui.cloud_backup_modal import show_restore_modal
-        restored_data = show_restore_modal()
-        if restored_data:
-            st.session_state.intake_data = restored_data
-            st.success("✅ Data restored! Continue to your plan.")
-
-    # ============ END OF ADDED CONTENT ============
+# Function show_new_user_mode_selection() is now imported from ui/welcome.py
+# Old code removed to reduce app.py size (was 121 lines)
 
 
 # =============================================================================
