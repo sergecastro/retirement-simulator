@@ -192,7 +192,7 @@ def show_account_signup_form():
     if st.session_state.get('account_signup_success'):
         email = st.session_state.get('user_email', '')
         st.success(f"✅ Account created for {email}!")
-        if st.button("Continue to Welcome Page", type="primary", use_container_width=True, key="account_continue_btn"):
+        if st.button("Go Back to Welcome Page to Enter the App", type="primary", use_container_width=True, key="account_continue_btn"):
             st.session_state.show_backup_signup = None
             st.session_state.account_signup_success = False
             st.rerun()
@@ -251,7 +251,7 @@ def show_anonymous_signup_form():
         <small>⚠️ WRITE THIS DOWN with your password!</small>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("Continue to Welcome Page", type="primary", use_container_width=True, key="anon_continue_btn"):
+        if st.button("Go Back to Welcome Page to Enter the App", type="primary", use_container_width=True, key="anon_continue_btn"):
             st.session_state.show_backup_signup = None
             st.session_state.anon_signup_success = False
             st.rerun()
