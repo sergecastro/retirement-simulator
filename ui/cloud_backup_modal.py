@@ -281,7 +281,7 @@ def show_restore_modal() -> dict:
     """
     st.markdown("### 🔐 Restore Your Data")
 
-    tab1, tab2 = st.tabs(["🕵️ Anonymous Vault", "📧 Sign In"])
+    tab1, tab2 = st.tabs(["🔑 Using Vault ID & Password", "📧 Using Email & Password"])
 
     with tab1:
         vault_id = st.text_input("Vault ID (e.g., FF-X7K9-M2PL)", key="restore_vault_id")

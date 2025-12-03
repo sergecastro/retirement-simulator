@@ -407,7 +407,7 @@ def main():
             elif signup_mode == 'anonymous':
                 from ui.welcome import show_anonymous_signup_form
                 show_anonymous_signup_form()
-            elif signup_mode in ['restore_email', 'restore_vault']:
+            elif signup_mode == 'restore':
                 from ui.welcome import show_restore_form
                 show_restore_form(signup_mode)
             else:

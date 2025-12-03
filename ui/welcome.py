@@ -109,19 +109,11 @@ def show_new_user_mode_selection():
 
     # ============ RESTORE OPTION ============
     st.markdown("---")
-    st.markdown("### 🔑 Already have a backup? Restore here")
+    st.markdown("### 🔑 Already have a backup?")
 
-    restore_col1, restore_col2 = st.columns(2)
-
-    with restore_col1:
-        if st.button("Restore from Email Account", key="welcome_restore_email", use_container_width=True):
-            st.session_state.show_backup_signup = 'restore_email'
-            st.rerun()
-
-    with restore_col2:
-        if st.button("Restore from Vault ID", key="welcome_restore_vault", use_container_width=True):
-            st.session_state.show_backup_signup = 'restore_vault'
-            st.rerun()
+    if st.button("Restore My Plan", key="welcome_restore", use_container_width=True):
+        st.session_state.show_backup_signup = 'restore'
+        st.rerun()
 
     # ============ PRIVACY SECTION (Strong Security Message) ============
     st.markdown("---")
