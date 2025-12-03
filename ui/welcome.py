@@ -4,11 +4,15 @@
 # Updated: Dec 3, 2025 - Added Welcome Back prompt for returning users
 
 import streamlit as st
-from utils.cookie_helper import get_welcome_back_info, clear_welcome_back_cookies, has_returning_user
+from utils.cookie_helper import get_welcome_back_info, clear_welcome_back_cookies, has_returning_user, init_cookie_reader, load_cookie_from_transfer
 
 
 def show_new_user_mode_selection():
     """Welcome page with mode selection and cloud backup options"""
+
+    # ============ READ WELCOME BACK COOKIE (for returning users) ============
+    init_cookie_reader()      # Inject JS to read cookie into localStorage transfer
+    load_cookie_from_transfer()  # Load from transfer into session_state
 
     # ============ TITLE + BETA WARNING ============
     st.title("Welcome to Family Forecast!")
