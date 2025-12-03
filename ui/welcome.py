@@ -1,9 +1,10 @@
 # ui/welcome.py
 # Welcome page for Family Forecast
 # Extracted from app.py for maintainability - Dec 2, 2025
-# Updated: Dec 2, 2025 - Improved layout, headers, and professional colors
+# Updated: Dec 3, 2025 - Added Welcome Back prompt for returning users
 
 import streamlit as st
+from utils.cookie_helper import get_welcome_back_info, clear_welcome_back_cookies, has_returning_user
 
 
 def show_new_user_mode_selection():
@@ -17,6 +18,46 @@ def show_new_user_mode_selection():
         <span style='color: #856404;'>⚠️ <strong>BETA</strong> — For educational purposes only. Not financial advice.</span>
     </div>
     """, unsafe_allow_html=True)
+
+    # ============ WELCOME BACK PROMPT (for returning users) ============
+    if has_returning_user():
+        welcome_info = get_welcome_back_info()
+        user_name = welcome_info.get("name", "")
+        formatted_date = welcome_info.get("formatted_date", "")
+
+        # Build personalized message
+        if user_name and formatted_date:
+            welcome_msg = f"Welcome back, **{user_name}**! Would you like to continue working on your plan from **{formatted_date}**?"
+        elif user_name:
+            welcome_msg = f"Welcome back, **{user_name}**! Would you like to continue where you left off?"
+        else:
+            welcome_msg = "Welcome back! Would you like to continue where you left off?"
+
+        st.markdown(f"""
+        <div style='background-color: #E0F2FE; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #0891B2;'>
+            <h4 style='margin: 0 0 10px 0; color: #0E7490;'>👋 {welcome_msg}</h4>
+        </div>
+        """, unsafe_allow_html=True)
+
+        col_continue, col_fresh = st.columns(2)
+
+        with col_continue:
+            if st.button("✅ Continue My Plan", type="primary", use_container_width=True, key="welcome_back_continue"):
+                # Load from localStorage and go to INTAKE
+                st.session_state["intake_mode"] = "full"
+                st.session_state["beta_agreement"] = True
+                st.session_state.mode_selected = True
+                st.session_state.current_mode = "INTAKE"
+                st.session_state["load_from_local_storage"] = True  # Flag to trigger localStorage load
+                st.rerun()
+
+        with col_fresh:
+            if st.button("🔄 Start Fresh", use_container_width=True, key="welcome_back_fresh"):
+                # Clear cookies and show normal welcome
+                clear_welcome_back_cookies()
+                st.rerun()
+
+        st.markdown("---")
 
     # ============ CUSTOM BUTTON STYLING (Colorful and Professional) ============
     st.markdown("""
