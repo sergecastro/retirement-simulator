@@ -1476,8 +1476,14 @@ def show_intake_questionnaire():
                     # Set flag to show balloons AFTER rerun
                     st.session_state['show_balloons_on_load'] = True
                     # Offer cloud backup after save (only if user doesn't already have account/vault)
+                    print(f"DEBUG BACKUP MODAL: user_email = {st.session_state.get('user_email')}")
+                    print(f"DEBUG BACKUP MODAL: vault_id = {st.session_state.get('vault_id')}")
+                    print(f"DEBUG BACKUP MODAL: cloud_backup_enabled = {st.session_state.get('cloud_backup_enabled')}")
                     if not st.session_state.get('user_email') and not st.session_state.get('vault_id'):
+                        print("DEBUG BACKUP MODAL: Setting show_cloud_backup_offer = True")
                         st.session_state['show_cloud_backup_offer'] = True
+                    else:
+                        print("DEBUG BACKUP MODAL: User already has backup, NOT showing modal")
 
                     # WELCOME BACK: Save user's first name + timestamp to cookie
                     user_name = data.get('input_user_name', '')
