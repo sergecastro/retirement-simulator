@@ -29,6 +29,9 @@ from ui.cloud_backup_modal import show_cloud_backup_modal
 # Welcome Back cookie (stores first name + last save date for returning users)
 from utils.cookie_helper import set_welcome_back_cookie
 
+# Safe localStorage read (avoids rerun loops)
+from utils.safe_local_storage import get_backup_credentials
+
 # ========== SCROLL TO TOP FIX ==========
 import streamlit.components.v1 as components
 
@@ -1517,10 +1520,13 @@ def show_intake_questionnaire():
             # Note: backup_vault_id is set during flow, so don't check it here
             # Only check if the modal step is 'done' OR user has existing account/vault
             backup_done = st.session_state.get('backup_modal_step') == 'done'
+            # Check localStorage for credentials (safe read, no rerun loops)
+            creds = get_backup_credentials()
             has_existing_backup = (
                 st.session_state.get('cloud_backup_enabled', False) or
                 st.session_state.get('user_email') or
-                st.session_state.get('vault_id')
+                st.session_state.get('vault_id') or
+                (creds['ready'] and creds['has_credentials'])
             )
             if not backup_done and not has_existing_backup:
                 st.markdown("---")
