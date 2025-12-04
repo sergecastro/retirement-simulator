@@ -1498,6 +1498,9 @@ def show_intake_questionnaire():
             del st.session_state['snapshot_save_message']  # Clear after showing
 
         # Show cloud backup offer after save (if flag is set and user doesn't have backup yet)
+        print(f"DEBUG MODAL CHECK: show_cloud_backup_offer = {st.session_state.get('show_cloud_backup_offer')}")
+        print(f"DEBUG MODAL CHECK: user_email = {st.session_state.get('user_email')}")
+        print(f"DEBUG MODAL CHECK: vault_id = {st.session_state.get('vault_id')}")
         if st.session_state.get('show_cloud_backup_offer', False):
             # Skip modal for users who already COMPLETED cloud backup
             # Note: backup_vault_id is set during flow, so don't check it here
