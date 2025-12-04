@@ -14,24 +14,6 @@ def show_new_user_mode_selection():
     from utils.cookie_helper import check_for_returning_user
     check_for_returning_user()
 
-    # ============ RESTORE CREDENTIALS FROM LOCALSTORAGE ============
-    # This populates session state so skip checks work properly
-    if not st.session_state.get('_credentials_loaded_from_ls'):
-        from utils.snapshot_manager import _get_local_storage
-        try:
-            ls = _get_local_storage()
-            ls_email = ls.get('ff_user_email')
-            ls_vault = ls.get('ff_vault_id')
-            if ls_email and not st.session_state.get('user_email'):
-                st.session_state.user_email = ls_email
-                print(f"✅ WELCOME: Loaded user_email from localStorage: {ls_email}")
-            if ls_vault and not st.session_state.get('vault_id'):
-                st.session_state.vault_id = ls_vault
-                print(f"✅ WELCOME: Loaded vault_id from localStorage: {ls_vault}")
-            st.session_state['_credentials_loaded_from_ls'] = True
-        except Exception as e:
-            print(f"⚠️ WELCOME: Could not load credentials from localStorage: {e}")
-
     # ============ TITLE + BETA WARNING ============
     st.title("Welcome to Family Forecast!")
 
