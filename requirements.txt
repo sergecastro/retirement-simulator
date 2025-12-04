@@ -8,6 +8,7 @@
 streamlit==1.39.0  # Updated from 1.36.0 - fixes width parameter issues
 streamlit-local-storage==0.0.25
 streamlit-browser-storage==0.3.6
+streamlit-javascript==0.1.5  # Safe localStorage reads without rerun loops
 
 # Data processing
 pandas==2.2.2
