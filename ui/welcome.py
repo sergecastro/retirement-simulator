@@ -37,7 +37,10 @@ def show_new_user_mode_selection():
         elif cloud_vault:
             st.write(f"Vault ID: **{cloud_vault}**")
         
-        st.info("👆 Use **Restore My Plan** below to load your saved data.")
+        st.write("")  # Spacing
+        if st.button("🔄 Restore My Plan", type="primary", use_container_width=True, key="cloud_restore"):
+            st.session_state.show_backup_signup = 'restore'
+            st.rerun()
         st.markdown("---")
 
     # ============ WELCOME BACK PROMPT (for returning users) ============
@@ -394,5 +397,7 @@ def show_restore_form(restore_type: str):
     if restored_data:
         st.session_state.intake_data = restored_data
         st.session_state.show_backup_signup = None
-        st.success("Data restored successfully!")
+        st.session_state.mode_selected = True
+        st.session_state.current_mode = "Analysis"
+        st.success("Data restored successfully! Redirecting to Analysis...")
         st.rerun()
