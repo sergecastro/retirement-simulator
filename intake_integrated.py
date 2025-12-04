@@ -1507,24 +1507,8 @@ def show_intake_questionnaire():
             del st.session_state['snapshot_save_message']  # Clear after showing
 
         # Show cloud backup offer after save (if flag is set and user doesn't have backup yet)
-        # FIRST: Check localStorage for credentials (in case session state was lost)
-        # Only run ONCE per session to prevent rerun loops
-        if not st.session_state.get('_modal_ls_checked'):
-            st.session_state._modal_ls_checked = True
-            from utils.snapshot_manager import _get_local_storage
-            try:
-                ls = _get_local_storage()
-                ls_email = ls.get('ff_user_email')
-                ls_vault = ls.get('ff_vault_id')
-                if ls_email and not st.session_state.get('user_email'):
-                    st.session_state.user_email = ls_email
-                    print(f"✅ MODAL CHECK: Restored user_email from localStorage: {ls_email}")
-                if ls_vault and not st.session_state.get('vault_id'):
-                    st.session_state.vault_id = ls_vault
-                    print(f"✅ MODAL CHECK: Restored vault_id from localStorage: {ls_vault}")
-            except Exception as e:
-                print(f"⚠️ MODAL CHECK: Could not read localStorage: {e}")
-
+        # NOTE: Credentials should be loaded from localStorage on Welcome page load
+        # We don't read localStorage here to avoid rerun loops
         print(f"DEBUG MODAL CHECK: show_cloud_backup_offer = {st.session_state.get('show_cloud_backup_offer')}")
         print(f"DEBUG MODAL CHECK: user_email = {st.session_state.get('user_email')}")
         print(f"DEBUG MODAL CHECK: vault_id = {st.session_state.get('vault_id')}")
