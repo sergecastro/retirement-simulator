@@ -281,6 +281,7 @@ def show_account_signup_form():
 
                 if success:
                     st.session_state.user_email = email
+                    print(f"🔥 WELCOME REGISTRATION: user_email SET TO: {st.session_state.user_email}")
                     st.session_state.account_signup_success = True
                     st.balloons()
                     st.rerun()  # Rerun to show compact success view
