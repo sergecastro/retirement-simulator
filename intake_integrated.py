@@ -1475,8 +1475,9 @@ def show_intake_questionnaire():
 
                     # Set flag to show balloons AFTER rerun
                     st.session_state['show_balloons_on_load'] = True
-                    # Offer cloud backup after save
-                    st.session_state['show_cloud_backup_offer'] = True
+                    # Offer cloud backup after save (only if user doesn't already have account/vault)
+                    if not st.session_state.get('user_email') and not st.session_state.get('vault_id'):
+                        st.session_state['show_cloud_backup_offer'] = True
 
                     # WELCOME BACK: Save user's first name + timestamp to cookie
                     user_name = data.get('input_user_name', '')
