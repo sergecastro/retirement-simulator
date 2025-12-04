@@ -234,6 +234,7 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
 
                 if success:
                     st.session_state.backup_user_email = email
+                    st.session_state.user_email = email  # Also set for skip check
                     st.session_state.backup_modal_step = 'success_account'
                     st.rerun()
                 else:
