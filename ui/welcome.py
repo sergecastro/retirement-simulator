@@ -122,6 +122,8 @@ def show_new_user_mode_selection():
         st.markdown("---")
         st.markdown("### ☁️ Add Encrypted Cloud Backup (Optional)")
 
+        st.warning("🚧 **COMING SOON** — Cloud backup is in final testing. For now, complete your plan first and you can register after saving.")
+
         col_account, col_anon = st.columns(2)
 
         with col_account:
@@ -132,9 +134,8 @@ def show_new_user_mode_selection():
             ✓ Unlimited scenarios · ✓ Auto-sync · ✓ Password recovery
             </div>
             """, unsafe_allow_html=True)
-            if st.button("Create Free Account", type="primary", use_container_width=True, key="welcome_account"):
-                st.session_state.show_backup_signup = 'account'
-                st.rerun()
+            if st.button("Create Free Account", type="primary", use_container_width=True, key="welcome_account", disabled=True):
+                pass  # Disabled for now
 
         with col_anon:
             st.markdown("#### Other Option")
@@ -144,9 +145,8 @@ def show_new_user_mode_selection():
             ⚠️ No recovery if password forgotten
             </div>
             """, unsafe_allow_html=True)
-            if st.button("Try Anonymous", use_container_width=True, key="welcome_anonymous"):
-                st.session_state.show_backup_signup = 'anonymous'
-                st.rerun()
+            if st.button("Try Anonymous", use_container_width=True, key="welcome_anonymous", disabled=True):
+                pass  # Disabled for now
 
         # Skip option
         st.markdown("")
