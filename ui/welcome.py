@@ -5,6 +5,8 @@
 
 import streamlit as st
 from utils.cookie_helper import get_welcome_back_info, clear_welcome_back_cookies, has_returning_user, init_cookie_reader, load_cookie_from_transfer
+# Safe localStorage read for cloud backup users
+from utils.safe_local_storage import get_backup_credentials
 
 
 def show_new_user_mode_selection():
@@ -22,6 +24,21 @@ def show_new_user_mode_selection():
         <span style='color: #856404;'>⚠️ <strong>BETA</strong> — For educational purposes only. Not financial advice.</span>
     </div>
     """, unsafe_allow_html=True)
+
+    # --- Cloud Backup User Recognition ---
+    cloud_creds = get_backup_credentials()
+    if cloud_creds['ready'] and cloud_creds['has_credentials']:
+        cloud_email = cloud_creds['ff_user_email']
+        cloud_vault = cloud_creds['ff_vault_id']
+        
+        st.success(f"☁️ **Welcome back!** You have a cloud backup.")
+        if cloud_email:
+            st.write(f"Signed in as: **{cloud_email}**")
+        elif cloud_vault:
+            st.write(f"Vault ID: **{cloud_vault}**")
+        
+        st.info("👆 Use **Restore My Plan** below to load your saved data.")
+        st.markdown("---")
 
     # ============ WELCOME BACK PROMPT (for returning users) ============
     if has_returning_user():
