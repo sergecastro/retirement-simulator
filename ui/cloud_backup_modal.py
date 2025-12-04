@@ -235,6 +235,11 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
                 if success:
                     st.session_state.backup_user_email = email
                     st.session_state.user_email = email  # Also set for skip check
+                    # Save to localStorage for persistence across sessions
+                    from utils.snapshot_manager import _get_local_storage
+                    ls = _get_local_storage()
+                    ls.set('ff_user_email', email)
+                    print(f"🔥 MODAL REGISTRATION: Saved to localStorage: ff_user_email = {email}")
                     st.session_state.backup_modal_step = 'success_account'
                     st.rerun()
                 else:

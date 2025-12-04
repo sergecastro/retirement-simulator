@@ -1476,10 +1476,19 @@ def show_intake_questionnaire():
                     # Set flag to show balloons AFTER rerun
                     st.session_state['show_balloons_on_load'] = True
                     # Offer cloud backup after save (only if user doesn't already have account/vault)
-                    print(f"DEBUG BACKUP MODAL: user_email = {st.session_state.get('user_email')}")
-                    print(f"DEBUG BACKUP MODAL: vault_id = {st.session_state.get('vault_id')}")
-                    print(f"DEBUG BACKUP MODAL: cloud_backup_enabled = {st.session_state.get('cloud_backup_enabled')}")
-                    if not st.session_state.get('user_email') and not st.session_state.get('vault_id'):
+                    # Check BOTH session state AND localStorage for persistence
+                    from utils.snapshot_manager import _get_local_storage
+                    ls = _get_local_storage()
+                    ls_user_email = ls.get('ff_user_email')
+                    ls_vault_id = ls.get('ff_vault_id')
+                    has_email = ls_user_email or st.session_state.get('user_email')
+                    has_vault = ls_vault_id or st.session_state.get('vault_id')
+                    print(f"DEBUG BACKUP MODAL: session user_email = {st.session_state.get('user_email')}")
+                    print(f"DEBUG BACKUP MODAL: localStorage ff_user_email = {ls_user_email}")
+                    print(f"DEBUG BACKUP MODAL: session vault_id = {st.session_state.get('vault_id')}")
+                    print(f"DEBUG BACKUP MODAL: localStorage ff_vault_id = {ls_vault_id}")
+                    print(f"DEBUG BACKUP MODAL: has_email = {has_email}, has_vault = {has_vault}")
+                    if not has_email and not has_vault:
                         print("DEBUG BACKUP MODAL: Setting show_cloud_backup_offer = True")
                         st.session_state['show_cloud_backup_offer'] = True
                     else:
