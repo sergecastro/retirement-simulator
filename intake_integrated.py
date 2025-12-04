@@ -1507,9 +1507,20 @@ def show_intake_questionnaire():
             del st.session_state['snapshot_save_message']  # Clear after showing
 
         # Show cloud backup offer after save (if flag is set and user doesn't have backup yet)
+        # Check BOTH session state AND localStorage for credentials
+        from utils.snapshot_manager import _get_local_storage
+        try:
+            ls_check = _get_local_storage()
+            ls_email_check = ls_check.get('ff_user_email')
+            ls_vault_check = ls_check.get('ff_vault_id')
+        except:
+            ls_email_check = None
+            ls_vault_check = None
         print(f"DEBUG MODAL CHECK: show_cloud_backup_offer = {st.session_state.get('show_cloud_backup_offer')}")
-        print(f"DEBUG MODAL CHECK: user_email = {st.session_state.get('user_email')}")
-        print(f"DEBUG MODAL CHECK: vault_id = {st.session_state.get('vault_id')}")
+        print(f"DEBUG MODAL CHECK: session user_email = {st.session_state.get('user_email')}")
+        print(f"DEBUG MODAL CHECK: localStorage ff_user_email = {ls_email_check}")
+        print(f"DEBUG MODAL CHECK: session vault_id = {st.session_state.get('vault_id')}")
+        print(f"DEBUG MODAL CHECK: localStorage ff_vault_id = {ls_vault_check}")
         if st.session_state.get('show_cloud_backup_offer', False):
             # Skip modal for users who already COMPLETED cloud backup
             # Note: backup_vault_id is set during flow, so don't check it here
@@ -1518,7 +1529,9 @@ def show_intake_questionnaire():
             has_existing_backup = (
                 st.session_state.get('cloud_backup_enabled', False) or
                 st.session_state.get('user_email') or
-                st.session_state.get('vault_id')
+                ls_email_check or
+                st.session_state.get('vault_id') or
+                ls_vault_check
             )
             if not backup_done and not has_existing_backup:
                 st.markdown("---")
