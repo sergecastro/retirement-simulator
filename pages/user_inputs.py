@@ -43,21 +43,26 @@ def collect_user_inputs():
         help="📝 Edit in INTAKE mode"
     )
     
-    # CRITICAL FIX: Read from session state for scenario loading
+    # CRITICAL FIX: Initialize session_state BEFORE widget (avoid value/key conflict)
+    if 'input_age' not in st.session_state or st.session_state.get('input_age', 0) < 18:
+        st.session_state['input_age'] = 55  # Default if missing or invalid
+
     age = st.number_input(
         "Your Age:",
         min_value=18,
         max_value=120,
-        value=max(18, safe_int(st.session_state.get('input_age', 55), 55)),
-        key="input_age",
+        key="input_age",  # NO value= parameter! Streamlit uses session_state
         disabled=True,
         help="📝 Edit in INTAKE mode"
     )
     
+    # Initialize partner_exists before widget
+    if 'input_partner_exists' not in st.session_state:
+        st.session_state['input_partner_exists'] = False
+
     partner_exists = st.checkbox(
         "Have Partner?",
-        value=st.session_state.get('input_partner_exists', False),
-        key="input_partner_exists",
+        key="input_partner_exists",  # NO value= parameter!
         disabled=True,
         help="📝 Edit in INTAKE mode"
     )
@@ -66,10 +71,15 @@ def collect_user_inputs():
     partner_age = age
     
     if partner_exists:
+        # Initialize partner fields before widgets
+        if 'input_partner_name' not in st.session_state:
+            st.session_state['input_partner_name'] = ''
+        if 'input_partner_age' not in st.session_state or st.session_state.get('input_partner_age', 0) < 18:
+            st.session_state['input_partner_age'] = age
+
         partner_name = st.text_input(
             "Partner Name:",
-            value=st.session_state.get('input_partner_name', ''),
-            key="input_partner_name",
+            key="input_partner_name",  # NO value= parameter!
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )
@@ -77,8 +87,7 @@ def collect_user_inputs():
             "Partner Age:",
             min_value=18,
             max_value=120,
-            value=safe_int(st.session_state.get('input_partner_age', age), age),
-            key="input_partner_age",
+            key="input_partner_age",  # NO value= parameter!
             disabled=True,
             help="📝 Edit in INTAKE mode"
         )

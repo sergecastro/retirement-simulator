@@ -400,6 +400,66 @@ def update_user_vault(email: str, password: str, data: dict) -> Tuple[bool, str]
 
 
 # =============================================================================
+# AUTO-SYNC HELPER (for background sync after local save)
+# =============================================================================
+
+def auto_sync_to_cloud(data: dict) -> Tuple[bool, str]:
+    """
+    Automatically sync data to cloud if user has credentials in session.
+
+    This is called after local save to keep cloud in sync.
+    Requires cloud_password to be in session_state (set during restore).
+
+    Args:
+        data: The intake data dict to sync
+
+    Returns:
+        (success, message) - Returns (True, "No cloud backup") if not configured
+    """
+    import streamlit as st
+
+    # DEBUG: What data is being synced?
+    print(f"☁️ SYNC DEBUG - Total keys: {len(data.keys())}")
+    print(f"☁️ SYNC DEBUG - input_age: {data.get('input_age', 'MISSING')}")
+    print(f"☁️ SYNC DEBUG - input_salary_wages: {data.get('input_salary_wages', 'MISSING')}")
+    print(f"☁️ SYNC DEBUG - input_housing_expenses: {data.get('input_housing_expenses', 'MISSING')}")
+    print(f"☁️ SYNC DEBUG - input_ira_balance: {data.get('input_ira_balance', 'MISSING')}")
+
+    # Check if we have credentials for sync
+    password = st.session_state.get('cloud_password')
+    if not password:
+        print("☁️ SYNC: No cloud_password in session - auto-sync requires restore first")
+        return True, "No cloud backup configured (need to restore first)"
+
+    vault_id = st.session_state.get('vault_id')
+    email = st.session_state.get('user_email')
+
+    print(f"☁️ SYNC DEBUG - vault_id: {vault_id}, email: {email}")
+
+    if vault_id:
+        # Sync to anonymous vault
+        print(f"🔄 AUTO-SYNC: Syncing to vault {vault_id}...")
+        success, message = update_anonymous_vault(vault_id, password, data)
+        if success:
+            print(f"✅ AUTO-SYNC: Vault updated successfully")
+        else:
+            print(f"❌ AUTO-SYNC: Failed - {message}")
+        return success, message
+
+    elif email:
+        # Sync to user vault
+        print(f"🔄 AUTO-SYNC: Syncing to user vault for {email}...")
+        success, message = update_user_vault(email, password, data)
+        if success:
+            print(f"✅ AUTO-SYNC: User vault updated successfully")
+        else:
+            print(f"❌ AUTO-SYNC: Failed - {message}")
+        return success, message
+
+    return True, "No cloud backup configured"
+
+
+# =============================================================================
 # TESTING
 # =============================================================================
 

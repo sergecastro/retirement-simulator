@@ -561,6 +561,10 @@ def transition_to_analysis():
 # ========== MAIN INTAKE QUESTIONNAIRE ==========
 def show_intake_questionnaire():
     """Main function to display the intake questionnaire"""
+    # DEBUG: Track cloud credentials
+    print(f"🔑 INTAKE ENTRY: cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
+    print(f"🔑 INTAKE ENTRY: vault_id = {st.session_state.get('vault_id', 'NONE')}")
+
     # ===== CRITICAL: Clean up stale widget keys BEFORE any widgets render =====
     # This prevents 'cannot be modified after widget instantiated' errors
     widget_keys_to_clean = [
@@ -587,32 +591,37 @@ def show_intake_questionnaire():
         st.session_state.intake_from_review = False
 
     # AUTO-LOAD saved snapshot if user has one (FIRST TIME entering INTAKE this session)
+    # SKIP if cloud restore already loaded data (intake_data_loaded flag from app.py)
     if 'intake_initialized' not in st.session_state:
         st.session_state['intake_initialized'] = True
 
-        # Check if user has saved snapshots
-        from utils.snapshot_manager import get_current_snapshot, has_user_snapshots
-
-        if has_user_snapshots():
-            # Load most recent snapshot into session_state
-            snapshot_data = get_current_snapshot()
-
-            if snapshot_data:
-                # Load all fields into session_state
-                for key, value in snapshot_data.items():
-                    # WHITELIST: Only copy safe data keys, never widget keys
-                    if key.startswith(('input_', 'temp_', '_protected')) or key in (
-                        'children_list', 'children_rows', 'inheritance_list', 'inherit_rows',
-                        'goals_list', 'goals_data', 'custom_expenses', 'custom_expenses_list',
-                        'custom_income', 'custom_income_list', 'schema_version'
-                    ):
-                        st.session_state[key] = value
-
-                user_name = snapshot_data.get('input_user_name', 'Unknown')
-            else:
-                pass  # No snapshot data
+        # CRITICAL: Don't overwrite cloud restore data with local snapshot!
+        if st.session_state.get('intake_data_loaded'):
+            print("📂 INTAKE: Skipping local snapshot load - cloud data already loaded")
         else:
-            pass  # No user snapshots
+            # Check if user has saved snapshots
+            from utils.snapshot_manager import get_current_snapshot, has_user_snapshots
+
+            if has_user_snapshots():
+                # Load most recent snapshot into session_state
+                snapshot_data = get_current_snapshot()
+
+                if snapshot_data:
+                    # Load all fields into session_state
+                    for key, value in snapshot_data.items():
+                        # WHITELIST: Only copy safe data keys, never widget keys
+                        if key.startswith(('input_', 'temp_', '_protected')) or key in (
+                            'children_list', 'children_rows', 'inheritance_list', 'inherit_rows',
+                            'goals_list', 'goals_data', 'custom_expenses', 'custom_expenses_list',
+                            'custom_income', 'custom_income_list', 'schema_version'
+                        ):
+                            st.session_state[key] = value
+
+                    user_name = snapshot_data.get('input_user_name', 'Unknown')
+                else:
+                    pass  # No snapshot data
+            else:
+                pass  # No user snapshots
 
     # Progress bar
     pages = ['profile', 'income', 'expenses', 'custom_expenses', 'assets', 'liabilities', 'family', 'review']
@@ -1463,11 +1472,27 @@ def show_intake_questionnaire():
             st.write("")  # Spacer
             st.write("")  # Spacer
             if st.button("💾 **SAVE PLAN**", type="primary", use_container_width=True, key="save_snapshot_btn"):
+                # DEBUG: What's in session_state before collecting?
+                input_keys = [k for k in st.session_state.keys() if 'input_' in k]
+                print(f"💾 SAVE DEBUG - session_state input_ keys ({len(input_keys)}): {input_keys[:20]}...")
+                print(f"💾 SAVE DEBUG - input_age: {st.session_state.get('input_age', 'MISSING')}")
+                print(f"💾 SAVE DEBUG - input_salary_wages: {st.session_state.get('input_salary_wages', 'MISSING')}")
+                print(f"💾 SAVE DEBUG - input_housing_expenses: {st.session_state.get('input_housing_expenses', 'MISSING')}")
+                print(f"💾 SAVE DEBUG - input_ira_balance: {st.session_state.get('input_ira_balance', 'MISSING')}")
+
                 # CRITICAL FIX: Collect CURRENT form data, not old snapshot!
                 data = collect_current_form_data()
                 name = snapshot_name if snapshot_name else None
                 success = save_payload(data, snapshot_name=name)
                 if success:
+                    # AUTO-SYNC TO CLOUD (if user has cloud backup configured)
+                    from utils.supabase_sync import auto_sync_to_cloud
+                    cloud_success, cloud_msg = auto_sync_to_cloud(data)
+                    if cloud_success and "No cloud backup" not in cloud_msg:
+                        print(f"☁️ CLOUD SYNC: {cloud_msg}")
+                    elif not cloud_success:
+                        print(f"⚠️ CLOUD SYNC FAILED: {cloud_msg}")
+
                     # Store message in session state to show AFTER rerun
                     saved_name = snapshot_name if snapshot_name else f"Plan - {datetime.now().strftime('%b %d, %Y')}"
                     st.session_state['snapshot_save_message'] = f"✅ Saved: {saved_name}"

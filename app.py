@@ -238,6 +238,10 @@ def load_intake_data_to_session():
 
     already_loaded = 'intake_data_loaded' in st.session_state
 
+    # DEBUG: Trace data loading
+    print(f"🔍 LOAD_INTAKE: already_loaded={already_loaded}")
+    print(f"🔍 LOAD_INTAKE: intake_data in session? {'intake_data' in st.session_state}")
+    print(f"🔍 LOAD_INTAKE: input_age in session? {st.session_state.get('input_age', 'MISSING')}")
 
     # FORCE RELOAD if we have cached snapshot data (just came from Intake)
     if '_cached_snapshots' in st.session_state and len(st.session_state['_cached_snapshots']) > 0:
@@ -246,8 +250,12 @@ def load_intake_data_to_session():
     # Only load if not already loaded in this session
     if not already_loaded:
         try:
-            # Try to get current snapshot (will use cache if available)
-            intake_data = get_current_snapshot()
+            # Try cloud restore data first, then fall back to local snapshot
+            intake_data = st.session_state.pop('intake_data', None) or get_current_snapshot()
+            print(f"🔍 LOAD_INTAKE: Got intake_data? {intake_data is not None}")
+            if intake_data:
+                print(f"🔍 LOAD_INTAKE: intake_data keys: {list(intake_data.keys())[:10]}...")
+                print(f"🔍 LOAD_INTAKE: intake_data input_age = {intake_data.get('input_age', 'MISSING')}")
 
             if intake_data:
                 # Load snapshot data into session state
@@ -258,6 +266,10 @@ def load_intake_data_to_session():
                         'goals_list', 'goals_data', 'custom_expenses', 'custom_expenses_list',
                         'custom_income', 'custom_income_list', 'schema_version'
                     ):
+                        # FIX: Validate age fields (widgets have min_value=18)
+                        if key in ('input_age', 'input_partner_age') and isinstance(value, (int, float)):
+                            if value < 18:
+                                value = 55  # Default to 55 if invalid
                         st.session_state[key] = value
 
                 st.session_state.intake_data_loaded = True
@@ -304,6 +316,8 @@ def main():
     input_keys = len([k for k in st.session_state.keys() if k.startswith('input_')])
     
     print(f'')
+    print(f"🔐 APP MAIN: cloud_password exists? {bool(st.session_state.get('cloud_password'))}, vault_id={st.session_state.get('vault_id', 'NONE')}")
+    print(f"🔐 APP MAIN: current_mode={st.session_state.get('current_mode')}, mode_selected={st.session_state.get('mode_selected')}")
 
     # =============================================================================
     # HEALTH CHECK ENDPOINT - For monitoring/uptime services
@@ -317,6 +331,18 @@ def main():
         st.write(f"Status: Running")
         st.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}")
         st.stop()
+
+    # =============================================================================
+    # RESTORE SHORTCUT - Go directly to cloud restore from any page
+    # =============================================================================
+    # Usage: http://localhost:8501/?restore=cloud
+    if st.query_params.get("restore") == "cloud":
+        st.session_state.mode_selected = False
+        st.session_state.current_mode = None
+        st.session_state.show_backup_signup = 'restore'
+        st.session_state['_force_welcome'] = True  # Flag to skip auto-Analysis
+        st.query_params.clear()  # Clear the param so it doesn't loop
+        st.rerun()
 
     # Initialize app (page config, CSS, Flask check)
     initialize_app()
@@ -352,6 +378,7 @@ def main():
     # Initialize mode selection in session state
     if 'mode_selected' not in st.session_state:
         st.session_state.mode_selected = False
+    if 'current_mode' not in st.session_state:
         st.session_state.current_mode = None
 
     # FORCE CHECK: If current_mode is None, MUST show landing page
@@ -367,8 +394,18 @@ def main():
 
     # CRITICAL: Route based on new vs return user
     if not st.session_state.mode_selected or st.session_state.current_mode is None:
-        
-        if has_saved_data:
+
+        # Check if forced to Welcome (e.g., ?restore=cloud)
+        force_welcome = st.session_state.pop('_force_welcome', False)
+
+        # PRIORITY: If restore form requested, show it immediately
+        if st.session_state.get('show_backup_signup') == 'restore':
+            from ui.welcome import show_restore_form
+            show_restore_form('restore')
+            show_sidebar_footer(is_trusted)
+            st.stop()
+
+        if has_saved_data and not force_welcome:
             # ═══════════════════════════════════════════════════════
             # RETURN USER: Has snapshots → Auto-load → Analysis
             # ═══════════════════════════════════════════════════════

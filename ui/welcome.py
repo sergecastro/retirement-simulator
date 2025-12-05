@@ -387,17 +387,53 @@ def show_restore_form(restore_type: str):
     from ui.cloud_backup_modal import show_restore_modal
 
     st.markdown("### 🔑 Restore Your Plan")
+    print(f"🔐 RESTORE FORM ENTRY: cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
+    print(f"🔐 RESTORE FORM ENTRY: _restore_success = {st.session_state.get('_restore_success', False)}")
 
     if st.button("Back to Welcome", key="restore_back"):
         st.session_state.show_backup_signup = None
+        st.session_state['_restore_success'] = False  # Clear restore success flag
         st.rerun()
 
-    restored_data = show_restore_modal()
+    # Check if we already have a successful restore (from previous render)
+    restore_already_done = st.session_state.get('_restore_success', False)
 
-    if restored_data:
-        st.session_state.intake_data = restored_data
-        st.session_state.show_backup_signup = None
-        st.session_state.mode_selected = True
-        st.session_state.current_mode = "Analysis"
-        st.success("Data restored successfully! Redirecting to Analysis...")
-        st.rerun()
+    if not restore_already_done:
+        # Show the modal and try to restore
+        restored_data = show_restore_modal()
+        print(f"🔐 RESTORE FORM AFTER MODAL: cloud_password exists? {bool(st.session_state.get('cloud_password'))}, restored_data={restored_data is not None}")
+
+        if restored_data:
+            # Save vault credentials to localStorage BEFORE redirect
+            vault_id = st.session_state.get('vault_id')
+            user_email = st.session_state.get('user_email')
+
+            # Inject JavaScript to save to localStorage (runs when page renders)
+            js_commands = []
+            if vault_id:
+                js_commands.append(f"localStorage.setItem('ff_vault_id', '{vault_id}');")
+            if user_email:
+                js_commands.append(f"localStorage.setItem('ff_user_email', '{user_email}');")
+
+            if js_commands:
+                import streamlit.components.v1 as components
+                js_code = " ".join(js_commands) + " console.log('Saved credentials to localStorage');"
+                components.html(f"<script>{js_code}</script>", height=0)
+
+            st.session_state.intake_data = restored_data
+            st.session_state['_restore_success'] = True  # Mark restore as successful
+            st.rerun()  # Rerun to show success screen
+
+    # Show success screen if restore was successful
+    if st.session_state.get('_restore_success', False):
+        st.success("✅ Data restored successfully!")
+        st.markdown(f"**Vault ID:** `{st.session_state.get('vault_id', 'N/A')}`")
+
+        # Show continue button
+        if st.button("🚀 Continue to Analysis", type="primary", use_container_width=True):
+            print(f"🔐 CONTINUE BUTTON CLICKED: cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
+            st.session_state.show_backup_signup = None
+            st.session_state.mode_selected = True
+            st.session_state.current_mode = "Analysis"
+            st.session_state['_restore_success'] = False  # Clear flag
+            st.rerun()
