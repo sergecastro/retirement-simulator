@@ -1505,24 +1505,15 @@ def show_intake_questionnaire():
 
                     # Set flag to show balloons AFTER rerun
                     st.session_state['show_balloons_on_load'] = True
+
                     # Offer cloud backup after save (only if user doesn't already have account/vault)
-                    # Check BOTH session state AND localStorage for persistence
-                    from utils.snapshot_manager import _get_local_storage
-                    ls = _get_local_storage()
-                    ls_user_email = ls.get('ff_user_email')
-                    ls_vault_id = ls.get('ff_vault_id')
-                    has_email = ls_user_email or st.session_state.get('user_email')
-                    has_vault = ls_vault_id or st.session_state.get('vault_id')
-                    print(f"DEBUG BACKUP MODAL: session user_email = {st.session_state.get('user_email')}")
-                    print(f"DEBUG BACKUP MODAL: localStorage ff_user_email = {ls_user_email}")
-                    print(f"DEBUG BACKUP MODAL: session vault_id = {st.session_state.get('vault_id')}")
-                    print(f"DEBUG BACKUP MODAL: localStorage ff_vault_id = {ls_vault_id}")
-                    print(f"DEBUG BACKUP MODAL: has_email = {has_email}, has_vault = {has_vault}")
+                    # Check session_state ONLY - localStorage is checked on Welcome page load
+                    # DO NOT call _get_local_storage() here - it creates a component that causes duplicates
+                    has_email = st.session_state.get('user_email')
+                    has_vault = st.session_state.get('vault_id')
+
                     if not has_email and not has_vault:
-                        print("DEBUG BACKUP MODAL: Setting show_cloud_backup_offer = True")
                         st.session_state['show_cloud_backup_offer'] = True
-                    else:
-                        print("DEBUG BACKUP MODAL: User already has backup, NOT showing modal")
 
                     # WELCOME BACK: Save user's first name + timestamp to cookie
                     user_name = data.get('input_user_name', '')
