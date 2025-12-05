@@ -256,6 +256,8 @@ def load_intake_data_to_session():
             if intake_data:
                 print(f"🔍 LOAD_INTAKE: intake_data keys: {list(intake_data.keys())[:10]}...")
                 print(f"🔍 LOAD_INTAKE: intake_data input_age = {intake_data.get('input_age', 'MISSING')}")
+                print(f"🔍 LOAD_INTAKE: intake_data input_salary_wages = {intake_data.get('input_salary_wages', 'MISSING')}")
+                print(f"🔍 LOAD_INTAKE: intake_data input_housing_expenses = {intake_data.get('input_housing_expenses', 'MISSING')}")
 
             if intake_data:
                 # Load snapshot data into session state

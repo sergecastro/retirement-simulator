@@ -561,9 +561,12 @@ def transition_to_analysis():
 # ========== MAIN INTAKE QUESTIONNAIRE ==========
 def show_intake_questionnaire():
     """Main function to display the intake questionnaire"""
-    # DEBUG: Track cloud credentials
+    # DEBUG: Track cloud credentials and data
     print(f"🔑 INTAKE ENTRY: cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
     print(f"🔑 INTAKE ENTRY: vault_id = {st.session_state.get('vault_id', 'NONE')}")
+    print(f"🔑 INTAKE ENTRY: input_age = {st.session_state.get('input_age', 'MISSING')}")
+    print(f"🔑 INTAKE ENTRY: input_salary_wages = {st.session_state.get('input_salary_wages', 'MISSING')}")
+    print(f"🔑 INTAKE ENTRY: intake_data_loaded = {st.session_state.get('intake_data_loaded', False)}")
 
     # ===== CRITICAL: Clean up stale widget keys BEFORE any widgets render =====
     # This prevents 'cannot be modified after widget instantiated' errors
@@ -652,6 +655,7 @@ def show_intake_questionnaire():
 
     # ===== PAGE 1: PROFILE =====
     if current_page == 'profile':
+        print(f"📄 PAGE 1 PROFILE: Rendering. Current session input_age={st.session_state.get('input_age', 'MISSING')}")
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
         scroll_to_top()
 
@@ -751,12 +755,15 @@ def show_intake_questionnaire():
             if st.button("NEXT →", type="primary", use_container_width=True, disabled=not can_proceed):
                 # CRITICAL: Explicitly save to session_state BEFORE navigating
                 # (widgets with key= don't save until after script completes)
+                print(f"📄 PAGE 1 NEXT CLICKED: Saving user_name={user_name}, age={your_age}, partner_exists={partner_exists}")
                 st.session_state['input_user_name'] = user_name
                 st.session_state['input_age'] = your_age
                 st.session_state['input_partner_exists'] = partner_exists
                 if mode == "Couple":
                     st.session_state['input_partner_name'] = partner_name
                     st.session_state['input_partner_age'] = partner_age
+                    print(f"📄 PAGE 1 NEXT: Partner data saved: name={partner_name}, age={partner_age}")
+                print(f"📄 PAGE 1 NEXT: session_state input_age now = {st.session_state.get('input_age')}")
 
                 # Navigate to next page
                 go_to_page('income')
