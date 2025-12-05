@@ -442,6 +442,8 @@ def save_payload(data, snapshot_name=None):
 
 def go_to_page(page_name):
     """Navigate to a different intake page"""
+    print(f"🔀 GO_TO_PAGE: Navigating to {page_name}")
+    print(f"🔀 GO_TO_PAGE: input_age BEFORE rerun = {st.session_state.get('input_age', 'MISSING')}")
     st.session_state.intake_current_page = page_name
     st.rerun()
 
@@ -562,15 +564,21 @@ def transition_to_analysis():
 def show_intake_questionnaire():
     """Main function to display the intake questionnaire"""
     # DEBUG: Track cloud credentials and data
-    print(f"🔑 INTAKE ENTRY: cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
-    print(f"🔑 INTAKE ENTRY: vault_id = {st.session_state.get('vault_id', 'NONE')}")
-    print(f"🔑 INTAKE ENTRY: input_age = {st.session_state.get('input_age', 'MISSING')}")
-    print(f"🔑 INTAKE ENTRY: input_salary_wages = {st.session_state.get('input_salary_wages', 'MISSING')}")
-    print(f"🔑 INTAKE ENTRY: intake_data_loaded = {st.session_state.get('intake_data_loaded', False)}")
-    print(f"🔑 INTAKE ENTRY: intake_initialized = {st.session_state.get('intake_initialized', False)}")
+    # Session ID for debugging (to detect if session is reset)
+    if '_debug_session_id' not in st.session_state:
+        import random
+        st.session_state['_debug_session_id'] = random.randint(1000, 9999)
+    session_id = st.session_state['_debug_session_id']
+
+    print(f"🔑 INTAKE ENTRY [Session {session_id}]: cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
+    print(f"🔑 INTAKE ENTRY [Session {session_id}]: vault_id = {st.session_state.get('vault_id', 'NONE')}")
+    print(f"🔑 INTAKE ENTRY [Session {session_id}]: input_age = {st.session_state.get('input_age', 'MISSING')}")
+    print(f"🔑 INTAKE ENTRY [Session {session_id}]: input_salary_wages = {st.session_state.get('input_salary_wages', 'MISSING')}")
+    print(f"🔑 INTAKE ENTRY [Session {session_id}]: intake_data_loaded = {st.session_state.get('intake_data_loaded', False)}")
+    print(f"🔑 INTAKE ENTRY [Session {session_id}]: intake_initialized = {st.session_state.get('intake_initialized', False)}")
     # Count all input_ keys
     input_keys = [k for k in st.session_state.keys() if k.startswith('input_')]
-    print(f"🔑 INTAKE ENTRY: Total input_ keys in session: {len(input_keys)}")
+    print(f"🔑 INTAKE ENTRY [Session {session_id}]: Total input_ keys in session: {len(input_keys)}")
 
     # ===== CRITICAL: Clean up stale widget keys BEFORE any widgets render =====
     # This prevents 'cannot be modified after widget instantiated' errors
