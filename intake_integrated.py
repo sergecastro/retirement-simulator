@@ -662,6 +662,17 @@ def show_intake_questionnaire():
 
         st.header("👤 Your Profile")
 
+        # Personalized greeting
+        saved_name = st.session_state.get("input_user_name", "")
+        user_email = st.session_state.get("user_email", "")
+
+        if saved_name:
+            st.markdown(f"**Welcome back, {saved_name.split()[0]}!** Let's continue building your retirement plan.")
+        elif user_email:
+            st.markdown("**Welcome!** Let's set up your retirement plan.")
+        else:
+            st.markdown("**Let's get started!** Enter your information below.")
+
         # PRODUCTION: Auto-select FULL mode (BETA mode hidden for launch)
         # TODO: Restore BETA mode selector post-launch from yesterday's commits
         if "intake_mode" not in st.session_state:
