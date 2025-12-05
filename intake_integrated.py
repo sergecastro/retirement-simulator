@@ -67,8 +67,12 @@ def preserve_widget_keys():
 # ========== SCROLL TO TOP FIX ==========
 import streamlit.components.v1 as components
 
+_scroll_counter = 0
+
 def scroll_to_top():
     """Force scroll to top using components.html for reliable execution"""
+    global _scroll_counter
+    _scroll_counter += 1
     components.html(
         """
         <script>
@@ -99,7 +103,8 @@ def scroll_to_top():
             }, 150);
         </script>
         """,
-        height=0
+        height=0,
+        key=f"scroll_to_top_{_scroll_counter}"
     )
 
 

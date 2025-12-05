@@ -29,7 +29,7 @@ def read_local_storage(key: str):
     Note: First call returns 0, subsequent call returns actual value.
     Page will auto-rerun once to get the real value.
     """
-    return st_javascript(f"localStorage.getItem('{key}')")
+    return st_javascript(f"localStorage.getItem('{key}')", key=f"read_ls_{key}")
 
 
 def get_backup_credentials() -> dict:
@@ -52,8 +52,8 @@ def get_backup_credentials() -> dict:
             email = creds['ff_user_email']
             vault_id = creds['ff_vault_id']
     """
-    email = st_javascript("localStorage.getItem('ff_user_email')")
-    vault_id = st_javascript("localStorage.getItem('ff_vault_id')")
+    email = st_javascript("localStorage.getItem('ff_user_email')", key="get_creds_email")
+    vault_id = st_javascript("localStorage.getItem('ff_vault_id')", key="get_creds_vault")
 
     # st_javascript returns 0 on first call before JS executes
     if email == 0 or vault_id == 0:
@@ -88,4 +88,4 @@ def write_local_storage(key: str, value: str):
     """
     # Escape quotes in value
     escaped_value = value.replace("'", "\\'")
-    st_javascript(f"localStorage.setItem('{key}', '{escaped_value}')")
+    st_javascript(f"localStorage.setItem('{key}', '{escaped_value}')", key=f"write_ls_{key}")
