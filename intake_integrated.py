@@ -73,7 +73,7 @@ def scroll_to_top(page_id="default"):
     if not st.session_state.get(guard_key):
         st.session_state[guard_key] = True
         components.html(
-            """<script>window.parent.document.querySelector('section.main').scrollTo(0, 0);</script>""",
+            """<script>var main = window.parent.document.querySelector('section.main'); if (main) main.scrollTo(0, 0);</script>""",
             height=0
         )
 
@@ -1543,13 +1543,8 @@ def show_intake_questionnaire():
             cloud_email = st.session_state.get('user_email')
             cloud_vault = st.session_state.get('vault_id')
 
-            # Only call get_backup_credentials if we don't have them AND haven't checked yet
-            if not cloud_email and not cloud_vault and not st.session_state.get('_credentials_loaded'):
-                creds = get_backup_credentials()
-                if creds.get('ready'):
-                    cloud_email = creds.get('ff_user_email')
-                    cloud_vault = creds.get('ff_vault_id')
-                    st.session_state['_credentials_loaded'] = True
+            # DO NOT call get_backup_credentials() here - it creates duplicate components
+            # Credentials are already loaded on app startup in app.py
 
             has_existing_backup = (
                 st.session_state.get('cloud_backup_enabled', False) or
