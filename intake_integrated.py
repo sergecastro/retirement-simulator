@@ -567,6 +567,10 @@ def show_intake_questionnaire():
     print(f"🔑 INTAKE ENTRY: input_age = {st.session_state.get('input_age', 'MISSING')}")
     print(f"🔑 INTAKE ENTRY: input_salary_wages = {st.session_state.get('input_salary_wages', 'MISSING')}")
     print(f"🔑 INTAKE ENTRY: intake_data_loaded = {st.session_state.get('intake_data_loaded', False)}")
+    print(f"🔑 INTAKE ENTRY: intake_initialized = {st.session_state.get('intake_initialized', False)}")
+    # Count all input_ keys
+    input_keys = [k for k in st.session_state.keys() if k.startswith('input_')]
+    print(f"🔑 INTAKE ENTRY: Total input_ keys in session: {len(input_keys)}")
 
     # ===== CRITICAL: Clean up stale widget keys BEFORE any widgets render =====
     # This prevents 'cannot be modified after widget instantiated' errors
