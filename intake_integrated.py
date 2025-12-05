@@ -1572,13 +1572,23 @@ def show_intake_questionnaire():
             # Note: backup_vault_id is set during flow, so don't check it here
             # Only check if the modal step is 'done' OR user has existing account/vault
             backup_done = st.session_state.get('backup_modal_step') == 'done'
-            # Check localStorage for credentials (safe read, no rerun loops)
-            creds = get_backup_credentials()
+
+            # Check session_state first (avoid st_javascript calls that cause stuck state)
+            cloud_email = st.session_state.get('user_email')
+            cloud_vault = st.session_state.get('vault_id')
+
+            # Only call get_backup_credentials if we don't have them AND haven't checked yet
+            if not cloud_email and not cloud_vault and not st.session_state.get('_credentials_loaded'):
+                creds = get_backup_credentials()
+                if creds.get('ready'):
+                    cloud_email = creds.get('ff_user_email')
+                    cloud_vault = creds.get('ff_vault_id')
+                    st.session_state['_credentials_loaded'] = True
+
             has_existing_backup = (
                 st.session_state.get('cloud_backup_enabled', False) or
-                st.session_state.get('user_email') or
-                st.session_state.get('vault_id') or
-                (creds['ready'] and creds['has_credentials'])
+                cloud_email or
+                cloud_vault
             )
             if not backup_done and not has_existing_backup:
                 st.markdown("---")
