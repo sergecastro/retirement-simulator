@@ -67,7 +67,7 @@ def preserve_widget_keys():
 # ========== SCROLL TO TOP FIX ==========
 import streamlit.components.v1 as components
 
-def scroll_to_top(key_suffix="default"):
+def scroll_to_top():
     """Force scroll to top using components.html for reliable execution"""
     components.html(
         """
@@ -99,8 +99,7 @@ def scroll_to_top(key_suffix="default"):
             }, 150);
         </script>
         """,
-        height=0,
-        key=f"scroll_to_top_{key_suffix}"
+        height=0
     )
 
 
@@ -673,7 +672,7 @@ def show_intake_questionnaire():
         st.divider()
 
     # Force scroll to top on EVERY page load (critical for UX)
-    scroll_to_top("page_load")
+    scroll_to_top()
 
     # Reset flag when reaching review page normally (not from edit)
     if current_page == 'review' and st.session_state.intake_from_review:
@@ -682,7 +681,7 @@ def show_intake_questionnaire():
     # ===== PAGE 1: PROFILE =====
     if current_page == 'profile':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        scroll_to_top("profile")
+        scroll_to_top()
 
         # ⚠️  WARN USER ABOUT UNSAVED CHANGES
         st.markdown(UNSAVED_CHANGES_WARNING_JS, unsafe_allow_html=True)
@@ -793,7 +792,7 @@ def show_intake_questionnaire():
     # ===== PAGE 2: INCOME =====
     elif current_page == 'income':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        scroll_to_top("income")
+        scroll_to_top()
         st.header("💰 Monthly Income")
         st.markdown("*Enter your typical monthly income from all sources. Enter 0 if not applicable.*")
 
@@ -941,7 +940,7 @@ def show_intake_questionnaire():
     # ===== PAGE 3: EXPENSES =====
     elif current_page == 'expenses':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        scroll_to_top("expenses")
+        scroll_to_top()
 
         st.header("🏠 Monthly Expenses")
         st.markdown("*Enter your typical monthly expenses. Enter 0 if not applicable.*")
@@ -1206,7 +1205,7 @@ def show_intake_questionnaire():
     # ===== PAGE 3.5: CUSTOM MONTHLY INCOME SOURCES =====
     elif current_page == 'custom_expenses':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        scroll_to_top("custom_expenses")
+        scroll_to_top()
         st.header("💰 Custom Income Sources")
         st.markdown("*Add income sources not covered above (business income, consulting fees, bonuses, side gigs, investment income, etc.)*")
 
@@ -1308,21 +1307,21 @@ def show_intake_questionnaire():
     # These pages use the intake_review module
     # Pass session_state as existing so widgets load saved values
     elif current_page == 'assets':
-        scroll_to_top("assets")
+        scroll_to_top()
         show_assets_page(dict(st.session_state), save_payload, go_to_page)
 
     elif current_page == 'liabilities':
-        scroll_to_top("liabilities")
+        scroll_to_top()
         show_liabilities_page(dict(st.session_state), save_payload, go_to_page)
 
     elif current_page == 'family':
-        scroll_to_top("family")
+        scroll_to_top()
         show_family_page(dict(st.session_state), save_payload, go_to_page)
 
     # ===== PAGE 7: REVIEW (FINAL PAGE with edit buttons!) =====
     elif current_page == 'review':
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
-        scroll_to_top("review")
+        scroll_to_top()
 
         st.header("📋 Review & Complete Your Intake")
         st.caption("Review all your information before completing - click any section to edit")
