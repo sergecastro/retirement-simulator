@@ -259,14 +259,16 @@ def show_account_signup_form():
     """Show email account signup form"""
     st.markdown("### 📧 Create Free Account")
 
-    # If already signed up, show success + continue button ONLY (compact!)
+    # If already signed up, show success + auto-redirect to INTAKE
     if st.session_state.get('account_signup_success'):
         email = st.session_state.get('user_email', '')
-        st.success(f"✅ Account created for {email}!")
-        if st.button("Go Back to Welcome Page to Enter the App", type="primary", use_container_width=True, key="account_continue_btn"):
-            st.session_state.show_backup_signup = None
-            st.session_state.account_signup_success = False
-            st.rerun()
+        st.success(f"✅ Account created for {email}! Redirecting to your plan...")
+        # Auto-redirect to INTAKE
+        st.session_state.show_backup_signup = None
+        st.session_state.account_signup_success = False
+        st.session_state.mode_selected = True
+        st.session_state.current_mode = "INTAKE"
+        st.rerun()
         return
 
     # Show signup form
@@ -302,14 +304,11 @@ def show_account_signup_form():
                 if success:
                     st.session_state.user_email = email
                     print(f"🔥 WELCOME REGISTRATION: user_email SET TO: {st.session_state.user_email}")
-                    # Save to localStorage for persistence across sessions
-                    from utils.snapshot_manager import _get_local_storage
-                    ls = _get_local_storage()
-                    ls.set('ff_user_email', email)
-                    print(f"🔥 WELCOME REGISTRATION: Saved to localStorage: ff_user_email = {email}")
+                    # DO NOT call _get_local_storage() here - it creates a component that causes duplicates
+                    # localStorage will be saved when user completes intake and saves
                     st.session_state.account_signup_success = True
                     st.balloons()
-                    st.rerun()  # Rerun to show compact success view
+                    st.rerun()  # Rerun to auto-redirect to INTAKE
                 else:
                     st.error(message)
 
@@ -318,7 +317,7 @@ def show_anonymous_signup_form():
     """Show anonymous vault signup form"""
     st.markdown("### 🕵️ Create Anonymous Vault")
 
-    # If already created vault, show Vault ID + continue button ONLY (compact!)
+    # If already created vault, show Vault ID + require confirmation before redirect
     if st.session_state.get('anon_signup_success'):
         vault_id = st.session_state.get('vault_id', '')
         st.success("✅ Vault created!")
@@ -337,9 +336,12 @@ def show_anonymous_signup_form():
         )
 
         if confirmed:
-            if st.button("Go Back to Welcome Page to Enter the App", type="primary", use_container_width=True, key="anon_continue_btn"):
+            if st.button("Continue to My Plan", type="primary", use_container_width=True, key="anon_continue_btn"):
+                # Redirect to INTAKE
                 st.session_state.show_backup_signup = None
                 st.session_state.anon_signup_success = False
+                st.session_state.mode_selected = True
+                st.session_state.current_mode = "INTAKE"
                 st.rerun()
         else:
             st.warning("☝️ Please confirm you've saved your Vault ID before continuing.")
