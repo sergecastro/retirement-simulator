@@ -287,24 +287,11 @@ def load_intake_data_to_session():
 
 def main():
     """Main application entry point"""
-    # DEBUG: Track reruns with timing AND session identity
-    import time
-    import uuid
-    
-    # Create a unique session ID on first run (persists until session dies)
-    if '_debug_session_id' not in st.session_state:
-        st.session_state['_debug_session_id'] = str(uuid.uuid4())[:8]
-    
-    session_id = st.session_state.get('_debug_session_id', 'UNKNOWN')
-    rerun_count = st.session_state.get('_debug_rerun_count', 0) + 1
-    st.session_state['_debug_rerun_count'] = rerun_count
-    last_rerun = st.session_state.get('_debug_last_rerun_time', 0)
-    current_time = time.time()
-    time_since_last = current_time - last_rerun if last_rerun > 0 else 0
-    st.session_state['_debug_last_rerun_time'] = current_time
-    
-    # Count input_ keys
-    input_keys = len([k for k in st.session_state.keys() if k.startswith('input_')])
+    # =============================================================================
+    # CRITICAL: initialize_app() MUST be called FIRST before any st.session_state
+    # st.set_page_config() must be the first Streamlit command
+    # =============================================================================
+    initialize_app()
 
     # LOAD VAULT CREDENTIALS FROM LOCALSTORAGE (ONLY ONCE per session)
     if not st.session_state.get('_credentials_loaded'):
@@ -344,9 +331,6 @@ def main():
         st.session_state['_force_welcome'] = True  # Flag to skip auto-Analysis
         st.query_params.clear()  # Clear the param so it doesn't loop
         st.rerun()
-
-    # Initialize app (page config, CSS, Flask check)
-    initialize_app()
 
     # Inject analytics tracking code (invisible to users)
     # Using components.html instead of markdown for better script injection
