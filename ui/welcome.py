@@ -429,11 +429,17 @@ def show_restore_form(restore_type: str):
         st.success("✅ Data restored successfully!")
         st.markdown(f"**Vault ID:** `{st.session_state.get('vault_id', 'N/A')}`")
 
-        # Show continue button
-        if st.button("🚀 Continue to Analysis", type="primary", use_container_width=True):
-            print(f"🔐 CONTINUE BUTTON CLICKED: cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
+        # Debug info
+        st.info(f"🔐 Password saved: {'✅ Yes' if st.session_state.get('cloud_password') else '❌ No'}")
+
+        # Show continue button with explicit key
+        if st.button("🚀 Continue to Analysis", type="primary", use_container_width=True, key="restore_continue_to_analysis"):
+            print(f"🔐 CONTINUE BUTTON CLICKED!")
+            print(f"🔐 cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
+            print(f"🔐 Setting mode_selected=True, current_mode='Analysis', show_backup_signup=None")
             st.session_state.show_backup_signup = None
             st.session_state.mode_selected = True
             st.session_state.current_mode = "Analysis"
             st.session_state['_restore_success'] = False  # Clear flag
+            print(f"🔐 About to rerun...")
             st.rerun()

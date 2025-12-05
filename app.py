@@ -393,6 +393,8 @@ def main():
     is_trusted = is_trusted_user()
 
     # CRITICAL: Route based on new vs return user
+    print(f"🔐 APP ROUTING: mode_selected={st.session_state.mode_selected}, current_mode={st.session_state.current_mode}")
+    print(f"🔐 APP ROUTING: show_backup_signup={st.session_state.get('show_backup_signup')}, _restore_success={st.session_state.get('_restore_success')}")
     if not st.session_state.mode_selected or st.session_state.current_mode is None:
 
         # Check if forced to Welcome (e.g., ?restore=cloud)
