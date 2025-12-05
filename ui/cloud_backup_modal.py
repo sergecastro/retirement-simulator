@@ -344,7 +344,7 @@ def show_restore_modal() -> dict:
                 # ALSO save vault_id to localStorage for persistence across sessions
                 # Using st_javascript for synchronous write
                 from streamlit_javascript import st_javascript
-                st_javascript(f"localStorage.setItem('ff_vault_id', '{vault_id}')", key="restore_save_vault_id")
+                st_javascript(f"localStorage.setItem('ff_vault_id', '{vault_id}')")
                 print(f"✅ RESTORE: Saved ff_vault_id to localStorage: {vault_id}")
                 return data
             else:
@@ -371,7 +371,7 @@ def show_restore_modal() -> dict:
                 # ALSO save email to localStorage for persistence across sessions
                 # Using st_javascript for synchronous write
                 from streamlit_javascript import st_javascript
-                st_javascript(f"localStorage.setItem('ff_user_email', '{email}')", key="restore_save_user_email")
+                st_javascript(f"localStorage.setItem('ff_user_email', '{email}')")
                 print(f"✅ RESTORE: Saved ff_user_email to localStorage: {email}")
                 return data
             else:
