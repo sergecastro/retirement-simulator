@@ -387,8 +387,6 @@ def show_restore_form(restore_type: str):
     from ui.cloud_backup_modal import show_restore_modal
 
     st.markdown("### 🔑 Restore Your Plan")
-    print(f"🔐 RESTORE FORM ENTRY: cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
-    print(f"🔐 RESTORE FORM ENTRY: _restore_success = {st.session_state.get('_restore_success', False)}")
 
     if st.button("Back to Welcome", key="restore_back"):
         st.session_state.show_backup_signup = None
@@ -401,7 +399,6 @@ def show_restore_form(restore_type: str):
     if not restore_already_done:
         # Show the modal and try to restore
         restored_data = show_restore_modal()
-        print(f"🔐 RESTORE FORM AFTER MODAL: cloud_password exists? {bool(st.session_state.get('cloud_password'))}, restored_data={restored_data is not None}")
 
         if restored_data:
             # Save vault credentials to localStorage BEFORE redirect
@@ -435,12 +432,8 @@ def show_restore_form(restore_type: str):
 
         # Show continue button with explicit key
         if st.button("🚀 Continue to Analysis", type="primary", use_container_width=True, key="restore_continue_to_analysis"):
-            print(f"🔐 CONTINUE BUTTON CLICKED!")
-            print(f"🔐 cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
-            print(f"🔐 Setting mode_selected=True, current_mode='Analysis', show_backup_signup=None")
             st.session_state.show_backup_signup = None
             st.session_state.mode_selected = True
             st.session_state.current_mode = "Analysis"
             st.session_state['_restore_success'] = False  # Clear flag
-            print(f"🔐 About to rerun...")
             st.rerun()

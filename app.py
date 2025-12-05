@@ -238,11 +238,6 @@ def load_intake_data_to_session():
 
     already_loaded = 'intake_data_loaded' in st.session_state
 
-    # DEBUG: Trace data loading
-    print(f"🔍 LOAD_INTAKE: already_loaded={already_loaded}")
-    print(f"🔍 LOAD_INTAKE: intake_data in session? {'intake_data' in st.session_state}")
-    print(f"🔍 LOAD_INTAKE: input_age in session? {st.session_state.get('input_age', 'MISSING')}")
-
     # FORCE RELOAD if we have cached snapshot data (just came from Intake)
     if '_cached_snapshots' in st.session_state and len(st.session_state['_cached_snapshots']) > 0:
         already_loaded = False
@@ -252,12 +247,6 @@ def load_intake_data_to_session():
         try:
             # Try cloud restore data first, then fall back to local snapshot
             intake_data = st.session_state.pop('intake_data', None) or get_current_snapshot()
-            print(f"🔍 LOAD_INTAKE: Got intake_data? {intake_data is not None}")
-            if intake_data:
-                print(f"🔍 LOAD_INTAKE: intake_data keys: {list(intake_data.keys())[:10]}...")
-                print(f"🔍 LOAD_INTAKE: intake_data input_age = {intake_data.get('input_age', 'MISSING')}")
-                print(f"🔍 LOAD_INTAKE: intake_data input_salary_wages = {intake_data.get('input_salary_wages', 'MISSING')}")
-                print(f"🔍 LOAD_INTAKE: intake_data input_housing_expenses = {intake_data.get('input_housing_expenses', 'MISSING')}")
 
             if intake_data:
                 # Load snapshot data into session state
@@ -330,11 +319,6 @@ def main():
                 st.session_state['_credentials_loaded'] = True
             elif creds.get('ready'):
                 st.session_state['_credentials_loaded'] = True
-
-    print(f'')
-    print(f"🔐 APP MAIN: input_age = {st.session_state.get('input_age', 'MISSING')}, input_ keys = {input_keys}")
-    print(f"🔐 APP MAIN: cloud_password exists? {bool(st.session_state.get('cloud_password'))}, vault_id={st.session_state.get('vault_id', 'NONE')}")
-    print(f"🔐 APP MAIN: current_mode={st.session_state.get('current_mode')}, mode_selected={st.session_state.get('mode_selected')}")
 
     # =============================================================================
     # HEALTH CHECK ENDPOINT - For monitoring/uptime services
@@ -410,8 +394,6 @@ def main():
     is_trusted = is_trusted_user()
 
     # CRITICAL: Route based on new vs return user
-    print(f"🔐 APP ROUTING: mode_selected={st.session_state.mode_selected}, current_mode={st.session_state.current_mode}")
-    print(f"🔐 APP ROUTING: show_backup_signup={st.session_state.get('show_backup_signup')}, _restore_success={st.session_state.get('_restore_success')}")
     if not st.session_state.mode_selected or st.session_state.current_mode is None:
 
         # Check if forced to Welcome (e.g., ?restore=cloud)

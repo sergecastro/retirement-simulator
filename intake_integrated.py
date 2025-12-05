@@ -259,14 +259,10 @@ def collect_current_form_data():
 
     # FIXED: Helper that checks ALL possible hiding spots for list data
     def hunt_for_data(primary_keys):
-        print(f"[HUNT DEBUG] Searching keys: {primary_keys}")
         for key in primary_keys:
             data = st.session_state.get(key)
-            print(f"[HUNT DEBUG] {key} = {type(data).__name__} | {data}")
             if data and isinstance(data, list) and len(data) > 0:
-                print(f"[HUNT DEBUG] FOUND DATA in {key}\!")
                 return data
-        print(f"[HUNT DEBUG] NOTHING FOUND for {primary_keys}")
         return []
 
     data = {
@@ -474,8 +470,6 @@ def save_payload(data, snapshot_name=None):
 
 def go_to_page(page_name):
     """Navigate to a different intake page"""
-    print(f"🔀 GO_TO_PAGE: Navigating to {page_name}")
-    print(f"🔀 GO_TO_PAGE: input_age BEFORE rerun = {st.session_state.get('input_age', 'MISSING')}")
     st.session_state.intake_current_page = page_name
     st.rerun()
 
@@ -599,23 +593,6 @@ def show_intake_questionnaire():
     # This prevents Streamlit from garbage collecting session_state during reruns
     preserve_widget_keys()
 
-    # DEBUG: Track cloud credentials and data
-    # Session ID for debugging (to detect if session is reset)
-    if '_debug_session_id' not in st.session_state:
-        import random
-        st.session_state['_debug_session_id'] = random.randint(1000, 9999)
-    session_id = st.session_state['_debug_session_id']
-
-    print(f"🔑 INTAKE ENTRY [Session {session_id}]: cloud_password exists? {bool(st.session_state.get('cloud_password'))}")
-    print(f"🔑 INTAKE ENTRY [Session {session_id}]: vault_id = {st.session_state.get('vault_id', 'NONE')}")
-    print(f"🔑 INTAKE ENTRY [Session {session_id}]: input_age = {st.session_state.get('input_age', 'MISSING')}")
-    print(f"🔑 INTAKE ENTRY [Session {session_id}]: input_salary_wages = {st.session_state.get('input_salary_wages', 'MISSING')}")
-    print(f"🔑 INTAKE ENTRY [Session {session_id}]: intake_data_loaded = {st.session_state.get('intake_data_loaded', False)}")
-    print(f"🔑 INTAKE ENTRY [Session {session_id}]: intake_initialized = {st.session_state.get('intake_initialized', False)}")
-    # Count all input_ keys
-    input_keys = [k for k in st.session_state.keys() if k.startswith('input_')]
-    print(f"🔑 INTAKE ENTRY [Session {session_id}]: Total input_ keys in session: {len(input_keys)}")
-
     # ===== CRITICAL: Clean up stale widget keys BEFORE any widgets render =====
     # This prevents 'cannot be modified after widget instantiated' errors
     widget_keys_to_clean = [
@@ -703,7 +680,6 @@ def show_intake_questionnaire():
 
     # ===== PAGE 1: PROFILE =====
     if current_page == 'profile':
-        print(f"📄 PAGE 1 PROFILE: Rendering. Current session input_age={st.session_state.get('input_age', 'MISSING')}")
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
         scroll_to_top()
 
@@ -803,15 +779,12 @@ def show_intake_questionnaire():
             if st.button("NEXT →", type="primary", use_container_width=True, disabled=not can_proceed):
                 # CRITICAL: Explicitly save to session_state BEFORE navigating
                 # (widgets with key= don't save until after script completes)
-                print(f"📄 PAGE 1 NEXT CLICKED: Saving user_name={user_name}, age={your_age}, partner_exists={partner_exists}")
                 st.session_state['input_user_name'] = user_name
                 st.session_state['input_age'] = your_age
                 st.session_state['input_partner_exists'] = partner_exists
                 if mode == "Couple":
                     st.session_state['input_partner_name'] = partner_name
                     st.session_state['input_partner_age'] = partner_age
-                    print(f"📄 PAGE 1 NEXT: Partner data saved: name={partner_name}, age={partner_age}")
-                print(f"📄 PAGE 1 NEXT: session_state input_age now = {st.session_state.get('input_age')}")
 
                 # Navigate to next page
                 go_to_page('income')
