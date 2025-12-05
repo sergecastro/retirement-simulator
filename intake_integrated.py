@@ -1538,6 +1538,19 @@ def show_intake_questionnaire():
             st.success(st.session_state['snapshot_save_message'])
             del st.session_state['snapshot_save_message']  # Clear after showing
 
+            # Save credentials to localStorage for return user recognition
+            # This runs AFTER rerun, so components.html is safe here (no duplicates)
+            user_email = st.session_state.get('user_email')
+            vault_id = st.session_state.get('vault_id')
+            if user_email or vault_id:
+                js_commands = []
+                if user_email:
+                    js_commands.append(f"localStorage.setItem('ff_user_email', '{user_email}');")
+                if vault_id:
+                    js_commands.append(f"localStorage.setItem('ff_vault_id', '{vault_id}');")
+                if js_commands:
+                    components.html(f"<script>{''.join(js_commands)}</script>", height=0)
+
         # Show cloud backup offer after save (if flag is set and user doesn't have backup yet)
         # NOTE: Credentials should be loaded from localStorage on Welcome page load
         # We don't read localStorage here to avoid rerun loops
