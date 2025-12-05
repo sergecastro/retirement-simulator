@@ -316,8 +316,23 @@ def main():
     
     # Count input_ keys
     input_keys = len([k for k in st.session_state.keys() if k.startswith('input_')])
-    
+
+    # LOAD VAULT CREDENTIALS FROM LOCALSTORAGE (ONLY ONCE per session)
+    if not st.session_state.get('_credentials_loaded'):
+        if not st.session_state.get('vault_id') and not st.session_state.get('user_email'):
+            from utils.safe_local_storage import get_backup_credentials
+            creds = get_backup_credentials()
+            if creds.get('ready') and creds.get('has_credentials'):
+                if creds.get('ff_vault_id'):
+                    st.session_state['vault_id'] = creds['ff_vault_id']
+                if creds.get('ff_user_email'):
+                    st.session_state['user_email'] = creds['ff_user_email']
+                st.session_state['_credentials_loaded'] = True
+            elif creds.get('ready'):
+                st.session_state['_credentials_loaded'] = True
+
     print(f'')
+    print(f"🔐 APP MAIN: input_age = {st.session_state.get('input_age', 'MISSING')}, input_ keys = {input_keys}")
     print(f"🔐 APP MAIN: cloud_password exists? {bool(st.session_state.get('cloud_password'))}, vault_id={st.session_state.get('vault_id', 'NONE')}")
     print(f"🔐 APP MAIN: current_mode={st.session_state.get('current_mode')}, mode_selected={st.session_state.get('mode_selected')}")
 

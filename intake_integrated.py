@@ -32,6 +32,38 @@ from utils.cookie_helper import set_welcome_back_cookie
 # Safe localStorage read (avoids rerun loops)
 from utils.safe_local_storage import get_backup_credentials
 
+# === WIDGET KEY PRESERVATION (Prevents Streamlit GC) ===
+# Re-assertion Pattern: "Touch" keys to prevent garbage collection during reruns
+WIDGET_KEYS_TO_PERSIST = [
+    # Profile
+    "input_user_name", "input_age", "input_partner_exists", "input_partner_name", "input_partner_age",
+    # Income
+    "input_salary_wages", "input_self_employment_income", "input_rental_income", "input_investment_income",
+    "input_social_security_income", "input_pension_income", "input_other_income", "input_total_income",
+    # Expenses
+    "input_housing_expenses", "input_utilities_expenses", "input_groceries_expenses", "input_transportation_expenses",
+    "input_healthcare_expenses", "input_insurance_expenses", "input_property_tax_expenses", "input_entertainment_expenses",
+    "input_restaurant_expenses", "input_travel_expenses", "input_education_expenses", "input_childcare_expenses",
+    "input_clothing_expenses", "input_charitable_donations", "input_miscellaneous_expenses", "input_other_expenses",
+    "input_total_expenses",
+    # Assets
+    "input_ira_balance", "input_four01k_403b_balance", "input_pension_fund_value", "input_partner_ira_balance",
+    "input_partner_four01k_403b_balance", "input_taxable_investment_accounts", "input_high_yield_savings_account",
+    "input_hsa_balance", "input_five29_plan_balance", "input_primary_residence_value", "input_secondary_residence_value",
+    "input_vehicles_value", "input_jewelry_collectibles_value", "input_business_ownership_value",
+    "input_cryptocurrency_holdings", "input_other_assets",
+    # Liabilities
+    "input_mortgage_balance", "input_secondary_mortgage_balance", "input_auto_loan_balance", "input_student_loan_balance",
+    "input_credit_card_debt", "input_other_liabilities",
+]
+
+def preserve_widget_keys():
+    """Touch all widget keys to prevent Streamlit garbage collection"""
+    for key in WIDGET_KEYS_TO_PERSIST:
+        if key in st.session_state:
+            st.session_state[key] = st.session_state[key]
+# === END PRESERVATION ===
+
 # ========== SCROLL TO TOP FIX ==========
 import streamlit.components.v1 as components
 
@@ -563,6 +595,10 @@ def transition_to_analysis():
 # ========== MAIN INTAKE QUESTIONNAIRE ==========
 def show_intake_questionnaire():
     """Main function to display the intake questionnaire"""
+    # === CRITICAL: Preserve widget keys on EVERY render ===
+    # This prevents Streamlit from garbage collecting session_state during reruns
+    preserve_widget_keys()
+
     # DEBUG: Track cloud credentials and data
     # Session ID for debugging (to detect if session is reset)
     if '_debug_session_id' not in st.session_state:

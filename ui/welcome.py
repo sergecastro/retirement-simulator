@@ -26,11 +26,11 @@ def show_new_user_mode_selection():
     """, unsafe_allow_html=True)
 
     # --- Cloud Backup User Recognition ---
-    cloud_creds = get_backup_credentials()
-    if cloud_creds['ready'] and cloud_creds['has_credentials']:
-        cloud_email = cloud_creds['ff_user_email']
-        cloud_vault = cloud_creds['ff_vault_id']
-        
+    # Check session_state first (already loaded in app.py), avoid duplicate st_javascript calls
+    cloud_email = st.session_state.get('user_email')
+    cloud_vault = st.session_state.get('vault_id')
+
+    if cloud_email or cloud_vault:
         st.success(f"☁️ **Welcome back!** You have a cloud backup.")
         if cloud_email:
             st.write(f"Signed in as: **{cloud_email}**")
@@ -422,6 +422,7 @@ def show_restore_form(restore_type: str):
 
             st.session_state.intake_data = restored_data
             st.session_state['_restore_success'] = True  # Mark restore as successful
+            st.session_state['_credentials_loaded'] = True  # Prevent st_javascript reruns
             st.rerun()  # Rerun to show success screen
 
     # Show success screen if restore was successful
