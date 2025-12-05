@@ -1,141 +1,195 @@
-# Session Handoff - December 4, 2025 (Night)
+# Session Handoff - December 4, 2025 (Night) - UPDATED
 
-## Summary
-Worked on Supabase cloud backup integration. Made significant progress but hit a blocker with localStorage reads causing Streamlit rerun loops.
+## 🚨 CRITICAL BUG: Session State Data Loss Between INTAKE Pages
 
----
+### The Problem We're Stuck On
+User enters data on Page 1 (Profile), clicks NEXT, and **the data disappears** before Page 2 renders.
 
-## What Was Accomplished Today
+### Terminal Evidence
+```
+📄 PAGE 1 NEXT CLICKED: Saving user_name=TESTUSER99, age=99, partner_exists=True
+📄 PAGE 1 NEXT: session_state input_age now = 99
+🔑 INTAKE ENTRY: input_age = 99
+🔑 INTAKE ENTRY: Total input_ keys in session: 18
 
-### ✅ WORKING
-1. **Vault creation in modal** - Anonymous vault creation works, saves to Supabase
-2. **Vault ID saved to localStorage** - `ff_vault_id` persists in browser
-3. **User email saved to localStorage** - `ff_user_email` persists in browser
-4. **Success screen with confirmation** - User must check checkbox before continuing
-5. **Button order fixed** - Account (left/recommended), Anonymous (right)
-6. **"Not now" button** - Clears backup offer flag correctly
+(st.rerun() happens in go_to_page())
 
-### ❌ NOT WORKING (Blocked)
-1. **Skip modal for returning users** - Can't read localStorage without causing loops
-2. **Welcome page recognition** - Same localStorage read issue
-3. **Restore from Supabase** - Not implemented yet
-
-### 🚧 REVERTED (Coming Soon)
-- Welcome page backup buttons are DISABLED with "COMING SOON" message
-- This prevents user frustration while we fix the core issue
-
----
-
-## The Core Problem
-
-**`_get_local_storage()` causes Streamlit rerun loops when used for reads.**
-
-The function in `utils/snapshot_manager.py` line 183-192 uses `LocalStorage()` component which triggers reruns on `.get()` calls.
-
-```python
-def _get_local_storage():
-    """
-    Get localStorage instance - ONLY call this during SAVE operations!
-    Never call during reads (causes rerun loops).
-    """
+🔑 INTAKE ENTRY: input_age = MISSING
+🔑 INTAKE ENTRY: Total input_ keys in session: 16
 ```
 
-### Why This Matters
-- We SAVE `ff_user_email` and `ff_vault_id` to localStorage on registration ✅
-- But we CAN'T READ them back without causing infinite loops ❌
-- So session state loses credentials when user navigates between pages
+**Key observation:** 2 keys deleted (18 → 16) during page transition.
+
+---
+
+## What We FIXED Today (These Work!)
+
+### 1. Password Persistence After Restore ✅
+- **Problem:** `cloud_password` disappeared after clicking "Continue to Analysis"
+- **Root cause:** `show_restore_modal()` returns `None` on subsequent reruns
+- **Fix:** Added `_restore_success` session state flag
+- **File:** `ui/welcome.py` lines 398-445
+
+### 2. "Continue to Analysis" Button ✅
+- Added explicit `key="restore_continue_to_analysis"`
+- Button properly navigates to Analysis mode
+
+### 3. Auto-Sync to Cloud ✅
+- `auto_sync_to_cloud()` successfully syncs to Supabase
+- Terminal shows: `✅ AUTO-SYNC: Vault updated successfully`
+- **BUT:** It syncs zeros instead of real data (because of the data loss bug)
+
+---
+
+## What We Investigated (NOT the Cause)
+
+We checked these and they do NOT delete input_age:
+
+1. **`go_to_page()` function** (line 443-448)
+   - Just sets page name and calls `st.rerun()`
+   - No deletion code
+
+2. **`render_top_navigation()`**
+   - Only sets `current_mode` on navigation clicks
+   - No session_state deletion
+
+3. **Widget key cleanup** (line 583)
+   - Only cleans editor keys: `children_editor`, `inherit_editor`, etc.
+   - Does NOT touch `input_*` keys
+
+4. **Searched for `del.*session_state`**
+   - Found only: flag cleanups (line 544), editor keys (line 583), message cleanup (line 1546)
+   - Nothing deletes `input_age`
+
+---
+
+## Debug Infrastructure Already In Place
+
+Ready to use tomorrow - just run the app and check terminal:
+
+### 1. Session ID Tracking
+```python
+# intake_integrated.py line 567-571
+if '_debug_session_id' not in st.session_state:
+    st.session_state['_debug_session_id'] = random.randint(1000, 9999)
+```
+If session ID changes between pages → session is being reset
+
+### 2. go_to_page() Debug
+```python
+# intake_integrated.py line 445-446
+print(f"🔀 GO_TO_PAGE: Navigating to {page_name}")
+print(f"🔀 GO_TO_PAGE: input_age BEFORE rerun = {st.session_state.get('input_age', 'MISSING')}")
+```
+
+### 3. INTAKE Entry Debug
+Shows session ID, all key counts, and specific field values on each page render.
+
+---
+
+## Theories to Test Tomorrow
+
+### Theory 1: Session Reset on Rerun
+Maybe `st.rerun()` is somehow creating a new session instead of continuing the existing one.
+- **Test:** Check if Session ID changes between pages
+- **If true:** We need to persist data differently (localStorage bridge)
+
+### Theory 2: Two Browser Sessions
+User might have two tabs open, causing session confusion.
+- **Test:** Close all tabs, use only one
+- **If true:** Not a code bug, just user behavior
+
+### Theory 3: Hidden Code We Missed
+Something is deleting keys that we haven't found.
+- **Test:** Add more debug prints, trace every session_state modification
+- **Search:** Look for any code that iterates over session_state keys
+
+### Theory 4: Streamlit Bug
+The `st.rerun()` call might have a bug in this Streamlit version.
+- **Test:** Try `st.experimental_rerun()` instead (deprecated but might work differently)
+
+---
+
+## INTAKE Widget Architecture (Important Context)
+
+Widgets in `intake_integrated.py` do NOT use `key=` parameters:
+```python
+your_age = st.number_input("Your age", min_value=18, max_value=100,
+                           value=st.session_state.get("input_age") or 55)
+```
+
+Values are manually saved when NEXT is clicked:
+```python
+if st.button("NEXT →"):
+    st.session_state['input_age'] = your_age  # ← This WORKS (we see it in debug)
+    go_to_page('income')
+```
+
+The data IS being saved correctly - it just disappears during `st.rerun()`.
 
 ---
 
 ## Files Modified Today
 
-| File | Changes |
-|------|---------|
-| `ui/cloud_backup_modal.py` | Button order, localStorage save, success screens, debug prints |
-| `ui/welcome.py` | Backup buttons disabled (COMING SOON) |
-| `intake_integrated.py` | Modal skip logic (partially working), removed problematic localStorage reads |
+| File | Key Changes |
+|------|-------------|
+| `ui/welcome.py` | `_restore_success` flag, button key, debug prints |
+| `ui/cloud_backup_modal.py` | Debug prints for credential tracking |
+| `app.py` | Debug prints at main entry and routing |
+| `intake_integrated.py` | Session ID tracking, go_to_page debug, INTAKE entry debug, Page 1 NEXT debug |
+| `utils/supabase_sync.py` | `auto_sync_to_cloud()` works correctly |
 
 ---
 
-## What Needs to Be Built Tomorrow
-
-### Priority 1: Safe localStorage Read
-Need a way to read localStorage WITHOUT triggering reruns. Options:
-
-1. **JavaScript injection** - Use `st.components.html()` to inject JS that reads localStorage and writes to a hidden element
-2. **App startup check** - Read localStorage once in `app.py` before any page renders
-3. **Query parameters** - Pass credentials via URL (not ideal for security)
-4. **Cookies** - Use cookies instead of localStorage (size limits)
-
-### Priority 2: Complete the Flow
-Once we can read localStorage safely:
-1. Welcome page recognizes returning registered users
-2. Modal skip works for users with credentials
-3. "Go to Analysis" button appears correctly
-
-### Priority 3: Restore from Supabase
-- Functions exist: `load_anonymous_vault()`, `sign_in_user()`
-- Need to wire them up properly
-- Load data into session state after restore
-
----
-
-## Key Code Locations
-
-### localStorage Save (WORKING)
-- `ui/welcome.py` line 285-289 - saves `ff_user_email` on registration
-- `ui/cloud_backup_modal.py` line 178 - saves `ff_vault_id` on vault creation
-- `ui/cloud_backup_modal.py` line 241 - saves `ff_user_email` on modal registration
-
-### Modal Skip Logic
-- `intake_integrated.py` line 1515-1525 - checks if modal should show
-- `intake_integrated.py` line 1639-1641 - checks if "Go to Analysis" should show
-
-### Supabase Functions
-- `utils/supabase_sync.py` - all cloud sync functions
-  - `create_anonymous_vault()` - creates vault with data
-  - `create_user_account()` - creates email account
-  - `load_anonymous_vault()` - restores vault data
-  - `sign_in_user()` - signs in and restores data
-
----
-
-## Debug Prints Still in Code
-Remove these before production cleanup:
-- `[MODAL DEBUG]` prints in `cloud_backup_modal.py`
-- `DEBUG MODAL CHECK` prints in `intake_integrated.py`
-- `🔥 WELCOME REGISTRATION` prints in `welcome.py`
-- `🔥 MODAL REGISTRATION` prints in `cloud_backup_modal.py`
-
----
-
-## Git Status
+## Git Commits Today
 ```
-Branch: master
-Last commit: 51a067e REVERT: Welcome page backup buttons disabled - COMING SOON - Dec 4 2025
-Remote: Up to date with origin/master
+cbe3960 FIX: Cloud restore password persistence
+2c0b87b DEBUG: Add routing debug prints
+1fa92f1 DEBUG: Add Page 1 profile data trace prints
+2f86bb6 DEBUG: Add more INTAKE entry trace
+a23b101 DEBUG: Add session ID + go_to_page trace
 ```
 
 ---
 
-## Test Accounts in Supabase
-- serge@emiramed.com (registered today)
-- Various test vaults created (FF-XXXX-XXXX format)
+## The Vault Data is Corrupted
+
+Vault FF-3T33-GB7D contains zeros from previous bad saves. Once data loss bug is fixed:
+1. User must re-enter all data in INTAKE
+2. Save successfully
+3. Then vault will have correct data
 
 ---
 
 ## Tomorrow's First Steps
 
-1. **Research safe localStorage read** - Check if `streamlit-local-storage` package has a non-rerunning read method
-2. **Try JavaScript injection approach** - Most likely to work
-3. **Test with fresh browser** - Clear all localStorage and test full flow
-4. **Re-enable Welcome page buttons** once localStorage read works
+### Step 1: Run the Debug
+1. Open http://localhost:8501
+2. Go to INTAKE Page 1
+3. Enter age=99, partner=yes
+4. Click NEXT
+5. **Check terminal for Session ID** - does it change?
+
+### Step 2: Based on Results
+- **If Session ID changes:** Session is being reset → Need localStorage bridge
+- **If Session ID same but data gone:** Hidden code deleting it → More investigation
+
+### Step 3: Potential Fixes
+- Add `key=` parameters to ALL widgets (auto-persist)
+- Store data in localStorage on every change
+- Find and fix whatever is deleting session_state
 
 ---
 
-## Session Stats
-- ~50 commits today on this feature
-- Multiple debug/fix cycles
-- Core infrastructure is in place, just needs the read mechanism fixed
+## Quick Reference: Key Line Numbers
 
-Good luck tomorrow! 🚀
+- `go_to_page()`: intake_integrated.py line 443
+- Debug at INTAKE entry: intake_integrated.py line 565-581
+- Page 1 Profile: intake_integrated.py line 660-773
+- Page 1 NEXT button save: intake_integrated.py line 758-770
+- Widget key cleanup: intake_integrated.py line 583
+- `_restore_success` flag: ui/welcome.py line 424, 428, 438, 443
+
+---
+
+Good luck tomorrow! The debug infrastructure is ready. 🚀
