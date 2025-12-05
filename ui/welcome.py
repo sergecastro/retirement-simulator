@@ -17,7 +17,7 @@ def show_new_user_mode_selection():
     check_for_returning_user()
 
     # ============ TITLE + BETA WARNING ============
-    st.title("Welcome to Family Forecast!")
+    st.markdown("### FAMILY FORECAST")
 
     st.markdown("""
     <div style='background-color: #FFF3CD; padding: 10px; border-radius: 6px; margin-bottom: 15px;'>

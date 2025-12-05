@@ -35,6 +35,16 @@ CUSTOM_CSS = """
 <script defer data-domain="familyforecast.ai" src="https://plausible.io/js/script.js"></script>
 
 <style>
+    /* White background */
+    .stApp {
+        background-color: #FFFFFF !important;
+    }
+
+    /* Helvetica font */
+    * {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    }
+
     /* HIDE Streamlit's auto-generated pages navigation in sidebar */
     [data-testid="stSidebarNav"] {
         display: none !important;

@@ -17,7 +17,7 @@ def render_top_navigation(current: str = "intake"):
                  Options: "INTAKE", "Analysis", "Healthcare", "scenario_studio", "social_security", "historical_tracking"
     """
     modules = [
-        ("📝", "INTAKE", "INTAKE"),
+        ("📝", "My Information", "INTAKE"),
         ("📊", "Analysis", "Analysis"),
         ("🏥", "Healthcare", "Healthcare"),
         ("🎬", "Scenarios", "scenario_studio"),

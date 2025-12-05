@@ -499,7 +499,7 @@ def main():
             st.markdown("---")
             st.markdown("### 🎯 Quick Mode Switch")
 
-            mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Social Security", "Healthcare"]
+            mode_options = ["My Information", "Analysis", "Scenario Studio", "Social Security", "Healthcare"]
             current_idx = 1  # Analysis is current
 
             # Mode selector radio buttons
@@ -508,7 +508,7 @@ def main():
                 options=mode_options,
                 index=current_idx,
                 key="mode_selector_analysis",
-                help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
+                help="My Information: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
             )
 
             # Handle mode change
@@ -766,19 +766,19 @@ def show_intake_mode():
         st.markdown("---")
         st.markdown("### 🎯 Quick Mode Switch")
 
-        mode_options = ["INTAKE", "Analysis", "Scenario Studio", "Social Security", "Healthcare"]
-        current_idx = 0  # INTAKE is current
+        mode_options = ["My Information", "Analysis", "Scenario Studio", "Social Security", "Healthcare"]
+        current_idx = 0  # My Information is current
 
         mode = st.radio(
             "Choose mode:",
             options=mode_options,
             index=current_idx,
             key="mode_selector_intake",
-            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
+            help="My Information: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
         )
 
         # Handle mode change
-        if mode != "INTAKE":
+        if mode != "My Information":
             # Preserve current snapshot before mode switch
             if 'current_snapshot_id' in st.session_state:
                 st.session_state['preserved_snapshot_id'] = st.session_state['current_snapshot_id']
@@ -792,7 +792,7 @@ def show_intake_mode():
             st.session_state.mode_selected = True
             st.rerun()
 
-    st.title("📝 INTAKE Questionnaire")
+    st.title("📝 My Information")
     st.markdown("*Guided data collection for retirement planning*")
     st.markdown("---")
 
@@ -872,10 +872,10 @@ def show_healthcare_mode():
 
         mode = st.radio(
             "Choose mode:",
-            options=["INTAKE", "Analysis", "Scenario Studio", "Social Security", "Healthcare"],
+            options=["My Information", "Analysis", "Scenario Studio", "Social Security", "Healthcare"],
             index=4,  # Healthcare is index 4
             key="mode_selector_healthcare",
-            help="INTAKE: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
+            help="My Information: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
         )
 
         if mode != st.session_state.current_mode:

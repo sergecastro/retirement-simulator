@@ -271,7 +271,6 @@ def collect_current_form_data():
         # Profile
         "input_user_name": st.session_state.get("input_user_name", ""),
         "input_age": st.session_state.get("input_age", 0),
-        "input_age_group": st.session_state.get("input_age_group", "70+"),
         "input_partner_exists": st.session_state.get("input_partner_exists", False),
         "input_partner_name": st.session_state.get("input_partner_name", ""),
         "input_partner_age": st.session_state.get("input_partner_age", 0),
@@ -1323,7 +1322,7 @@ def show_intake_questionnaire():
         # ✅ FORCE SCROLL TO TOP BEFORE CONTENT RENDERS
         scroll_to_top()
 
-        st.header("📋 Review & Complete Your Intake")
+        st.header("📋 Review & Complete Your Profile")
         st.caption("Review all your information before completing - click any section to edit")
 
         # Navigation: Back to Family button at top
