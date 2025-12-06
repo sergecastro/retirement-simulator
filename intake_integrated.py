@@ -1531,25 +1531,24 @@ def show_intake_questionnaire():
                     if user_name:
                         set_welcome_back_cookie(user_name, datetime.now().isoformat())
 
+                    # Save credentials to localStorage for return user recognition
+                    # Using st.markdown with script tag - no component, runs before rerun
+                    save_email = st.session_state.get('user_email')
+                    save_vault = st.session_state.get('vault_id')
+                    if save_email or save_vault:
+                        js_parts = []
+                        if save_email:
+                            js_parts.append(f"localStorage.setItem('ff_user_email', '{save_email}');")
+                        if save_vault:
+                            js_parts.append(f"localStorage.setItem('ff_vault_id', '{save_vault}');")
+                        st.markdown(f"<script>{''.join(js_parts)}</script>", unsafe_allow_html=True)
+
                     st.rerun()
 
         # Show save success message if exists
         if 'snapshot_save_message' in st.session_state:
             st.success(st.session_state['snapshot_save_message'])
             del st.session_state['snapshot_save_message']  # Clear after showing
-
-            # Save credentials to localStorage for return user recognition
-            # This runs AFTER rerun, so components.html is safe here (no duplicates)
-            user_email = st.session_state.get('user_email')
-            vault_id = st.session_state.get('vault_id')
-            if user_email or vault_id:
-                js_commands = []
-                if user_email:
-                    js_commands.append(f"localStorage.setItem('ff_user_email', '{user_email}');")
-                if vault_id:
-                    js_commands.append(f"localStorage.setItem('ff_vault_id', '{vault_id}');")
-                if js_commands:
-                    components.html(f"<script>{''.join(js_commands)}</script>", height=0)
 
         # Show cloud backup offer after save (if flag is set and user doesn't have backup yet)
         # NOTE: Credentials should be loaded from localStorage on Welcome page load
