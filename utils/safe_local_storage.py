@@ -56,13 +56,21 @@ def get_backup_credentials() -> dict:
     vault_id = st_javascript("localStorage.getItem('ff_vault_id')")
 
     # st_javascript returns 0 on first call before JS executes
-    if email == 0 or vault_id == 0:
+    # Only "not ready" if BOTH are 0 (first render before any JS runs)
+    # If one is 0 and other has value, JS ran but that key doesn't exist
+    if email == 0 and vault_id == 0:
         return {
             'has_credentials': False,
             'ff_user_email': None,
             'ff_vault_id': None,
             'ready': False
         }
+
+    # Convert 0 to None (JS ran but key doesn't exist in localStorage)
+    if email == 0:
+        email = None
+    if vault_id == 0:
+        vault_id = None
 
     # Clean up values - localStorage returns null as string "null" or None
     if email in (None, "null", ""):
