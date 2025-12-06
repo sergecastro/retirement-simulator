@@ -1532,16 +1532,14 @@ def show_intake_questionnaire():
                         set_welcome_back_cookie(user_name, datetime.now().isoformat())
 
                     # Save credentials to localStorage for return user recognition
-                    # Using st.markdown with script tag - no component, runs before rerun
+                    # Flag triggers write in app.py (safe location for st_javascript)
                     save_email = st.session_state.get('user_email')
                     save_vault = st.session_state.get('vault_id')
                     if save_email or save_vault:
-                        js_parts = []
-                        if save_email:
-                            js_parts.append(f"localStorage.setItem('ff_user_email', '{save_email}');")
-                        if save_vault:
-                            js_parts.append(f"localStorage.setItem('ff_vault_id', '{save_vault}');")
-                        st.markdown(f"<script>{''.join(js_parts)}</script>", unsafe_allow_html=True)
+                        st.session_state['_pending_localstorage_save'] = {
+                            'email': save_email,
+                            'vault': save_vault
+                        }
 
                     st.rerun()
 

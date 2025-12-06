@@ -307,6 +307,16 @@ def main():
             elif creds.get('ready'):
                 st.session_state['_credentials_loaded'] = True
 
+    # WRITE PENDING CREDENTIALS TO LOCALSTORAGE (after Page 8 Save)
+    # This runs on next page load (Analysis page) - safe location for st_javascript
+    if st.session_state.get('_pending_localstorage_save'):
+        from utils.safe_local_storage import write_local_storage
+        pending = st.session_state.pop('_pending_localstorage_save')
+        if pending.get('email'):
+            write_local_storage('ff_user_email', pending['email'])
+        if pending.get('vault'):
+            write_local_storage('ff_vault_id', pending['vault'])
+
     # =============================================================================
     # HEALTH CHECK ENDPOINT - For monitoring/uptime services
     # =============================================================================
