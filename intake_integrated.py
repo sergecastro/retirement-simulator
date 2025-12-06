@@ -667,9 +667,9 @@ def show_intake_questionnaire():
         user_email = st.session_state.get("user_email", "")
 
         if saved_name:
-            st.markdown(f"**Welcome back, {saved_name.split()[0]}!** Let's continue building your retirement plan.")
+            st.markdown(f"**Welcome back, {saved_name}!** Let's continue with your retirement plan.")
         elif user_email:
-            st.markdown("**Welcome!** Let's set up your retirement plan.")
+            st.markdown(f"**Welcome back!** Signed in as {user_email}")
         else:
             st.markdown("**Let's get started!** Enter your information below.")
 
