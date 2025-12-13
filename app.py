@@ -342,6 +342,19 @@ def main():
         st.query_params.clear()  # Clear the param so it doesn't loop
         st.rerun()
 
+    # =============================================================================
+    # MODE SHORTCUT - Direct navigation from external apps (Lovable)
+    # =============================================================================
+    # Usage: https://familyforecast.ai?mode=Analysis
+    # Valid modes: INTAKE, Analysis, Healthcare, scenario_studio, social_security, historical_tracking
+    mode_param = st.query_params.get("mode")
+    if mode_param and mode_param in ["INTAKE", "Analysis", "Healthcare", "scenario_studio", "social_security", "historical_tracking"]:
+        st.session_state.mode_selected = True
+        st.session_state.current_mode = mode_param
+        st.session_state["beta_agreement"] = True  # Skip beta agreement
+        st.query_params.clear()  # Clear the param so it doesn't loop
+        st.rerun()
+
     # Inject analytics tracking code (invisible to users)
     # Using components.html instead of markdown for better script injection
     st.components.v1.html(ANALYTICS_TRACKING_CODE, height=0)
