@@ -289,9 +289,11 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                     Complete YOUR INTAKE to see YOUR real comparison!
                     """)
                     if st.button("📝 Go to INTAKE to create YOUR plan", key="demo_goto_intake_btn"):
-                        st.session_state.current_mode = "INTAKE"
-                        st.session_state.mode_selected = True
-                        st.rerun()
+                        st.markdown(
+                            '<meta http-equiv="refresh" content="0;url=https://intake.familyforecast.ai/intake">',
+                            unsafe_allow_html=True
+                        )
+                        st.stop()
 
                 snapshots = all_snapshots
                 # Build dropdown options (exclude current snapshot)

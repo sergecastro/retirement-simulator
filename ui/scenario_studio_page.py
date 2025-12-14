@@ -312,8 +312,11 @@ def render_scenario_studio_page():
         if not current_snapshot:
             st.warning("⚠️ Please complete the INTAKE questionnaire first to create a base plan.")
             if st.button("📝 Go to INTAKE"):
-                st.session_state['current_mode'] = 'INTAKE'
-                st.session_state['mode_selected'] = True
+                st.markdown(
+                    '<meta http-equiv="refresh" content="0;url=https://intake.familyforecast.ai/intake">',
+                    unsafe_allow_html=True
+                )
+                st.stop()
             return
 
         # Get the current snapshot ID from the index
@@ -324,8 +327,11 @@ def render_scenario_studio_page():
         if not base_plan_id:
             st.error("❌ No current snapshot ID found. Please save a snapshot in INTAKE mode first.")
             if st.button("📝 Go to INTAKE"):
-                st.session_state['current_mode'] = 'INTAKE'
-                st.session_state['mode_selected'] = True
+                st.markdown(
+                    '<meta http-equiv="refresh" content="0;url=https://intake.familyforecast.ai/intake">',
+                    unsafe_allow_html=True
+                )
+                st.stop()
             return
 
         # Extract user info from snapshot data (snapshot uses 'input_' prefix)

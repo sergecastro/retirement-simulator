@@ -49,6 +49,14 @@ def render_top_navigation(current: str = "intake"):
                 use_container_width=True,
                 type=button_type
             ):
-                st.session_state.current_mode = mode_key
-                st.session_state.mode_selected = True
-                st.rerun()
+                if mode_key == "INTAKE":
+                    # Redirect to Lovable INTAKE
+                    st.markdown(
+                        '<meta http-equiv="refresh" content="0;url=https://intake.familyforecast.ai/intake">',
+                        unsafe_allow_html=True
+                    )
+                    st.stop()
+                else:
+                    st.session_state.current_mode = mode_key
+                    st.session_state.mode_selected = True
+                    st.rerun()

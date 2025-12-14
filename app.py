@@ -540,7 +540,14 @@ def main():
                 if 'current_snapshot_id' in st.session_state:
                     st.session_state['preserved_snapshot_id'] = st.session_state['current_snapshot_id']
 
-                if mode == "Scenario Studio":
+                if mode == "My Information":
+                    # Redirect to Lovable INTAKE
+                    st.markdown(
+                        '<meta http-equiv="refresh" content="0;url=https://intake.familyforecast.ai/intake">',
+                        unsafe_allow_html=True
+                    )
+                    st.stop()
+                elif mode == "Scenario Studio":
                     st.session_state.current_mode = "scenario_studio"
                 elif mode == "Social Security":
                     st.session_state.current_mode = "social_security"
@@ -902,7 +909,14 @@ def show_healthcare_mode():
         )
 
         if mode != st.session_state.current_mode:
-            if mode == "Scenario Studio":
+            if mode == "My Information":
+                # Redirect to Lovable INTAKE
+                st.markdown(
+                    '<meta http-equiv="refresh" content="0;url=https://intake.familyforecast.ai/intake">',
+                    unsafe_allow_html=True
+                )
+                st.stop()
+            elif mode == "Scenario Studio":
                 st.session_state.current_mode = "scenario_studio"
             elif mode == "Social Security":
                 st.session_state.current_mode = "social_security"
