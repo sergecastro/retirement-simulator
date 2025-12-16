@@ -134,15 +134,8 @@ CUSTOM_CSS = """
         color: #333333 !important;
     }
 
-    /* Sidebar text - white on dark background */
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] h1,
-    section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3,
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] span {
-        color: #FFFFFF !important;
-    }
+    /* NOTE: Sidebar uses default Streamlit styling (dark text on light background on desktop) */
+    /* Do NOT override sidebar colors - only fix main content area */
 </style>
 """
 
