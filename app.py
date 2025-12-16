@@ -343,6 +343,30 @@ def main():
         st.rerun()
 
     # =============================================================================
+    # CREDENTIAL PARAMS - Receive vault_id/email from Lovable via URL
+    # =============================================================================
+    # Usage: ?mode=Analysis&vault_id=FF-XXXX-XXXX or ?email=user@example.com
+    # This bridges credentials across domains (Lovable → Streamlit)
+    # IMPORTANT: Must run BEFORE mode handler which clears all params
+    vault_param = st.query_params.get("vault_id")
+    email_param = st.query_params.get("email")
+
+    if vault_param or email_param:
+        from utils.safe_local_storage import write_local_storage
+
+        if vault_param:
+            st.session_state['vault_id'] = vault_param
+            write_local_storage('ff_vault_id', vault_param)
+            print(f"🔐 RECEIVED vault_id from URL: {vault_param}")
+
+        if email_param:
+            st.session_state['user_email'] = email_param
+            write_local_storage('ff_user_email', email_param)
+            print(f"🔐 RECEIVED email from URL: {email_param}")
+
+        st.session_state['_credentials_loaded'] = True  # Mark as loaded
+
+    # =============================================================================
     # MODE SHORTCUT - Direct navigation from external apps (Lovable)
     # =============================================================================
     # Usage: https://familyforecast.ai?mode=Analysis
@@ -352,7 +376,7 @@ def main():
         st.session_state.mode_selected = True
         st.session_state.current_mode = mode_param
         st.session_state["beta_agreement"] = True  # Skip beta agreement
-        st.query_params.clear()  # Clear the param so it doesn't loop
+        st.query_params.clear()  # Clear ALL params (credentials already saved above)
         st.rerun()
 
     # Inject analytics tracking code (invisible to users)
