@@ -115,6 +115,210 @@ def create_anonymous_vault_empty(password: str) -> Tuple[Optional[str], str]:
 
 
 # =============================================================================
+# LOVABLE TO STREAMLIT DATA TRANSFORMER
+# =============================================================================
+
+def transform_lovable_to_streamlit(lovable_data: dict) -> dict:
+    """
+    Transform Lovable INTAKE data format to Streamlit session_state format.
+
+    Lovable uses nested objects: profile.name, income.salary.current, etc.
+    Streamlit uses flat keys: input_user_name, input_salary_wages, etc.
+
+    Args:
+        lovable_data: Data from Lovable INTAKE (nested format)
+
+    Returns:
+        Streamlit-compatible flat dictionary with input_* keys
+    """
+    from datetime import datetime
+
+    result = {}
+
+    # Helper to safely get nested values
+    def get_nested(obj, *keys, default=0):
+        for key in keys:
+            if obj is None or not isinstance(obj, dict):
+                return default
+            obj = obj.get(key)
+        return obj if obj is not None else default
+
+    # ==========================================================================
+    # PROFILE
+    # ==========================================================================
+    profile = lovable_data.get('profile', {})
+    result['input_user_name'] = profile.get('name', '')
+
+    # Calculate age from birth year
+    birth_year = profile.get('birthYear')
+    if birth_year:
+        result['input_age'] = datetime.now().year - birth_year
+    else:
+        result['input_age'] = 0
+
+    # Partner info
+    relationship = profile.get('relationshipStatus')
+    result['input_partner_exists'] = relationship not in [None, 'single', '']
+    result['input_partner_name'] = profile.get('partnerName', '')
+    result['input_retirement_age'] = profile.get('retirementAgeUser') or 65
+
+    # ==========================================================================
+    # INCOME
+    # ==========================================================================
+    income = lovable_data.get('income', {})
+    result['input_salary_wages'] = get_nested(income, 'salary', 'current', default=0)
+    result['input_self_employment_income'] = get_nested(income, 'selfEmployment', 'current', default=0)
+    result['input_social_security_income'] = get_nested(income, 'socialSecurity', 'current', default=0)
+    result['input_pension_income'] = get_nested(income, 'pension', 'current', default=0)
+    result['input_rental_income'] = get_nested(income, 'rentalIncome', 'current', default=0)
+    result['input_investment_income'] = get_nested(income, 'investmentIncome', 'current', default=0)
+    result['input_other_income'] = get_nested(income, 'otherIncome', 'current', default=0)
+
+    # Calculate total income
+    result['input_total_income'] = (
+        result['input_salary_wages'] +
+        result['input_self_employment_income'] +
+        result['input_social_security_income'] +
+        result['input_pension_income'] +
+        result['input_rental_income'] +
+        result['input_investment_income'] +
+        result['input_other_income']
+    )
+
+    # ==========================================================================
+    # EXPENSES
+    # ==========================================================================
+    expenses = lovable_data.get('expenses', {})
+    result['input_housing_expenses'] = get_nested(expenses, 'housing', 'amount', default=0)
+    result['input_utilities_expenses'] = get_nested(expenses, 'utilities', 'amount', default=0)
+    result['input_groceries_expenses'] = get_nested(expenses, 'groceries', 'amount', default=0)
+    result['input_transportation_expenses'] = get_nested(expenses, 'transportation', 'amount', default=0)
+    result['input_healthcare_expenses'] = get_nested(expenses, 'healthcare', 'amount', default=0)
+    result['input_insurance_expenses'] = get_nested(expenses, 'insurance', 'amount', default=0)
+    result['input_entertainment_expenses'] = get_nested(expenses, 'entertainment', 'amount', default=0)
+    result['input_restaurant_expenses'] = get_nested(expenses, 'diningOut', 'amount', default=0)
+    result['input_travel_expenses'] = get_nested(expenses, 'travel', 'amount', default=0)
+    result['input_education_expenses'] = get_nested(expenses, 'education', 'amount', default=0)
+    result['input_childcare_expenses'] = get_nested(expenses, 'childcare', 'amount', default=0)
+    result['input_clothing_expenses'] = get_nested(expenses, 'clothing', 'amount', default=0)
+    result['input_charitable_donations'] = get_nested(expenses, 'charity', 'amount', default=0)
+    result['input_miscellaneous_expenses'] = get_nested(expenses, 'miscellaneous', 'amount', default=0)
+    result['input_other_expenses'] = get_nested(expenses, 'other', 'amount', default=0)
+
+    # Calculate total expenses
+    result['input_total_expenses'] = (
+        result['input_housing_expenses'] +
+        result['input_utilities_expenses'] +
+        result['input_groceries_expenses'] +
+        result['input_transportation_expenses'] +
+        result['input_healthcare_expenses'] +
+        result['input_insurance_expenses'] +
+        result['input_entertainment_expenses'] +
+        result['input_restaurant_expenses'] +
+        result['input_travel_expenses'] +
+        result['input_education_expenses'] +
+        result['input_childcare_expenses'] +
+        result['input_clothing_expenses'] +
+        result['input_charitable_donations'] +
+        result['input_miscellaneous_expenses'] +
+        result['input_other_expenses']
+    )
+
+    # ==========================================================================
+    # ASSETS
+    # ==========================================================================
+    assets = lovable_data.get('assets', {})
+    result['input_high_yield_savings_account'] = get_nested(assets, 'checkingSavings', 'currentValue', default=0)
+    result['input_four01k_403b_balance'] = get_nested(assets, 'retirement401k', 'currentValue', default=0)
+    result['input_ira_balance'] = get_nested(assets, 'iraAccounts', 'currentValue', default=0)
+    result['input_taxable_investment_accounts'] = get_nested(assets, 'brokerageAccounts', 'currentValue', default=0)
+    result['input_primary_residence_value'] = get_nested(assets, 'realEstatePrimary', 'currentValue', default=0)
+    result['input_secondary_residence_value'] = get_nested(assets, 'realEstateInvestment', 'currentValue', default=0)
+    result['input_business_ownership_value'] = get_nested(assets, 'businessEquity', 'currentValue', default=0)
+    result['input_vehicles_value'] = get_nested(assets, 'vehicles', 'currentValue', default=0)
+    result['input_hsa_balance'] = get_nested(assets, 'hsa', 'currentValue', default=0)
+    result['input_five29_plan_balance'] = get_nested(assets, 'education529', 'currentValue', default=0)
+    result['input_jewelry_collectibles_value'] = get_nested(assets, 'collectibles', 'currentValue', default=0)
+    result['input_cryptocurrency_holdings'] = get_nested(assets, 'crypto', 'currentValue', default=0)
+    result['input_other_assets'] = get_nested(assets, 'otherAssets', 'currentValue', default=0)
+
+    # ==========================================================================
+    # LIABILITIES
+    # ==========================================================================
+    liabilities = lovable_data.get('liabilities', {})
+    result['input_mortgage_balance'] = get_nested(liabilities, 'mortgage', 'balance', default=0)
+    result['input_auto_loan_balance'] = get_nested(liabilities, 'autoLoans', 'balance', default=0)
+    result['input_student_loan_balance'] = get_nested(liabilities, 'studentLoans', 'balance', default=0)
+    result['input_credit_card_debt'] = get_nested(liabilities, 'creditCards', 'balance', default=0)
+    result['input_other_liabilities'] = get_nested(liabilities, 'otherDebts', 'balance', default=0)
+
+    # ==========================================================================
+    # FAMILY: CHILDREN
+    # ==========================================================================
+    family = lovable_data.get('family', {})
+    lovable_children = family.get('children', [])
+
+    children_list = []
+    for child in lovable_children:
+        children_list.append({
+            'Name': child.get('name', 'Child'),
+            'Birth Year': child.get('birthYear', 2010),
+            'College Plan': child.get('educationPlan') or 'Public In-State',
+            'Scholarship %': 0.0,
+            'Start Age': 18,
+            'Years': 4,
+            'Use 529 First?': True
+        })
+
+    result['children_list'] = children_list
+    result['children_rows'] = children_list  # Streamlit uses both
+
+    # ==========================================================================
+    # FAMILY: INHERITANCES
+    # ==========================================================================
+    lovable_inheritances = family.get('inheritances', [])
+
+    inheritance_list = []
+    for inh in lovable_inheritances:
+        inheritance_list.append({
+            'Year': inh.get('expectedYear', 2030),
+            'Amount': float(inh.get('estimatedAmount', 0)),
+            'Taxable?': False
+        })
+
+    result['inheritance_list'] = inheritance_list
+    result['inherit_rows'] = inheritance_list  # Streamlit uses both
+
+    # ==========================================================================
+    # FAMILY: GOALS
+    # ==========================================================================
+    lovable_goals = family.get('goals', [])
+
+    goals_list = []
+    for goal in lovable_goals:
+        goals_list.append({
+            'Goal': goal.get('description', 'Financial Goal'),
+            'Target $': float(goal.get('targetAmount', 0)),
+            'Target Year': float(goal.get('targetYear', 2030)),
+            'goal': goal.get('description', 'Financial Goal'),
+            'amount': float(goal.get('targetAmount', 0)),
+            'year': goal.get('targetYear', 2030)
+        })
+
+    result['goals_list'] = goals_list
+    result['goals_data'] = goals_list  # Streamlit uses both
+
+    # ==========================================================================
+    # METADATA
+    # ==========================================================================
+    result['_lovable_source'] = True  # Mark as transformed from Lovable
+    result['_lovable_mode'] = lovable_data.get('mode', 'unknown')
+    result['_lovable_plan_name'] = lovable_data.get('planName', '')
+
+    return result
+
+
+# =============================================================================
 # ANONYMOUS VAULT FUNCTIONS
 # =============================================================================
 
@@ -192,7 +396,17 @@ def load_anonymous_vault(vault_id: str, password: str) -> Tuple[Optional[dict], 
         encrypted_data = vault['encrypted_data']
 
         decrypted_json = decrypt_with_password(encrypted_data, password, salt)
-        data = json.loads(decrypted_json)
+        raw_data = json.loads(decrypted_json)
+
+        # Check if this is Lovable format (has 'profile' key) or Streamlit format (has 'input_' keys)
+        if 'profile' in raw_data:
+            # Lovable format - transform to Streamlit format
+            print(f"[VAULT] Detected Lovable format - transforming to Streamlit format...")
+            data = transform_lovable_to_streamlit(raw_data)
+            print(f"[VAULT] Transformation complete. Keys: {len(data)}")
+        else:
+            # Already Streamlit format
+            data = raw_data
 
         # Calculate days remaining
         days_left = (expires_at - datetime.utcnow().replace(tzinfo=expires_at.tzinfo)).days
