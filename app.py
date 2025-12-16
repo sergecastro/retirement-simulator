@@ -367,6 +367,26 @@ def main():
         st.session_state['_credentials_loaded'] = True  # Mark as loaded
 
     # =============================================================================
+    # PASSWORD PROMPT - User has vault/email from Lovable but needs password
+    # =============================================================================
+    # If user has vault_id or email but NO password in session, redirect to restore
+    # This enables cloud sync for users coming from Lovable
+    has_vault_or_email = st.session_state.get('vault_id') or st.session_state.get('user_email')
+    has_password = st.session_state.get('cloud_password')
+    already_prompted = st.session_state.get('_vault_password_prompted')
+
+    if has_vault_or_email and not has_password and not already_prompted:
+        # Mark that we're prompting (prevent redirect loop)
+        st.session_state['_vault_password_prompted'] = True
+        # Redirect to restore flow - vault_id/email already in session will be pre-filled
+        st.session_state.show_backup_signup = 'restore'
+        st.session_state['_force_welcome'] = True
+        print(f"🔐 PASSWORD NEEDED: Redirecting to restore flow for vault/email authentication")
+        # Don't clear query params yet - let the mode handler do it
+        # But DO trigger rerun to show restore modal
+        st.rerun()
+
+    # =============================================================================
     # MODE SHORTCUT - Direct navigation from external apps (Lovable)
     # =============================================================================
     # Usage: https://familyforecast.ai?mode=Analysis

@@ -318,12 +318,26 @@ def show_restore_modal() -> dict:
     Returns:
         Restored data dict or None
     """
-    st.markdown("### 🔐 Restore Your Data")
+    # Check if vault_id or email already in session (from Lovable URL params)
+    prefilled_vault = st.session_state.get('vault_id', '')
+    prefilled_email = st.session_state.get('user_email', '')
+
+    # Show appropriate message if coming from Lovable with credentials
+    if prefilled_vault or prefilled_email:
+        st.markdown("### 🔐 Enter Your Password")
+        st.info("Your vault/account was found. Please enter your password to enable cloud sync.")
+    else:
+        st.markdown("### 🔐 Restore Your Data")
 
     tab1, tab2 = st.tabs(["🔑 Using Vault ID & Password", "📧 Using Email & Password"])
 
     with tab1:
-        vault_id = st.text_input("Vault ID (e.g., FF-X7K9-M2PL)", key="restore_vault_id")
+        # Pre-fill vault_id if available from session (e.g., from Lovable URL)
+        vault_id = st.text_input(
+            "Vault ID (e.g., FF-X7K9-M2PL)",
+            value=prefilled_vault,
+            key="restore_vault_id"
+        )
         password = st.text_input("Password", type="password", key="restore_vault_password")
 
         if st.button("Restore Vault", key="restore_vault_btn"):
@@ -352,7 +366,8 @@ def show_restore_modal() -> dict:
                 return None
 
     with tab2:
-        email = st.text_input("Email", key="restore_email")
+        # Pre-fill email if available from session (e.g., from Lovable URL)
+        email = st.text_input("Email", value=prefilled_email, key="restore_email")
         password = st.text_input("Password", type="password", key="restore_password")
 
         if st.button("Sign In", key="restore_signin_btn"):
