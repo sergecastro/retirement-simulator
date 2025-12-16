@@ -102,6 +102,47 @@ CUSTOM_CSS = """
         z-index: 999999 !important;
         pointer-events: auto !important;
     }
+
+    /* ==============================================
+       MOBILE CONTRAST FIX - Force light theme
+       Prevents dark mode from making text invisible
+       ============================================== */
+
+    /* Force light background everywhere */
+    .stApp, .main, [data-testid="stAppViewContainer"] {
+        background-color: #FFFFFF !important;
+    }
+
+    /* Force dark text for all main content headers and labels */
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
+    .stApp p, .stApp label, .stApp span,
+    [data-testid="stAppViewContainer"] h1,
+    [data-testid="stAppViewContainer"] h2,
+    [data-testid="stAppViewContainer"] h3,
+    [data-testid="stAppViewContainer"] label,
+    [data-testid="stAppViewContainer"] p {
+        color: #1E1E1E !important;
+    }
+
+    /* Force dark text in input labels */
+    .stTextInput label, .stNumberInput label, .stSelectbox label {
+        color: #1E1E1E !important;
+    }
+
+    /* Info/warning boxes - ensure readable dark text */
+    .stAlert p, [data-baseweb="notification"] p {
+        color: #333333 !important;
+    }
+
+    /* Sidebar text - white on dark background */
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span {
+        color: #FFFFFF !important;
+    }
 </style>
 """
 

@@ -424,22 +424,73 @@ def show_restore_form(restore_type: str):
                 components.html(f"<script>{js_code}</script>", height=0)
 
             st.session_state.intake_data = restored_data
+            # DEBUG: Log what we saved
+            print(f"[DEBUG RESTORE] Saved intake_data with {len(restored_data)} keys")
+            print(f"[DEBUG RESTORE] _lovable_source: {restored_data.get('_lovable_source')}")
+            print(f"[DEBUG RESTORE] input_user_name: {restored_data.get('input_user_name')}")
             st.session_state['_restore_success'] = True  # Mark restore as successful
             st.session_state['_credentials_loaded'] = True  # Prevent st_javascript reruns
             st.rerun()  # Rerun to show success screen
 
     # Show success screen if restore was successful
     if st.session_state.get('_restore_success', False):
-        st.success("✅ Data restored successfully!")
-        st.markdown(f"**Vault ID:** `{st.session_state.get('vault_id', 'N/A')}`")
+        intake_data = st.session_state.get('intake_data', {})
 
-        # Debug info
-        st.info(f"🔐 Password saved: {'✅ Yes' if st.session_state.get('cloud_password') else '❌ No'}")
+        # DEBUG: Log what we got
+        print(f"[DEBUG WELCOME] intake_data keys: {list(intake_data.keys())[:10]}...")
+        print(f"[DEBUG WELCOME] _lovable_source: {intake_data.get('_lovable_source')}")
+        print(f"[DEBUG WELCOME] input_user_name: {intake_data.get('input_user_name')}")
 
-        # Show continue button with explicit key
-        if st.button("🚀 Continue to Analysis", type="primary", use_container_width=True, key="restore_continue_to_analysis"):
-            st.session_state.show_backup_signup = None
-            st.session_state.mode_selected = True
-            st.session_state.current_mode = "Analysis"
-            st.session_state['_restore_success'] = False  # Clear flag
-            st.rerun()
+        # Check if this came from Lovable INTAKE
+        if intake_data.get('_lovable_source'):
+            # === LOVABLE WELCOME FLOW ===
+            user_name = intake_data.get('input_user_name', 'Friend')
+            st.markdown(f"## Welcome, {user_name}!")
+            st.success("Your Financial Profile is Ready!")
+            st.markdown("Your data has been securely decrypted. Ready to explore your retirement future?")
+
+            st.markdown("---")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Run Simulation", type="primary", use_container_width=True, key="lovable_btn_analysis"):
+                    st.session_state.show_backup_signup = None
+                    st.session_state.mode_selected = True
+                    st.session_state.current_mode = "Analysis"
+                    st.session_state['_restore_success'] = False
+                    st.rerun()
+                if st.button("Healthcare Hub", use_container_width=True, key="lovable_btn_healthcare"):
+                    st.session_state.show_backup_signup = None
+                    st.session_state.mode_selected = True
+                    st.session_state.current_mode = "Healthcare"
+                    st.session_state['_restore_success'] = False
+                    st.rerun()
+            with col2:
+                if st.button("Social Security", use_container_width=True, key="lovable_btn_ss"):
+                    st.session_state.show_backup_signup = None
+                    st.session_state.mode_selected = True
+                    st.session_state.current_mode = "Social Security"
+                    st.session_state['_restore_success'] = False
+                    st.rerun()
+                if st.button("Scenarios", use_container_width=True, key="lovable_btn_scenarios"):
+                    st.session_state.show_backup_signup = None
+                    st.session_state.mode_selected = True
+                    st.session_state.current_mode = "Scenarios"
+                    st.session_state['_restore_success'] = False
+                    st.rerun()
+
+        else:
+            # === STANDARD STREAMLIT RESTORE FLOW ===
+            st.success("Data restored successfully!")
+            st.markdown(f"**Vault ID:** `{st.session_state.get('vault_id', 'N/A')}`")
+
+            # Debug info
+            st.info(f"Password saved: {'Yes' if st.session_state.get('cloud_password') else 'No'}")
+
+            # Show continue button with explicit key
+            if st.button("Continue to Analysis", type="primary", use_container_width=True, key="restore_continue_to_analysis"):
+                st.session_state.show_backup_signup = None
+                st.session_state.mode_selected = True
+                st.session_state.current_mode = "Analysis"
+                st.session_state['_restore_success'] = False  # Clear flag
+                st.rerun()
