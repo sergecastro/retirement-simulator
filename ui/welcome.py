@@ -441,6 +441,19 @@ def show_restore_form(restore_type: str):
         print(f"[DEBUG WELCOME] _lovable_source: {intake_data.get('_lovable_source')}")
         print(f"[DEBUG WELCOME] input_user_name: {intake_data.get('input_user_name')}")
 
+        # =======================================================================
+        # RETURNING USER UPDATE FLOW: If user came with &then=INTAKE, go directly
+        # to Streamlit INTAKE mode (skip welcome screen, user wants to edit data)
+        # =======================================================================
+        if st.session_state.get('_after_restore_go_to') == 'INTAKE':
+            st.session_state['_after_restore_go_to'] = None  # Clear flag
+            st.session_state['_restore_success'] = False
+            st.session_state.show_backup_signup = None
+            st.session_state.mode_selected = True
+            st.session_state.current_mode = "INTAKE"
+            print(f"🔄 REDIRECT TO INTAKE: Returning user update flow - going to Streamlit INTAKE")
+            st.rerun()
+
         # Check if this came from Lovable INTAKE
         if intake_data.get('_lovable_source'):
             # === LOVABLE WELCOME FLOW ===

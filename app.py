@@ -358,12 +358,21 @@ def main():
     # RESTORE SHORTCUT - Go directly to cloud restore from any page
     # =============================================================================
     # Usage: http://localhost:8501/?restore=cloud&vault_id=XXX
+    # Usage: http://localhost:8501/?restore=cloud&vault_id=XXX&then=INTAKE
+    #        (for returning users who want to UPDATE their data)
     # NOTE: Credential params captured ABOVE before we clear params here
     if st.query_params.get("restore") == "cloud":
         st.session_state.mode_selected = False
         st.session_state.current_mode = None
         st.session_state.show_backup_signup = 'restore'
         st.session_state['_force_welcome'] = True  # Flag to skip auto-Analysis
+
+        # Check if user wants to go to INTAKE after restore (returning user update flow)
+        then_param = st.query_params.get("then")
+        if then_param == "INTAKE":
+            st.session_state['_after_restore_go_to'] = 'INTAKE'
+            print(f"🔄 RESTORE THEN INTAKE: User wants to update data after restore")
+
         st.query_params.clear()  # Clear the param so it doesn't loop
         st.rerun()
 
@@ -776,6 +785,24 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 
 def show_intake_mode():
     """Display INTAKE questionnaire mode"""
+
+    # =========================================================================
+    # CLOUD RESTORE DATA: If user came from cloud restore (returning user update
+    # flow), load data from intake_data into session_state for INTAKE form fields
+    # =========================================================================
+    if st.session_state.get('intake_data') and not st.session_state.get('_intake_cloud_loaded'):
+        st.session_state['_intake_cloud_loaded'] = True  # Prevent re-loading
+        intake_data = st.session_state.get('intake_data', {})
+        for key, value in intake_data.items():
+            # WHITELIST: Only copy safe data keys, never widget keys
+            if key.startswith(('input_', 'temp_', '_protected')) or key in (
+                'children_list', 'children_rows', 'inheritance_list', 'inherit_rows',
+                'goals_list', 'goals_data', 'custom_expenses', 'custom_expenses_list',
+                'custom_income', 'custom_income_list', 'schema_version'
+            ):
+                st.session_state[key] = value
+        user_name = intake_data.get('input_user_name', 'Unknown')
+        print(f"[CLOUD RESTORE → INTAKE] Loaded data for: {user_name}")
 
     # WELCOME BACK: If user clicked "Continue My Plan", load from localStorage (user-triggered, safe)
     if st.session_state.get('load_from_local_storage', False):
