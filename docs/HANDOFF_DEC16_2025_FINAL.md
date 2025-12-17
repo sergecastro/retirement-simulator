@@ -33,31 +33,50 @@ Up to date with origin/master
 
 ---
 
-## CRITICAL ISSUE TO RETHINK TOMORROW
+## DECISION MADE: Returning User Update Flow
 
-### Returning User "Update My Info" → Empty Form
+### The Solution: Streamlit INTAKE Mode (One-Way Ticket)
 
-**Current Behavior:**
-- User clicks "Update My Info" in Lovable
-- Goes to `/intake` route
-- Sees **EMPTY FORM** (no data pre-filled)
-- Must re-enter ALL data from scratch
+**Serge's Decision (Dec 16, 2025 end of session):**
 
-**Why This Happens:**
-- Lovable has NO decryption capability
-- Cannot fetch and decrypt data from Supabase
-- Cross-domain localStorage isolation prevents sharing
+```
+Returning User clicks "Update My Info" in Lovable
+    │
+    ▼
+Redirect to: app.familyforecast.ai?mode=INTAKE&vault_id=XXX
+    │
+    ▼
+Streamlit prompts for password → Decrypts data
+    │
+    ▼
+Shows OLD Streamlit INTAKE pages (pre-Lovable pages)
+    │  - Data is PRE-FILLED (already decrypted!)
+    │  - User edits what they need
+    │  - Saves back to Supabase (encrypted)
+    │
+    ▼
+Continue to Analysis (Streamlit)
+    │
+    ▼
+NEVER returns to Lovable (one-way ticket)
+```
 
-**Options to Discuss Tomorrow:**
+**Why This Works:**
+- Streamlit CAN decrypt (already does for restore)
+- Old INTAKE pages still exist in codebase
+- Data pre-filled - no re-entering from scratch
+- One password prompt only
+- User already impressed by Lovable - now just needs functionality
 
-| Option | Pros | Cons |
-|--------|------|------|
-| **A. Accept It** | Simple, no code changes | Bad UX for updates |
-| **B. Add Lovable Decryption** | Full data pre-fill | Double password prompt, complex JS crypto |
-| **C. Enable Streamlit Inputs** | Edit in Streamlit | Currently `disabled=True`, would need UI work |
-| **D. Hybrid Editing** | Quick tweaks in Streamlit | Partial solution, complexity |
+**Implementation Tomorrow:**
 
-**Recommendation:** Discuss with Serge before implementing. This affects core user experience.
+| Step | Where | Change |
+|------|-------|--------|
+| 1 | **Lovable** | Change "Update My Info" redirect: `/intake` → `app.familyforecast.ai?mode=INTAKE&vault_id=XXX` |
+| 2 | **Streamlit** | Verify `?mode=INTAKE` loads data from Supabase before showing form |
+| 3 | **Test** | Full flow: Lovable → Streamlit INTAKE → Edit → Save → Analysis |
+
+**Serge's Philosophy:** "User is already our customer, no need to impress again, just needs to work perfectly"
 
 ---
 
