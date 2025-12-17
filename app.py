@@ -800,12 +800,15 @@ def show_intake_mode():
                 'goals_list', 'goals_data', 'custom_expenses', 'custom_expenses_list',
                 'custom_income', 'custom_income_list', 'schema_version'
             ):
-                # Convert numeric input_ fields to int for st.number_input compatibility
-                # int(float(x)) handles "5000", 5000.0, and 5000 safely
+                # Convert numeric input_ fields for st.number_input compatibility
+                # Age fields need int, everything else needs float
                 # Names and other strings will fail conversion and keep original value
                 if key.startswith('input_'):
                     try:
-                        st.session_state[key] = int(float(value)) if value is not None else 0
+                        if 'age' in key:  # input_age, input_partner_age
+                            st.session_state[key] = int(float(value)) if value is not None else 0
+                        else:
+                            st.session_state[key] = float(value) if value is not None else 0.0
                     except (ValueError, TypeError):
                         # Not a number (e.g., input_user_name) - keep as string
                         st.session_state[key] = value
