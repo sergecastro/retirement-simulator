@@ -800,7 +800,16 @@ def show_intake_mode():
                 'goals_list', 'goals_data', 'custom_expenses', 'custom_expenses_list',
                 'custom_income', 'custom_income_list', 'schema_version'
             ):
-                st.session_state[key] = value
+                # Convert numeric input_ fields to float for st.number_input compatibility
+                # Names and other strings will fail conversion and keep original value
+                if key.startswith('input_'):
+                    try:
+                        st.session_state[key] = float(value) if value is not None else 0.0
+                    except (ValueError, TypeError):
+                        # Not a number (e.g., input_user_name) - keep as string
+                        st.session_state[key] = value
+                else:
+                    st.session_state[key] = value
         user_name = intake_data.get('input_user_name', 'Unknown')
         print(f"[CLOUD RESTORE → INTAKE] Loaded data for: {user_name}")
 
