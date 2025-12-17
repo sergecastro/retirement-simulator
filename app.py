@@ -827,6 +827,10 @@ def show_intake_mode():
         st.session_state['intake_mode'] = 'full'
         print(f"[CLOUD RESTORE → INTAKE] Set intake_mode=full to skip gateway")
 
+        # Prevent auto-load from localStorage from overwriting our cloud data
+        st.session_state['_intake_autoload_attempted'] = True
+        print(f"[CLOUD RESTORE → INTAKE] Set _intake_autoload_attempted=True to prevent localStorage overwrite")
+
     # WELCOME BACK: If user clicked "Continue My Plan", load from localStorage (user-triggered, safe)
     if st.session_state.get('load_from_local_storage', False):
         st.session_state['load_from_local_storage'] = False  # Clear flag FIRST to prevent loops
