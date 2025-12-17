@@ -3,6 +3,37 @@ Supabase Cloud Sync for Family Forecast
 =======================================
 Handles anonymous vaults and user account vaults.
 All data is encrypted BEFORE sending to Supabase.
+
+# =============================================================================
+# ⚠️⚠️⚠️ CRITICAL WARNING FOR FUTURE DEVELOPERS ⚠️⚠️⚠️
+# =============================================================================
+#
+# THREE SYSTEMS MUST STAY IN PERFECT SYNC - ANY FIELD CHANGE REQUIRES ALL THREE:
+#
+#   1. LOVABLE INTAKE (React/TypeScript)
+#      - File: src/lib/encryption.ts (field names in encrypted data)
+#      - File: IntakeReview.tsx, QuickReview.tsx (form fields)
+#
+#   2. STREAMLIT INTAKE (Python)
+#      - File: pages/financial_inputs.py (form fields with input_* keys)
+#      - Uses st.session_state keys like input_salary_wages, input_age, etc.
+#
+#   3. DATA TRANSFORMER (this file)
+#      - Function: transform_lovable_to_streamlit() below
+#      - Maps Lovable nested format → Streamlit flat format
+#
+#   4. STREAMLIT ANALYSIS (Python)
+#      - File: simulation/simulation_core.py (reads input_* keys)
+#      - File: ui/results_page.py (displays input_* values)
+#
+# WHAT HAPPENS IF YOU FORGET:
+#   - Add field in Lovable only → Data lost in Streamlit
+#   - Rename field in Streamlit only → Analysis shows zeros
+#   - Change transformer only → Lovable data doesn't map correctly
+#
+# RULE: ONE CHANGE = CHECK ALL FOUR PLACES
+#
+# =============================================================================
 """
 
 import json
