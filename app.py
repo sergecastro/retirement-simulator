@@ -369,9 +369,11 @@ def main():
 
         # Check if user wants to go to INTAKE after restore (returning user update flow)
         then_param = st.query_params.get("then")
+        print(f"[DEBUG APP.PY] restore=cloud detected, then_param={then_param}")
         if then_param == "INTAKE":
             st.session_state['_after_restore_go_to'] = 'INTAKE'
             print(f"🔄 RESTORE THEN INTAKE: User wants to update data after restore")
+        print(f"[DEBUG APP.PY] _after_restore_go_to set to: {st.session_state.get('_after_restore_go_to')}")
 
         st.query_params.clear()  # Clear the param so it doesn't loop
         st.rerun()

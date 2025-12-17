@@ -440,6 +440,7 @@ def show_restore_form(restore_type: str):
         print(f"[DEBUG WELCOME] intake_data keys: {list(intake_data.keys())[:10]}...")
         print(f"[DEBUG WELCOME] _lovable_source: {intake_data.get('_lovable_source')}")
         print(f"[DEBUG WELCOME] input_user_name: {intake_data.get('input_user_name')}")
+        print(f"[DEBUG WELCOME] _after_restore_go_to: {st.session_state.get('_after_restore_go_to')}")
 
         # =======================================================================
         # RETURNING USER UPDATE FLOW: If user came with &then=INTAKE, go directly
