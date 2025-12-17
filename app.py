@@ -806,17 +806,8 @@ def show_intake_mode():
                 'custom_income', 'custom_income_list', 'schema_version'
             ):
                 print(f"[DEBUG CONVERT] key={key}, value={value}, type={type(value)}")
-                # Convert numeric input_ fields for st.number_input compatibility
-                # ALL numeric fields need float (including age)
-                # Names and other strings will fail conversion and keep original value
-                if key.startswith('input_'):
-                    try:
-                        st.session_state[key] = float(value) if value is not None else 0.0
-                    except (ValueError, TypeError):
-                        # Not a number (e.g., input_user_name) - keep as string
-                        st.session_state[key] = value
-                else:
-                    st.session_state[key] = value
+                # All widgets now use float, transformer returns float - just pass through
+                st.session_state[key] = value
         user_name = intake_data.get('input_user_name', 'Unknown')
         print(f"[CLOUD RESTORE → INTAKE] Loaded data for: {user_name}")
 

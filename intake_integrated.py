@@ -701,16 +701,16 @@ def show_intake_questionnaire():
         # Your age
         your_age = st.number_input(
             "Your age",
-            min_value=18,
-            max_value=100,
-            value=st.session_state.get("input_age") or 55,
-            step=1,
+            min_value=18.0,
+            max_value=100.0,
+            value=float(st.session_state.get("input_age") or 55),
+            step=1.0,
             help="Your current age"
         )
 
         # Partner fields (if couple)
         partner_name = ""
-        partner_age = 18
+        partner_age = 18.0
         if mode == "Couple":
             partner_name = st.text_input(
                 "Partner name",
@@ -718,10 +718,10 @@ def show_intake_questionnaire():
             )
             partner_age = st.number_input(
                 "Partner age",
-                min_value=18,
-                max_value=100,
-                value=st.session_state.get("input_partner_age") or 18,
-                step=1
+                min_value=18.0,
+                max_value=100.0,
+                value=float(st.session_state.get("input_partner_age") or 18),
+                step=1.0
             )
 
         # Intelligent validation
