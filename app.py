@@ -370,11 +370,8 @@ def main():
 
         # Check if user wants to go to INTAKE after restore (returning user update flow)
         then_param = st.query_params.get("then")
-        print(f"[DEBUG APP.PY] restore=cloud detected, then_param={then_param}")
         if then_param == "INTAKE":
             st.session_state['_after_restore_go_to'] = 'INTAKE'
-            print(f"🔄 RESTORE THEN INTAKE: User wants to update data after restore")
-        print(f"[DEBUG APP.PY] _after_restore_go_to set to: {st.session_state.get('_after_restore_go_to')}")
 
         st.query_params.clear()  # Clear the param so it doesn't loop
         st.rerun()
@@ -793,8 +790,6 @@ def show_intake_mode():
     # CLOUD RESTORE DATA: If user came from cloud restore (returning user update
     # flow), load data from intake_data into session_state for INTAKE form fields
     # =========================================================================
-    print(f"[DEBUG] intake_data exists: {st.session_state.get('intake_data') is not None}")
-    print(f"[DEBUG] _intake_cloud_loaded: {st.session_state.get('_intake_cloud_loaded')}")
     if st.session_state.get('intake_data') and not st.session_state.get('_intake_cloud_loaded'):
         st.session_state['_intake_cloud_loaded'] = True  # Prevent re-loading
         intake_data = st.session_state.get('intake_data', {})
@@ -805,20 +800,15 @@ def show_intake_mode():
                 'goals_list', 'goals_data', 'custom_expenses', 'custom_expenses_list',
                 'custom_income', 'custom_income_list', 'schema_version'
             ):
-                print(f"[DEBUG CONVERT] key={key}, value={value}, type={type(value)}")
                 # All widgets now use float, transformer returns float - just pass through
                 st.session_state[key] = value
-        user_name = intake_data.get('input_user_name', 'Unknown')
-        print(f"[CLOUD RESTORE → INTAKE] Loaded data for: {user_name}")
 
         # Set intake_mode to skip the mode selection gateway
         # Returning users should go directly to questionnaire with pre-filled data
         st.session_state['intake_mode'] = 'full'
-        print(f"[CLOUD RESTORE → INTAKE] Set intake_mode=full to skip gateway")
 
         # Prevent auto-load from localStorage from overwriting our cloud data
         st.session_state['_intake_autoload_attempted'] = True
-        print(f"[CLOUD RESTORE → INTAKE] Set _intake_autoload_attempted=True to prevent localStorage overwrite")
 
     # WELCOME BACK: If user clicked "Continue My Plan", load from localStorage (user-triggered, safe)
     if st.session_state.get('load_from_local_storage', False):

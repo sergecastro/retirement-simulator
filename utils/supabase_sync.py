@@ -435,17 +435,10 @@ def load_anonymous_vault(vault_id: str, password: str) -> Tuple[Optional[dict], 
         decrypted_json = decrypt_with_password(encrypted_data, password, salt)
         raw_data = json.loads(decrypted_json)
 
-        # DEBUG: Show raw data from Supabase BEFORE any transformation
-        print(f"[DEBUG RAW] Data from Supabase (first 2000 chars):")
-        print(json.dumps(raw_data, indent=2)[:2000])
-        print(f"[DEBUG RAW] Total keys in raw_data: {list(raw_data.keys())}")
-
         # Check if this is Lovable format (has 'profile' key) or Streamlit format (has 'input_' keys)
         if 'profile' in raw_data:
             # Lovable format - transform to Streamlit format
-            print(f"[VAULT] Detected Lovable format - transforming to Streamlit format...")
             data = transform_lovable_to_streamlit(raw_data)
-            print(f"[VAULT] Transformation complete. Keys: {len(data)}")
         else:
             # Already Streamlit format
             data = raw_data
