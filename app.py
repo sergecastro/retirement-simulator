@@ -366,6 +366,7 @@ def main():
         st.session_state.current_mode = None
         st.session_state.show_backup_signup = 'restore'
         st.session_state['_force_welcome'] = True  # Flag to skip auto-Analysis
+        st.session_state['_vault_password_prompted'] = True  # Prevent double password prompt
 
         # Check if user wants to go to INTAKE after restore (returning user update flow)
         then_param = st.query_params.get("then")

@@ -446,6 +446,8 @@ def show_restore_form(restore_type: str):
         # RETURNING USER UPDATE FLOW: If user came with &then=INTAKE, go directly
         # to Streamlit INTAKE mode (skip welcome screen, user wants to edit data)
         # =======================================================================
+        print(f"[DEBUG WELCOME] Checking _after_restore_go_to: {st.session_state.get('_after_restore_go_to')}")
+        print(f"[DEBUG WELCOME] _lovable_source: {intake_data.get('_lovable_source')}")
         if st.session_state.get('_after_restore_go_to') == 'INTAKE':
             st.session_state['_after_restore_go_to'] = None  # Clear flag
             st.session_state['_restore_success'] = False
