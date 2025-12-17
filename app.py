@@ -368,10 +368,12 @@ def main():
         st.session_state['_force_welcome'] = True  # Flag to skip auto-Analysis
         st.session_state['_vault_password_prompted'] = True  # Prevent double password prompt
 
-        # Check if user wants to go to INTAKE after restore (returning user update flow)
+        # Check if user wants to go somewhere specific after restore
         then_param = st.query_params.get("then")
         if then_param == "INTAKE":
             st.session_state['_after_restore_go_to'] = 'INTAKE'
+        elif then_param == "Analysis":
+            st.session_state['_after_restore_go_to'] = 'Analysis'
 
         st.query_params.clear()  # Clear the param so it doesn't loop
         st.rerun()

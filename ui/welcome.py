@@ -433,15 +433,23 @@ def show_restore_form(restore_type: str):
         intake_data = st.session_state.get('intake_data', {})
 
         # =======================================================================
-        # RETURNING USER UPDATE FLOW: If user came with &then=INTAKE, go directly
-        # to Streamlit INTAKE mode (skip welcome screen, user wants to edit data)
+        # DIRECT NAVIGATION: If user specified &then=INTAKE or &then=Analysis,
+        # skip welcome screen and go directly to their destination
         # =======================================================================
-        if st.session_state.get('_after_restore_go_to') == 'INTAKE':
+        after_restore_destination = st.session_state.get('_after_restore_go_to')
+        if after_restore_destination == 'INTAKE':
             st.session_state['_after_restore_go_to'] = None  # Clear flag
             st.session_state['_restore_success'] = False
             st.session_state.show_backup_signup = None
             st.session_state.mode_selected = True
             st.session_state.current_mode = "INTAKE"
+            st.rerun()
+        elif after_restore_destination == 'Analysis':
+            st.session_state['_after_restore_go_to'] = None  # Clear flag
+            st.session_state['_restore_success'] = False
+            st.session_state.show_backup_signup = None
+            st.session_state.mode_selected = True
+            st.session_state.current_mode = "Analysis"
             st.rerun()
 
         # Check if this came from Lovable INTAKE
