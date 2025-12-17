@@ -329,6 +329,18 @@ def show_restore_modal() -> dict:
     else:
         st.markdown("### 🔐 Restore Your Data")
 
+    # Security explanation for users transitioning from Lovable
+    st.info('''
+🔐 **Security Checkpoint**
+
+You're transitioning between two separate secure areas:
+- **Data Entry** (where you entered your information)
+- **Analysis** (where you'll view your projections)
+
+For your protection, each area encrypts your data independently.
+Please re-enter your password to securely access your financial data.
+''')
+
     tab1, tab2 = st.tabs(["🔑 Using Vault ID & Password", "📧 Using Email & Password"])
 
     with tab1:
