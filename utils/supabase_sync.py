@@ -166,13 +166,19 @@ def transform_lovable_to_streamlit(lovable_data: dict) -> dict:
 
     result = {}
 
-    # Helper to safely get nested values
-    def get_nested(obj, *keys, default=0):
+    # Helper to safely get nested values (returns float for numeric fields)
+    def get_nested(obj, *keys, default=0.0):
         for key in keys:
             if obj is None or not isinstance(obj, dict):
-                return default
+                return float(default)
             obj = obj.get(key)
-        return obj if obj is not None else default
+        # Ensure numeric values are returned as float for st.number_input compatibility
+        if obj is None:
+            return float(default)
+        try:
+            return float(obj)
+        except (ValueError, TypeError):
+            return float(default)
 
     # ==========================================================================
     # PROFILE
