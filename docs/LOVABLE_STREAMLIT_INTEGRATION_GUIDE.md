@@ -1,54 +1,70 @@
 # Lovable + Streamlit Integration Guide
 ## Family Forecast Architecture Documentation
 **Created:** December 13, 2025
+**Last Updated:** December 16, 2025
 **Author:** Claude Code
 **Purpose:** Complete reference for how Lovable apps integrate with Streamlit backend
+
+> **IMPORTANT UPDATE (Dec 16, 2025):** Landing Page and INTAKE are now merged into a single Lovable project. The architecture diagrams below reflect this change.
 
 ---
 
 ## Table of Contents
 1. [Architecture Overview](#1-architecture-overview)
-2. [The Three Apps](#2-the-three-apps)
+2. [The Two Apps](#2-the-two-apps) *(Updated: merged Lovable project)*
 3. [User Flows](#3-user-flows)
-4. [URL Parameter System](#4-url-parameter-system)
-5. [Navigation Redirects](#5-navigation-redirects)
-6. [Data Sharing Strategy](#6-data-sharing-strategy)
-7. [File Reference](#7-file-reference)
-8. [Future: Adding Lovable Analysis](#8-future-adding-lovable-analysis)
-9. [Debugging Tips](#9-debugging-tips)
-10. [Common Pitfalls](#10-common-pitfalls)
+4. [Encryption Parameters](#4-encryption-parameters) *(NEW)*
+5. [URL Parameter System](#5-url-parameter-system)
+6. [Data Transformer](#6-data-transformer) *(NEW)*
+7. [Navigation Redirects](#7-navigation-redirects)
+8. [Data Sharing Strategy](#8-data-sharing-strategy)
+9. [File Reference](#9-file-reference)
+10. [Future: Adding Lovable Analysis](#10-future-adding-lovable-analysis)
+11. [Debugging Tips](#11-debugging-tips)
+12. [Common Pitfalls](#12-common-pitfalls)
 
 ---
 
 ## 1. Architecture Overview
 
-Family Forecast uses a **hybrid architecture** with two frontend technologies:
+Family Forecast uses a **hybrid architecture** with two apps:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         LOVABLE (React/TypeScript)                       │
-│  ┌─────────────────────────┐    ┌─────────────────────────────────────┐ │
-│  │   LANDING PAGE          │    │   INTAKE                            │ │
-│  │   familyforecast.ai     │───▶│   intake.familyforecast.ai/intake   │ │
-│  │                         │    │                                     │ │
-│  │   - Marketing           │    │   - 6 pages of data collection      │ │
-│  │   - "Open the App"      │    │   - Saves to Supabase               │ │
-│  │   - Testimonials        │    │   - "Continue to Analysis" button   │ │
-│  └─────────────────────────┘    └──────────────────┬──────────────────┘ │
-└────────────────────────────────────────────────────┼────────────────────┘
-                                                     │
-                                                     ▼ ?mode=Analysis
+│                   LOVABLE (React/TypeScript) - MERGED PROJECT            │
+│                   familyforecast.ai / intake.familyforecast.ai           │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │   LANDING PAGE (/)              INTAKE (/intake)                    │ │
+│  │   - Marketing                   - 6 pages of data collection        │ │
+│  │   - "Open the App" button       - Password dialog on submit         │ │
+│  │   - Returning user detection    - Client-side encryption            │ │
+│  │   - Two buttons for returning:  - Saves encrypted data to Supabase  │ │
+│  │     • "Go to Analysis"          - Redirects to Streamlit            │ │
+│  │     • "Update My Info"                                              │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    │               │               │
+                    ▼               ▼               ▼
+              ?mode=Analysis  ?restore=cloud   /intake
+              (new users)     &vault_id=XXX    (update info)
+                              (returning)
+                                    │
+                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         STREAMLIT (Python)                               │
 │                         app.familyforecast.ai                            │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐   │
 │  │   Analysis   │ │  Healthcare  │ │  Scenarios   │ │   History    │   │
-│  │              │ │              │ │              │ │              │   │
-│  │  Monte Carlo │ │  Medicare    │ │  What-if     │ │  Tracking    │   │
-│  │  Simulation  │ │  IRMAA       │ │  Comparison  │ │  Over time   │   │
+│  │   (READ-ONLY │ │              │ │              │ │              │   │
+│  │    inputs)   │ │  Medicare    │ │  What-if     │ │  Tracking    │   │
+│  │  Monte Carlo │ │  IRMAA       │ │  Comparison  │ │  Over time   │   │
 │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘   │
 │                                                                          │
 │  + Social Security module (social_security)                              │
+│  NOTE: All input fields in Analysis are DISABLED (disabled=True)         │
+│        Users must go to Lovable INTAKE to edit data                      │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -58,31 +74,42 @@ Family Forecast uses a **hybrid architecture** with two frontend technologies:
 2. **Streamlit excels at**: Data visualization, Monte Carlo simulations, complex calculations
 3. **Result**: Best of both worlds - gorgeous INTAKE, powerful Analysis
 
+### Key Architectural Decisions (Dec 16, 2025)
+
+1. **Merged Lovable Project**: Landing Page + INTAKE are now ONE Lovable project
+2. **No Lovable Decryption**: INTAKE cannot decrypt data (avoids double password prompt)
+3. **Streamlit Read-Only**: Analysis input fields are disabled - edit only in INTAKE
+4. **Data Transformer**: Streamlit transforms Lovable's nested format to flat format
+
 ---
 
-## 2. The Three Apps
+## 2. The Two Apps
 
-### 2.1 Landing Page (Lovable)
-- **URL:** `https://familyforecast.ai`
-- **Hosted on:** Lovable.dev
-- **Purpose:** Marketing, first impression, call-to-action
-- **Key button:** "Open the App" → redirects to INTAKE
+> **Note:** Previously "The Three Apps" - Landing and INTAKE merged Dec 16, 2025
 
-### 2.2 INTAKE (Lovable)
-- **URL:** `https://intake.familyforecast.ai/intake`
-- **Hosted on:** Lovable.dev (separate project from landing page)
-- **Purpose:** Collect user financial data across 6 pages
-- **Data storage:** Supabase (encrypted)
-- **Key button:** "Continue to Analysis" → redirects to Streamlit with `?mode=Analysis`
+### 2.1 Lovable (Landing + INTAKE) - MERGED
+- **URLs:**
+  - `https://familyforecast.ai` (Landing Page)
+  - `https://intake.familyforecast.ai/intake` (INTAKE form)
+- **Hosted on:** Lovable.dev (single project)
+- **Purpose:** Marketing, user registration, data collection
+- **Key features:**
+  - Returning user detection via `ff_vault_id` or `ff_user_email` in localStorage
+  - Two buttons for returning users: "Go to Analysis" and "Update My Info"
+  - Client-side AES-256-GCM encryption before saving to Supabase
 
-### 2.3 Streamlit App
+### 2.2 Streamlit App
 - **URL:** `https://app.familyforecast.ai`
-- **Hosted on:** Streamlit Cloud (or your server)
+- **Hosted on:** Streamlit Cloud
 - **Purpose:** Analysis, Healthcare, Scenarios, Social Security, History
 - **Data storage:**
   - Session state (runtime)
   - localStorage (browser persistence)
   - Supabase (cloud backup)
+- **Key features:**
+  - Data transformer: converts Lovable format to Streamlit format
+  - All INTAKE input fields are `disabled=True` (read-only)
+  - Password prompt via restore modal for returning users
 
 ---
 
@@ -92,33 +119,42 @@ Family Forecast uses a **hybrid architecture** with two frontend technologies:
 ```
 1. User visits familyforecast.ai (Landing)
 2. Clicks "Open the App"
-3. → Redirected to intake.familyforecast.ai/intake (Lovable INTAKE)
+3. → Goes to /intake route (same Lovable project)
 4. Completes 6 pages of data entry
-5. Clicks "Continue to Analysis"
-6. → Redirected to app.familyforecast.ai?mode=Analysis (Streamlit)
-7. Streamlit loads data from Supabase, runs simulation
-8. User sees results in Analysis mode
+5. Clicks "Continue to Analysis" → Password dialog appears
+6. Enters password → Data encrypted client-side
+7. → Redirected to app.familyforecast.ai?mode=Analysis&vault_id=XXX
+8. Streamlit prompts for password, decrypts, transforms data
+9. User sees results in Analysis mode
 ```
 
-### 3.2 Returning User with Cloud Backup
+### 3.2 Returning User - Go to Analysis (Primary)
 ```
-1. User visits app.familyforecast.ai directly
-2. Streamlit reads ff_vault_id or ff_user_email from localStorage
-3. Shows "Welcome back! Restore My Plan?" prompt
-4. User clicks "Restore My Plan"
-5. Enters password, data decrypted from Supabase
-6. → Goes directly to Analysis (data already exists)
+1. User visits familyforecast.ai (Landing)
+2. Lovable detects returning user (ff_vault_id in localStorage)
+3. Shows "Welcome back!" with two buttons
+4. User clicks "Go to Analysis"
+5. → Opens app.familyforecast.ai?restore=cloud&vault_id=XXX
+6. Streamlit shows password prompt (restore modal)
+7. User enters password, data decrypted from Supabase
+8. → Goes directly to Analysis
 ```
 
-### 3.3 New User Creating Account at Welcome Page
+### 3.3 Returning User - Update Info (Re-enter Data)
 ```
-1. User visits app.familyforecast.ai directly
-2. Sees welcome page with signup options
-3. Clicks "Create Free Account" or "Try Anonymous"
-4. Fills form, account/vault created in Supabase
-5. → Redirected to intake.familyforecast.ai/intake (Lovable INTAKE)
-6. Completes INTAKE, continues to Analysis
+1. User visits familyforecast.ai (Landing)
+2. Lovable detects returning user
+3. Shows "Welcome back!" with two buttons
+4. User clicks "Update My Info" (sees warning about re-entering data)
+5. → Goes to /intake (EMPTY form - no decryption capability)
+6. User re-enters all data
+7. → Same as new user flow from step 5
 ```
+
+**Note:** Update flow requires re-entering ALL data because:
+- Lovable has NO decryption capability
+- This avoids a double password prompt (once in Lovable, once in Streamlit)
+- This is acceptable because data updates are rare
 
 ### 3.4 Navigation from Streamlit back to INTAKE
 ```
@@ -127,11 +163,85 @@ Family Forecast uses a **hybrid architecture** with two frontend technologies:
 3. → Redirected to intake.familyforecast.ai/intake (Lovable INTAKE)
 ```
 
+**Warning:** This sends user to empty INTAKE form (no data pre-filled)
+
 ---
 
-## 4. URL Parameter System
+## 4. Encryption Parameters
 
-### 4.1 The ?mode= Parameter
+> **CRITICAL:** These parameters MUST match EXACTLY between Lovable and Streamlit. Verified working Dec 15, 2025.
+
+### 4.1 Algorithm Specifications
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| **Algorithm** | AES-256-GCM | Authenticated encryption |
+| **Key Derivation** | PBKDF2-SHA256 | Password-based |
+| **Iterations** | 600,000 | High for security |
+| **Salt Length** | 32 bytes | Generated per vault |
+| **IV/Nonce Length** | 12 bytes | GCM standard |
+| **Key Length** | 256 bits | AES-256 |
+
+### 4.2 Lovable Implementation (src/lib/encryption.ts)
+
+```javascript
+// Configuration - MUST MATCH PYTHON EXACTLY
+const PBKDF2_ITERATIONS = 600000;  // 600K iterations
+const IV_LENGTH_BYTES = 12;        // 12 bytes / 96 bits (GCM standard)
+const SALT_LENGTH_BYTES = 32;      // 32 bytes for salt
+
+// Key derivation
+const key = await crypto.subtle.deriveKey(
+  {
+    name: "PBKDF2",
+    salt: saltBytes.buffer,
+    iterations: PBKDF2_ITERATIONS,
+    hash: "SHA-256",
+  },
+  keyMaterial,
+  { name: "AES-GCM", length: 256 },
+  false,
+  ["encrypt"]
+);
+```
+
+### 4.3 Streamlit Implementation (utils/password_crypto.py)
+
+```python
+ITERATIONS = 600_000  # MUST MATCH JAVASCRIPT
+SALT_LENGTH = 32
+NONCE_LENGTH = 12
+
+# Key derivation
+kdf = PBKDF2HMAC(
+    algorithm=hashes.SHA256(),
+    length=32,
+    salt=salt_bytes,
+    iterations=ITERATIONS,
+)
+key = kdf.derive(password.encode('utf-8'))
+```
+
+### 4.4 Data Format (Base64 encoded)
+
+```
+[12 bytes nonce][encrypted data + GCM tag]
+```
+
+Both systems produce/consume identical format.
+
+### 4.5 Salt Storage
+
+- Salt is generated once per vault (when vault is created)
+- Stored in Supabase `anonymous_vaults.salt` column (base64)
+- Lovable READS existing salt for encryption (does NOT generate new)
+- Streamlit READS same salt for decryption
+
+---
+
+## 5. URL Parameter System
+
+### 5.1 The ?mode= Parameter
 
 Streamlit accepts a `mode` query parameter for direct navigation from external apps:
 
@@ -155,27 +265,156 @@ if mode_param and mode_param in ["INTAKE", "Analysis", "Healthcare", "scenario_s
     st.rerun()
 ```
 
-### 4.2 Why Clear Query Params?
+### 5.2 The ?restore=cloud Parameter (NEW Dec 16, 2025)
+
+For returning users, Lovable uses a different URL pattern:
+
+```
+?restore=cloud&vault_id=FF-XXXX-XXXX
+```
+
+**Implementation in app.py (lines 333-368):**
+
+```python
+# =============================================================================
+# CREDENTIAL PARAMS - Receive vault_id/email from Lovable via URL
+# =============================================================================
+# IMPORTANT: Must run BEFORE restore handler which clears all params
+vault_param = st.query_params.get("vault_id")
+email_param = st.query_params.get("email")
+
+if vault_param or email_param:
+    if vault_param:
+        st.session_state['vault_id'] = vault_param
+        write_local_storage('ff_vault_id', vault_param)
+    if email_param:
+        st.session_state['user_email'] = email_param
+        write_local_storage('ff_user_email', email_param)
+    st.session_state['_credentials_loaded'] = True
+
+# =============================================================================
+# RESTORE SHORTCUT - Go directly to cloud restore
+# =============================================================================
+# NOTE: Credential params captured ABOVE before we clear params here
+if st.query_params.get("restore") == "cloud":
+    st.session_state.show_backup_signup = 'restore'
+    st.session_state['_force_welcome'] = True
+    st.query_params.clear()  # Safe now - credentials already saved
+    st.rerun()
+```
+
+**Critical:** Credential params MUST be captured BEFORE the restore handler clears them!
+
+### 5.3 Why Clear Query Params?
 
 `st.query_params.clear()` is called to:
 1. Clean up the URL (looks better)
 2. Prevent re-triggering on page refresh
 3. Allow normal navigation afterward
 
-### 4.3 Future: Passing Data via URL
+---
 
-For Lovable Analysis, consider:
-```
-?mode=Analysis&scenario_id=abc123
+## 6. Data Transformer
+
+> **NEW Dec 16, 2025:** Converts Lovable's nested data format to Streamlit's flat format.
+
+### 6.1 The Problem
+
+Lovable and Streamlit use different data structures:
+
+**Lovable (nested):**
+```json
+{
+  "profile": { "name": "John", "birthYear": 1963 },
+  "income": { "salary": { "current": 5000 } },
+  "expenses": { "housing": 2000 }
+}
 ```
 
-Then Streamlit/Lovable can fetch that specific scenario from Supabase.
+**Streamlit (flat):**
+```json
+{
+  "input_user_name": "John",
+  "input_age": 62,
+  "input_salary_wages": 5000,
+  "input_housing_expenses": 2000
+}
+```
+
+### 6.2 The Solution
+
+**File:** `utils/supabase_sync.py`
+**Function:** `transform_lovable_to_streamlit(lovable_data: dict) -> dict`
+
+```python
+def transform_lovable_to_streamlit(lovable_data: dict) -> dict:
+    """
+    Transform Lovable INTAKE nested format to Streamlit flat format.
+    Called automatically when Lovable data is detected (has 'profile' key).
+    """
+    result = {}
+
+    # Profile
+    profile = lovable_data.get('profile', {})
+    result['input_user_name'] = profile.get('name', '')
+    # Calculate age from birthYear
+    birth_year = profile.get('birthYear', 0)
+    if birth_year:
+        result['input_age'] = datetime.now().year - birth_year
+
+    # Income (7 fields)
+    income = lovable_data.get('income', {})
+    result['input_salary_wages'] = income.get('salary', {}).get('current', 0)
+    # ... more mappings
+
+    # Mark as Lovable source
+    result['_lovable_source'] = True
+
+    return result
+```
+
+### 6.3 Automatic Detection
+
+In `load_anonymous_vault()`:
+
+```python
+if 'profile' in decrypted_data:
+    # Lovable format detected - transform it
+    decrypted_data = transform_lovable_to_streamlit(decrypted_data)
+```
+
+### 6.4 Field Mappings (Summary)
+
+| Category | Lovable Path | Streamlit Key |
+|----------|--------------|---------------|
+| Profile | `profile.name` | `input_user_name` |
+| Profile | `profile.birthYear` | `input_age` (calculated) |
+| Income | `income.salary.current` | `input_salary_wages` |
+| Income | `income.socialSecurity.user` | `input_social_security` |
+| Expenses | `expenses.housing` | `input_housing_expenses` |
+| Assets | `assets.retirement.401k` | `input_401k_balance` |
+| Liabilities | `liabilities.mortgage` | `input_mortgage_balance` |
+
+Full mapping: ~50 fields across Profile, Income, Expenses, Assets, Liabilities, Children, Inheritances, Goals.
+
+### 6.5 Diagnostic Tool
+
+**File:** `tests/diagnose_vault.py`
+
+```bash
+python tests/diagnose_vault.py FF-XXXX-XXXX YourPassword
+```
+
+Shows:
+- Raw encrypted data from Supabase
+- Decrypted JSON structure
+- Which Streamlit fields are present/missing
 
 ---
 
-## 5. Navigation Redirects
+## 7. Navigation Redirects
 
-### 5.1 The Redirect Pattern
+### 7.1 The Redirect Pattern
 
 All INTAKE redirects use this pattern:
 ```python
@@ -191,7 +430,7 @@ st.stop()
 - `content="1"` = 1 second delay (used after success messages)
 - `st.stop()` = CRITICAL - prevents further Streamlit execution
 
-### 5.2 All Redirect Locations (as of Dec 13, 2025)
+### 7.2 All Redirect Locations (as of Dec 13, 2025)
 
 | File | Function/Location | Redirect To |
 |------|-------------------|-------------|
@@ -204,7 +443,7 @@ st.stop()
 | `ui/welcome.py` (line ~269) | Account signup success | Lovable INTAKE |
 | `ui/welcome.py` (line ~345) | Vault signup success | Lovable INTAKE |
 
-### 5.3 Locations NOT Redirected (Intentionally)
+### 7.3 Locations NOT Redirected (Intentionally)
 
 | File | Location | Why Not Redirected |
 |------|----------|-------------------|
@@ -214,16 +453,16 @@ st.stop()
 
 ---
 
-## 6. Data Sharing Strategy
+## 8. Data Sharing Strategy
 
-### 6.1 The localStorage Problem
+### 8.1 The localStorage Problem
 
 **Critical limitation:** localStorage is origin-specific.
 - `intake.familyforecast.ai` has its OWN localStorage
 - `app.familyforecast.ai` has its OWN localStorage
 - They CANNOT share localStorage directly!
 
-### 6.2 Solution: Supabase as Bridge
+### 8.2 Solution: Supabase as Bridge
 
 ```
 ┌──────────────────┐         ┌──────────────┐         ┌──────────────────┐
@@ -235,7 +474,7 @@ st.stop()
                              └──────────────┘
 ```
 
-### 6.3 Data Flow Details
+### 8.3 Data Flow Details
 
 **Lovable INTAKE saves to Supabase:**
 - User completes INTAKE pages
@@ -250,7 +489,7 @@ st.stop()
 - Decrypts with password
 - Loads into `st.session_state.intake_data`
 
-### 6.4 Key Session State Variables
+### 8.4 Key Session State Variables
 
 ```python
 # User identification
@@ -267,7 +506,7 @@ st.session_state.mode_selected   # True when user has chosen a mode
 st.session_state.beta_agreement  # True when user accepted terms
 ```
 
-### 6.5 localStorage Keys (Streamlit side)
+### 8.5 localStorage Keys (Streamlit side)
 
 ```javascript
 ff_user_email    // User's email (account users)
@@ -279,9 +518,9 @@ ff_user_name     // User's name (for "Welcome back" message)
 
 ---
 
-## 7. File Reference
+## 9. File Reference
 
-### 7.1 Core Navigation Files
+### 9.1 Core Navigation Files
 
 | File | Purpose |
 |------|---------|
@@ -290,7 +529,7 @@ ff_user_name     // User's name (for "Welcome back" message)
 | `ui/welcome.py` | Welcome page, signup forms, returning user detection |
 | `ui/cloud_backup_modal.py` | Backup signup modal (shown after INTAKE) |
 
-### 7.2 Module Pages
+### 9.2 Module Pages
 
 | File | Module |
 |------|--------|
@@ -300,22 +539,24 @@ ff_user_name     // User's name (for "Welcome back" message)
 | `ui/social_security_page.py` | Social Security |
 | `ui/historical_tracking.py` | History |
 
-### 7.3 Data/Sync Files
+### 9.3 Data/Sync Files
 
 | File | Purpose |
 |------|---------|
-| `utils/supabase_sync.py` | All Supabase operations (save, load, encrypt, decrypt) |
+| `utils/supabase_sync.py` | All Supabase operations (save, load, encrypt, decrypt) + transform_lovable_to_streamlit() |
 | `utils/safe_local_storage.py` | Safe localStorage read (with polling) |
+| `utils/password_crypto.py` | AES-256-GCM encryption/decryption |
 | `utils/cookie_helper.py` | Returning user detection |
 | `simulation/simulation_core.py` | Monte Carlo simulation engine |
+| `tests/diagnose_vault.py` | Vault diagnostic tool (NEW Dec 16) |
 
 ---
 
-## 8. Future: Adding Lovable Analysis
+## 10. Future: Adding Lovable Analysis
 
 When you rebuild Analysis in Lovable, here's what to consider:
 
-### 8.1 Option A: Full Lovable (Recommended for Display)
+### 10.1 Option A: Full Lovable (Recommended for Display)
 
 **For display-only results:**
 ```
@@ -325,7 +566,7 @@ Lovable INTAKE → Supabase → Streamlit (runs simulation, saves results) → S
 **Pros:** Beautiful charts, responsive design
 **Cons:** Need to run simulation somewhere (Streamlit API? Cloud function?)
 
-### 8.2 Option B: Hybrid (Keep Streamlit for Calculation)
+### 10.2 Option B: Hybrid (Keep Streamlit for Calculation)
 
 **For interactive scenarios:**
 ```
@@ -334,7 +575,7 @@ Lovable INTAKE → Supabase → Streamlit Analysis (calculate + display)
 
 Then later add Lovable display layer that fetches pre-calculated results.
 
-### 8.3 Key Considerations
+### 10.3 Key Considerations
 
 1. **Simulation Engine:**
    - `simulation/simulation_core.py` runs 1000+ Monte Carlo iterations
@@ -354,14 +595,14 @@ Then later add Lovable display layer that fetches pre-calculated results.
    - Streamlit: Slider changes → instant recalculation
    - Lovable: Would need API call for each change (latency concern)
 
-### 8.4 Migration Path
+### 10.4 Migration Path
 
 1. **Phase 1 (Current):** Lovable INTAKE + Streamlit Analysis ✅
 2. **Phase 2:** Add Lovable display for static results (view-only)
 3. **Phase 3:** Move simulation to API endpoint
 4. **Phase 4:** Full Lovable Analysis with real-time updates
 
-### 8.5 URL Patterns for Lovable Analysis
+### 10.5 URL Patterns for Lovable Analysis
 
 ```
 # View specific scenario
@@ -376,9 +617,9 @@ https://analysis.familyforecast.ai/results?intake_id=xxx&run_simulation=true
 
 ---
 
-## 9. Debugging Tips
+## 11. Debugging Tips
 
-### 9.1 Check Which App You're On
+### 11.1 Check Which App You're On
 
 ```
 familyforecast.ai        → Lovable Landing (check Lovable dashboard)
@@ -386,7 +627,7 @@ intake.familyforecast.ai → Lovable INTAKE (check Lovable dashboard)
 app.familyforecast.ai    → Streamlit (check Streamlit Cloud logs)
 ```
 
-### 9.2 Streamlit Debug Prints
+### 11.2 Streamlit Debug Prints
 
 The codebase has debug prints (search for `print(` or `🔥` or `🔐`):
 ```python
@@ -396,7 +637,7 @@ print(f"🔐 RESTORE MODAL: SET cloud_password (len={len(password)})")
 
 View these in Streamlit Cloud logs or local terminal.
 
-### 9.3 Common Issues
+### 11.3 Common Issues
 
 **"Redirect not working"**
 - Check: Is `st.stop()` called after the meta refresh?
@@ -411,26 +652,33 @@ View these in Streamlit Cloud logs or local terminal.
 - Check: `st.session_state.current_mode` value
 - Check: `st.session_state.mode_selected` is True
 
-### 9.4 Lovable → Streamlit Data Flow Debug
+**"Data shows all zeros after restore"** (NEW Dec 16)
+- Check: Was Lovable format detected? Look for `'profile' in decrypted_data`
+- Check: Is `transform_lovable_to_streamlit()` being called?
+- Use: `python tests/diagnose_vault.py FF-XXXX-XXXX password` to inspect data
+
+### 11.4 Lovable → Streamlit Data Flow Debug
 
 1. In Lovable INTAKE, after save, log the user_id/vault_id
-2. Check Supabase dashboard for the record
-3. In Streamlit, check if localStorage has the credentials
-4. Check if `load_from_supabase()` is being called
-5. Check if `st.session_state.intake_data` is populated
+2. Check Supabase dashboard for the record (`anonymous_vaults` table)
+3. Verify `encrypted_data` column is NOT empty
+4. In Streamlit, check if localStorage has the credentials
+5. Check if `load_anonymous_vault()` is being called
+6. Check if data transformation is triggered (look for `'profile' in data`)
+7. Check if `st.session_state.intake_data` is populated
 
 ---
 
-## 10. Common Pitfalls
+## 12. Common Pitfalls
 
-### 10.1 localStorage Across Subdomains
+### 12.1 localStorage Across Subdomains
 
 **WRONG assumption:** "They share localStorage"
 **REALITY:** Each subdomain has isolated localStorage
 
 **Solution:** Use Supabase as the data bridge.
 
-### 10.2 Forgetting st.stop()
+### 12.2 Forgetting st.stop()
 
 **WRONG:**
 ```python
@@ -444,7 +692,7 @@ st.markdown('<meta http-equiv="refresh" content="0;url=...">', unsafe_allow_html
 st.stop()  # CRITICAL!
 ```
 
-### 10.3 Query Params Not Clearing
+### 12.3 Query Params Not Clearing
 
 If you don't clear query params:
 ```python
@@ -452,7 +700,29 @@ st.query_params.clear()
 ```
 The mode will re-trigger on every rerun, causing navigation loops.
 
-### 10.4 Hardcoded URLs
+### 12.4 Credential Params Cleared Too Early (Dec 16, 2025)
+
+**WRONG:** Clearing params before capturing credentials
+```python
+if st.query_params.get("restore") == "cloud":
+    st.query_params.clear()  # Loses vault_id!
+    st.rerun()
+
+vault_param = st.query_params.get("vault_id")  # Always None!
+```
+
+**RIGHT:** Capture credentials BEFORE clearing
+```python
+vault_param = st.query_params.get("vault_id")
+if vault_param:
+    st.session_state['vault_id'] = vault_param  # Save first!
+
+if st.query_params.get("restore") == "cloud":
+    st.query_params.clear()  # Now safe to clear
+    st.rerun()
+```
+
+### 12.5 Hardcoded URLs
 
 **Current hardcoded URLs:**
 - `https://intake.familyforecast.ai/intake` (8+ locations)
@@ -465,12 +735,12 @@ LOVABLE_INTAKE_URL = "https://intake.familyforecast.ai/intake"
 STREAMLIT_APP_URL = "https://app.familyforecast.ai"
 ```
 
-### 10.5 Mobile Sidebar Hidden
+### 12.6 Mobile Sidebar Hidden
 
 The sidebar is hidden on mobile (see `MOBILE_SIDEBAR_CSS` in app.py).
 Users navigate via hamburger menu (`top_navigation.py`) on mobile.
 
-### 10.6 The "or" vs "and" Bug (Dec 5, 2025)
+### 12.7 The "or" vs "and" Bug (Dec 5, 2025)
 
 In `safe_local_storage.py`, there was a bug:
 ```python
@@ -483,6 +753,19 @@ if ff_user_email == 0 and ff_vault_id == 0:
 
 Lesson: Users may have email OR vault, not both.
 
+### 12.8 Encryption Parameter Mismatch
+
+**CRITICAL:** Lovable and Streamlit MUST use identical encryption parameters.
+
+| Parameter | Correct Value |
+|-----------|---------------|
+| PBKDF2 Iterations | 600,000 |
+| Salt Length | 32 bytes |
+| IV/Nonce Length | 12 bytes |
+| Algorithm | AES-256-GCM |
+
+If either side changes these values, decryption will fail silently (garbage output or wrong data).
+
 ---
 
 ## Appendix A: Git Commits Reference
@@ -490,6 +773,13 @@ Lesson: Users may have email OR vault, not both.
 Key commits for this integration:
 
 ```
+# December 2025 - Lovable Integration
+cf52f93 FEATURE: Add Lovable-to-Streamlit data transformer - Dec 16 2025
+33fc846 FIX: Capture vault_id/email BEFORE clearing params in restore flow
+0c17683 FEATURE: Lovable welcome flow + Mobile CSS contrast fix - Dec 16 2025
+b4291a1 Architecture D implementation - Crypto test passed - Dec 15 2025
+
+# Earlier commits
 8c73d47 FIX: Redirect signup forms to Lovable INTAKE instead of Streamlit
 e7b3e44 FEATURE: Redirect 'My Information' navigation to Lovable INTAKE
 fc1a524 FEATURE: Add ?mode= URL parameter for external app navigation
@@ -505,6 +795,7 @@ user_data (
     id,
     email,
     encrypted_data,  -- AES-256-GCM encrypted JSON
+    salt,            -- 32 bytes base64 (NEW)
     created_at,
     updated_at
 )
@@ -512,7 +803,8 @@ user_data (
 -- Anonymous vaults
 anonymous_vaults (
     vault_id,        -- Format: FF-XXXX-XXXX
-    encrypted_data,  -- AES-256-GCM encrypted JSON
+    encrypted_data,  -- AES-256-GCM encrypted JSON (nonce + ciphertext)
+    salt,            -- 32 bytes base64 for PBKDF2
     created_at,
     expires_at,      -- 30 days from creation
     scenario_count   -- Max 3 for anonymous
@@ -527,28 +819,43 @@ anonymous_vaults (
 ┌─────────────────────────────────────────────────────────────┐
 │                    QUICK REFERENCE                          │
 ├─────────────────────────────────────────────────────────────┤
-│ Landing Page:     familyforecast.ai                         │
-│ INTAKE (Lovable): intake.familyforecast.ai/intake           │
+│ Landing + INTAKE: familyforecast.ai (MERGED Lovable project)│
+│ INTAKE Route:     /intake                                   │
 │ App (Streamlit):  app.familyforecast.ai                     │
 ├─────────────────────────────────────────────────────────────┤
-│ URL Param:        ?mode=Analysis (or Healthcare, etc.)      │
+│ New User:         ?mode=Analysis&vault_id=XXX               │
+│ Returning User:   ?restore=cloud&vault_id=XXX               │
 │ Data Bridge:      Supabase (encrypted)                      │
 │ Auth:             ff_user_email OR ff_vault_id              │
 ├─────────────────────────────────────────────────────────────┤
-│ Redirect Pattern:                                           │
-│   st.markdown('<meta http-equiv="refresh" ...>')            │
-│   st.stop()  # DON'T FORGET!                                │
+│ Encryption:       AES-256-GCM, PBKDF2-SHA256, 600K iter     │
+│ Salt:             32 bytes, stored in Supabase              │
+│ Nonce:            12 bytes, prepended to ciphertext         │
 ├─────────────────────────────────────────────────────────────┤
 │ Key Files:                                                  │
-│   app.py                 - Main routing                     │
-│   ui/welcome.py          - Signup forms                     │
-│   top_navigation.py      - Hamburger menu                   │
-│   utils/supabase_sync.py - Data sync                        │
+│   app.py                 - Main routing, URL params         │
+│   ui/welcome.py          - Signup forms, Lovable welcome    │
+│   utils/supabase_sync.py - Data sync + transformer          │
+│   utils/password_crypto.py - Encryption/decryption          │
+│   tests/diagnose_vault.py - Vault debugging tool            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
+## Appendix D: Lovable Code Reference
+
+Key files in Lovable project (for reference):
+
+| File | Purpose |
+|------|---------|
+| `src/lib/encryption.ts` | AES-256-GCM encryption (Web Crypto API) |
+| `src/lib/supabase.ts` | Supabase client configuration |
+| `src/contexts/RegistrationContext.tsx` | Returning user detection + buttons |
+| `IntakeReview.tsx` | Password dialog on submit |
+
+---
+
 **Document maintained by:** Development Team
-**Last updated:** December 13, 2025
+**Last updated:** December 16, 2025
 **Next review:** When adding Lovable Analysis module
