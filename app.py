@@ -790,6 +790,8 @@ def show_intake_mode():
     # CLOUD RESTORE DATA: If user came from cloud restore (returning user update
     # flow), load data from intake_data into session_state for INTAKE form fields
     # =========================================================================
+    print(f"[DEBUG] intake_data exists: {st.session_state.get('intake_data') is not None}")
+    print(f"[DEBUG] _intake_cloud_loaded: {st.session_state.get('_intake_cloud_loaded')}")
     if st.session_state.get('intake_data') and not st.session_state.get('_intake_cloud_loaded'):
         st.session_state['_intake_cloud_loaded'] = True  # Prevent re-loading
         intake_data = st.session_state.get('intake_data', {})
@@ -800,6 +802,7 @@ def show_intake_mode():
                 'goals_list', 'goals_data', 'custom_expenses', 'custom_expenses_list',
                 'custom_income', 'custom_income_list', 'schema_version'
             ):
+                print(f"[DEBUG CONVERT] key={key}, value={value}, type={type(value)}")
                 # Convert numeric input_ fields for st.number_input compatibility
                 # Age fields need int, everything else needs float
                 # Names and other strings will fail conversion and keep original value
