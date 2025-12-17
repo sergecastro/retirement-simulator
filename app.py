@@ -331,23 +331,11 @@ def main():
         st.stop()
 
     # =============================================================================
-    # RESTORE SHORTCUT - Go directly to cloud restore from any page
-    # =============================================================================
-    # Usage: http://localhost:8501/?restore=cloud
-    if st.query_params.get("restore") == "cloud":
-        st.session_state.mode_selected = False
-        st.session_state.current_mode = None
-        st.session_state.show_backup_signup = 'restore'
-        st.session_state['_force_welcome'] = True  # Flag to skip auto-Analysis
-        st.query_params.clear()  # Clear the param so it doesn't loop
-        st.rerun()
-
-    # =============================================================================
     # CREDENTIAL PARAMS - Receive vault_id/email from Lovable via URL
     # =============================================================================
-    # Usage: ?mode=Analysis&vault_id=FF-XXXX-XXXX or ?email=user@example.com
+    # Usage: ?restore=cloud&vault_id=FF-XXXX-XXXX or ?email=user@example.com
     # This bridges credentials across domains (Lovable → Streamlit)
-    # IMPORTANT: Must run BEFORE mode handler which clears all params
+    # IMPORTANT: Must run BEFORE restore handler which clears all params
     vault_param = st.query_params.get("vault_id")
     email_param = st.query_params.get("email")
 
@@ -365,6 +353,19 @@ def main():
             print(f"🔐 RECEIVED email from URL: {email_param}")
 
         st.session_state['_credentials_loaded'] = True  # Mark as loaded
+
+    # =============================================================================
+    # RESTORE SHORTCUT - Go directly to cloud restore from any page
+    # =============================================================================
+    # Usage: http://localhost:8501/?restore=cloud&vault_id=XXX
+    # NOTE: Credential params captured ABOVE before we clear params here
+    if st.query_params.get("restore") == "cloud":
+        st.session_state.mode_selected = False
+        st.session_state.current_mode = None
+        st.session_state.show_backup_signup = 'restore'
+        st.session_state['_force_welcome'] = True  # Flag to skip auto-Analysis
+        st.query_params.clear()  # Clear the param so it doesn't loop
+        st.rerun()
 
     # =============================================================================
     # PASSWORD PROMPT - User has vault/email from Lovable but needs password
