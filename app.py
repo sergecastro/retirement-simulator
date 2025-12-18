@@ -355,6 +355,50 @@ def main():
         st.session_state['_credentials_loaded'] = True  # Mark as loaded
 
     # =============================================================================
+    # FRICTIONLESS FLOW - Load from pending_intake (no password required)
+    # =============================================================================
+    # Usage: ?session=TEMP-XXXXXX&then=Analysis
+    # This is for NEW users who completed Lovable INTAKE without creating a vault
+    session_param = st.query_params.get("session")
+    if session_param and session_param.upper().startswith("TEMP-"):
+        from utils.supabase_sync import load_pending_intake
+
+        print(f"🆕 FRICTIONLESS: Loading pending intake for session {session_param}")
+
+        # Load the temporary intake data (no password needed)
+        intake_data, message = load_pending_intake(session_param)
+
+        if intake_data:
+            # Success! Load data into session_state
+            st.session_state['intake_data'] = intake_data
+            for key, value in intake_data.items():
+                st.session_state[key] = value
+
+            # Mark as loaded from pending (for UI hints about saving)
+            st.session_state['_pending_session'] = session_param
+            st.session_state['_pending_source'] = True
+            st.session_state['_lovable_source'] = True
+
+            print(f"✅ FRICTIONLESS: Loaded {len(intake_data)} fields from pending_intake")
+            print(f"   Name: {intake_data.get('input_user_name', 'N/A')}")
+            print(f"   Age: {intake_data.get('input_age', 'N/A')}")
+
+            # Set mode based on 'then' param (default to Analysis)
+            then_param = st.query_params.get("then", "Analysis")
+            st.session_state.mode_selected = True
+            st.session_state.current_mode = then_param
+            st.session_state["beta_agreement"] = True
+
+            st.query_params.clear()
+            st.rerun()
+        else:
+            # Failed to load - show error and redirect to welcome
+            print(f"❌ FRICTIONLESS: Failed to load - {message}")
+            st.session_state['_pending_error'] = message
+            st.query_params.clear()
+            # Continue to welcome page where error will be shown
+
+    # =============================================================================
     # RESTORE SHORTCUT - Go directly to cloud restore from any page
     # =============================================================================
     # Usage: http://localhost:8501/?restore=cloud&vault_id=XXX
