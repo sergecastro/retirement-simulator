@@ -320,5 +320,61 @@ After creating table, generate a fresh session ID by going through the flow.
 
 ---
 
+---
+
+## CRITICAL UPDATE (11:45 PM)
+
+### Supabase Project Verification
+
+**Both apps use the SAME Supabase project:**
+```
+URL: https://ebhzvauommuhqlcswdil.supabase.co
+```
+
+- Streamlit: Confirmed in `utils/supabase_sync.py` line 66
+- Lovable: Confirmed by user
+
+### Why "Table Not Found" Error?
+
+If both use the same Supabase, the error could be:
+
+1. **Schema cache stale** - PostgREST hasn't refreshed after table creation
+   - Fix: Go to Supabase Dashboard → Settings → API → "Reload Schema"
+
+2. **RLS blocking access** - Table exists but policies don't allow Streamlit's role
+   - Fix: Add policies for `anon` role (see SQL above)
+
+3. **Table in wrong schema** - Maybe created in non-public schema
+   - Fix: Verify table is in `public` schema
+
+### Tomorrow's Verification Steps
+
+1. **Check if table exists:**
+```sql
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public' AND table_name = 'pending_intake';
+```
+
+2. **Check RLS policies:**
+```sql
+SELECT * FROM pg_policies WHERE tablename = 'pending_intake';
+```
+
+3. **Reload PostgREST schema cache:**
+   - Supabase Dashboard → Settings → API → Click "Reload Schema"
+
+4. **Test from Streamlit:**
+```python
+python -c "
+from utils.supabase_sync import get_supabase_client
+client = get_supabase_client()
+result = client.table('pending_intake').select('*').limit(1).execute()
+print(result)
+"
+```
+
+---
+
 *Document created: December 18, 2025, 11:59 PM PST*
+*Updated: December 18, 2025, 11:45 PM PST (Supabase verification)*
 *Next session: December 19, 2025*
