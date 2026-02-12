@@ -177,7 +177,7 @@ def collect_family_events():
                     "Year:",
                     value=int(inh_data.get('Year', date.today().year + 10)),
                     min_value=date.today().year,
-                    max_value=date.today().year + 50,
+                    max_value=2100,
                     step=1,
                     key=f"inh_year_{idx}",
                     disabled=True,

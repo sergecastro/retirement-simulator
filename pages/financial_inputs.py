@@ -580,7 +580,7 @@ def collect_financial_data():
                         "Target Year:",
                         value=year,
                         min_value=date.today().year,
-                        max_value=date.today().year + 50,
+                        max_value=2100,
                         step=1,
                         key=f"goal_year_{idx}",
                         disabled=True,
