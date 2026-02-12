@@ -271,6 +271,75 @@ def load_intake_data_to_session():
                         else:
                             st.session_state[key] = 0.0
 
+                # Ensure ALL required fields exist for Analysis mode widgets
+                # Quick Mode snapshots may be missing many of these
+                required_numeric_fields = [
+                    # user_inputs.py
+                    'input_age', 'input_partner_age',
+                    # financial_inputs.py — income
+                    'input_salary_wages', 'input_self_employment_income',
+                    'input_rental_income', 'input_investment_income',
+                    'input_social_security_income', 'input_pension_income',
+                    'input_other_income',
+                    # financial_inputs.py — expenses
+                    'input_housing_expenses', 'input_utilities_expenses',
+                    'input_groceries_expenses', 'input_transportation_expenses',
+                    'input_healthcare_expenses', 'input_insurance_expenses',
+                    'input_property_tax_expenses', 'input_entertainment_expenses',
+                    'input_restaurant_expenses', 'input_travel_expenses',
+                    'input_education_expenses', 'input_childcare_expenses',
+                    'input_clothing_expenses', 'input_charitable_donations',
+                    'input_miscellaneous_expenses', 'input_other_expenses',
+                    # financial_inputs.py — assets
+                    'input_primary_residence_value', 'input_secondary_residence_value',
+                    'input_ira_balance', 'input_four01k_403b_balance',
+                    'input_pension_fund_value',
+                    'input_partner_ira_balance', 'input_partner_four01k_403b_balance',
+                    'input_taxable_investment_accounts',
+                    'input_high_yield_savings_account',
+                    'input_hsa_balance', 'input_five29_plan_balance',
+                    'input_vehicles_value', 'input_jewelry_collectibles_value',
+                    'input_cryptocurrency_holdings',
+                    # financial_inputs.py — liabilities
+                    'input_mortgage_balance', 'input_secondary_residence_mortgage',
+                    'input_auto_loan_balance', 'input_student_loan_balance',
+                    'input_credit_card_debt', 'input_other_liabilities',
+                    # family_inputs.py — college cost params
+                    'input_college_inflation_pct', 'input_base_public_in',
+                    'input_base_public_out', 'input_base_private',
+                ]
+                required_string_fields = [
+                    'input_user_name', 'input_partner_name',
+                ]
+                required_list_fields = [
+                    'children_list', 'inheritance_list', 'goals_list',
+                ]
+
+                for field in required_numeric_fields:
+                    if field not in st.session_state or st.session_state[field] is None:
+                        if field == 'input_age':
+                            st.session_state[field] = 55
+                        elif field == 'input_partner_age':
+                            st.session_state[field] = 55
+                        elif field == 'input_college_inflation_pct':
+                            st.session_state[field] = 4.0
+                        elif field == 'input_base_public_in':
+                            st.session_state[field] = 20000.0
+                        elif field == 'input_base_public_out':
+                            st.session_state[field] = 40000.0
+                        elif field == 'input_base_private':
+                            st.session_state[field] = 60000.0
+                        else:
+                            st.session_state[field] = 0.0
+
+                for field in required_string_fields:
+                    if field not in st.session_state or st.session_state[field] is None:
+                        st.session_state[field] = ""
+
+                for field in required_list_fields:
+                    if field not in st.session_state or st.session_state[field] is None:
+                        st.session_state[field] = []
+
                 st.session_state.intake_data_loaded = True
 
                 # Show welcome message ONCE

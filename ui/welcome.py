@@ -265,13 +265,11 @@ def show_account_signup_form():
         st.success(f"✅ Account created for {email}! Redirecting to enter your information...")
         st.session_state.show_backup_signup = None
         st.session_state.account_signup_success = False
-        # Redirect to Lovable INTAKE (1 second delay to show success message)
-        st.markdown(
-            '<meta http-equiv="refresh" content="1;url=https://intake.familyforecast.ai/intake">',
-            unsafe_allow_html=True
-        )
-        st.stop()
-        return
+        # Route to internal INTAKE (data lives in Streamlit session_state)
+        st.session_state.current_mode = "INTAKE"
+        st.session_state["intake_mode"] = "full"
+        st.session_state.mode_selected = True
+        st.rerun()
 
     # Show signup form
     st.markdown("Your data will sync automatically when you save your plan.")
@@ -339,14 +337,13 @@ def show_anonymous_signup_form():
 
         if confirmed:
             if st.button("Continue to My Plan", type="primary", use_container_width=True, key="anon_continue_btn"):
-                # Redirect to Lovable INTAKE
+                # Route to internal INTAKE (data lives in Streamlit session_state)
                 st.session_state.show_backup_signup = None
                 st.session_state.anon_signup_success = False
-                st.markdown(
-                    '<meta http-equiv="refresh" content="0;url=https://intake.familyforecast.ai/intake">',
-                    unsafe_allow_html=True
-                )
-                st.stop()
+                st.session_state.current_mode = "INTAKE"
+                st.session_state["intake_mode"] = "full"
+                st.session_state.mode_selected = True
+                st.rerun()
         else:
             st.warning("☝️ Please confirm you've saved your Vault ID before continuing.")
         return
