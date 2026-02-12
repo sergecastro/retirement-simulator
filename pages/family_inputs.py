@@ -70,10 +70,16 @@ def collect_family_events():
                 if college_plan_value is None:
                     college_plan_value = 'None'
 
+                college_plan_options = ["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"]
+                try:
+                    college_plan_idx = college_plan_options.index(str(college_plan_value).strip())
+                except (ValueError, AttributeError):
+                    college_plan_idx = 0
+
                 college_plan = st.selectbox(
                     "College Plan:",
-                    ["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"],
-                    index=["None", "Public In-State", "Public Out-of-State", "Private", "Private Nonprofit"].index(college_plan_value),
+                    college_plan_options,
+                    index=college_plan_idx,
                     key=f"child_college_{idx}",
                     disabled=True,
                     help="📝 Edit in INTAKE mode"

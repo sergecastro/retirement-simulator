@@ -263,6 +263,14 @@ def load_intake_data_to_session():
                                 value = 55  # Default to 55 if invalid
                         st.session_state[key] = value
 
+                # Sanitize None values from snapshot to prevent widget crashes
+                for key in list(st.session_state.keys()):
+                    if key.startswith('input_') and st.session_state[key] is None:
+                        if any(word in key for word in ['name', 'Name']):
+                            st.session_state[key] = ""
+                        else:
+                            st.session_state[key] = 0.0
+
                 st.session_state.intake_data_loaded = True
 
                 # Show welcome message ONCE
@@ -641,12 +649,9 @@ def main():
                     st.session_state['preserved_snapshot_id'] = st.session_state['current_snapshot_id']
 
                 if mode == "My Information":
-                    # Redirect to Lovable INTAKE
-                    st.markdown(
-                        '<meta http-equiv="refresh" content="0;url=https://intake.familyforecast.ai/intake">',
-                        unsafe_allow_html=True
-                    )
-                    st.stop()
+                    st.session_state.current_mode = "INTAKE"
+                    st.session_state["intake_mode"] = "full"
+                    st.rerun()
                 elif mode == "Scenario Studio":
                     st.session_state.current_mode = "scenario_studio"
                 elif mode == "Social Security":

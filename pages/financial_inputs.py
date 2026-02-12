@@ -10,8 +10,8 @@ import pandas as pd
 
 
 def _init_float(key: str, default: float = 0.0):
-    """Initialize session_state float field if missing"""
-    if key not in st.session_state:
+    """Initialize session_state float field if missing or None"""
+    if key not in st.session_state or st.session_state[key] is None:
         st.session_state[key] = default
 
 
