@@ -15,6 +15,17 @@ def _init_float(key: str, default: float = 0.0):
         st.session_state[key] = default
 
 
+def _display_currency(label, value, help_text=None):
+    """Display a currency value as formatted text instead of a disabled input.
+    Readable on all devices including mobile Safari with accessibility settings."""
+    val = float(value) if value is not None else 0.0
+    formatted = f"${val:,.0f}" if val >= 0 else f"-${abs(val):,.0f}"
+    if help_text:
+        st.markdown(f"**{label}:** &nbsp; `{formatted}` &nbsp; <small style='color:#888;'>{help_text}</small>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"**{label}:** &nbsp; `{formatted}`", unsafe_allow_html=True)
+
+
 def collect_financial_data():
     """Collect financial data with reliable goals input"""
 
@@ -38,50 +49,27 @@ def collect_financial_data():
     col1, col2 = st.columns(2)
 
     with col1:
-        salary_wages = st.number_input(
-            "Monthly Salary/Wages (Before Taxes):",
-            key="input_salary_wages",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        self_employment = st.number_input(
-            "Monthly Self-Employment Income:",
-            key="input_self_employment_income",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        rental_income = st.number_input(
-            "Monthly Rental Income:",
-            key="input_rental_income",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        investment_income = st.number_input(
-            "Monthly Investment Income (Before Taxes):",
-            key="input_investment_income",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        salary_wages = st.session_state.get('input_salary_wages', 0.0)
+        _display_currency("Monthly Salary/Wages (Before Taxes)", salary_wages)
+
+        self_employment = st.session_state.get('input_self_employment_income', 0.0)
+        _display_currency("Monthly Self-Employment Income", self_employment)
+
+        rental_income = st.session_state.get('input_rental_income', 0.0)
+        _display_currency("Monthly Rental Income", rental_income)
+
+        investment_income = st.session_state.get('input_investment_income', 0.0)
+        _display_currency("Monthly Investment Income (Before Taxes)", investment_income)
 
     with col2:
-        social_security = st.number_input(
-            "Monthly Social Security (Before Taxes):",
-            key="input_social_security_income",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        pension_income = st.number_input(
-            "Monthly Pension (Before Taxes):",
-            key="input_pension_income",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        other_income = st.number_input(
-            "Monthly Other Income:",
-            key="input_other_income",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        social_security = st.session_state.get('input_social_security_income', 0.0)
+        _display_currency("Monthly Social Security (Before Taxes)", social_security)
+
+        pension_income = st.session_state.get('input_pension_income', 0.0)
+        _display_currency("Monthly Pension (Before Taxes)", pension_income)
+
+        other_income = st.session_state.get('input_other_income', 0.0)
+        _display_currency("Monthly Other Income", other_income)
 
     total_income = calculate_total_income(
         salary_wages, self_employment, rental_income,
