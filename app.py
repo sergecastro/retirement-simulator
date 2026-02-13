@@ -539,6 +539,98 @@ def main():
     # Inject mobile-responsive sidebar CSS (auto-collapse on mobile devices)
     st.markdown(MOBILE_SIDEBAR_CSS, unsafe_allow_html=True)
 
+    # Mobile Safari high-contrast fix — forces explicit colors for iOS accessibility
+    st.markdown("""
+        <style>
+        /* === FORCE EXPLICIT COLORS FOR MOBILE SAFARI ACCESSIBILITY === */
+
+        /* Force dark text on all standard elements */
+        .main, .main .block-container, .stApp {
+            color: #1a1a1a !important;
+        }
+
+        /* All paragraph and span text */
+        .main p, .main span, .main label, .main li, .main td, .main th,
+        .main .stMarkdown, .main .stMarkdown p, .main .stMarkdown span {
+            color: #1a1a1a !important;
+        }
+
+        /* Headers */
+        .main h1, .main h2, .main h3, .main h4, .main h5, .main h6 {
+            color: #0d0d0d !important;
+        }
+
+        /* Metric values (the big numbers in st.metric) */
+        .main [data-testid="stMetricValue"] {
+            color: #0d0d0d !important;
+        }
+        .main [data-testid="stMetricLabel"] {
+            color: #333333 !important;
+        }
+        .main [data-testid="stMetricDelta"] {
+            color: #1a1a1a !important;
+        }
+
+        /* Force white/light backgrounds on content areas */
+        .main .block-container {
+            background-color: #ffffff !important;
+        }
+
+        /* Expander content (AI explanations use these) */
+        .main .streamlit-expanderHeader {
+            color: #1a1a1a !important;
+            background-color: #f0f2f6 !important;
+        }
+        .main .streamlit-expanderContent,
+        .main .streamlit-expanderContent p,
+        .main .streamlit-expanderContent span,
+        .main .streamlit-expanderContent li {
+            color: #1a1a1a !important;
+            background-color: #ffffff !important;
+        }
+
+        /* Info/Warning/Error/Success boxes */
+        .main .stAlert p, .main .stAlert span {
+            color: #1a1a1a !important;
+        }
+
+        /* Input fields and labels */
+        .main .stNumberInput label, .main .stTextInput label,
+        .main .stSelectbox label, .main .stSlider label {
+            color: #1a1a1a !important;
+        }
+
+        /* Tabs */
+        .main .stTabs [data-baseweb="tab"] {
+            color: #1a1a1a !important;
+        }
+
+        /* Tables */
+        .main .stDataFrame, .main table {
+            color: #1a1a1a !important;
+            background-color: #ffffff !important;
+        }
+
+        /* Radio buttons and checkboxes text */
+        .main .stRadio label, .main .stCheckbox label {
+            color: #1a1a1a !important;
+        }
+
+        /* Plotly chart text (if any overlays) */
+        .main .js-plotly-plot text {
+            fill: #1a1a1a !important;
+        }
+
+        /* Sidebar text when open */
+        section[data-testid="stSidebar"] p,
+        section[data-testid="stSidebar"] span,
+        section[data-testid="stSidebar"] label,
+        section[data-testid="stSidebar"] .stRadio label {
+            color: #1a1a1a !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     # ⚠️⚠️⚠️ DEMO MODE - Authentication simplified for beta testing ⚠️⚠️⚠️
     # To re-enable full auth: Uncomment the lines below
     st.sidebar.info("🧪 **BETA DEMO** - Testing mode active")
