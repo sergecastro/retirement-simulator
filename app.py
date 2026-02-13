@@ -695,6 +695,18 @@ def main():
             opacity: 1 !important;
         }
 
+        /* Force black text on ALL input values — belt and suspenders */
+        .main input[type="number"],
+        .main input[type="text"],
+        .main input[type="number"]:disabled,
+        .main input[type="text"]:disabled {
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+            font-weight: 600 !important;
+            -webkit-opacity: 1 !important;
+            opacity: 1 !important;
+        }
+
         /* BaseWeb input wrappers (Streamlit uses these) */
         .main [data-baseweb="input"],
         .main [data-baseweb="input"] div,
