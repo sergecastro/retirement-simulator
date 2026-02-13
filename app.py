@@ -540,93 +540,147 @@ def main():
     st.markdown(MOBILE_SIDEBAR_CSS, unsafe_allow_html=True)
 
     # Mobile Safari high-contrast fix — forces explicit colors for iOS accessibility
+    # Uses -webkit-text-fill-color which Safari won't override with accessibility settings
     st.markdown("""
         <style>
-        /* === FORCE EXPLICIT COLORS FOR MOBILE SAFARI ACCESSIBILITY === */
-
-        /* Force dark text on all standard elements */
-        .main, .main .block-container, .stApp {
-            color: #1a1a1a !important;
+        /* === FORCE LIGHT COLOR SCHEME — PREVENTS SAFARI DARK MODE === */
+        :root {
+            color-scheme: light only !important;
+        }
+        html, body, .stApp {
+            color-scheme: light only !important;
         }
 
-        /* All paragraph and span text */
+        /* === WEBKIT TEXT FILL COLOR — SAFARI ACCESSIBILITY PROOF === */
+
+        /* All standard text */
+        .main, .main .block-container, .stApp,
         .main p, .main span, .main label, .main li, .main td, .main th,
-        .main .stMarkdown, .main .stMarkdown p, .main .stMarkdown span {
+        .main .stMarkdown, .main .stMarkdown p, .main .stMarkdown span,
+        .main div, .main small, .main strong, .main em, .main b, .main i {
             color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
         }
 
         /* Headers */
         .main h1, .main h2, .main h3, .main h4, .main h5, .main h6 {
             color: #0d0d0d !important;
+            -webkit-text-fill-color: #0d0d0d !important;
         }
 
-        /* Metric values (the big numbers in st.metric) */
-        .main [data-testid="stMetricValue"] {
+        /* Metric values */
+        .main [data-testid="stMetricValue"],
+        .main [data-testid="stMetricValue"] div {
             color: #0d0d0d !important;
+            -webkit-text-fill-color: #0d0d0d !important;
         }
-        .main [data-testid="stMetricLabel"] {
+        .main [data-testid="stMetricLabel"],
+        .main [data-testid="stMetricLabel"] div {
             color: #333333 !important;
+            -webkit-text-fill-color: #333333 !important;
         }
         .main [data-testid="stMetricDelta"] {
             color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
         }
 
-        /* Force white/light backgrounds on content areas */
+        /* Force white backgrounds everywhere */
         .main .block-container {
+            background-color: #ffffff !important;
+            -webkit-appearance: none !important;
+        }
+        .stApp, .stApp > header, .main {
             background-color: #ffffff !important;
         }
 
-        /* Expander content (AI explanations use these) */
-        .main .streamlit-expanderHeader {
+        /* Expander content (AI explanations) */
+        .main .streamlit-expanderHeader,
+        .main [data-testid="stExpander"] summary {
             color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
             background-color: #f0f2f6 !important;
         }
         .main .streamlit-expanderContent,
         .main .streamlit-expanderContent p,
         .main .streamlit-expanderContent span,
-        .main .streamlit-expanderContent li {
+        .main .streamlit-expanderContent li,
+        .main .streamlit-expanderContent div,
+        .main [data-testid="stExpander"] div[role="region"],
+        .main [data-testid="stExpander"] div[role="region"] p,
+        .main [data-testid="stExpander"] div[role="region"] span {
             color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
             background-color: #ffffff !important;
         }
 
         /* Info/Warning/Error/Success boxes */
-        .main .stAlert p, .main .stAlert span {
+        .main .stAlert, .main .stAlert p, .main .stAlert span,
+        .main .stAlert div {
             color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
         }
 
-        /* Input fields and labels */
+        /* Input fields and their labels */
         .main .stNumberInput label, .main .stTextInput label,
-        .main .stSelectbox label, .main .stSlider label {
+        .main .stSelectbox label, .main .stSlider label,
+        .main .stNumberInput input, .main .stTextInput input,
+        .main .stSelectbox div[data-baseweb="select"] span {
             color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+        }
+
+        /* Number input values */
+        .main input[type="number"], .main input[type="text"] {
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+            background-color: #ffffff !important;
         }
 
         /* Tabs */
         .main .stTabs [data-baseweb="tab"] {
             color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
         }
 
         /* Tables */
-        .main .stDataFrame, .main table {
+        .main .stDataFrame, .main table, .main table td, .main table th {
             color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
             background-color: #ffffff !important;
         }
 
-        /* Radio buttons and checkboxes text */
-        .main .stRadio label, .main .stCheckbox label {
+        /* Radio buttons and checkboxes */
+        .main .stRadio label, .main .stCheckbox label,
+        .main .stRadio p, .main .stCheckbox span {
             color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
         }
 
-        /* Plotly chart text (if any overlays) */
+        /* Plotly/Matplotlib chart text */
         .main .js-plotly-plot text {
+            fill: #1a1a1a !important;
+        }
+        .main svg text {
             fill: #1a1a1a !important;
         }
 
         /* Sidebar text when open */
+        section[data-testid="stSidebar"],
         section[data-testid="stSidebar"] p,
         section[data-testid="stSidebar"] span,
         section[data-testid="stSidebar"] label,
+        section[data-testid="stSidebar"] div,
         section[data-testid="stSidebar"] .stRadio label {
             color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+        }
+        section[data-testid="stSidebar"] {
+            background-color: #f8f9fa !important;
+        }
+
+        /* Buttons — keep readable */
+        .main .stButton button {
+            -webkit-text-fill-color: inherit !important;
         }
         </style>
     """, unsafe_allow_html=True)
