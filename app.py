@@ -683,21 +683,67 @@ def main():
             -webkit-text-fill-color: inherit !important;
         }
 
-        /* === INPUT FIELDS — FORCE LIGHT BACKGROUND + DARK TEXT === */
-        .main input, .main select, .main textarea,
-        .main [data-baseweb="input"] input,
-        .main [data-baseweb="select"] div,
-        .main .stNumberInput input,
-        .main .stTextInput input {
+        /* === INPUT FIELDS — NUCLEAR OVERRIDE FOR SAFARI === */
+        .main input, .main select, .main textarea {
             color: #1a1a1a !important;
             -webkit-text-fill-color: #1a1a1a !important;
             background-color: #ffffff !important;
+            background: #ffffff !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            opacity: 1 !important;
+        }
+
+        /* BaseWeb input wrappers (Streamlit uses these) */
+        .main [data-baseweb="input"],
+        .main [data-baseweb="input"] div,
+        .main [data-baseweb="input"] input,
+        .main [data-baseweb="base-input"],
+        .main [data-baseweb="base-input"] div,
+        .main [data-baseweb="base-input"] input {
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+        }
+
+        /* Number input specifically */
+        .main [data-testid="stNumberInput"] input,
+        .main [data-testid="stNumberInput"] div[data-baseweb] div,
+        .main .stNumberInput input[type="number"] {
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+            background-color: #ffffff !important;
+            background: #ffffff !important;
             -webkit-appearance: none !important;
         }
 
-        /* Selectbox displayed value */
+        /* Text input specifically */
+        .main [data-testid="stTextInput"] input,
+        .main [data-testid="stTextInput"] div[data-baseweb] div,
+        .main .stTextInput input[type="text"] {
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+        }
+
+        /* Selectbox wrapper and value */
+        .main [data-baseweb="select"],
+        .main [data-baseweb="select"] div,
         .main [data-baseweb="select"] span,
+        .main .stSelectbox [data-baseweb="select"],
         .main .stSelectbox [data-baseweb="select"] div {
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+        }
+
+        /* Slider value display */
+        .main [data-testid="stSlider"] div,
+        .main [data-testid="stSlider"] span {
             color: #1a1a1a !important;
             -webkit-text-fill-color: #1a1a1a !important;
         }
