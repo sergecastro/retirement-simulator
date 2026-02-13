@@ -473,7 +473,7 @@ def main():
             print(f"❌ FRICTIONLESS: Failed to load - {message}")
             st.session_state['_pending_error'] = message
             st.query_params.clear()
-            # Continue to welcome page where error will be shown
+            st.rerun()  # Clean rerun so error displays properly
 
     # =============================================================================
     # RESTORE SHORTCUT - Go directly to cloud restore from any page
@@ -576,6 +576,11 @@ def main():
 
     # Get user type
     is_trusted = is_trusted_user()
+
+    # Display any pending intake errors
+    if st.session_state.get('_pending_error'):
+        st.error(f"⚠️ Could not load your data: {st.session_state['_pending_error']}")
+        del st.session_state['_pending_error']
 
     # CRITICAL: Route based on new vs return user
     if not st.session_state.mode_selected or st.session_state.current_mode is None:
