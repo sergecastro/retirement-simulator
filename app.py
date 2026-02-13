@@ -682,6 +682,58 @@ def main():
         .main .stButton button {
             -webkit-text-fill-color: inherit !important;
         }
+
+        /* === INPUT FIELDS — FORCE LIGHT BACKGROUND + DARK TEXT === */
+        .main input, .main select, .main textarea,
+        .main [data-baseweb="input"] input,
+        .main [data-baseweb="select"] div,
+        .main .stNumberInput input,
+        .main .stTextInput input {
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+            background-color: #ffffff !important;
+            -webkit-appearance: none !important;
+        }
+
+        /* Selectbox displayed value */
+        .main [data-baseweb="select"] span,
+        .main .stSelectbox [data-baseweb="select"] div {
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+        }
+
+        /* === AI EXPLANATION TEXT — DEEP NESTED SELECTORS === */
+        .main details, .main details summary,
+        .main details div, .main details p, .main details span,
+        .main details li, .main details ul, .main details ol,
+        .main details strong, .main details em,
+        .main [data-testid="stExpander"],
+        .main [data-testid="stExpander"] * {
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+        }
+        .main details[open] > div {
+            background-color: #ffffff !important;
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+        }
+
+        /* Markdown rendered inside expanders */
+        .main .element-container .stMarkdown,
+        .main .element-container .stMarkdown p,
+        .main .element-container .stMarkdown span,
+        .main .element-container .stMarkdown li,
+        .main .element-container .stMarkdown div {
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+        }
+
+        /* AI Explanation modal text (injected outside .main via JS) */
+        .ev-modal, .ev-modal p, .ev-modal li, .ev-modal span,
+        .ev-modal div, .ev-modal ul, .ev-modal ol {
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
