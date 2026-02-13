@@ -101,106 +101,55 @@ def collect_financial_data():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        housing = st.number_input(
-            "Housing:",
-            key="input_housing_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        utilities = st.number_input(
-            "Utilities:",
-            key="input_utilities_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        groceries = st.number_input(
-            "Groceries:",
-            key="input_groceries_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        transportation = st.number_input(
-            "Transportation:",
-            key="input_transportation_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        healthcare = st.number_input(
-            "Healthcare:",
-            key="input_healthcare_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        housing = st.session_state.get('input_housing_expenses', 0.0)
+        _display_currency("Housing", housing)
+
+        utilities = st.session_state.get('input_utilities_expenses', 0.0)
+        _display_currency("Utilities", utilities)
+
+        groceries = st.session_state.get('input_groceries_expenses', 0.0)
+        _display_currency("Groceries", groceries)
+
+        transportation = st.session_state.get('input_transportation_expenses', 0.0)
+        _display_currency("Transportation", transportation)
+
+        healthcare = st.session_state.get('input_healthcare_expenses', 0.0)
+        _display_currency("Healthcare", healthcare)
 
     with col2:
-        insurance = st.number_input(
-            "Insurance:",
-            key="input_insurance_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        property_tax = st.number_input(
-            "Property Tax:",
-            key="input_property_tax_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        entertainment = st.number_input(
-            "Entertainment:",
-            key="input_entertainment_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        restaurants = st.number_input(
-            "Restaurants:",
-            key="input_restaurant_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        travel = st.number_input(
-            "Travel:",
-            key="input_travel_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        insurance = st.session_state.get('input_insurance_expenses', 0.0)
+        _display_currency("Insurance", insurance)
+
+        property_tax = st.session_state.get('input_property_tax_expenses', 0.0)
+        _display_currency("Property Tax", property_tax)
+
+        entertainment = st.session_state.get('input_entertainment_expenses', 0.0)
+        _display_currency("Entertainment", entertainment)
+
+        restaurants = st.session_state.get('input_restaurant_expenses', 0.0)
+        _display_currency("Restaurants", restaurants)
+
+        travel = st.session_state.get('input_travel_expenses', 0.0)
+        _display_currency("Travel", travel)
 
     with col3:
-        education = st.number_input(
-            "Education:",
-            key="input_education_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        childcare = st.number_input(
-            "Childcare:",
-            key="input_childcare_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        clothing = st.number_input(
-            "Clothing:",
-            key="input_clothing_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        charitable = st.number_input(
-            "Charitable:",
-            key="input_charitable_donations",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        miscellaneous = st.number_input(
-            "Miscellaneous:",
-            key="input_miscellaneous_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        other_expenses = st.number_input(
-            "Other Expenses:",
-            key="input_other_expenses",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        education = st.session_state.get('input_education_expenses', 0.0)
+        _display_currency("Education", education)
+
+        childcare = st.session_state.get('input_childcare_expenses', 0.0)
+        _display_currency("Childcare", childcare)
+
+        clothing = st.session_state.get('input_clothing_expenses', 0.0)
+        _display_currency("Clothing", clothing)
+
+        charitable = st.session_state.get('input_charitable_donations', 0.0)
+        _display_currency("Charitable", charitable)
+
+        miscellaneous = st.session_state.get('input_miscellaneous_expenses', 0.0)
+        _display_currency("Miscellaneous", miscellaneous)
+
+        other_expenses = st.session_state.get('input_other_expenses', 0.0)
+        _display_currency("Other Expenses", other_expenses)
 
     # ============================================
     # CUSTOM INCOME SECTION (NEW!)
@@ -293,42 +242,24 @@ def collect_financial_data():
     st.subheader("🏠 Real Estate")
     col1, col2 = st.columns(2)
     with col1:
-        primary_residence = st.number_input(
-            "Primary Residence Value:",
-            key="input_primary_residence_value",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        primary_residence = st.session_state.get('input_primary_residence_value', 0.0)
+        _display_currency("Primary Residence Value", primary_residence)
     with col2:
-        secondary_residence = st.number_input(
-            "Secondary Residence Value:",
-            key="input_secondary_residence_value",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        secondary_residence = st.session_state.get('input_secondary_residence_value', 0.0)
+        _display_currency("Secondary Residence Value", secondary_residence)
 
     st.subheader("💼 Your Retirement Accounts")
     col1, col2 = st.columns(2)
     with col1:
-        ira_balance = st.number_input(
-            "Your IRA Balance:",
-            key="input_ira_balance",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        four01k_balance = st.number_input(
-            "Your 401k/403b Balance:",
-            key="input_four01k_403b_balance",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        ira_balance = st.session_state.get('input_ira_balance', 0.0)
+        _display_currency("Your IRA Balance", ira_balance)
+
+        four01k_balance = st.session_state.get('input_four01k_403b_balance', 0.0)
+        _display_currency("Your 401k/403b Balance", four01k_balance)
     with col2:
-        pension_value = st.number_input(
-            "Pension Fund Value:",
-            key="input_pension_fund_value",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        pension_value = st.session_state.get('input_pension_fund_value', 0.0)
+        _display_currency("Pension Fund Value", pension_value)
+
         st.metric("Your Total Retirement", f"${ira_balance + four01k_balance + pension_value:,.0f}")
 
     partner_ira_balance = 0
@@ -341,18 +272,11 @@ def collect_financial_data():
 
         col1, col2 = st.columns(2)
         with col1:
-            partner_ira_balance = st.number_input(
-                "Partner IRA Balance:",
-                key="input_partner_ira_balance",
-                disabled=True,
-                help="📝 Edit in INTAKE mode"
-            )
-            partner_four01k_balance = st.number_input(
-                "Partner 401k/403b Balance:",
-                key="input_partner_four01k_403b_balance",
-                disabled=True,
-                help="📝 Edit in INTAKE mode"
-            )
+            partner_ira_balance = st.session_state.get('input_partner_ira_balance', 0.0)
+            _display_currency("Partner IRA Balance", partner_ira_balance)
+
+            partner_four01k_balance = st.session_state.get('input_partner_four01k_403b_balance', 0.0)
+            _display_currency("Partner 401k/403b Balance", partner_four01k_balance)
         with col2:
             st.metric("Partner Total Retirement", f"${partner_ira_balance + partner_four01k_balance:,.0f}")
             st.metric("Combined Retirement", f"${ira_balance + four01k_balance + partner_ira_balance + partner_four01k_balance:,.0f}")
@@ -370,55 +294,29 @@ def collect_financial_data():
     st.subheader("💵 Liquid Assets")
     col1, col2 = st.columns(2)
     with col1:
-        taxable_investments = st.number_input(
-            "Taxable Investment Accounts:",
-            key="input_taxable_investment_accounts",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        savings_account = st.number_input(
-            "High-Yield Savings:",
-            key="input_high_yield_savings_account",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        taxable_investments = st.session_state.get('input_taxable_investment_accounts', 0.0)
+        _display_currency("Taxable Investment Accounts", taxable_investments)
+
+        savings_account = st.session_state.get('input_high_yield_savings_account', 0.0)
+        _display_currency("High-Yield Savings", savings_account)
     with col2:
-        hsa_balance = st.number_input(
-            "HSA Balance:",
-            key="input_hsa_balance",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        five29_balance = st.number_input(
-            "529 Plan Balance:",
-            key="input_five29_plan_balance",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        hsa_balance = st.session_state.get('input_hsa_balance', 0.0)
+        _display_currency("HSA Balance", hsa_balance)
+
+        five29_balance = st.session_state.get('input_five29_plan_balance', 0.0)
+        _display_currency("529 Plan Balance", five29_balance)
 
     st.subheader("🎨 Other Assets")
     col1, col2, col3 = st.columns(3)
     with col1:
-        vehicles = st.number_input(
-            "Vehicles Value:",
-            key="input_vehicles_value",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        vehicles = st.session_state.get('input_vehicles_value', 0.0)
+        _display_currency("Vehicles Value", vehicles)
     with col2:
-        jewelry = st.number_input(
-            "Jewelry/Collectibles:",
-            key="input_jewelry_collectibles_value",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        jewelry = st.session_state.get('input_jewelry_collectibles_value', 0.0)
+        _display_currency("Jewelry/Collectibles", jewelry)
     with col3:
-        crypto = st.number_input(
-            "Cryptocurrency:",
-            key="input_cryptocurrency_holdings",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        crypto = st.session_state.get('input_cryptocurrency_holdings', 0.0)
+        _display_currency("Cryptocurrency", crypto)
 
     liquid_assets = (taxable_investments + savings_account + hsa_balance +
                     ira_balance + four01k_balance + pension_value +
@@ -438,44 +336,24 @@ def collect_financial_data():
     col1, col2 = st.columns(2)
 
     with col1:
-        primary_mortgage = st.number_input(
-            "Primary Mortgage Balance:",
-            key="input_mortgage_balance",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        secondary_mortgage = st.number_input(
-            "Secondary Mortgage Balance:",
-            key="input_secondary_residence_mortgage",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        auto_loans = st.number_input(
-            "Auto Loans:",
-            key="input_auto_loan_balance",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        primary_mortgage = st.session_state.get('input_mortgage_balance', 0.0)
+        _display_currency("Primary Mortgage Balance", primary_mortgage)
+
+        secondary_mortgage = st.session_state.get('input_secondary_residence_mortgage', 0.0)
+        _display_currency("Secondary Mortgage Balance", secondary_mortgage)
+
+        auto_loans = st.session_state.get('input_auto_loan_balance', 0.0)
+        _display_currency("Auto Loans", auto_loans)
 
     with col2:
-        student_loans = st.number_input(
-            "Student Loans:",
-            key="input_student_loan_balance",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        credit_cards = st.number_input(
-            "Credit Card Debt:",
-            key="input_credit_card_debt",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
-        personal_loans = st.number_input(
-            "Personal Loans:",
-            key="input_other_liabilities",
-            disabled=True,
-            help="📝 Edit in INTAKE mode"
-        )
+        student_loans = st.session_state.get('input_student_loan_balance', 0.0)
+        _display_currency("Student Loans", student_loans)
+
+        credit_cards = st.session_state.get('input_credit_card_debt', 0.0)
+        _display_currency("Credit Card Debt", credit_cards)
+
+        personal_loans = st.session_state.get('input_other_liabilities', 0.0)
+        _display_currency("Personal Loans", personal_loans)
 
     total_liabilities = calculate_total_liabilities(
         primary_mortgage, secondary_mortgage, auto_loans,
