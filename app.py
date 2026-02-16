@@ -460,6 +460,20 @@ def main():
             print(f"   Name: {intake_data.get('input_user_name', 'N/A')}")
             print(f"   Age: {intake_data.get('input_age', 'N/A')}")
 
+            # Auto-save as localStorage snapshot so returning user flow works
+            if not st.session_state.get('_pending_auto_saved'):
+                try:
+                    from utils.snapshot_manager import save_snapshot
+                    user_name = intake_data.get('input_user_name', 'User')
+                    snapshot_id = save_snapshot(intake_data, f"INTAKE - {user_name}")
+                    if snapshot_id:
+                        print(f"✅ FRICTIONLESS: Auto-saved snapshot {snapshot_id}")
+                        st.session_state['_pending_auto_saved'] = True
+                    else:
+                        print("⚠️ FRICTIONLESS: save_snapshot returned None")
+                except Exception as e:
+                    print(f"⚠️ FRICTIONLESS: Auto-save failed: {e}")
+
             # Set mode based on 'then' param (default to Analysis)
             then_param = st.query_params.get("then", "Analysis")
             st.session_state.mode_selected = True
