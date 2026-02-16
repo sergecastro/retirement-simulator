@@ -124,9 +124,9 @@ from ui.components.top_navigation import render_top_navigation
 from ui.welcome import show_new_user_mode_selection
 
 # Import data collection
-from pages.user_inputs import setup_sidebar as collect_user_data
 from pages.financial_inputs import collect_financial_data
 from pages.family_inputs import collect_family_events
+from financial_utils import safe_int
 
 # Import data management
 # OLD: from data_manager_cloud import manage_scenarios_cloud as manage_scenarios
@@ -1469,10 +1469,21 @@ def show_analysis_mode(nav_state):
     # NOTE: Scenario management is now called in main() before this function
     # It appears at top of sidebar (above features and data inputs)
 
-    # Collect data from sidebar
+    # Collect data (no widgets — values display in welcome banner above)
     try:
-        # User demographic data
-        user_data = collect_user_data(is_trusted)
+        # User demographic data — read directly from session_state
+        # Age group normalization (maps old scenario formats)
+        age_group_mapping = {"Under 25": "25-55", "55-70": "56-69"}
+        raw_ag = st.session_state.get('input_age_group', '25-55')
+        st.session_state['input_age_group'] = age_group_mapping.get(raw_ag, raw_ag)
+
+        user_data = {
+            'age_group': st.session_state.get('input_age_group', '25-55'),
+            'age': safe_int(st.session_state.get('input_age', 55), 35),
+            'partner_exists': st.session_state.get('input_partner_exists', False),
+            'partner_name': st.session_state.get('input_partner_name', ''),
+            'partner_age': safe_int(st.session_state.get('input_partner_age', 55), 35),
+        }
 
         # Financial data
         financial_data = collect_financial_data()
