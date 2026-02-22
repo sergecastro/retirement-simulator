@@ -246,7 +246,7 @@ def load_intake_data_to_session():
     if not already_loaded:
         try:
             # Try cloud restore data first, then fall back to local snapshot
-            intake_data = st.session_state.pop('intake_data', None) or get_current_snapshot()
+            intake_data = st.session_state.get('intake_data', None) or get_current_snapshot()
 
             if intake_data:
                 # Load snapshot data into session state
