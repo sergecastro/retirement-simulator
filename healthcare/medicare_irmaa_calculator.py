@@ -5,8 +5,8 @@ Calculates Medicare Part B and Part D premiums including Income-Related
 Monthly Adjustment Amounts (IRMAA) based on Modified Adjusted Gross Income (MAGI).
 
 Author: Family Forecast Development Team
-Last Updated: October 22, 2025
-Data Source: CMS 2025 IRMAA Tables
+Last Updated: February 21, 2026
+Data Source: CMS 2026 IRMAA Tables (finalized November 14, 2025)
 """
 
 from typing import Dict, Tuple, List
@@ -55,61 +55,61 @@ class MedicareIRMAACalculator:
     - Applies to both single filers and married filing jointly
     """
 
-    # 2025 CMS Standard Premiums (these change annually)
-    BASE_PART_B_PREMIUM = 174.70  # 2025 standard Part B premium
-    BASE_PART_D_PREMIUM = 55.00   # 2025 estimated average Part D premium
+    # 2026 CMS Standard Premiums (these change annually)
+    BASE_PART_B_PREMIUM = 202.90  # 2026 standard Part B premium
+    BASE_PART_D_PREMIUM = 46.50   # 2026 CMS base beneficiary Part D premium
 
-    # 2025 IRMAA Brackets (Based on CMS guidelines)
+    # 2026 IRMAA Brackets (Based on CMS guidelines, finalized Nov 2025)
     # NOTE: These are updated annually by CMS for inflation
-    IRMAA_BRACKETS_2025 = [
+    IRMAA_BRACKETS_2026 = [
         IRMAABracket(
             bracket_name="Standard (No IRMAA)",
             single_min=0,
-            single_max=106000,
+            single_max=109000,
             married_min=0,
-            married_max=212000,
+            married_max=218000,
             part_b_surcharge=0,
             part_d_surcharge=0,
             description="Standard Medicare premiums - no additional charges"
         ),
         IRMAABracket(
             bracket_name="IRMAA Bracket 1",
-            single_min=106001,
-            single_max=133000,
-            married_min=212001,
-            married_max=266000,
-            part_b_surcharge=69.90,
-            part_d_surcharge=12.90,
+            single_min=109001,
+            single_max=137000,
+            married_min=218001,
+            married_max=274000,
+            part_b_surcharge=81.20,
+            part_d_surcharge=14.50,
             description="First IRMAA tier - modest surcharge"
         ),
         IRMAABracket(
             bracket_name="IRMAA Bracket 2",
-            single_min=133001,
-            single_max=167000,
-            married_min=266001,
-            married_max=334000,
-            part_b_surcharge=174.70,
-            part_d_surcharge=33.30,
+            single_min=137001,
+            single_max=171000,
+            married_min=274001,
+            married_max=342000,
+            part_b_surcharge=202.90,
+            part_d_surcharge=37.50,
             description="Second IRMAA tier - medium surcharge"
         ),
         IRMAABracket(
             bracket_name="IRMAA Bracket 3",
-            single_min=167001,
-            single_max=200000,
-            married_min=334001,
-            married_max=400000,
-            part_b_surcharge=279.50,
-            part_d_surcharge=53.80,
+            single_min=171001,
+            single_max=205000,
+            married_min=342001,
+            married_max=410000,
+            part_b_surcharge=324.60,
+            part_d_surcharge=60.40,
             description="Third IRMAA tier - high surcharge"
         ),
         IRMAABracket(
             bracket_name="IRMAA Bracket 4",
-            single_min=200001,
+            single_min=205001,
             single_max=500000,
-            married_min=400001,
+            married_min=410001,
             married_max=750000,
-            part_b_surcharge=384.30,
-            part_d_surcharge=74.20,
+            part_b_surcharge=446.30,
+            part_d_surcharge=83.30,
             description="Fourth IRMAA tier - very high surcharge"
         ),
         IRMAABracket(
@@ -118,8 +118,8 @@ class MedicareIRMAACalculator:
             single_max=float('inf'),
             married_min=750001,
             married_max=float('inf'),
-            part_b_surcharge=419.30,
-            part_d_surcharge=81.00,
+            part_b_surcharge=487.00,
+            part_d_surcharge=91.00,
             description="Highest IRMAA tier - maximum surcharge"
         ),
     ]
@@ -132,7 +132,7 @@ class MedicareIRMAACalculator:
             year: Tax year for IRMAA calculation (default: 2025)
         """
         self.year = year
-        self.brackets = self.IRMAA_BRACKETS_2025  # In future, load year-specific brackets
+        self.brackets = self.IRMAA_BRACKETS_2026  # In future, load year-specific brackets
 
     def calculate_magi_simple(
         self,

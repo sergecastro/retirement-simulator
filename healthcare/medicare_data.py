@@ -20,15 +20,15 @@ from datetime import datetime
 # =============================================================================
 
 # IMPORTANT: Update these values when Medicare data changes (annually in November)
-DATA_VERSION = "2025.1"
-DATA_YEAR = 2025
-DATA_LAST_UPDATED = "2025-10-22"
-DATA_VALID_THROUGH = "2025-12-31"  # Data expires end of calendar year
-DATA_SOURCE_DATE = "2025-10-22"  # When we last verified CMS data
+DATA_VERSION = "2026.1"
+DATA_YEAR = 2026
+DATA_LAST_UPDATED = "2026-02-21"
+DATA_VALID_THROUGH = "2026-12-31"  # Data expires end of calendar year
+DATA_SOURCE_DATE = "2025-11-14"  # CMS finalized 2026 rates on Nov 14, 2025
 
 # Next update information
-NEXT_UPDATE_EXPECTED = "2025-11-01"  # CMS typically announces in October/November
-NEXT_DATA_EFFECTIVE = "2026-01-01"  # New rates effective January 1st
+NEXT_UPDATE_EXPECTED = "2026-11-01"  # CMS typically announces in October/November
+NEXT_DATA_EFFECTIVE = "2027-01-01"  # New rates effective January 1st
 
 
 def get_data_version_info():
@@ -208,7 +208,7 @@ File: `medicare_data.py`
 
 
 # =============================================================================
-# HISTORICAL MEDICARE PREMIUMS (2020-2025)
+# HISTORICAL MEDICARE PREMIUMS (2020-2026)
 # =============================================================================
 
 HISTORICAL_PART_B_PREMIUMS = {
@@ -217,7 +217,8 @@ HISTORICAL_PART_B_PREMIUMS = {
     2022: 170.10,  # Large jump due to Aduhelm drug coverage
     2023: 164.90,  # Slight decrease after Aduhelm removal
     2024: 174.70,
-    2025: 174.70,  # Projected (actual may vary)
+    2025: 185.00,  # CMS actual
+    2026: 202.90,  # CMS finalized Nov 14, 2025
 }
 
 HISTORICAL_PART_D_BASE_PREMIUMS = {
@@ -226,7 +227,8 @@ HISTORICAL_PART_D_BASE_PREMIUMS = {
     2022: 33.00,
     2023: 32.74,
     2024: 55.00,  # Estimated average
-    2025: 55.00,  # Projected average
+    2025: 55.00,  # Estimated average
+    2026: 46.50,  # CMS base beneficiary premium
 }
 
 
@@ -264,6 +266,16 @@ IRMAA_BRACKETS_HISTORY = {
             {"max": 500000, "part_b": 384.30, "part_d": 74.20},
             {"max": float('inf'), "part_b": 419.30, "part_d": 81.00},
         ]
+    },
+    2026: {
+        "brackets": [
+            {"max": 109000, "part_b": 0, "part_d": 0},
+            {"max": 137000, "part_b": 81.20, "part_d": 14.50},
+            {"max": 171000, "part_b": 202.90, "part_d": 37.50},
+            {"max": 205000, "part_b": 324.60, "part_d": 60.40},
+            {"max": 500000, "part_b": 446.30, "part_d": 83.30},
+            {"max": float('inf'), "part_b": 487.00, "part_d": 91.00},
+        ]
     }
 }
 
@@ -273,21 +285,21 @@ IRMAA_BRACKETS_HISTORY = {
 # =============================================================================
 
 # Part A Premium (for those without 40 quarters of coverage)
-PART_A_PREMIUM_2025 = {
-    "30_39_quarters": 278.00,  # Monthly premium with 30-39 quarters
-    "less_than_30_quarters": 505.00,  # Monthly premium with <30 quarters
+PART_A_PREMIUM_2026 = {
+    "30_39_quarters": 311.00,  # Monthly premium with 30-39 quarters
+    "less_than_30_quarters": 565.00,  # Monthly premium with <30 quarters
 }
 
 # Part A Deductibles and Coinsurance
-PART_A_COST_SHARING_2025 = {
-    "inpatient_deductible": 1632,  # Per benefit period
+PART_A_COST_SHARING_2026 = {
+    "inpatient_deductible": 1736,  # Per benefit period
     "skilled_nursing_coinsurance": {
         "days_1_20": 0,
-        "days_21_100": 204.00  # Per day
+        "days_21_100": 217.00  # Per day
     },
     "daily_coinsurance": {
-        "days_61_90": 408,  # Per day
-        "lifetime_reserve_days": 816  # Per day (60 lifetime days)
+        "days_61_90": 434,  # Per day
+        "lifetime_reserve_days": 868  # Per day (60 lifetime days)
     }
 }
 
@@ -296,8 +308,8 @@ PART_A_COST_SHARING_2025 = {
 # PART B (MEDICAL INSURANCE) COST SHARING
 # =============================================================================
 
-PART_B_COST_SHARING_2025 = {
-    "annual_deductible": 240,
+PART_B_COST_SHARING_2026 = {
+    "annual_deductible": 283,
     "coinsurance_rate": 0.20,  # 20% of Medicare-approved amount
     "preventive_services_copay": 0  # Most preventive services are free
 }
@@ -551,7 +563,7 @@ def project_part_b_premium(
         float: Projected premium
     """
     if starting_premium is None:
-        starting_premium = HISTORICAL_PART_B_PREMIUMS[2025]
+        starting_premium = HISTORICAL_PART_B_PREMIUMS[2026]
 
     if inflation_rate is None:
         inflation_rate = MEDICARE_INFLATION_RATES["moderate_projection"]
@@ -576,7 +588,7 @@ def get_medicare_cost_summary(
     Returns:
         dict: Complete cost summary
     """
-    part_b = HISTORICAL_PART_B_PREMIUMS[2025]
+    part_b = HISTORICAL_PART_B_PREMIUMS[2026]
     part_d = get_part_d_premium_for_state(state_code)
 
     costs = {

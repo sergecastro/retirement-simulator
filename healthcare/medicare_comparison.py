@@ -162,9 +162,9 @@ ADVANTAGE_PLANS = {
 }
 
 
-# 2025 Medicare constants
-PART_B_DEDUCTIBLE_2025 = 240
-PART_B_PREMIUM_2025 = 174.70
+# 2026 Medicare constants
+PART_B_DEDUCTIBLE_2026 = 283
+PART_B_PREMIUM_2026 = 202.90
 
 
 # =============================================================================
@@ -196,10 +196,10 @@ def calculate_medigap_annual_cost(plan_name: str, age: int, usage_scenario: str 
         monthly_premium = plan['avg_premium_age_80']
 
     annual_medigap_premium = monthly_premium * 12
-    annual_part_b_premium = PART_B_PREMIUM_2025 * 12
+    annual_part_b_premium = PART_B_PREMIUM_2026 * 12
 
     # Part B deductible (only if plan doesn't cover it)
-    part_b_deductible = 0 if plan['coverage']['Part B deductible'] else PART_B_DEDUCTIBLE_2025
+    part_b_deductible = 0 if plan['coverage']['Part B deductible'] else PART_B_DEDUCTIBLE_2026
 
     # Estimate out-of-pocket for Plan N copays
     copay_costs = 0
