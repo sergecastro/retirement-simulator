@@ -532,7 +532,7 @@ def render_scenario_studio_page():
                 "Annual Salary/Wages",
                 min_value=0,
                 max_value=10000000,
-                value=int(template_adjustments.get('salary_wages', get_value('salary_wages', 100000) * 12)),
+                value=int(template_adjustments.get('salary_wages', get_value('salary_wages', 100000)) * 12),
                 step=5000,
                 help="Employment income (annual)"
             )
