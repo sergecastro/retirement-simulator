@@ -186,7 +186,24 @@ def assemble_user_context(user_data: Dict, financial_data: Dict, sim_params: Dic
             year = inh.get('Year', 'Unknown')
             amount = inh.get('Amount', 0)
             context += f"- Year {year}: ${amount:,.0f}\n"
-    
+
+    # Add goals if available
+    if 'goals_list' in st.session_state and st.session_state['goals_list']:
+        context += "\n### Financial Goals:\n"
+        for goal in st.session_state['goals_list']:
+            name = goal.get('goal', 'Unknown Goal')
+            amount = goal.get('amount', 0)
+            year = goal.get('year', 'Unknown')
+            context += f"- {name}: ${amount:,.0f} by {year}\n"
+
+    # Add custom expenses if available
+    if 'custom_expenses_list' in st.session_state and st.session_state['custom_expenses_list']:
+        context += "\n### Custom Monthly Expenses:\n"
+        for exp in st.session_state['custom_expenses_list']:
+            name = exp.get('Name', 'Unknown')
+            amount = exp.get('Monthly Amount', 0)
+            context += f"- {name}: ${amount:,.0f}/month\n"
+
     # Add retirement accounts if available
     ira = financial_data.get('ira_balance', 0)
     k401 = financial_data.get('four01k_403b_balance', 0)
@@ -477,7 +494,25 @@ def show_ai_consultation(results: Dict, user_data: Dict, financial_data: Dict, s
 
             st.markdown("---")
     else:
-        st.info("👋 **Hi! I'm your AI Planning Assistant.**\n\nI've analyzed your complete financial profile. Ask me anything:\n- Should I buy or lease my next car?\n- Can I afford to retire early?\n- Should I pay off my mortgage or invest?\n- How can I reduce my taxes?\n- What's the impact of [any life decision] on my retirement?")
+        # Build personalized opening message
+        children_count = len(st.session_state.get('children_list', []))
+        children_text = f"{children_count} kid{'s' if children_count != 1 else ''}, " if children_count > 0 else ""
+        monthly_income = financial_data.get('total_income', 0) if financial_data else 0
+        monthly_expenses = financial_data.get('total_expenses', 0) if financial_data else 0
+        surplus = monthly_income - monthly_expenses
+        surplus_text = f"${surplus:,.0f} monthly surplus" if surplus >= 0 else f"${abs(surplus):,.0f} monthly shortfall"
+        current_age = st.session_state.get('input_age', 65)
+        retire_age = st.session_state.get('input_retirement_age', 65)
+        from datetime import date
+        retire_year = date.today().year + max(0, retire_age - current_age)
+        retirement_year = f"targeting retirement in {retire_year}" if retire_age > current_age else "already in retirement"
+
+        opening_message = f"""**Hi, I'm your Family Forecast AI Advisor, powered by Claude by Anthropic.**
+
+I can see your family situation — {children_text}{retirement_year}, {surplus_text}. Want me to identify your biggest risks and opportunities?
+
+**Your privacy is protected:** I only see your data during this active session to answer your questions. Your financial information is never stored by the AI, never sent to any third party, and remains encrypted on your device at all times. When you close this session, nothing is retained."""
+        st.info(opening_message)
     
     # ============================================
     # EXAMPLE QUESTIONS (Quick Starts)
