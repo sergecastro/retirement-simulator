@@ -159,11 +159,29 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
     if features.get('show_ai_advisor'):
         from ai_advisor import show_ai_consultation
         st.markdown("---")
-        with st.expander("💬 Ask AI Advisor — Powered by Claude (Anthropic)", expanded=True):
+        st.markdown("""
+            <style>
+            .ai-advisor-expander [data-testid="stExpander"] {
+                border: 2px solid #4A90D9 !important;
+                border-radius: 12px !important;
+                box-shadow: 0 0 15px rgba(74, 144, 217, 0.4) !important;
+                background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%) !important;
+            }
+            .ai-advisor-expander [data-testid="stExpander"] summary {
+                font-size: 1.2rem !important;
+                font-weight: 700 !important;
+                color: #1a5fa8 !important;
+                padding: 12px !important;
+            }
+            </style>
+            <div class="ai-advisor-expander">
+        """, unsafe_allow_html=True)
+        with st.expander("✨ 💬 Ask Your AI Family Financial Advisor — Powered by Claude (Anthropic)", expanded=True):
             try:
                 show_ai_consultation(results, user_data, financial_data, sim_params)
             except Exception as e:
                 st.error(f"AI advisor temporarily unavailable: {str(e)}")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # =============================================================================
     # BASIC CHARTS
