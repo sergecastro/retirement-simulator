@@ -560,6 +560,21 @@ I can see your family situation — {children_text}{retirement_year}, {surplus_t
     if 'ai_input' in st.session_state:
         del st.session_state['ai_input']
     
+    st.markdown("""
+        <style>
+        div[data-testid="stButton"] button[kind="primary"] {
+            background: linear-gradient(135deg, #e63946, #c1121f) !important;
+            color: white !important;
+            font-size: 1.3rem !important;
+            font-weight: 800 !important;
+            padding: 18px !important;
+            border-radius: 10px !important;
+            border: none !important;
+            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.5) !important;
+            letter-spacing: 1px !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
     col1, col2 = st.columns([3, 1])
     with col1:
         ask_button = st.button("💬 Ask AI Assistant", type="primary", use_container_width=True)

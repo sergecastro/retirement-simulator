@@ -627,16 +627,15 @@ def main():
             background-color: #ffffff !important;
         }
 
-        /* Fix Streamlit expander arrow text bleed */
-        .streamlit-expanderHeader span[data-testid="stExpanderToggleIcon"] {
-            display: none !important;
-        }
-        [data-testid="stExpander"] summary span[data-testid="stExpanderToggleIcon"] {
-            display: none !important;
-        }
-        [data-testid="stExpanderToggleIcon"] {
+        /* Nuclear option - hide ALL expander arrow text */
+        button[data-testid="stBaseButton-headerNoPadding"] div p,
+        [data-testid="stExpanderToggleIcon"],
+        [data-testid="stExpanderToggleIcon"] * {
             display: none !important;
             visibility: hidden !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
         }
 
         /* Info/Warning/Error/Success boxes */
