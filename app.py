@@ -634,6 +634,10 @@ def main():
         [data-testid="stExpander"] summary span[data-testid="stExpanderToggleIcon"] {
             display: none !important;
         }
+        [data-testid="stExpanderToggleIcon"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
 
         /* Info/Warning/Error/Success boxes */
         .main .stAlert, .main .stAlert p, .main .stAlert span,

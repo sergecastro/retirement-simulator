@@ -435,9 +435,6 @@ def show_ai_consultation(results: Dict, user_data: Dict, financial_data: Dict, s
     st.header("🤖 AI Planning Assistant")
     st.markdown("*Ask any financial question and get personalized advice based on your complete financial profile.*")
 
-    # ✅ REGULATORY COMPLIANCE: Show AI advisor disclaimer
-    disclaimers.show_ai_advisor_disclaimer()
-
     # Test API connection on first load
     if 'ai_advisor_tested' not in st.session_state:
         with st.spinner("Testing Claude API connection..."):
@@ -513,7 +510,13 @@ I can see your family situation — {children_text}{retirement_year}, {surplus_t
 
 **Your privacy is protected:** I only see your data during this active session to answer your questions. Your financial information is never stored by the AI, never sent to any third party, and remains encrypted on your device at all times. When you close this session, nothing is retained."""
         st.info(opening_message)
-    
+
+    # ✅ REGULATORY COMPLIANCE: AI advisor disclaimer (collapsed, after greeting)
+    with st.expander("ℹ️ Important Notice & Limitations", expanded=False):
+        st.markdown('<small>', unsafe_allow_html=True)
+        disclaimers.show_ai_advisor_disclaimer()
+        st.markdown('</small>', unsafe_allow_html=True)
+
     # ============================================
     # EXAMPLE QUESTIONS (Quick Starts)
     # ============================================
