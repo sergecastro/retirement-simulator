@@ -92,6 +92,7 @@ User fills INTAKE (Lovable)
 6. **NEVER touch `utils/encryption.py`** without explicit approval
 7. **Max 500 lines per file**
 8. **"For Educational Purposes" disclaimer required**
+9. **NEVER store API keys in claude.md or any committed file** — All API keys, secrets, and credentials must go in `.env` files ONLY. `.env` must always be in `.gitignore`. No exceptions.
 
 ---
 
