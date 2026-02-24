@@ -119,7 +119,7 @@ User fills INTAKE (Lovable)
 
 ## Key Credentials (for reference)
 - Supabase URL: `https://ebhzvauommuhqlcswdil.supabase.co`
-- Resend API key / SMTP password: `re_g6S4RTuB_9W3VH7x8y5AggRR9RPByGb1T`
+- Resend API key / SMTP password: `REMOVED_SEE_ENV_FILE`
 - SMTP host: `smtp.resend.com` / port: `465` / username: `resend`
 - Sender: `noreply@familyforecast.ai`
 
@@ -130,3 +130,15 @@ User fills INTAKE (Lovable)
 - Check line counts: `wc -l filename.py`
 - Find functions: `grep -n "def " filename.py | head -20`
 - Find field references: `grep -rn "field_name" . --include="*.py"`
+
+## 🤖 END OF SESSION — MANDATORY
+At the end of every session, before closing, you MUST update the file `HANDOFF.md` 
+in this same folder. Use the following structure:
+
+- Update PROJECT ARCHITECTURE if anything changed (new files, agents, URLs, services)
+- Write a LAST SESSION SUMMARY of what was done today
+- Add any SIGNIFICANT CHANGES that changed direction
+- Add a new PROGRESS MILESTONE with today's date and what was achieved
+- Update STATUS (🟢 Active / 🟡 Paused / 🔴 Blocked)
+
+Do this automatically. Do not ask for permission. Do not wait to be reminded.
