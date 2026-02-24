@@ -153,6 +153,19 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             st.error(f"Summary metrics error: {str(e)}")
 
     # =============================================================================
+    # AI ADVISOR
+    # =============================================================================
+
+    if features.get('show_ai_advisor'):
+        from ai_advisor import show_ai_consultation
+        st.markdown("---")
+        with st.expander("💬 Ask AI Advisor — Powered by Claude (Anthropic)", expanded=True):
+            try:
+                show_ai_consultation(results, user_data, financial_data, sim_params)
+            except Exception as e:
+                st.error(f"AI advisor temporarily unavailable: {str(e)}")
+
+    # =============================================================================
     # BASIC CHARTS
     # =============================================================================
 
@@ -897,19 +910,6 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                         else:
                             print("[DEBUG SAVE] ERROR: adjustments is None, skipping save")
                             st.error("Cannot save: adjustments could not be built")
-
-    # =============================================================================
-    # AI ADVISOR
-    # =============================================================================
-
-    if features.get('show_ai_advisor'):
-        from ai_advisor import show_ai_consultation
-        st.markdown("---")
-        with st.expander("💬 Ask AI Advisor — Powered by Claude (Anthropic)", expanded=True):
-            try:
-                show_ai_consultation(results, user_data, financial_data, sim_params)
-            except Exception as e:
-                st.error(f"AI advisor temporarily unavailable: {str(e)}")
 
     # =============================================================================
     # INJECT CHART EXPLANATION BUTTONS
