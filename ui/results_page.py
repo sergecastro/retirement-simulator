@@ -903,12 +903,13 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
     # =============================================================================
 
     if features.get('show_ai_advisor'):
-        try:
-            from ai_advisor import show_ai_consultation
-            st.markdown("---")
-            show_ai_consultation(results, user_data, financial_data, sim_params)
-        except Exception as e:
-            st.error(f"AI advisor error: {str(e)}")
+        from ai_advisor import show_ai_consultation
+        st.markdown("---")
+        with st.expander("💬 Ask AI Advisor — Powered by Claude (Anthropic)", expanded=True):
+            try:
+                show_ai_consultation(results, user_data, financial_data, sim_params)
+            except Exception as e:
+                st.error(f"AI advisor temporarily unavailable: {str(e)}")
 
     # =============================================================================
     # INJECT CHART EXPLANATION BUTTONS
