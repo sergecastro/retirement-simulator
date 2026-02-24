@@ -627,6 +627,14 @@ def main():
             background-color: #ffffff !important;
         }
 
+        /* Fix Streamlit expander arrow text bleed */
+        .streamlit-expanderHeader span[data-testid="stExpanderToggleIcon"] {
+            display: none !important;
+        }
+        [data-testid="stExpander"] summary span[data-testid="stExpanderToggleIcon"] {
+            display: none !important;
+        }
+
         /* Info/Warning/Error/Success boxes */
         .main .stAlert, .main .stAlert p, .main .stAlert span,
         .main .stAlert div {
