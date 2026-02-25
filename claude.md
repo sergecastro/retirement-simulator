@@ -119,10 +119,10 @@ User fills INTAKE (Lovable)
 ---
 
 ## Key Credentials (for reference)
-- Supabase URL: `https://ebhzvauommuhqlcswdil.supabase.co`
-- Resend API key / SMTP password: `REMOVED_SEE_ENV_FILE`
-- SMTP host: `smtp.resend.com` / port: `465` / username: `resend`
-- Sender: `noreply@familyforecast.ai`
+- Supabase URL: `SEE_ENV_FILE`
+- Resend API key / SMTP password: `SEE_ENV_FILE`
+- SMTP host / port / username: `SEE_ENV_FILE`
+- Sender: `SEE_ENV_FILE`
 
 ---
 
