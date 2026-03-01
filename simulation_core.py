@@ -136,6 +136,8 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         combined_other_assets_total = safe_float(combined_other_assets_total)
         total_liabilities_local = safe_float(total_liabilities_local)
         partner_liabilities = safe_float(partner_liabilities)
+        # KNOWN LIMITATION: tax_rate parameter accepted but unused.
+        # Taxes calculated via calculate_taxes(magi, filing_status) instead.
         tax_rate = safe_float(tax_rate, 22.0)
         inflation_rate = safe_float(inflation_rate, 3.0)
         investment_return_rate = safe_float(investment_return_rate, 7.0)
@@ -240,8 +242,13 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4,
             88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5, 92: 10.8,
             93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4, 97: 7.8,
-            98: 7.3, 99: 6.8, 100: 6.4
+            98: 7.3, 99: 6.8, 100: 6.4, 101: 6.0, 102: 5.6,
+            103: 5.2, 104: 4.9, 105: 4.6, 106: 4.3, 107: 4.1,
+            108: 3.9, 109: 3.7, 110: 3.5, 111: 3.4, 112: 3.3,
+            113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8, 117: 2.7,
+            118: 2.5, 119: 2.3, 120: 2.0
         }
+        rmd_min_factor = min(rmd_factors.values())
         
         # Initial savings
         current_savings = combined_financial_assets
@@ -249,6 +256,8 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
         # CRITICAL FIX: Use actual income/expenses
         savings = combined_financial_assets
         five29_balance = five29_plan_balance
+        remaining_liabilities = combined_total_liabilities
+        remaining_other_assets = combined_other_assets_total
         
         for year_idx in range(simulation_years):
             year = start_year + year_idx
@@ -259,24 +268,44 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             annual_income = base_total_income * (1 + inflation_rate / 100) ** year_idx
             annual_expenses = base_total_expenses * (1 + inflation_rate / 100) ** year_idx
             
-            # Income components (simplified - use total income for now)
-            salary_wages = annual_income * 0.5  # Placeholder
-            rental_income = annual_income * 0.1
-            investment_income = annual_income * 0.1
-            social_security = annual_income * 0.2
-            pension_income = annual_income * 0.05
-            other_income = annual_income * 0.05
+            # Income components: use actual intake data if available, else estimate from total
+            _ss = st.session_state
+            base_salary = safe_float(_ss.get('input_salary_wages', 0)) * 12
+            base_rental = safe_float(_ss.get('input_rental_income', 0)) * 12
+            base_investment = safe_float(_ss.get('input_investment_income', 0)) * 12
+            base_ss = safe_float(_ss.get('input_social_security_income', 0)) * 12
+            base_pension = safe_float(_ss.get('input_pension_income', 0)) * 12
+            base_other = safe_float(_ss.get('input_other_income', 0)) * 12
+            intake_total = base_salary + base_rental + base_investment + base_ss + base_pension + base_other
+
+            if intake_total > 0:
+                # Use actual user-provided income breakdown, inflation-adjusted
+                inflate = (1 + inflation_rate / 100) ** year_idx
+                salary_wages = base_salary * inflate
+                rental_income = base_rental * inflate
+                investment_income = base_investment * inflate
+                social_security = base_ss * inflate
+                pension_income = base_pension * inflate
+                other_income = base_other * inflate
+            else:
+                # KNOWN LIMITATION: No itemized income data — fall back to estimated ratios
+                salary_wages = annual_income * 0.5
+                rental_income = annual_income * 0.1
+                investment_income = annual_income * 0.1
+                social_security = annual_income * 0.2
+                pension_income = annual_income * 0.05
+                other_income = annual_income * 0.05
             
             # RMD calculations
             user_rmd = 0
             partner_rmd = 0
             if user_age >= 73 and user_retirement_balance > 0:
-                factor = rmd_factors.get(user_age, 27.4)
+                factor = rmd_factors.get(user_age, rmd_min_factor)
                 user_rmd = user_retirement_balance / factor
                 user_retirement_balance -= user_rmd
 
             if partner_exists and current_partner_age >= 73 and partner_retirement_balance > 0:
-                factor = rmd_factors.get(current_partner_age, 27.4)
+                factor = rmd_factors.get(current_partner_age, rmd_min_factor)
                 partner_rmd = partner_retirement_balance / factor
                 partner_retirement_balance -= partner_rmd
             
@@ -332,7 +361,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             
             # Net calculations
             net_before_special = total_income - total_expenses - taxes_paid
-            net_after_special = net_before_special - family_expense + family_inflow - irmaa_cost
+            net_after_special = net_before_special + family_inflow - irmaa_cost
             
             # Savings and investment returns
             savings_start = savings
@@ -341,12 +370,16 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             savings += investment_return
             savings = max(0, savings)
             
+            # Debt paydown: reduce liabilities by 5% per year (simple amortization)
+            remaining_liabilities = max(0, remaining_liabilities * 0.95)
+
             # Assets and net worth
+            remaining_other_assets = combined_other_assets_total * (1 + 2.0 / 100) ** year_idx
             total_assets = savings + primary_residence_value * (1 + 2.0 / 100) ** year_idx + \
                           secondary_residence_value * (1 + 2.0 / 100) ** year_idx + \
-                          combined_other_assets_total
-            net_worth = total_assets - combined_total_liabilities
-            
+                          remaining_other_assets
+            net_worth = total_assets - remaining_liabilities
+
             # Goal progress - CHECK AND DEDUCT
             goal_progress = {}
             for goal, data in goal_costs.items():
@@ -368,8 +401,8 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             # Recalculate total_assets and net_worth AFTER goal deductions
             total_assets = savings + primary_residence_value * (1 + 2.0 / 100) ** year_idx + \
                           secondary_residence_value * (1 + 2.0 / 100) ** year_idx + \
-                          combined_other_assets_total
-            net_worth = total_assets - combined_total_liabilities
+                          remaining_other_assets
+            net_worth = total_assets - remaining_liabilities
 
             # Store results
             total_income_list.append(total_income)
@@ -410,7 +443,7 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             investment_return_list.append(investment_return)
             savings_end_list.append(savings)
             total_assets_list.append(total_assets)
-            total_liabilities_list.append(combined_total_liabilities)
+            total_liabilities_list.append(remaining_liabilities)
             net_worth_list.append(net_worth)
             
             goal_progress_list.append(goal_progress)
