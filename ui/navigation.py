@@ -64,7 +64,7 @@ def show_feature_toggles(is_trusted):
         'show_monte_carlo': True,
         'show_sankey': True,
         'show_longevity_analysis': True,
-        'show_irmaa_analysis': False,  # Healthcare module disabled
+        'show_irmaa_analysis': True,
         'show_scenario_comparison': True,
         'show_detailed_table': True
     }
