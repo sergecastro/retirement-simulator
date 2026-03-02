@@ -376,15 +376,12 @@ def load_pending_intake(session_id: str) -> Tuple[Optional[dict], str]:
         (data, message) - Intake data or None with error message
     """
     try:
-        print(f"[PENDING] Attempting to load session: {session_id}")
         client = get_supabase_client()
 
         # Find the pending intake
-        result = client.table('pending_intake').select('*').eq('session_id', session_id.upper()).execute()
-        print(f"[PENDING] Query result: found={bool(result.data)}, count={len(result.data) if result.data else 0}")
+        result = client.table('pending_intake').select('*').eq('session_id', session_id.strip().upper()).execute()
 
         if not result.data:
-            print(f"[PENDING] Session not found: {session_id.upper()}")
             return None, "Session not found or expired. Please complete INTAKE again."
 
         record = result.data[0]
@@ -392,29 +389,22 @@ def load_pending_intake(session_id: str) -> Tuple[Optional[dict], str]:
         # Check expiration
         expires_at = datetime.fromisoformat(record['expires_at'].replace('Z', '+00:00'))
         is_expired = datetime.utcnow().replace(tzinfo=expires_at.tzinfo) > expires_at
-        print(f"[PENDING] Expiration check: expired={is_expired}, expires_at={expires_at}")
 
         if is_expired:
             # Clean up expired record
-            client.table('pending_intake').delete().eq('session_id', session_id.upper()).execute()
+            client.table('pending_intake').delete().eq('session_id', session_id.strip().upper()).execute()
             return None, "Session expired (24 hours). Please complete INTAKE again."
 
         # Get the intake data (already unencrypted JSON)
         intake_data = record['intake_data']
-        print(f"[PENDING] Raw data type: {type(intake_data).__name__}")
 
         # If it's a string, parse it
         if isinstance(intake_data, str):
             intake_data = json.loads(intake_data)
 
         # Check if this is Lovable format and transform if needed
-        is_lovable = 'profile' in intake_data
-        print(f"[PENDING] Lovable format: {is_lovable}")
-
-        if is_lovable:
+        if 'profile' in intake_data:
             intake_data = transform_lovable_to_streamlit(intake_data)
-
-        print(f"[PENDING] Transform complete, fields: {len(intake_data)}")
 
         # Mark as pending (not yet saved to vault)
         intake_data['_pending_session'] = session_id

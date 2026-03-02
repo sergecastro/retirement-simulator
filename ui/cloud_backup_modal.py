@@ -172,6 +172,12 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
                     print(f"[MODAL DEBUG] Vault created successfully: {vault_id}")
                     st.session_state.backup_vault_id = vault_id
 
+                    # Clean up pending intake if this user came from frictionless flow
+                    if st.session_state.get('_pending_session'):
+                        from utils.supabase_sync import delete_pending_intake
+                        delete_pending_intake(st.session_state['_pending_session'])
+                        st.session_state['_pending_session'] = None
+
                     # Save vault_id to localStorage for persistence
                     from utils.snapshot_manager import _get_local_storage
                     ls = _get_local_storage()
@@ -235,6 +241,13 @@ def show_cloud_backup_modal(user_data: dict) -> bool:
                 if success:
                     st.session_state.backup_user_email = email
                     st.session_state.user_email = email  # Also set for skip check
+
+                    # Clean up pending intake if this user came from frictionless flow
+                    if st.session_state.get('_pending_session'):
+                        from utils.supabase_sync import delete_pending_intake
+                        delete_pending_intake(st.session_state['_pending_session'])
+                        st.session_state['_pending_session'] = None
+
                     # Save to localStorage for persistence across sessions
                     from utils.snapshot_manager import _get_local_storage
                     ls = _get_local_storage()
