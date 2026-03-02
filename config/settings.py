@@ -35,26 +35,6 @@ CUSTOM_CSS = """
 <script defer data-domain="familyforecast.ai" src="https://plausible.io/js/script.js"></script>
 
 <style>
-    @import url('https://cdn.jsdelivr.net/npm/material-icons@1.13.14/iconfont/material-icons.min.css');
-
-    /* Make unloaded Material Icons text invisible */
-    .material-icons {
-        color: transparent !important;
-        font-size: 14px !important;
-        display: inline-block !important;
-        width: 20px !important;
-    }
-
-    /* Prevent expander title text from overlapping icon */
-    [data-testid="stExpander"] summary > div > p {
-        padding-left: 8px !important;
-        display: inline !important;
-    }
-
-    button[data-testid="baseButton-header"] p {
-        padding-left: 8px !important;
-    }
-
     /* White background */
     .stApp {
         background-color: #FFFFFF !important;
