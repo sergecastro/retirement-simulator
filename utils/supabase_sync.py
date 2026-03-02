@@ -660,6 +660,7 @@ def sign_in_user(email: str, password: str) -> Tuple[Optional[dict], str]:
         (data, message) - Decrypted data or None
     """
     try:
+        email = email.strip().lower()
         client = get_supabase_client()
 
         # Sign in
@@ -687,12 +688,19 @@ def sign_in_user(email: str, password: str) -> Tuple[Optional[dict], str]:
         decrypted_json = decrypt_with_password(encrypted_data, password, salt)
         data = json.loads(decrypted_json)
 
+        # Check if this is Lovable format (has 'profile' key) and transform
+        if 'profile' in data:
+            data = transform_lovable_to_streamlit(data)
+
         return data, "Welcome back!"
 
     except ValueError:
         return None, "Failed to decrypt data. This shouldn't happen - contact support."
     except Exception as e:
-        return None, f"Error signing in: {str(e)}"
+        error_msg = str(e)
+        if "email not confirmed" in error_msg.lower():
+            return None, "Please confirm your email first — check your inbox for a verification link."
+        return None, f"Error signing in: {error_msg}"
 
 
 def update_user_vault(email: str, password: str, data: dict) -> Tuple[bool, str]:
