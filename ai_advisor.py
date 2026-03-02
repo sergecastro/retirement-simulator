@@ -457,7 +457,8 @@ def show_ai_consultation(results: Dict, user_data: Dict, financial_data: Dict, s
     # ============================================
     # PROACTIVE RECOMMENDATIONS SECTION
     # ============================================
-    with st.expander("💡 **Proactive Insights** (Click to see what Claude noticed about your plan)", expanded=False):
+    with st.container():
+        st.markdown("##### 💡 Proactive Insights")
         if st.button("🔍 Analyze My Plan", key="analyze_plan_btn"):
             with st.spinner("Analyzing your financial plan..."):
                 recommendations = generate_proactive_recommendations(context, results)
@@ -512,7 +513,8 @@ I can see your family situation — {children_text}{retirement_year}, {surplus_t
         st.info(opening_message)
 
     # ✅ REGULATORY COMPLIANCE: AI advisor disclaimer (collapsed, after greeting)
-    with st.expander("ℹ️ Important Notice & Limitations", expanded=False):
+    with st.container():
+        st.markdown("##### ℹ️ Important Notice & Limitations")
         st.markdown('<small>', unsafe_allow_html=True)
         disclaimers.show_ai_advisor_disclaimer()
         st.markdown('</small>', unsafe_allow_html=True)
@@ -520,7 +522,8 @@ I can see your family situation — {children_text}{retirement_year}, {surplus_t
     # ============================================
     # EXAMPLE QUESTIONS (Quick Starts)
     # ============================================
-    with st.expander("📝 Example Questions (Click any to ask)", expanded=False):
+    with st.container():
+        st.markdown("##### 📝 Example Questions")
         col1, col2 = st.columns(2)
         
         with col1:
