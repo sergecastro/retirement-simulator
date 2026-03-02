@@ -143,3 +143,32 @@ in this same folder. Use the following structure:
 - Update STATUS (🟢 Active / 🟡 Paused / 🔴 Blocked)
 
 Do this automatically. Do not ask for permission. Do not wait to be reminded.
+---
+
+## CLAUDEMANAGER — HANDOFF INSTRUCTIONS FOR CLAUDE CODE
+
+At the end of every session where code was changed, or when asked by the user, update HANDOFF.md as follows:
+
+**SECTION 1 — RECENT PROGRESS:**
+- The user will paste a formatted summary block from Claude.ai
+- PREPEND it at the very top of Section 1 (above older entries)
+- Keep maximum 5 session summaries — delete oldest if over 5
+- If no summary provided, write your own brief technical summary
+
+**SECTION 2 — ARCHITECTURE:**
+- Update ONLY if something structural changed this session
+- Keep it accurate — this is the re-activation guide
+
+**SECTION 3 — GIT COMMITS:**
+- Do NOT touch — ClaudeManager fills this automatically
+
+**IMPORTANT — Two audiences read Section 1:**
+1. The user — to recap and jump back in fresh next morning
+2. The LinkedIn Marketing Agent — to decide if posts need updating
+Write with BOTH in mind. Be specific, not vague.
+
+**AFTER UPDATING HANDOFF.md:**
+1. git add HANDOFF.md
+2. git commit -m "handoff: update session summary [DATE]"
+3. git push
+4. Confirm: "HANDOFF.md updated and pushed before midnight."

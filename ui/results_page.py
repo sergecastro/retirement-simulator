@@ -176,7 +176,8 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             </style>
             <div class="ai-advisor-expander">
         """, unsafe_allow_html=True)
-        with st.expander("✨ 💬 Ask Your AI Family Financial Advisor — Powered by Claude (Anthropic)", expanded=True):
+        with st.container():
+            st.markdown("#### ✨ 💬 Ask Your AI Family Financial Advisor — Powered by Claude (Anthropic)")
             try:
                 show_ai_consultation(results, user_data, financial_data, sim_params)
             except Exception as e:
