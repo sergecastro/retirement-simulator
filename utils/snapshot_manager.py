@@ -888,7 +888,7 @@ def export_all_snapshots() -> Dict[str, Any]:
     return backup
 
 
-def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
+def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> int:
     """
     Import snapshots from backup object into browser localStorage.
 
@@ -897,7 +897,7 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
         merge_mode: "merge" (add to existing) or "replace" (clear existing)
 
     Returns:
-        True if successful
+        Number of snapshots imported (0 on failure)
 
     Example:
         >>> # User uploads .ffb file
@@ -907,8 +907,13 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
     try:
         # Validate backup format
         if backup.get("app") != "Family Forecast":
-            st.error("❌ Invalid backup file format")
-            return False
+            st.error("❌ Invalid backup file. Please use a Family Forecast export.")
+            return 0
+
+        supported_versions = ["1.0"]
+        if backup.get("version") not in supported_versions:
+            st.error(f"❌ Unsupported backup version '{backup.get('version')}'. Please export a fresh backup.")
+            return 0
 
         # Get current index
         index = get_snapshots_index()
@@ -931,6 +936,10 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
         # Import each snapshot
         imported_count = 0
         for snapshot_obj in backup.get("snapshots", []):
+            if "metadata" not in snapshot_obj or "data" not in snapshot_obj:
+                continue
+            if "id" not in snapshot_obj["metadata"]:
+                continue
             metadata = snapshot_obj["metadata"]
             data = snapshot_obj["data"]
             snapshot_id = metadata["id"]
@@ -951,10 +960,13 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
             else:
                 print(f"[WARN] localStorage disabled - cannot import to browser: {snapshot_key}")
 
-            # Add to index (avoid duplicates)
-            if not any(s["id"] == snapshot_id for s in index["snapshots"]):
+            # Add to index or update existing metadata
+            existing = next((s for s in index["snapshots"] if s["id"] == snapshot_id), None)
+            if existing:
+                existing.update(metadata)
+            else:
                 index["snapshots"].append(metadata)
-                imported_count += 1
+            imported_count += 1
 
         # Set current snapshot if provided
         if backup.get("current_snapshot_id"):
@@ -965,14 +977,14 @@ def import_snapshots(backup: Dict[str, Any], merge_mode: str = "merge") -> bool:
 
         print(f"[OK] Imported {imported_count} snapshots to browser localStorage")
 
-        return True
+        return imported_count
 
     except Exception as e:
         st.error(f"❌ Import failed: {e}")
         print(f"[ERROR] Import error: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        return 0
 
 
 # =============================================================================
