@@ -1,5 +1,53 @@
 # HANDOFF.md -- FamilyForecast.AI
 
+## 🚀 DAILY STARTUP — Do This Every Morning
+
+### ⚠️ CRITICAL RULES
+- ALWAYS use CMD (not PowerShell) on backup laptop
+- ALWAYS launch /remote-control from INSIDE Claude Code
+- NEVER use `claude remote-control` directly from terminal — it FAILS on Windows with nvm
+
+### Terminal 1 — Start the app
+Open CMD and type:
+```
+cd C:\DEV\retirement-simulator\family_retirement_no_OCR
+git pull
+.\start_familyforecast.bat
+```
+Verify app is running at: http://localhost:8502
+Verify Flask is running at: http://localhost:5000/health
+
+### Terminal 2 — Start Remote Control
+Open a NEW CMD window and type:
+```
+cd C:\DEV\retirement-simulator\family_retirement_no_OCR
+claude
+```
+Wait for Claude Code to fully open, then type: `/remote-control`
+Copy the session URL shown (format: `https://claude.ai/code/session_XXXXX`)
+
+### Main Laptop — Connect
+Open browser and paste the session URL from backup laptop.
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `/remote-control` hangs forever | You're in PowerShell — switch to CMD |
+| `bad option: --sdk-url` error | You used `claude remote-control` in terminal — use CMD + claude + /rc instead |
+| Logo error on startup | Streamlit launched from wrong folder — use start_familyforecast.bat |
+| Port 8502 already in use | Run: `taskkill /f /im py.exe` then restart |
+| `git pull` fails with HANDOFF.md conflict | Run: `git checkout -- HANDOFF.md` then `git pull` |
+| Remote Control times out after inactivity | Restart: open CMD, cd to project, claude, /remote-control |
+
+### Quick Reference
+- App URL: http://localhost:8502
+- Flask API: http://localhost:5000/health
+- Project folder: `C:\DEV\retirement-simulator\family_retirement_no_OCR`
+- Startup file: `start_familyforecast.bat`
+
+---
+
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
