@@ -35,6 +35,8 @@ CUSTOM_CSS = """
 <script defer data-domain="familyforecast.ai" src="https://plausible.io/js/script.js"></script>
 
 <style>
+    @import url('https://cdn.jsdelivr.net/npm/material-icons@1.13.14/iconfont/material-icons.min.css');
+
     /* White background */
     .stApp {
         background-color: #FFFFFF !important;
