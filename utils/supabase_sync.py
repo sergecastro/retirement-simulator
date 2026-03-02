@@ -511,7 +511,7 @@ def load_anonymous_vault(vault_id: str, password: str) -> Tuple[Optional[dict], 
         client = get_supabase_client()
 
         # Find the vault
-        result = client.table('anonymous_vaults').select('*').eq('vault_id', vault_id.upper()).execute()
+        result = client.table('anonymous_vaults').select('*').eq('vault_id', vault_id.strip().upper()).execute()
 
         if not result.data:
             return None, "Vault not found. Check your Vault ID."
@@ -526,6 +526,9 @@ def load_anonymous_vault(vault_id: str, password: str) -> Tuple[Optional[dict], 
         # Decrypt
         salt = vault['salt']
         encrypted_data = vault['encrypted_data']
+
+        if not encrypted_data:
+            return None, "This vault has no saved data yet. Complete your plan and save it first."
 
         decrypted_json = decrypt_with_password(encrypted_data, password, salt)
         raw_data = json.loads(decrypted_json)
