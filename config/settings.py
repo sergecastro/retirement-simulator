@@ -54,6 +54,15 @@ CUSTOM_CSS = """
         margin-top: 0 !important;
     }
 
+    /* Push expander title text right to avoid icon overlap */
+    [data-testid="stExpander"] summary span p {
+        padding-left: 45px !important;
+        margin-left: 0 !important;
+    }
+    [data-testid="stExpander"] summary {
+        padding-left: 5px !important;
+    }
+
     /* White background */
     .stApp {
         background-color: #FFFFFF !important;
