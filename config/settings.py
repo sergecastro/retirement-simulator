@@ -37,30 +37,24 @@ CUSTOM_CSS = """
 <style>
     @import url('https://cdn.jsdelivr.net/npm/material-icons@1.13.14/iconfont/material-icons.min.css');
 
-    /* Hide broken Material Icons text that overlaps content */
+    /* Fix Streamlit expander arrow icon rendering */
     .material-icons {
-        font-size: 0 !important;
-        width: 18px !important;
+        font-family: 'Material Icons' !important;
+        font-size: 18px !important;
         display: inline-block !important;
+        vertical-align: middle !important;
+        overflow: hidden !important;
+        max-width: 24px !important;
     }
 
-    /* Fix Streamlit expander arrow overlap */
-    .streamlit-expanderHeader p {
-        display: block !important;
-        clear: both !important;
-    }
-    [data-testid="stExpander"] summary p {
-        line-height: 1.5 !important;
-        margin-top: 0 !important;
+    /* Prevent expander title text from overlapping icon */
+    [data-testid="stExpander"] summary > div > p {
+        padding-left: 8px !important;
+        display: inline !important;
     }
 
-    /* Push expander title text right to avoid icon overlap */
-    [data-testid="stExpander"] summary span p {
-        padding-left: 45px !important;
-        margin-left: 0 !important;
-    }
-    [data-testid="stExpander"] summary {
-        padding-left: 5px !important;
+    button[data-testid="baseButton-header"] p {
+        padding-left: 8px !important;
     }
 
     /* White background */
