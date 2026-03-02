@@ -37,14 +37,12 @@ CUSTOM_CSS = """
 <style>
     @import url('https://cdn.jsdelivr.net/npm/material-icons@1.13.14/iconfont/material-icons.min.css');
 
-    /* Fix Streamlit expander arrow icon rendering */
+    /* Make unloaded Material Icons text invisible */
     .material-icons {
-        font-family: 'Material Icons' !important;
-        font-size: 18px !important;
+        color: transparent !important;
+        font-size: 14px !important;
         display: inline-block !important;
-        vertical-align: middle !important;
-        overflow: hidden !important;
-        max-width: 24px !important;
+        width: 20px !important;
     }
 
     /* Prevent expander title text from overlapping icon */
