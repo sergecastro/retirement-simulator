@@ -37,6 +37,23 @@ CUSTOM_CSS = """
 <style>
     @import url('https://cdn.jsdelivr.net/npm/material-icons@1.13.14/iconfont/material-icons.min.css');
 
+    /* Hide broken Material Icons text that overlaps content */
+    .material-icons {
+        font-size: 0 !important;
+        width: 18px !important;
+        display: inline-block !important;
+    }
+
+    /* Fix Streamlit expander arrow overlap */
+    .streamlit-expanderHeader p {
+        display: block !important;
+        clear: both !important;
+    }
+    [data-testid="stExpander"] summary p {
+        line-height: 1.5 !important;
+        margin-top: 0 !important;
+    }
+
     /* White background */
     .stApp {
         background-color: #FFFFFF !important;
