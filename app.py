@@ -822,7 +822,7 @@ def main():
 
     # ⚠️⚠️⚠️ DEMO MODE - Authentication simplified for beta testing ⚠️⚠️⚠️
     # To re-enable full auth: Uncomment the lines below
-    st.sidebar.info("🧪 **BETA DEMO** - Testing mode active")
+    st.sidebar.info("⏳ **Founding Member Preview** — Free Access")
 
     # DEMO MODE: Simplified authentication
     # Require authentication
