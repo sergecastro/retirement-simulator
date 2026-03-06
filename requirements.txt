@@ -44,3 +44,4 @@ gunicorn==21.2.0
 
 # Cloud backup (optional - for cross-browser sync)
 supabase>=2.0.0
+stripe>=14.0.0
