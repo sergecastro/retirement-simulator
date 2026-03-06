@@ -51,6 +51,51 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
+### Session Summary — 2026-03-05
+**Session:** Stripe Integration Phase 1-4 + user_vaults RLS Fix
+
+#### COMPLETED TODAY
+- **user_vaults RLS fix:** anon UPDATE policy was missing — added in Supabase. Email signup → data save confirmed working (HTTP 201, row visible with encrypted data)
+- **Stripe account created** in sandbox/test mode
+- 3 Stripe products created with Price IDs (Early Bird, Monthly, Annual)
+- All Stripe keys + price IDs stored in `.env` (and Render env vars)
+- `subscriptions` table created in Supabase with RLS policies
+- `stripe` Python package installed (v14.4.0) + added to requirements.txt
+- `utils/stripe_utils.py` written — 180 lines, containing:
+  - `check_subscription()` — queries Supabase by email
+  - `is_premium_user()` — cached session check
+  - `create_checkout_session()` — creates Stripe Checkout URL
+  - `show_upgrade_wall()` — paywall UI (Annual $49/yr, Monthly $5/mo)
+- Commit `fea3869` = backup before Stripe implementation
+
+#### WAITING FOR SERGE APPROVAL
+- Wire gating into `app.py` with on/off switch (`FEATURE_GATING_ENABLED=false` until April 15)
+- Pricing roadmap:
+  - Now → Apr 14: Everything free
+  - Apr 15: Early bird $1/mo x 3, then $5/mo
+  - Jul 15+: $49/year or $5/month standard
+
+#### STILL OPEN (After Stripe)
+- Privacy Policy + Terms of Service pages (Lovable — 30 min)
+- Debug console.logs cleanup in QuickReview.tsx
+- Quick Mode with partner — retest
+- Medicare 2026 data update
+
+#### KEY FILES
+- `utils/stripe_utils.py` — new, untracked (180 lines)
+- `utils/supabase_sync.py` — unchanged
+- `app.py` — unchanged (gating not yet added)
+- Supabase: `subscriptions` table live
+
+#### FOR MARKETING AGENT
+- LinkedIn post opportunity: "From free tool to SaaS — Stripe integration day. Privacy-first retirement planning with AES-256 encryption now has a business model."
+- Educational angle: building a sustainable business while keeping user data private
+
+#### START NEXT SESSION
+"Type YES to wire Stripe gating into app.py. Then Privacy Policy + Terms of Service pages."
+
+---
+
 ### Session Summary — 2026-03-02
 **Session:** Return User QA + 24 Bug Fixes + Production Verified
 
