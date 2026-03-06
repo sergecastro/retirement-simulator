@@ -96,10 +96,10 @@ Open browser and paste the session URL from backup laptop.
 
 ---
 
-### Session Summary — 2026-03-02
+### Session Summary — 2026-03-02 (Evening)
 **Session:** Return User QA + 24 Bug Fixes + Production Verified
 
-#### ✅ COMPLETED TODAY
+#### ✅ COMPLETED
 - Fixed 12 bugs across all 5 return user paths
 - start_familyforecast.bat fixed for both laptops
 - Production app confirmed perfect on desktop and iPhone
@@ -107,18 +107,29 @@ Open browser and paste the session URL from backup laptop.
 - Local CSS icon issue confirmed NOT a production bug
 - REMOTE_CONTROL_STARTUP.md created
 
-#### 🔧 OPEN ITEMS
-- Sankey chart not connected to explanation API
-- Supabase SMTP → Resend for email confirmation
-- Remove BETA DEMO badge before launch
-- Stripe integration — after all testing complete
+---
+
+### Session Summary — 2026-03-02 (Afternoon)
+**Session:** SMTP Fix + Badge Update + Chart Audit
+
+#### ✅ COMPLETED
+- Resend SMTP email confirmation — FIXED (Supabase dashboard config, no code changes)
+- BETA DEMO badge replaced with "Founding Member Preview" (`app.py:825`)
+- Chart API audit: Financial Trajectories, Monte Carlo, Longevity all confirmed working
+- Sankey chart deferred — not a launch blocker
 
 #### 📋 FOR MARKETING AGENT
-- LinkedIn post opportunity: "24 bugs fixed in one session — production verified on desktop + iPhone"
-- Educational angle: rigorous QA matters before launch
+- Two-session marathon: 24 bugs fixed + SMTP live + badge polished + production verified
+- Educational angle: rigorous QA + infrastructure fixes before launch
+
+#### 🔧 OPEN ITEMS (combined)
+- Sankey chart not connected to explanation API (deferred)
+- Stripe integration — after all testing complete
+- Email signup → user_vaults data save needs retest (SMTP now fixed)
+- Privacy Policy / Terms of Service pages needed pre-launch
 
 #### ▶️ START NEXT SESSION
-"Connect Sankey and other charts to explanation API, then tackle Supabase SMTP Resend connection."
+"Stripe payment integration (full session), then fix email signup → user_vaults data save."
 
 ---
 
