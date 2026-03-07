@@ -6,6 +6,7 @@ Find your optimal Roth conversion amount to minimize lifetime taxes.
 
 import streamlit as st
 import pandas as pd
+from utils.stripe_utils import show_upgrade_wall, is_premium_user
 from utils.roth_calculations import (
     calculate_roth_sweet_spot,
     generate_conversion_timeline,
@@ -517,9 +518,12 @@ Don't set later than 72 unless you have a specific strategy.""",
 
     with col_act1:
         if st.button("📊 Save Strategy to My Plan", type="primary", key="save_roth_strategy"):
-            # Save to session state for later use
-            st.session_state['roth_strategy'] = results
-            st.session_state['roth_strategy_applied'] = True
+            if st.session_state.get("gating_enabled") and not is_premium_user():
+                show_upgrade_wall("roth_calculator")
+            else:
+                # Save to session state for later use
+                st.session_state['roth_strategy'] = results
+                st.session_state['roth_strategy_applied'] = True
             st.success(f"""
             ✅ **Strategy Saved!**
 
