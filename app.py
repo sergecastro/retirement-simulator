@@ -933,13 +933,10 @@ def main():
         show_mode_selection_landing_page(has_intake_data, is_trusted)
         st.stop()
 
-    # Stripe feature gating (controlled by FEATURE_GATING_ENABLED env var)
-    # Set to "true" in Render on April 15, 2026 to activate
+    # Feature gating is handled inside each premium feature at the action button
+    # FEATURE_GATING_ENABLED env var still controls on/off globally
     gating_enabled = os.getenv("FEATURE_GATING_ENABLED", "false").lower() == "true"
-    if gating_enabled and st.session_state.current_mode in PREMIUM_FEATURES:
-        if not is_premium_user():
-            show_upgrade_wall(st.session_state.current_mode)
-            st.stop()
+    st.session_state["gating_enabled"] = gating_enabled
 
     elif st.session_state.current_mode == "INTAKE":
         show_sidebar_footer(is_trusted)
