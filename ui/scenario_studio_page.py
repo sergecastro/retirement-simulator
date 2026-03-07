@@ -5,6 +5,7 @@ Self-contained scenario creation and side-by-side comparison
 
 import streamlit as st
 from ui.components.top_navigation import render_top_navigation
+from utils.stripe_utils import show_upgrade_wall, is_premium_user
 from utils.comparison_scenarios import get_comparisons_for_plan, load_comparison_scenario
 from utils.snapshot_manager import get_current_snapshot
 
@@ -946,7 +947,9 @@ def render_scenario_studio_page():
     # =============================================================================
 
     if run_scenario:
-        if not scenario_name or scenario_name.strip() == "":
+        if st.session_state.get("gating_enabled") and not is_premium_user():
+            show_upgrade_wall("scenario_studio")
+        elif not scenario_name or scenario_name.strip() == "":
             st.error("⚠️ **Please enter a scenario name** before running the simulation.")
         else:
             # =============================================================================
