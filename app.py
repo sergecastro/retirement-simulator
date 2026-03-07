@@ -925,6 +925,11 @@ def main():
             show_sidebar_footer(is_trusted)
             st.stop()
 
+    # Feature gating is handled inside each premium feature at the action button
+    # FEATURE_GATING_ENABLED env var still controls on/off globally
+    gating_enabled = os.getenv("FEATURE_GATING_ENABLED", "false").lower() == "true"
+    st.session_state["gating_enabled"] = gating_enabled
+
     # Route based on selected mode
     # (Mode selector moved below scenario management for better UX)
     if not st.session_state.mode_selected:
@@ -932,11 +937,6 @@ def main():
         show_sidebar_footer(is_trusted)
         show_mode_selection_landing_page(has_intake_data, is_trusted)
         st.stop()
-
-    # Feature gating is handled inside each premium feature at the action button
-    # FEATURE_GATING_ENABLED env var still controls on/off globally
-    gating_enabled = os.getenv("FEATURE_GATING_ENABLED", "false").lower() == "true"
-    st.session_state["gating_enabled"] = gating_enabled
 
     elif st.session_state.current_mode == "INTAKE":
         show_sidebar_footer(is_trusted)
