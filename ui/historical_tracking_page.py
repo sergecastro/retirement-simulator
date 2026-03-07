@@ -17,6 +17,7 @@ Created: November 19, 2025
 import streamlit as st
 import pandas as pd
 from ui.components.top_navigation import render_top_navigation
+from utils.stripe_utils import show_upgrade_wall, is_premium_user
 import plotly.graph_objects as go
 import json
 from datetime import datetime
@@ -37,6 +38,11 @@ def render():
 
     st.title("📊 Historical Tracking")
     st.markdown("Track your retirement plan progress over time")
+
+    # Gate: check premium before loading any data
+    if st.session_state.get("gating_enabled") and not is_premium_user():
+        show_upgrade_wall("historical_tracking")
+        return
 
     # Load all snapshots
     snapshots = list_historical_snapshots()
