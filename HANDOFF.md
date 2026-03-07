@@ -174,3 +174,38 @@ No architecture info recorded yet.
 
 ## SECTION 3 -- GIT COMMITS
 Managed automatically by ClaudeManager.
+
+---
+## Session: March 7, 2026 — Value-First Gating Complete
+
+### Recent Progress
+- Stripe webhook committed (20cd498) + SUPABASE_SERVICE_KEY added to Render
+- Feature gating moved from top-level app.py to inside each premium feature
+- Upgrade wall completely redesigned (dark theme, founding member banner, pricing cards)
+- All 5 premium features gated at last action button (value-first philosophy)
+
+### Files Changed
+- app.py — removed top-level gate, sets session_state["gating_enabled"]
+- utils/stripe_utils.py — beautiful upgrade wall redesign
+- healthcare/healthcare_main.py — gate at IRMAA + Medigap buttons
+- pages/roth_calculator.py — gate at Save Strategy button
+- ui/scenario_studio_page.py — gate at Run Scenario submit
+- pages/social_security_optimizer.py — gate at Create SS Scenario button
+- ui/historical_tracking_page.py — gate at render() entry
+
+### Git Commits (master)
+f881344 Value-first gating: Remove top-level gate + redesign upgrade wall
+1e22559 Value-first gating: Historical Tracking
+645645f Value-first gating: SS Optimizer button
+6b4c8c0 Value-first gating: Scenario Studio button
+fa15073 Value-first gating: Roth Calculator button
+427a6f6 Value-first gating: Healthcare buttons
+20cd498 Add Stripe webhook endpoint to Flask API
+
+### Remaining Before April 15
+- [ ] Test upgrade wall end-to-end with test payment (4242 4242 4242 4242)
+- [ ] Privacy Policy page (Lovable)
+- [ ] Terms of Service page (Lovable)
+- [ ] UX Design Review session (4 questions)
+- [ ] Stripe sandbox → live mode (bank account needed)
+- [ ] Email registered users — Early Bird offer
