@@ -13,6 +13,7 @@ Version: 3.2.0 (Production Hardening)
 # =============================================================================
 import os
 from pathlib import Path
+from utils.stripe_utils import is_premium_user, show_upgrade_wall, PREMIUM_FEATURES
 
 # Initialize Sentry for error tracking (optional - only if DSN is set)
 try:
@@ -931,6 +932,14 @@ def main():
         show_sidebar_footer(is_trusted)
         show_mode_selection_landing_page(has_intake_data, is_trusted)
         st.stop()
+
+    # Stripe feature gating (controlled by FEATURE_GATING_ENABLED env var)
+    # Set to "true" in Render on April 15, 2026 to activate
+    gating_enabled = os.getenv("FEATURE_GATING_ENABLED", "false").lower() == "true"
+    if gating_enabled and st.session_state.current_mode in PREMIUM_FEATURES:
+        if not is_premium_user():
+            show_upgrade_wall(st.session_state.current_mode)
+            st.stop()
 
     elif st.session_state.current_mode == "INTAKE":
         show_sidebar_footer(is_trusted)
