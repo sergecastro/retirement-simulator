@@ -8,6 +8,7 @@ Standalone module for SS claiming strategy optimization.
 import streamlit as st
 import pandas as pd
 from ui.components.top_navigation import render_top_navigation
+from utils.stripe_utils import show_upgrade_wall, is_premium_user
 from datetime import date
 from utils.ss_calculations import (
     calculate_benefit_at_age,
@@ -820,185 +821,188 @@ def show_social_security_optimizer():
             st.markdown("Create a scenario with your SS claiming age baked in.")
 
             if st.button("📊 Create SS Strategy Scenario", type="primary", key="go_to_studio"):
-                # Get values from session state (set in Tab 1)
-                current_claiming_age = st.session_state.get('ss_current_claiming_age', 67)
-                current_monthly_benefit = st.session_state.get('ss_current_monthly_benefit', 2500)
-
-                # Auto-create a scenario with SS strategy
-                try:
-                    from utils.comparison_scenarios import save_comparison_scenario
-                    from simulation_core import run_simulation
-                    from utils.snapshot_manager import get_current_snapshot, get_snapshots_index
-
-                    # Get current snapshot for base plan ID - MUST MATCH SCENARIO STUDIO!
-                    index = get_snapshots_index()
-                    base_plan_id = index.get('current_snapshot_id', 'default_plan')
-
-                    if base_plan_id == 'default_plan' or not base_plan_id:
-                        st.warning("⚠️ No base plan found. Please save your data in INTAKE first.")
-                        st.stop()
-
-                    # LOAD ACTUAL BASE PLAN DATA - Use same values as base plan, just add SS income
-                    from utils.snapshot_manager import load_snapshot
-                    base_snapshot = load_snapshot(base_plan_id)
-
-                    if not base_snapshot:
-                        st.error("❌ Could not load base plan data")
-                        st.stop()
-
-                    # Get financial data from the ACTUAL base plan (not defaults!)
-                    snapshot_data = base_snapshot.get('snapshot_data', base_snapshot)
-
-                    salary = snapshot_data.get('input_salary_wages', 75000)
-                    existing_ss = snapshot_data.get('input_social_security_income', 0)
-                    pension = snapshot_data.get('input_pension_income', 0)
-                    inv_income = snapshot_data.get('input_investment_income', 0)
-                    other_income = snapshot_data.get('input_other_income', 0)
-
-                    housing = snapshot_data.get('input_housing_expenses', 24000)
-                    healthcare = snapshot_data.get('input_healthcare_expenses', 6000)
-                    groceries = snapshot_data.get('input_groceries_expenses', 7200)
-                    transportation = snapshot_data.get('input_transportation_expenses', 4800)
-                    other_exp = snapshot_data.get('input_other_expenses', 12000)
-                    utilities = snapshot_data.get('input_utilities_expenses', 3600)
-                    insurance = snapshot_data.get('input_insurance_expenses', 3600)
-
-                    ira = snapshot_data.get('input_ira_balance', 0)
-                    four01k = snapshot_data.get('input_four01k_403b_balance', 0)
-                    roth = snapshot_data.get('input_roth_balance', 0)
-                    hsa = snapshot_data.get('input_hsa_balance', 0)
-                    partner_ira = snapshot_data.get('input_partner_ira_balance', 0)
-                    partner_401k = snapshot_data.get('input_partner_four01k_403b_balance', 0)
-                    taxable = snapshot_data.get('input_taxable_investment_accounts', 0)
-                    cash = snapshot_data.get('input_cash_savings', 0)
-
-                    home_value = snapshot_data.get('input_primary_residence_value', 0)
-                    mortgage = snapshot_data.get('input_primary_residence_mortgage', 0)
-                    secondary = snapshot_data.get('input_secondary_residence_value', 0)
-                    secondary_mortgage = snapshot_data.get('input_secondary_residence_mortgage', 0)
-
-                    return_rate = snapshot_data.get('input_return_rate', 0.07)
-                    inflation_rate = snapshot_data.get('input_inflation_rate', 0.03)
-                    base_life_exp = snapshot_data.get('input_life_expectancy', 85)
-                    base_age = snapshot_data.get('input_age', 45)
-
-                    # Calculate totals - REPLACE existing SS with new optimized SS income
-                    ss_income = current_monthly_benefit * 12  # New optimized SS income
-                    total_income = salary + ss_income + pension + inv_income + other_income
-                    total_expenses = housing + healthcare + groceries + transportation + other_exp + utilities + insurance
-                    liquid_assets = ira + four01k + roth + hsa + partner_ira + partner_401k + taxable + cash
-                    total_liabilities = mortgage + secondary_mortgage
-                    # USE BASE PLAN'S SIMULATION YEARS FOR CONSISTENCY!
-                    simulation_years = base_life_exp - base_age
-                    monthly_surplus = (total_income - total_expenses) / 12
-
-                    # Show what we're using
-                    st.info(f"📊 Creating scenario with: Age {base_age}, Life Exp {base_life_exp}, Sim Years: {simulation_years}")
-
-                    # Run simulation with SS income - USE BASE PLAN AGE for consistency!
-                    ss_results = run_simulation(
-                        age=base_age,
-                        partner_exists=partner_exists,
-                        partner_age=partner_age if partner_exists else base_age,
-                        total_income=total_income,
-                        total_expenses=total_expenses,
-                        combined_financial_assets=liquid_assets,
-                        primary_residence_value=home_value,
-                        secondary_residence_value=secondary,
-                        combined_other_assets_total=0,
-                        total_liabilities_local=total_liabilities,
-                        partner_liabilities=0,
-                        tax_rate=0.22,
-                        inflation_rate=inflation_rate * 100,
-                        investment_return_rate=return_rate * 100,
-                        simulation_years=simulation_years,
-                        mc_iterations=0,
-                        goal_costs={},
-                        college_inflation_pct=4.0,
-                        base_public_in=20000,
-                        base_public_out=40000,
-                        base_private=60000,
-                        ira_balance=ira,
-                        four01k_403b_balance=four01k,
-                        partner_ira_balance=partner_ira,
-                        partner_four01k_403b_balance=partner_401k,
-                        monthly_surplus=monthly_surplus,
-                        combined_total_liabilities=total_liabilities
-                    )
-
-                    if ss_results:
-                        # Serialize results for storage
-                        serializable_results = {}
-                        for key, value in ss_results.items():
-                            if hasattr(value, 'to_dict'):
-                                serializable_results[key] = {
-                                    '_type': 'dataframe',
-                                    'data': value.to_dict(orient='list')
-                                }
-                            else:
-                                serializable_results[key] = value
-
-                        # Save the scenario - include divergence info if applicable
-                        has_divergence = len(param_changes) > 0
-                        divergence_marker = " ⚠️" if has_divergence else ""
-                        scenario_name = f"SS Claim @ Age {current_claiming_age} (${current_monthly_benefit:,.0f}/mo){divergence_marker}"
-
-                        description = f"Social Security strategy: Claim at age {current_claiming_age} for ${current_monthly_benefit:,.0f}/month"
-                        if has_divergence:
-                            description += " | ⚠️ WARNING: Uses modified parameters (see parameter_divergence)"
-
-                        scenario_id = save_comparison_scenario(
-                            base_plan_id=base_plan_id,
-                            name=scenario_name,
-                            description=description,
-                            adjustments={
-                                # SS-specific adjustments
-                                'social_security_income': ss_income,
-                                'ss_claiming_age': current_claiming_age,
-                                'ss_monthly_benefit': current_monthly_benefit,
-                                'ss_annual_benefit': ss_income,
-                                # CRITICAL: Save ALL input parameters for comparison debugging
-                                'retirement_age': base_age + 20 if base_age < 45 else 65,  # Estimated
-                                'life_expectancy': base_life_exp,
-                                'simulation_years': simulation_years,
-                                'annual_income': total_income,
-                                'annual_expenses': total_expenses,
-                                'custom_income_total': pension + inv_income + other_income,
-                                'custom_expenses_total': 0,
-                                'ss_income_annual': ss_income,
-                                # Starting balances
-                                'ira_balance': ira,
-                                '401k_balance': four01k,
-                                'roth_balance': roth,
-                                'hsa_balance': hsa,
-                                'taxable_balance': taxable + cash,
-                                # Rates
-                                'investment_return': return_rate * 100,
-                                'inflation_rate': inflation_rate * 100,
-                                'stocks_allocation': 60,  # Default assumption
-                                'bonds_allocation': 40,
-                                # Divergence tracking (for comparison warnings)
-                                'parameter_divergence': param_changes if has_divergence else [],
-                                'uses_base_plan_values': not has_divergence,
-                            },
-                            simulation_results=serializable_results
+                if st.session_state.get("gating_enabled") and not is_premium_user():
+                    show_upgrade_wall("social_security")
+                else:
+                    # Get values from session state (set in Tab 1)
+                    current_claiming_age = st.session_state.get('ss_current_claiming_age', 67)
+                    current_monthly_benefit = st.session_state.get('ss_current_monthly_benefit', 2500)
+    
+                    # Auto-create a scenario with SS strategy
+                    try:
+                        from utils.comparison_scenarios import save_comparison_scenario
+                        from simulation_core import run_simulation
+                        from utils.snapshot_manager import get_current_snapshot, get_snapshots_index
+    
+                        # Get current snapshot for base plan ID - MUST MATCH SCENARIO STUDIO!
+                        index = get_snapshots_index()
+                        base_plan_id = index.get('current_snapshot_id', 'default_plan')
+    
+                        if base_plan_id == 'default_plan' or not base_plan_id:
+                            st.warning("⚠️ No base plan found. Please save your data in INTAKE first.")
+                            st.stop()
+    
+                        # LOAD ACTUAL BASE PLAN DATA - Use same values as base plan, just add SS income
+                        from utils.snapshot_manager import load_snapshot
+                        base_snapshot = load_snapshot(base_plan_id)
+    
+                        if not base_snapshot:
+                            st.error("❌ Could not load base plan data")
+                            st.stop()
+    
+                        # Get financial data from the ACTUAL base plan (not defaults!)
+                        snapshot_data = base_snapshot.get('snapshot_data', base_snapshot)
+    
+                        salary = snapshot_data.get('input_salary_wages', 75000)
+                        existing_ss = snapshot_data.get('input_social_security_income', 0)
+                        pension = snapshot_data.get('input_pension_income', 0)
+                        inv_income = snapshot_data.get('input_investment_income', 0)
+                        other_income = snapshot_data.get('input_other_income', 0)
+    
+                        housing = snapshot_data.get('input_housing_expenses', 24000)
+                        healthcare = snapshot_data.get('input_healthcare_expenses', 6000)
+                        groceries = snapshot_data.get('input_groceries_expenses', 7200)
+                        transportation = snapshot_data.get('input_transportation_expenses', 4800)
+                        other_exp = snapshot_data.get('input_other_expenses', 12000)
+                        utilities = snapshot_data.get('input_utilities_expenses', 3600)
+                        insurance = snapshot_data.get('input_insurance_expenses', 3600)
+    
+                        ira = snapshot_data.get('input_ira_balance', 0)
+                        four01k = snapshot_data.get('input_four01k_403b_balance', 0)
+                        roth = snapshot_data.get('input_roth_balance', 0)
+                        hsa = snapshot_data.get('input_hsa_balance', 0)
+                        partner_ira = snapshot_data.get('input_partner_ira_balance', 0)
+                        partner_401k = snapshot_data.get('input_partner_four01k_403b_balance', 0)
+                        taxable = snapshot_data.get('input_taxable_investment_accounts', 0)
+                        cash = snapshot_data.get('input_cash_savings', 0)
+    
+                        home_value = snapshot_data.get('input_primary_residence_value', 0)
+                        mortgage = snapshot_data.get('input_primary_residence_mortgage', 0)
+                        secondary = snapshot_data.get('input_secondary_residence_value', 0)
+                        secondary_mortgage = snapshot_data.get('input_secondary_residence_mortgage', 0)
+    
+                        return_rate = snapshot_data.get('input_return_rate', 0.07)
+                        inflation_rate = snapshot_data.get('input_inflation_rate', 0.03)
+                        base_life_exp = snapshot_data.get('input_life_expectancy', 85)
+                        base_age = snapshot_data.get('input_age', 45)
+    
+                        # Calculate totals - REPLACE existing SS with new optimized SS income
+                        ss_income = current_monthly_benefit * 12  # New optimized SS income
+                        total_income = salary + ss_income + pension + inv_income + other_income
+                        total_expenses = housing + healthcare + groceries + transportation + other_exp + utilities + insurance
+                        liquid_assets = ira + four01k + roth + hsa + partner_ira + partner_401k + taxable + cash
+                        total_liabilities = mortgage + secondary_mortgage
+                        # USE BASE PLAN'S SIMULATION YEARS FOR CONSISTENCY!
+                        simulation_years = base_life_exp - base_age
+                        monthly_surplus = (total_income - total_expenses) / 12
+    
+                        # Show what we're using
+                        st.info(f"📊 Creating scenario with: Age {base_age}, Life Exp {base_life_exp}, Sim Years: {simulation_years}")
+    
+                        # Run simulation with SS income - USE BASE PLAN AGE for consistency!
+                        ss_results = run_simulation(
+                            age=base_age,
+                            partner_exists=partner_exists,
+                            partner_age=partner_age if partner_exists else base_age,
+                            total_income=total_income,
+                            total_expenses=total_expenses,
+                            combined_financial_assets=liquid_assets,
+                            primary_residence_value=home_value,
+                            secondary_residence_value=secondary,
+                            combined_other_assets_total=0,
+                            total_liabilities_local=total_liabilities,
+                            partner_liabilities=0,
+                            tax_rate=0.22,
+                            inflation_rate=inflation_rate * 100,
+                            investment_return_rate=return_rate * 100,
+                            simulation_years=simulation_years,
+                            mc_iterations=0,
+                            goal_costs={},
+                            college_inflation_pct=4.0,
+                            base_public_in=20000,
+                            base_public_out=40000,
+                            base_private=60000,
+                            ira_balance=ira,
+                            four01k_403b_balance=four01k,
+                            partner_ira_balance=partner_ira,
+                            partner_four01k_403b_balance=partner_401k,
+                            monthly_surplus=monthly_surplus,
+                            combined_total_liabilities=total_liabilities
                         )
-
-                        if scenario_id:
-                            st.success(f"✅ **Scenario Created!** '{scenario_name}'")
-                            st.info("📊 Navigating to Scenario Studio...")
-                            # Auto-navigate to Studio after successful save
-                            st.session_state.current_mode = "scenario_studio"
-                            st.session_state.mode_selected = True
-                            st.rerun()
+    
+                        if ss_results:
+                            # Serialize results for storage
+                            serializable_results = {}
+                            for key, value in ss_results.items():
+                                if hasattr(value, 'to_dict'):
+                                    serializable_results[key] = {
+                                        '_type': 'dataframe',
+                                        'data': value.to_dict(orient='list')
+                                    }
+                                else:
+                                    serializable_results[key] = value
+    
+                            # Save the scenario - include divergence info if applicable
+                            has_divergence = len(param_changes) > 0
+                            divergence_marker = " ⚠️" if has_divergence else ""
+                            scenario_name = f"SS Claim @ Age {current_claiming_age} (${current_monthly_benefit:,.0f}/mo){divergence_marker}"
+    
+                            description = f"Social Security strategy: Claim at age {current_claiming_age} for ${current_monthly_benefit:,.0f}/month"
+                            if has_divergence:
+                                description += " | ⚠️ WARNING: Uses modified parameters (see parameter_divergence)"
+    
+                            scenario_id = save_comparison_scenario(
+                                base_plan_id=base_plan_id,
+                                name=scenario_name,
+                                description=description,
+                                adjustments={
+                                    # SS-specific adjustments
+                                    'social_security_income': ss_income,
+                                    'ss_claiming_age': current_claiming_age,
+                                    'ss_monthly_benefit': current_monthly_benefit,
+                                    'ss_annual_benefit': ss_income,
+                                    # CRITICAL: Save ALL input parameters for comparison debugging
+                                    'retirement_age': base_age + 20 if base_age < 45 else 65,  # Estimated
+                                    'life_expectancy': base_life_exp,
+                                    'simulation_years': simulation_years,
+                                    'annual_income': total_income,
+                                    'annual_expenses': total_expenses,
+                                    'custom_income_total': pension + inv_income + other_income,
+                                    'custom_expenses_total': 0,
+                                    'ss_income_annual': ss_income,
+                                    # Starting balances
+                                    'ira_balance': ira,
+                                    '401k_balance': four01k,
+                                    'roth_balance': roth,
+                                    'hsa_balance': hsa,
+                                    'taxable_balance': taxable + cash,
+                                    # Rates
+                                    'investment_return': return_rate * 100,
+                                    'inflation_rate': inflation_rate * 100,
+                                    'stocks_allocation': 60,  # Default assumption
+                                    'bonds_allocation': 40,
+                                    # Divergence tracking (for comparison warnings)
+                                    'parameter_divergence': param_changes if has_divergence else [],
+                                    'uses_base_plan_values': not has_divergence,
+                                },
+                                simulation_results=serializable_results
+                            )
+    
+                            if scenario_id:
+                                st.success(f"✅ **Scenario Created!** '{scenario_name}'")
+                                st.info("📊 Navigating to Scenario Studio...")
+                                # Auto-navigate to Studio after successful save
+                                st.session_state.current_mode = "scenario_studio"
+                                st.session_state.mode_selected = True
+                                st.rerun()
+                            else:
+                                st.error("❌ Failed to save scenario")
                         else:
-                            st.error("❌ Failed to save scenario")
-                    else:
-                        st.error("❌ Simulation failed")
-                except Exception as e:
-                    st.error(f"❌ Error creating scenario: {str(e)}")
-                    import traceback
-                    traceback.print_exc()
+                            st.error("❌ Simulation failed")
+                    except Exception as e:
+                        st.error(f"❌ Error creating scenario: {str(e)}")
+                        import traceback
+                        traceback.print_exc()
 
         with col_apply2:
             st.markdown("#### 📤 Share Your Analysis")
