@@ -5,6 +5,7 @@ Production-ready with environment variable support
 """
 
 from flask import Flask, request, jsonify
+import stripe
 from flask_cors import CORS
 import anthropic
 import os
@@ -34,6 +35,9 @@ CORS(app, resources={
 
 # Initialize Anthropic client
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ebhzvauommuhqlcswdil.supabase.co")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 
 if not ANTHROPIC_API_KEY:
     print("WARNING: ANTHROPIC_API_KEY not found in environment!")
@@ -128,6 +132,67 @@ def explain():
         })
         response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
         return response, 500
+
+
+@app.route('/webhook', methods=['POST'])
+def stripe_webhook():
+    """
+    Stripe webhook endpoint — receives payment confirmation.
+    Writes active subscription to Supabase subscriptions table.
+    """
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature', '')
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError:
+        print("[WEBHOOK] ERROR: Invalid payload")
+        return jsonify({'error': 'Invalid payload'}), 400
+    except stripe.error.SignatureVerificationError:
+        print("[WEBHOOK] ERROR: Invalid signature")
+        return jsonify({'error': 'Invalid signature'}), 400
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        customer_email = session.get('customer_email') or session.get('customer_details', {}).get('email', '')
+        subscription_id = session.get('subscription', '')
+        customer_id = session.get('customer', '')
+
+        print(f"[WEBHOOK] Payment confirmed for: {customer_email}")
+
+        if customer_email and SUPABASE_SERVICE_KEY:
+            try:
+                import requests as req
+                headers = {
+                    'apikey': SUPABASE_SERVICE_KEY,
+                    'Authorization': f'Bearer {SUPABASE_SERVICE_KEY}',
+                    'Content-Type': 'application/json',
+                    'Prefer': 'resolution=merge-duplicates'
+                }
+                data = {
+                    'user_email': customer_email.lower().strip(),
+                    'stripe_customer_id': customer_id,
+                    'stripe_subscription_id': subscription_id,
+                    'status': 'active',
+                    'updated_at': 'now()'
+                }
+                response = req.post(
+                    f'{SUPABASE_URL}/rest/v1/subscriptions',
+                    headers=headers,
+                    json=data
+                )
+                if response.status_code in [200, 201]:
+                    print(f"[WEBHOOK] ✅ Subscription activated for {customer_email}")
+                else:
+                    print(f"[WEBHOOK] ❌ Supabase error: {response.text}")
+            except Exception as e:
+                print(f"[WEBHOOK] ❌ Exception: {e}")
+        else:
+            print(f"[WEBHOOK] ⚠️ Missing email or service key")
+
+    return jsonify({'status': 'ok'}), 200
 
 
 @app.route('/health', methods=['GET'])
