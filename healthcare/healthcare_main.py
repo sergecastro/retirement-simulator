@@ -12,6 +12,9 @@ import streamlit as st
 from datetime import datetime
 from ui.components.top_navigation import render_top_navigation
 
+# Stripe gating
+from utils.stripe_utils import show_upgrade_wall, is_premium_user
+
 # Import disclaimers
 from healthcare.healthcare_disclaimers import (
     show_primary_healthcare_disclaimer,
@@ -144,8 +147,11 @@ def show_calculator_cards():
             """)
 
             if st.button("Open Medicare IRMAA Calculator →", key="medicare_calc", type="primary"):
-                st.session_state['healthcare_page'] = 'medicare_calculator'
-                st.rerun()
+                if st.session_state.get("gating_enabled") and not is_premium_user():
+                    show_upgrade_wall("Healthcare")
+                else:
+                    st.session_state['healthcare_page'] = 'medicare_calculator'
+                    st.rerun()
 
     with col2:
         with st.container():
@@ -167,8 +173,11 @@ def show_calculator_cards():
             """)
 
             if st.button("Compare Plans →", key="medigap_compare", type="primary"):
-                st.session_state['healthcare_page'] = 'medigap_comparison'
-                st.rerun()
+                if st.session_state.get("gating_enabled") and not is_premium_user():
+                    show_upgrade_wall("Healthcare")
+                else:
+                    st.session_state['healthcare_page'] = 'medigap_comparison'
+                    st.rerun()
 
     st.markdown("---")
 
