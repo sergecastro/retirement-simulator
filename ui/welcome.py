@@ -16,14 +16,8 @@ def show_new_user_mode_selection():
     from utils.cookie_helper import check_for_returning_user
     check_for_returning_user()
 
-    # ============ TITLE + BETA WARNING ============
+    # ============ TITLE ============
     st.markdown("### FAMILY FORECAST")
-
-    st.markdown("""
-    <div style='background-color: #FFF3CD; padding: 10px; border-radius: 6px; margin-bottom: 15px;'>
-        <span style='color: #856404;'>⚠️ <strong>BETA</strong> — For educational purposes only. Not financial advice.</span>
-    </div>
-    """, unsafe_allow_html=True)
 
     # --- Cloud Backup User Recognition ---
     # Check session_state first (already loaded in app.py), avoid duplicate st_javascript calls
