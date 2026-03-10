@@ -943,18 +943,30 @@ def main():
         show_intake_mode()
 
     elif st.session_state.current_mode == "Healthcare":
+        if gating_enabled and not is_premium_user():
+            show_upgrade_wall("Healthcare")
+            st.stop()
         show_sidebar_footer(is_trusted)
         show_healthcare_mode()
 
     elif st.session_state.current_mode == "scenario_studio":
+        if gating_enabled and not is_premium_user():
+            show_upgrade_wall("scenario_studio")
+            st.stop()
         from ui.scenario_studio_page import render_scenario_studio_page
         render_scenario_studio_page()
 
     elif st.session_state.current_mode == "historical_tracking":
+        if gating_enabled and not is_premium_user():
+            show_upgrade_wall("historical_tracking")
+            st.stop()
         from ui import historical_tracking_page
         historical_tracking_page.render()
 
     elif st.session_state.current_mode == "social_security":
+        if gating_enabled and not is_premium_user():
+            show_upgrade_wall("social_security")
+            st.stop()
         # Load INTAKE data first
         load_intake_data_to_session()
         show_sidebar_footer(is_trusted)
@@ -969,6 +981,9 @@ def main():
         show_social_security_optimizer()
 
     elif st.session_state.current_mode == "roth_calculator":
+        if gating_enabled and not is_premium_user():
+            show_upgrade_wall("roth_calculator")
+            st.stop()
         # Roth Conversion Calculator
         load_intake_data_to_session()
         show_sidebar_footer(is_trusted)
