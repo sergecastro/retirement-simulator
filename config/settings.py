@@ -259,6 +259,7 @@ FOOTER_HTML = f"""
 <p><strong>{APP_NAME} v{APP_VERSION}</strong></p>
 <p>Educational planning tool powered by Claude AI</p>
 <p>Privacy-First Design | Session-Only Data Storage | Educational Purposes Only</p>
+<p style='font-size: 0.8em; margin-top: 8px;'><a href='https://familyforecast.ai/privacy' target='_blank' style='color: #888;'>Privacy Policy</a> · <a href='https://familyforecast.ai/terms' target='_blank' style='color: #888;'>Terms of Service</a></p>
 </div>
 """
 
