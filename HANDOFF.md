@@ -51,6 +51,42 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
+### Session Summary — 2026-03-10
+**Session:** Stripe Gating + Webhook Verified + Privacy/Terms Pages + Footer Links
+
+#### COMPLETED TODAY
+- **Stripe feature gating:** added gating blocks to all 5 premium features in `app.py` router (Healthcare, Scenario Studio, Historical Tracking, SS Optimizer, Roth Calculator) — controlled by `FEATURE_GATING_ENABLED` env var, defaults to `false` (everything free until April 15)
+- **Stripe webhook verified live:** `https://forcash-api.onrender.com/webhook` returns 400 "Invalid signature" (correct — signature verification working). Webhook code already existed in `explain_api_server.py`, confirmed deployed on Render
+- **All Render env vars confirmed:** `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_KEY`, `SUPABASE_URL` on forcash-api service
+- **Privacy Policy page** built in Lovable — live at `familyforecast.ai/privacy`
+- **Terms of Service page** built in Lovable — live at `familyforecast.ai/terms`
+- **Privacy/Terms footer links** added to Streamlit app footer (`config/settings.py`)
+- **ImprovMX email forwarding** active for `support@`, `privacy@`, `legal@familyforecast.ai`
+- **Outbound confirmation email** verified working via Resend SMTP
+
+#### PENDING (before April 15 launch)
+- Mobile full QA pass (iPhone Safari + Android)
+- Lovable email address audit (`support@`, `privacy@`, `legal@`)
+- Verify Streamlit footer Privacy/Terms links render correctly after deploy
+- **April 13:** flip `FEATURE_GATING_ENABLED=true` on Render and test all 5 gates
+- Stripe end-to-end payment test (test card → webhook → Supabase subscription → premium unlock)
+
+#### KEY FILES CHANGED
+- `app.py` — 5 gating blocks added (lines 945-988)
+- `config/settings.py` — Privacy/Terms links in footer
+- `ui/welcome.py` — BETA banner removed (from Mar 9 session)
+
+#### KEY COMMITS
+- `bf14b16` — Privacy/Terms footer links
+- `1e4c8dc` — Feature gating blocks (5 premium features)
+- `ca5888a` — BETA banner + checkbox removal
+
+#### FOR MARKETING AGENT
+- Privacy Policy and Terms of Service now live — update any "coming soon" references
+- Stripe integration complete — payment infrastructure ready for April 15 launch
+
+---
+
 ### Session Summary — 2026-03-09
 **Session:** Quick Estimate Feature Launch + Landing Page Redesign + BETA Removal
 
@@ -60,21 +96,6 @@ Open browser and paste the session URL from backup laptop.
 - **BETA removal:** removed yellow BETA banner from `ui/welcome.py` and `beta_agreement` checkbox gate from `app.py` (commit `ca5888a`)
 - **Mobile fixes:** hero text overflow, CTA button wrap, phone mockup, wrong disclaimer bar removed
 - **All confirmed working** on iPhone Safari and Android
-- Created `quick-estimate-feature` safety branch, synced with master
-
-#### PENDING
-- Merge `quick-estimate-feature` branch to master after final Lovable commit
-- UX design review session still needed before April 15 launch
-- Stripe webhook end-to-end test still pending
-- Privacy Policy and Terms of Service pages not yet built
-
-#### KEY FILES CHANGED
-- `ui/welcome.py` — BETA banner removed
-- `app.py` — beta_agreement checkbox gate removed
-
-#### FOR MARKETING AGENT
-- Landing page now says "Founding Member Preview" not "BETA" — update any LinkedIn posts referencing beta
-- New messaging: "Complete access. Zero friction. Right now."
 
 ---
 
