@@ -51,6 +51,33 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
+### Session Summary — 2026-03-09
+**Session:** Quick Estimate Feature Launch + Landing Page Redesign + BETA Removal
+
+#### COMPLETED TODAY
+- **Quick Estimate feature:** built and launched — frictionless entry with 8 client-side calculations
+- **Landing page redesign (Lovable):** scrolling ticker countdown banner, TrustBanner, InvitationSection ("Complete access. Zero friction. Right now."), hero CTA updated
+- **BETA removal:** removed yellow BETA banner from `ui/welcome.py` and `beta_agreement` checkbox gate from `app.py` (commit `ca5888a`)
+- **Mobile fixes:** hero text overflow, CTA button wrap, phone mockup, wrong disclaimer bar removed
+- **All confirmed working** on iPhone Safari and Android
+- Created `quick-estimate-feature` safety branch, synced with master
+
+#### PENDING
+- Merge `quick-estimate-feature` branch to master after final Lovable commit
+- UX design review session still needed before April 15 launch
+- Stripe webhook end-to-end test still pending
+- Privacy Policy and Terms of Service pages not yet built
+
+#### KEY FILES CHANGED
+- `ui/welcome.py` — BETA banner removed
+- `app.py` — beta_agreement checkbox gate removed
+
+#### FOR MARKETING AGENT
+- Landing page now says "Founding Member Preview" not "BETA" — update any LinkedIn posts referencing beta
+- New messaging: "Complete access. Zero friction. Right now."
+
+---
+
 ### Session Summary — 2026-03-05
 **Session:** Stripe Integration Phase 1-4 + user_vaults RLS Fix
 
