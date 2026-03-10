@@ -1172,16 +1172,6 @@ def show_mode_selection_landing_page(has_intake_data, is_trusted):
 
     st.markdown("---")
 
-    # BETA AGREEMENT CHECKBOX - Must acknowledge before proceeding
-    beta_agreement = st.checkbox(
-        "I understand this is **BETA software for educational purposes only**. "
-        "This is NOT financial advice and I should consult qualified professionals.",
-        key="beta_agreement"
-    )
-
-    if not beta_agreement:
-        st.warning("⚠️ Please acknowledge the beta terms above to continue.")
-        st.stop()
 
     # DIRECT TO INTAKE: After accepting beta disclaimer, go straight to INTAKE
     # CRITICAL FIX: Only rerun if we haven't already transitioned (prevents infinite loop!)
