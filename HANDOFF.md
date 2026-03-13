@@ -51,6 +51,43 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
+### Session Summary — 2026-03-13
+**Session:** LinkedIn Campaign + OG Image + Marketing Assets
+
+**ONE LINE:** Pure marketing day — 11 LinkedIn visuals created, 2 carousel PDFs built, og:image fixed, Post Inspector 100% clean, and 2 weeks of LinkedIn content fully prepared.
+
+**WHAT WE DECIDED:**
+- **og:image strategy** — confirmed `og-image.png` hosted at `familyforecast.ai/og-image.png`, added all 4 OG meta tags to Lovable `index.html`, extended description to 124 characters. LinkedIn Post Inspector now 100% clean — no warnings.
+- **Carousel = PDF not images** — LinkedIn groups images as 2+3 thumbnails. Only PDF uploads render as true swipeable carousels. Both carousels built as PDFs.
+- **Post 9 revised** — "Tomorrow" → "On April 15th" and "You have ONE day" → "Still totally free for only a few days" — works for any posting date.
+- **Post 10 revised** — "today only" removed, replaced with "Founding Member pricing — still available."
+- **LinkedIn group sharing strategy** — post on personal feed first (public), then Share → Send into each group one by one with short personal intro.
+
+**WHAT WAS BUILT:**
+- All 10 LinkedIn post PNGs rebuilt/refined (1080×1350px, 300 DPI): `post1` through `post10`
+- `FamilyForecast_Carousel_A.pdf` — posts 1–5
+- `FamilyForecast_Carousel_B.pdf` — posts 6–10
+- Lovable `index.html` updated with og:image + og:description meta tags
+
+**OPEN QUESTIONS:**
+- Stripe Sandbox → Live mode — still needs bank account verification before April 15
+- `FEATURE_GATING_ENABLED` still `false` in Render — must flip to `true` on April 13th
+- Lovable debug console.logs still in `QuickReview.tsx`
+- Medicare 2025 → 2026 values not updated in `healthcare/` folder
+- Sankey chart API still shows "zero data points"
+- Quick Mode with partner — not retested since fix
+- Mobile full QA — never fully completed on iPhone Safari
+
+**FOR MARKETING AGENT:**
+- YES — Entire session was marketing. 10 post visuals + 2 carousel PDFs + post texts ready.
+- **Post 1 should go out tomorrow — March 14th.**
+
+**NEXT STEP:**
+- DEV: Return user flow testing (vault login, email login, all edge cases)
+- MARKETING: Post `post1_announcement.png` on LinkedIn with Post 1 copy
+
+---
+
 ### Session Summary — 2026-03-10
 **Session:** Stripe Gating + Webhook Verified + Privacy/Terms Pages + Footer Links
 
@@ -154,66 +191,6 @@ Open browser and paste the session URL from backup laptop.
 - Income display confirmed working correctly (Feb 13 fix)
 - Local CSS icon issue confirmed NOT a production bug
 - REMOTE_CONTROL_STARTUP.md created
-
----
-
-### Session Summary — 2026-03-02 (Afternoon)
-**Session:** SMTP Fix + Badge Update + Chart Audit
-
-#### ✅ COMPLETED
-- Resend SMTP email confirmation — FIXED (Supabase dashboard config, no code changes)
-- BETA DEMO badge replaced with "Founding Member Preview" (`app.py:825`)
-- Chart API audit: Financial Trajectories, Monte Carlo, Longevity all confirmed working
-- Sankey chart deferred — not a launch blocker
-
-#### 📋 FOR MARKETING AGENT
-- Two-session marathon: 24 bugs fixed + SMTP live + badge polished + production verified
-- Educational angle: rigorous QA + infrastructure fixes before launch
-
-#### 🔧 OPEN ITEMS (combined)
-- Sankey chart not connected to explanation API (deferred)
-- Stripe integration — after all testing complete
-- Email signup → user_vaults data save needs retest (SMTP now fixed)
-- Privacy Policy / Terms of Service pages needed pre-launch
-
-#### ▶️ START NEXT SESSION
-"Stripe payment integration (full session), then fix email signup → user_vaults data save."
-
----
-
-### Session Summary — 2026-03-01
-**Session:** Full QA + 6 Simulation Bugs Fixed + Both Laptops Synced
-
-#### ✅ COMPLETED TODAY
-- Fixed 6 critical simulation_core.py bugs:
-  1. College costs were double-counted
-  2. Liabilities never decreased (now 5%/yr paydown)
-  3. Income ratios hardcoded (now uses real intake data)
-  4. tax_rate parameter undocumented (now flagged)
-  5. Other assets never appreciated (now 2%/yr)
-  6. RMD table wrong for ages 100+ (extended to age 120)
-- Re-enabled IRMAA analysis (was hardcoded False)
-- Fixed nested expanders bug — AI Advisor works on all devices
-- Replaced Seagate sync with GitHub workflow (git pull/push)
-- Both laptops 100% identical and in sync
-- ClaudeManager fully working on backup laptop
-- GitHub Gist token configured on backup laptop
-- Supabase connection confirmed working on backup laptop
-- start_familyforecast.bat updated with git pull reminder
-- All fixes committed and pushed to GitHub master
-
-#### 🔧 OPEN ITEMS
-- Supabase SMTP: connect Resend API for email confirmation
-- Sidebar interconnect on mobile needs recheck
-- Full manual QA (clicking every button) still pending
-- LinkedIn post: write about today's QA + 6 bugs fixed
-
-#### 📋 FOR MARKETING AGENT
-- Strong LinkedIn post opportunity: "Found and fixed 6 simulation bugs via AI-powered Remote Control QA session"
-- Educational angle: accuracy matters in retirement planning
-
-#### ▶️ START NEXT SESSION
-"Connect Resend API to Supabase for email confirmation, then complete full manual QA of all FamilyForecast features."
 
 ---
 
