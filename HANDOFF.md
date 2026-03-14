@@ -52,11 +52,22 @@ Open browser and paste the session URL from backup laptop.
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
 ### Session Summary -- 2026-03-15
+Fixed the Gist multi-project merge. Each project now updates only its own section.
+
+---
+
+<!-- Updated automatically by ClaudeManager from GitHub Gist -->
+
+---
+
+### Session Summary -- 2026-03-15
 TEST A — FamilyForecast section only.
 
 ---
 
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
+
+---
 
 ---
 
@@ -72,57 +83,10 @@ FamilyForecast working correctly.
 
 ---
 
+---
+
 ### Session Summary -- 2026-03-15
 TEST — FamilyForecast only.
-
----
-
-<!-- Updated automatically by ClaudeManager from GitHub Gist -->
-
----
-
----
-
----
-
-### Session Summary -- 2026-03-14
-## SECTION 1 — Session Summary
-Date: 2026-03-11 | Project: ALL PROJECTS
-
-### WHAT HAPPENED TODAY
-
-**Vettario — Built from scratch:**
-- Created "Vettario Dev Sessions" Claude Project with full system prompt
-- Vettario defined: B2B matching platform — manufacturers/suppliers of 
-  aesthetic & medical equipment ↔ distributors (USA + worldwide)
-- Same Relational DNA matching engine as Synaptal, different market
-- GitHub repo created: github.com/sergecastro/vettario (private)
-- Local folder created: C:\DEV\VETTARIO
-- HANDOFF.md, CLAUDE.md, .gitignore all created and pushed to GitHub
-
-**ClaudeManager — Major upgrades:**
-- config.json updated: Vettario added as 4th monitored project
-- GIST_TOKEN added to all 4 project .env files (was missing in 3)
-- New GitHub token generated and deployed to all 4 projects
-- push_handoff.py + push_handoff.bat built and tested on Desktop
-- Gist push confirmed working ✅
-
-**Architecture clarified:**
-- Synaptal = AI companies ↔ job seekers
-- Vettario = manufacturers ↔ distributors (aesthetic/medical equipment)
-- Shared matching engine concept — separate codebases
-- All 4 projects now fully monitored by ClaudeManager
-
-### WHAT IS NEXT
-- Tonight: first full automatic run across all 4 projects
-- Tomorrow morning: verify START_HERE.html shows all 4 cards cleanly
-- Next session: fix ClaudeManager morning report quality (messy history issue)
-- Future: start Vettario dimension questionnaire and matching engine
-
-### FOR MARKETING AGENT
-- Vettario launched as new project today — early reveal phase
-- Can reference Vettario name and B2B distribution matching concept
-- Synaptal focus: AI talent matching thought leadership continues
 
 ---
 
