@@ -51,44 +51,8 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
-### Session Summary -- 2026-03-14
-## SECTION 1 — Session Summary
-Date: 2026-03-11 | Project: ALL PROJECTS
-
-### WHAT HAPPENED TODAY
-
-**Vettario — Built from scratch:**
-- Created "Vettario Dev Sessions" Claude Project with full system prompt
-- Vettario defined: B2B matching platform — manufacturers/suppliers of 
-  aesthetic & medical equipment ↔ distributors (USA + worldwide)
-- Same Relational DNA matching engine as Synaptal, different market
-- GitHub repo created: github.com/sergecastro/vettario (private)
-- Local folder created: C:\DEV\VETTARIO
-- HANDOFF.md, CLAUDE.md, .gitignore all created and pushed to GitHub
-
-**ClaudeManager — Major upgrades:**
-- config.json updated: Vettario added as 4th monitored project
-- GIST_TOKEN added to all 4 project .env files (was missing in 3)
-- New GitHub token generated and deployed to all 4 projects
-- push_handoff.py + push_handoff.bat built and tested on Desktop
-- Gist push confirmed working ✅
-
-**Architecture clarified:**
-- Synaptal = AI companies ↔ job seekers
-- Vettario = manufacturers ↔ distributors (aesthetic/medical equipment)
-- Shared matching engine concept — separate codebases
-- All 4 projects now fully monitored by ClaudeManager
-
-### WHAT IS NEXT
-- Tonight: first full automatic run across all 4 projects
-- Tomorrow morning: verify START_HERE.html shows all 4 cards cleanly
-- Next session: fix ClaudeManager morning report quality (messy history issue)
-- Future: start Vettario dimension questionnaire and matching engine
-
-### FOR MARKETING AGENT
-- Vettario launched as new project today — early reveal phase
-- Can reference Vettario name and B2B distribution matching concept
-- Synaptal focus: AI talent matching thought leadership continues
+### Session Summary -- 2026-03-15
+TEST — FamilyForecast only.
 
 ---
 
@@ -138,6 +102,55 @@ Date: 2026-03-11 | Project: ALL PROJECTS
 ---
 
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
+
+---
+
+---
+
+### Session Summary -- 2026-03-14
+## SECTION 1 — Session Summary
+Date: 2026-03-11 | Project: ALL PROJECTS
+
+### WHAT HAPPENED TODAY
+
+**Vettario — Built from scratch:**
+- Created "Vettario Dev Sessions" Claude Project with full system prompt
+- Vettario defined: B2B matching platform — manufacturers/suppliers of 
+  aesthetic & medical equipment ↔ distributors (USA + worldwide)
+- Same Relational DNA matching engine as Synaptal, different market
+- GitHub repo created: github.com/sergecastro/vettario (private)
+- Local folder created: C:\DEV\VETTARIO
+- HANDOFF.md, CLAUDE.md, .gitignore all created and pushed to GitHub
+
+**ClaudeManager — Major upgrades:**
+- config.json updated: Vettario added as 4th monitored project
+- GIST_TOKEN added to all 4 project .env files (was missing in 3)
+- New GitHub token generated and deployed to all 4 projects
+- push_handoff.py + push_handoff.bat built and tested on Desktop
+- Gist push confirmed working ✅
+
+**Architecture clarified:**
+- Synaptal = AI companies ↔ job seekers
+- Vettario = manufacturers ↔ distributors (aesthetic/medical equipment)
+- Shared matching engine concept — separate codebases
+- All 4 projects now fully monitored by ClaudeManager
+
+### WHAT IS NEXT
+- Tonight: first full automatic run across all 4 projects
+- Tomorrow morning: verify START_HERE.html shows all 4 cards cleanly
+- Next session: fix ClaudeManager morning report quality (messy history issue)
+- Future: start Vettario dimension questionnaire and matching engine
+
+### FOR MARKETING AGENT
+- Vettario launched as new project today — early reveal phase
+- Can reference Vettario name and B2B distribution matching concept
+- Synaptal focus: AI talent matching thought leadership continues
+
+---
+
+<!-- Updated automatically by ClaudeManager from GitHub Gist -->
+
+---
 
 ---
 
@@ -179,44 +192,6 @@ Date: 2026-03-11 | Project: ALL PROJECTS
 - MARKETING: Post `post1_announcement.png` on LinkedIn with Post 1 copy
 
 ---
-
----
-
----
-
-### Session Summary — 2026-03-10
-**Session:** Stripe Gating + Webhook Verified + Privacy/Terms Pages + Footer Links
-
-#### COMPLETED TODAY
-- **Stripe feature gating:** added gating blocks to all 5 premium features in `app.py` router (Healthcare, Scenario Studio, Historical Tracking, SS Optimizer, Roth Calculator) — controlled by `FEATURE_GATING_ENABLED` env var, defaults to `false` (everything free until April 15)
-- **Stripe webhook verified live:** `https://forcash-api.onrender.com/webhook` returns 400 "Invalid signature" (correct — signature verification working). Webhook code already existed in `explain_api_server.py`, confirmed deployed on Render
-- **All Render env vars confirmed:** `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_KEY`, `SUPABASE_URL` on forcash-api service
-- **Privacy Policy page** built in Lovable — live at `familyforecast.ai/privacy`
-- **Terms of Service page** built in Lovable — live at `familyforecast.ai/terms`
-- **Privacy/Terms footer links** added to Streamlit app footer (`config/settings.py`)
-- **ImprovMX email forwarding** active for `support@`, `privacy@`, `legal@familyforecast.ai`
-- **Outbound confirmation email** verified working via Resend SMTP
-
-#### PENDING (before April 15 launch)
-- Mobile full QA pass (iPhone Safari + Android)
-- Lovable email address audit (`support@`, `privacy@`, `legal@`)
-- Verify Streamlit footer Privacy/Terms links render correctly after deploy
-- **April 13:** flip `FEATURE_GATING_ENABLED=true` on Render and test all 5 gates
-- Stripe end-to-end payment test (test card → webhook → Supabase subscription → premium unlock)
-
-#### KEY FILES CHANGED
-- `app.py` — 5 gating blocks added (lines 945-988)
-- `config/settings.py` — Privacy/Terms links in footer
-- `ui/welcome.py` — BETA banner removed (from Mar 9 session)
-
-#### KEY COMMITS
-- `bf14b16` — Privacy/Terms footer links
-- `1e4c8dc` — Feature gating blocks (5 premium features)
-- `ca5888a` — BETA banner + checkbox removal
-
-#### FOR MARKETING AGENT
-- Privacy Policy and Terms of Service now live — update any "coming soon" references
-- Stripe integration complete — payment infrastructure ready for April 15 launch
 
 ---
 
