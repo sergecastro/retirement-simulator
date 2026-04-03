@@ -186,7 +186,7 @@ def show_new_user_mode_selection():
         elif has_vault:
             st.success(f"✅ Vault **{has_vault}** ready — your data will sync automatically!")
 
-    st.caption("By clicking any button above, you acknowledge this is beta software.")
+    st.caption("By clicking any button above, you acknowledge this is educational software, not financial advice.")
 
     # ============ PRIVACY SECTION (Strong Security Message) ============
     st.markdown("---")
