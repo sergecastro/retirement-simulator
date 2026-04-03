@@ -319,7 +319,7 @@ PART_B_COST_SHARING_2026 = {
 # PART D (PRESCRIPTION DRUGS) STRUCTURE
 # =============================================================================
 
-PART_D_COST_STRUCTURE_2025 = {
+PART_D_COST_STRUCTURE_2026 = {
     "annual_deductible_max": 545,  # Maximum deductible (plans vary)
     "initial_coverage_limit": 5030,  # Total drug costs before coverage gap
     "catastrophic_threshold": 8000,  # Out-of-pocket costs before catastrophic coverage
@@ -420,7 +420,7 @@ MEDICARE_ADVANTAGE_DATA = {
 # MEDICARE SAVINGS PROGRAMS (MSP) INCOME LIMITS
 # =============================================================================
 
-MEDICARE_SAVINGS_PROGRAMS_2025 = {
+MEDICARE_SAVINGS_PROGRAMS_2026 = {
     "QMB": {  # Qualified Medicare Beneficiary
         "name": "Qualified Medicare Beneficiary (QMB)",
         "income_limit_single": 1275,  # Monthly
@@ -452,7 +452,7 @@ MEDICARE_SAVINGS_PROGRAMS_2025 = {
 # EXTRA HELP (LOW INCOME SUBSIDY) FOR PART D
 # =============================================================================
 
-EXTRA_HELP_2025 = {
+EXTRA_HELP_2026 = {
     "full_subsidy": {
         "income_limit_single": 1719,  # Monthly (~150% FPL)
         "income_limit_married": 2318,

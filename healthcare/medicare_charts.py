@@ -157,7 +157,7 @@ def create_bracket_threshold_chart(calculator, filing_status="single"):
     Returns:
         plotly figure
     """
-    brackets = calculator.IRMAA_BRACKETS_2025
+    brackets = calculator.IRMAA_BRACKETS_2026
 
     # Prepare data
     thresholds = []

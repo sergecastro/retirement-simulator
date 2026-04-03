@@ -297,6 +297,7 @@ def show_account_signup_form():
 
                 if success:
                     st.session_state.user_email = email
+                    st.session_state.cloud_password = password
                     print(f"🔥 WELCOME REGISTRATION: user_email SET TO: {st.session_state.user_email}")
                     # DO NOT call _get_local_storage() here - it creates a component that causes duplicates
                     # localStorage will be saved when user completes intake and saves

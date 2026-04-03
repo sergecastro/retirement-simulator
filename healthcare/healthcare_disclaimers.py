@@ -309,7 +309,7 @@ DATA_SOURCE_DISCLAIMER = """
 - **Probability Data:** Published actuarial studies and longevity research
 
 **Data Limitations:**
-⚠️ **Point-in-Time:** All data is current as of October 2025 and will become outdated
+⚠️ **Point-in-Time:** All data is current as of January 2026 and will become outdated
 ⚠️ **Estimates & Averages:** Regional costs and probabilities are estimates, not guarantees
 ⚠️ **Simplified Models:** We use simplified assumptions for complex real-world situations
 ⚠️ **No Real-Time Plans:** We do NOT pull real-time insurance plan data or pricing
@@ -504,8 +504,8 @@ def require_healthcare_disclaimer_acknowledgment():
 # =============================================================================
 
 DISCLAIMER_VERSION = "1.0.0"
-DISCLAIMER_LAST_UPDATED = "October 22, 2025"
-DISCLAIMER_NEXT_REVIEW = "January 2026"
+DISCLAIMER_LAST_UPDATED = "April 3, 2026"
+DISCLAIMER_NEXT_REVIEW = "October 2026"
 
 
 def get_disclaimer_metadata():

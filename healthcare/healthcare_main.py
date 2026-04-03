@@ -93,15 +93,15 @@ def show_quick_facts():
         st.markdown("""
         **Medicare Basics:**
         - **Part A (Hospital):** Usually free if you worked 10+ years
-        - **Part B (Doctor visits):** ~$175/month standard premium (2025)
+        - **Part B (Doctor visits):** ~$203/month standard premium (2026)
         - **Part D (Prescriptions):** ~$55/month average (varies by plan)
         - **Enrollment:** Starts at age 65 (strict deadlines!)
 
         **IRMAA (Income Surcharges):**
         - Based on your income from **2 years ago**
         - 5 income brackets with increasing surcharges
-        - Single: Starts at $106K MAGI (2025)
-        - Married: Starts at $212K MAGI (2025)
+        - Single: Starts at $109K MAGI (2026)
+        - Married: Starts at $218K MAGI (2026)
         """)
 
     with col2:
