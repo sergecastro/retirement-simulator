@@ -224,6 +224,7 @@ def show_sidebar_footer(is_trusted):
             st.info("👤 Demo Access")
 
         st.caption("Family Forecast v3.0")
+        st.caption("[Privacy Policy](https://familyforecast.ai/privacy) · [Terms of Service](https://familyforecast.ai/terms)")
 
 
 # =============================================================================
