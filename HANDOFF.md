@@ -49,6 +49,27 @@ Open browser and paste the session URL from backup laptop.
 ---
 
 ## SECTION 1 -- RECENT PROGRESS
+
+---
+
+### April 3, 2026 — Landing Page Overhaul + Bug Fixes
+
+**Summary:** Complete landing page rewrite responding to board
+member Curtis Cluff's feedback. Competitive research on Empower,
+Boldin, Betterment. All content updated in Lovable (hero, banner,
+FAQ, security, screenshots, CTA, trust strip). Code changes:
+Privacy/Terms sidebar links, BETA text removal, email signup
+cloud_password bug fix, Medicare data updated to 2026 (6 files,
+16 edits). Feature gating set to false on Render. Email signup
+→ restore flow tested and working.
+
+**Commits:** d364eee, 881fea2, bb94ed5
+**Branch:** master (3 feature branches merged and deleted)
+**Landing page:** familyforecast.ai fully updated and live
+**Next:** Stripe wiring + return user path testing (paths 2-5)
+
+---
+
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
 ### Session Summary -- 2026-03-15
