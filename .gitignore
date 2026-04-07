@@ -1,3 +1,6 @@
+# Local secrets / launch scripts
+start_familyforecast.bat
+
 # Python noise
 __pycache__/
 *.pyc
