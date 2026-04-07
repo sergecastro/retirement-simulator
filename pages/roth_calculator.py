@@ -107,7 +107,7 @@ def show_roth_calculator():
         current_age = st.number_input(
             "Your current age",
             min_value=40,
-            max_value=72,
+            max_value=99,
             value=default_age,
             step=1,
             help="Your age today. This determines how many years you have for Roth conversions before RMDs begin at age 73.",
@@ -263,7 +263,7 @@ Remember: You're paying taxes NOW to avoid higher taxes LATER (when RMDs push yo
         conversion_start = st.number_input(
             "Start Conversions at Age",
             min_value=current_age,
-            max_value=72,
+            max_value=99,
             value=max(current_age, 60),
             step=1,
             help="""When to BEGIN Roth conversions.
