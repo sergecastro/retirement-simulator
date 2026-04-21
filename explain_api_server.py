@@ -134,11 +134,97 @@ def explain():
         return response, 500
 
 
+# ------------------------------------------------------------------
+# Stripe subscription lifecycle — helpers
+# ------------------------------------------------------------------
+
+# Maps Stripe subscription.status → our `subscriptions.status` column.
+# See https://stripe.com/docs/api/subscriptions/object#subscription_object-status
+SUBSCRIPTION_STATUS_MAP = {
+    'active': 'active',
+    'trialing': 'active',
+    'past_due': 'past_due',
+    'unpaid': 'past_due',
+    'paused': 'past_due',
+    'canceled': 'canceled',
+    'incomplete': 'incomplete',
+    'incomplete_expired': 'canceled',
+}
+
+
+def _map_status(stripe_status: str) -> str:
+    return SUBSCRIPTION_STATUS_MAP.get(stripe_status, 'incomplete')
+
+
+def _iso_from_unix(ts) -> str:
+    """Convert Stripe unix timestamp (seconds) to ISO-8601 UTC string."""
+    if not ts:
+        return ""
+    from datetime import datetime, timezone
+    return datetime.fromtimestamp(int(ts), tz=timezone.utc).isoformat()
+
+
+def upsert_subscription(
+    user_email: str,
+    stripe_customer_id: str = "",
+    stripe_subscription_id: str = "",
+    status: str = "active",
+    current_period_end: str = "",
+    price_id: str = "",
+) -> bool:
+    """
+    Upsert a row in Supabase `subscriptions` keyed by user_email.
+    Returns True on HTTP 200/201, False otherwise.
+    """
+    if not user_email or not SUPABASE_SERVICE_KEY:
+        print(f"[WEBHOOK] ⚠️ Missing email or service key (email={user_email!r})")
+        return False
+    try:
+        import requests as req
+        headers = {
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': f'Bearer {SUPABASE_SERVICE_KEY}',
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates',
+        }
+        data = {
+            'user_email': user_email.lower().strip(),
+            'stripe_customer_id': stripe_customer_id,
+            'stripe_subscription_id': stripe_subscription_id,
+            'status': status,
+            'updated_at': 'now()',
+        }
+        if current_period_end:
+            data['current_period_end'] = current_period_end
+        if price_id:
+            data['price_id'] = price_id
+        response = req.post(
+            f'{SUPABASE_URL}/rest/v1/subscriptions',
+            headers=headers,
+            json=data,
+        )
+        if response.status_code in [200, 201]:
+            print(f"[WEBHOOK] ✅ upsert status={status} email={user_email}")
+            return True
+        print(f"[WEBHOOK] ❌ Supabase {response.status_code}: {response.text}")
+        return False
+    except Exception as e:
+        print(f"[WEBHOOK] ❌ Exception in upsert_subscription: {e}")
+        return False
+
+
 @app.route('/webhook', methods=['POST'])
 def stripe_webhook():
     """
-    Stripe webhook endpoint — receives payment confirmation.
-    Writes active subscription to Supabase subscriptions table.
+    Stripe webhook endpoint — handles subscription lifecycle events.
+    Writes all status transitions to Supabase `subscriptions` table.
+
+    Handled events:
+      - checkout.session.completed    → status='active' (initial purchase)
+      - customer.subscription.updated → maps Stripe status, updates period end
+      - customer.subscription.deleted → status='canceled'
+      - invoice.paid                  → status='active', refreshes period end
+      - invoice.payment_failed        → status='past_due'
     """
     payload = request.get_data(as_text=True)
     sig_header = request.headers.get('Stripe-Signature', '')
@@ -154,43 +240,66 @@ def stripe_webhook():
         print("[WEBHOOK] ERROR: Invalid signature")
         return jsonify({'error': 'Invalid signature'}), 400
 
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        customer_email = session.get('customer_email') or session.get('customer_details', {}).get('email', '')
-        subscription_id = session.get('subscription', '')
-        customer_id = session.get('customer', '')
+    event_type = event['type']
+    obj = event['data']['object']
+    print(f"[WEBHOOK] Received: {event_type}")
 
-        print(f"[WEBHOOK] Payment confirmed for: {customer_email}")
+    try:
+        if event_type == 'checkout.session.completed':
+            # First-time subscription. current_period_end fills in on invoice.paid.
+            email = obj.get('customer_email') or obj.get('customer_details', {}).get('email', '')
+            upsert_subscription(
+                user_email=email,
+                stripe_customer_id=obj.get('customer', ''),
+                stripe_subscription_id=obj.get('subscription', ''),
+                status='active',
+            )
 
-        if customer_email and SUPABASE_SERVICE_KEY:
-            try:
-                import requests as req
-                headers = {
-                    'apikey': SUPABASE_SERVICE_KEY,
-                    'Authorization': f'Bearer {SUPABASE_SERVICE_KEY}',
-                    'Content-Type': 'application/json',
-                    'Prefer': 'resolution=merge-duplicates'
-                }
-                data = {
-                    'user_email': customer_email.lower().strip(),
-                    'stripe_customer_id': customer_id,
-                    'stripe_subscription_id': subscription_id,
-                    'status': 'active',
-                    'updated_at': 'now()'
-                }
-                response = req.post(
-                    f'{SUPABASE_URL}/rest/v1/subscriptions',
-                    headers=headers,
-                    json=data
-                )
-                if response.status_code in [200, 201]:
-                    print(f"[WEBHOOK] ✅ Subscription activated for {customer_email}")
-                else:
-                    print(f"[WEBHOOK] ❌ Supabase error: {response.text}")
-            except Exception as e:
-                print(f"[WEBHOOK] ❌ Exception: {e}")
+        elif event_type in ('customer.subscription.updated', 'customer.subscription.deleted'):
+            # Lifecycle transition. Subscription object doesn't carry email — look up via Customer.
+            customer_id = obj.get('customer', '')
+            customer = stripe.Customer.retrieve(customer_id) if customer_id else None
+            email = customer.get('email', '') if customer else ''
+            status = 'canceled' if event_type.endswith('deleted') else _map_status(obj.get('status', ''))
+            items = obj.get('items', {}).get('data', [])
+            price_id = items[0].get('price', {}).get('id', '') if items else ''
+            upsert_subscription(
+                user_email=email,
+                stripe_customer_id=customer_id,
+                stripe_subscription_id=obj.get('id', ''),
+                status=status,
+                current_period_end=_iso_from_unix(obj.get('current_period_end')),
+                price_id=price_id,
+            )
+
+        elif event_type == 'invoice.paid':
+            # Successful renewal — refresh current_period_end from the Subscription object.
+            subscription_id = obj.get('subscription', '')
+            period_end = ''
+            if subscription_id:
+                sub = stripe.Subscription.retrieve(subscription_id)
+                period_end = _iso_from_unix(sub.get('current_period_end'))
+            upsert_subscription(
+                user_email=obj.get('customer_email', ''),
+                stripe_customer_id=obj.get('customer', ''),
+                stripe_subscription_id=subscription_id,
+                status='active',
+                current_period_end=period_end,
+            )
+
+        elif event_type == 'invoice.payment_failed':
+            upsert_subscription(
+                user_email=obj.get('customer_email', ''),
+                stripe_customer_id=obj.get('customer', ''),
+                stripe_subscription_id=obj.get('subscription', ''),
+                status='past_due',
+            )
+
         else:
-            print(f"[WEBHOOK] ⚠️ Missing email or service key")
+            print(f"[WEBHOOK] ℹ️ Unhandled event type: {event_type}")
+
+    except Exception as e:
+        print(f"[WEBHOOK] ❌ Exception handling {event_type}: {e}")
 
     return jsonify({'status': 'ok'}), 200
 
