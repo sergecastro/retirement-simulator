@@ -118,13 +118,13 @@ def show_upgrade_wall(feature_name: str):
         st.markdown(
             f"""
             <div style='text-align:center; padding: 2rem 1rem 1rem 1rem;
-                        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+                        background: linear-gradient(135deg, #2a2a44 0%, #243558 50%, #1a4878 100%);
                         border-radius: 16px; border: 1px solid #2E86AB; margin-bottom: 1.5rem;'>
                 <div style='font-size: 3.5rem; margin-bottom: 0.5rem;'>{icon}</div>
                 <h1 style='color: #ffffff; font-size: 1.8rem; margin: 0 0 0.5rem 0;'>
                     {display_name}
                 </h1>
-                <p style='color: #a0c4ff; font-size: 1.05rem; margin: 0 0 1rem 0;'>
+                <p style='color: #ffffff; font-size: 1.05rem; margin: 0 0 1rem 0;'>
                     {feature_desc}
                 </p>
                 <div style='display:inline-block; background: #2E86AB; color: white;
@@ -140,14 +140,14 @@ def show_upgrade_wall(feature_name: str):
         if not user_email:
             st.markdown(
                 """
-                <div style='background: #1e3a5f; border: 1px solid #2E86AB; border-radius: 12px;
+                <div style='background: #1a3a6e; border: 1px solid #2E86AB; border-radius: 12px;
                             padding: 1.5rem; text-align: center; margin-bottom: 1rem;'>
                     <div style='font-size: 2rem; margin-bottom: 0.5rem;'>👋</div>
                     <h3 style='color: #ffffff; margin: 0 0 0.5rem 0;'>Create Your Free Account First</h3>
-                    <p style='color: #a0c4ff; margin: 0 0 1rem 0; font-size: 0.95rem;'>
+                    <p style='color: #ffffff; margin: 0 0 1rem 0; font-size: 0.95rem;'>
                         A free account takes 30 seconds and unlocks everything below.
                     </p>
-                    <p style='color: #7ec8e3; margin: 0; font-size: 0.9rem;'>
+                    <p style='color: #e0f0ff; margin: 0; font-size: 0.9rem;'>
                         👉 Go to the <strong>Review page</strong> → choose <strong>"Create Free Account"</strong>
                     </p>
                 </div>
