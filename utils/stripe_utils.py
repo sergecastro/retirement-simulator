@@ -84,6 +84,7 @@ def create_checkout_session(user_email: str, price_key: str = "annual") -> str:
             success_url="https://app.familyforecast.ai?upgrade=success",
             cancel_url="https://app.familyforecast.ai?upgrade=cancelled",
             metadata={"user_email": user_email},
+            discounts=[{"coupon": "POKg7YZp"}],
         )
         return session.url
     except Exception as e:
@@ -166,7 +167,7 @@ def show_upgrade_wall(feature_name: str):
                 | 📅 Historical Tracking | Year-over-year plan tracking |
                 | 🤖 AI Explanations | Personalized chart insights |
                 """)
-            return
+            st.stop()
 
         # Founding Member offer banner
         st.markdown(
@@ -175,7 +176,7 @@ def show_upgrade_wall(feature_name: str):
                         border-radius: 10px; padding: 0.8rem 1.2rem;
                         text-align: center; margin-bottom: 1.2rem;'>
                 <span style='color: #1a1a1a; font-weight: bold; font-size: 1rem;'>
-                    🐦 Founding Member Offer — Limited Time: First 3 months at $1/month, then $5/month
+                    🏆 Founding Member Offer — 20% off forever, automatically applied at checkout
                 </span>
             </div>
             """,
