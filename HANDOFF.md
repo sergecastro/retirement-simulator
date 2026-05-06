@@ -52,6 +52,43 @@ Open browser and paste the session URL from backup laptop.
 
 ---
 
+### May 6, 2026 — Stripe Payment Redirect Handler + Expander Audit
+
+**ONE LINE:** Code Fix 2 from the April 28 punch-list landed on master — `app.py` now handles `?upgrade=success` (green banner + balloons) and `?upgrade=cancelled` (info banner) Stripe redirects; Code Fix 4 (nested-expander mobile bug) cleared `utils/stripe_utils.py` as a suspect via read-only audit, leaving the triggering page TBD by Serge.
+
+**What was decided / done — Streamlit side:**
+
+| Item | Detail |
+|------|--------|
+| Fix 2 — payment redirect handler | New 14-line block in `app.py:550-563` (between the `?mode=` handler at lines 542-548 and the analytics injection). Reads `st.query_params.get("upgrade")`. On `success` → `st.success("✅ Payment confirmed — welcome to FamilyForecast Premium!")` + `st.balloons()` + `st.query_params.clear()`. On `cancelled` → `st.info("ℹ️ Payment cancelled — no charges made. You can upgrade anytime.")` + `st.query_params.clear()`. No `st.rerun()` after clear — banner needs to render on this pass. |
+| Fix 4 — expander audit | Read-only verification ruled out `utils/stripe_utils.py` as the source of the "Expanders may not be nested" mobile error. Both expanders inside `show_upgrade_wall()` (`stripe_utils.py:159, 253`) sit inside `col2` from `st.columns([1, 3, 1])` — columns are not expanders. All 7 call-sites of `show_upgrade_wall()` (5 in `app.py`, 2 in `healthcare/healthcare_main.py`) are top-level or inside columns, never inside an `st.expander`. The mobile bug originates elsewhere — triggering page TBD by Serge at next session start. |
+| Local QA | All 4 manual tests passed at localhost:8502: bare URL clean (no banner), `?upgrade=success` shows green banner + balloons, `?upgrade=cancelled` shows info banner, banners do not persist on next navigation. |
+| Process | Worked on branch `feature/payment-handler-2026-05-06` with safety tag `before-payment-handler-2026-05-06`. Merged with `--no-ff` after Serge approval, pushed to `origin/master`. Local feature branch deleted post-merge; remote retains for history. |
+
+**Commits:**
+- `1ebf1f0a` — Add Stripe ?upgrade=success/cancelled handler with balloons (feature branch)
+- `e933d260` — Merge: Stripe payment redirect handler with balloons (current master HEAD)
+
+**Branch:** `master`, clean, in sync with `origin`.
+
+**Open items — punch-list status (carry-over from April 28):**
+
+1. 🔴 IUL-FF Stripe wiring — still pending
+2. 🟡 Code Fix 1 (upgrade wall contrast): `!important` is in place at `utils/stripe_utils.py:124, 127, 146, 147, 150, 197, 221` (commits `c6df7c71`, `5d2bc74a` from April 27). April 28 handoff flagged this as still visually inadequate — Serge to re-verify after Render redeploys today's merge.
+3. ✅ Code Fix 2 (`?upgrade=success/cancelled`) — DONE today, on master.
+4. 🔴 Code Fix 3 / Fix 4 (nested-expander mobile bug): triggering page still TBD by Serge; `stripe_utils.py` ruled out today.
+5. 🔴 Lovable Fix: `console.log` cleanup in `QuickReview.tsx`.
+6. 🟡 Serge testing: Render auto-deploy verification of today's merge, return user paths 2-5, mobile full QA, UX design review.
+
+**Reminders:**
+- `FEATURE_GATING_ENABLED = false` — keep until May 14.
+- 9 days to launch (May 15, 2026).
+- Safety tag from today: `before-payment-handler-2026-05-06`.
+
+**Anomaly:** Local Streamlit was launched via Bash with the full executable path `C:\Users\serge\AppData\Local\Programs\Python\Python312\Scripts\streamlit.exe` — neither `streamlit` nor `python` is on Git Bash's PATH on this machine. PowerShell tool also failed today with a `System.Management.Automation.Runspaces.InitialSessionState` initializer error. Pinned both facts to memory (`reference_python_path.md`) so future Claude sessions can launch the app without rediscovering this. End-of-session TaskStop on `b12135nf5` returned "No task found" — task had already been stopped at merge time, no orphan process.
+
+---
+
 ### April 28, 2026 — Stripe Live + Email Handoff Fixed + RLS Unblocked
 
 **ONE LINE:** Stripe is fully live (Synaptal Technologies entity, live products + webhook + Founding Member coupon all wired and confirmed end-to-end), the Lovable→Streamlit email handoff bug that was blocking the upgrade wall is fixed, Supabase RLS rejection on `user_vaults` INSERT is unblocked, and the open punch-list before May 15 launch is down to four targeted Code fixes plus IUL-FF Stripe wiring tomorrow.
