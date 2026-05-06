@@ -547,6 +547,20 @@ def main():
         st.query_params.clear()  # Clear ALL params (credentials already saved above)
         st.rerun()
 
+    # =============================================================================
+    # STRIPE PAYMENT REDIRECT - Show success/cancel banner after Stripe Checkout
+    # =============================================================================
+    # Usage: ?upgrade=success (after successful payment)
+    # Usage: ?upgrade=cancelled (if user cancels Stripe Checkout)
+    upgrade_param = st.query_params.get("upgrade")
+    if upgrade_param == "success":
+        st.success("✅ Payment confirmed — welcome to FamilyForecast Premium!")
+        st.balloons()
+        st.query_params.clear()
+    elif upgrade_param == "cancelled":
+        st.info("ℹ️ Payment cancelled — no charges made. You can upgrade anytime.")
+        st.query_params.clear()
+
     # Inject analytics tracking code (invisible to users)
     # Using components.html instead of markdown for better script injection
     st.components.v1.html(ANALYTICS_TRACKING_CODE, height=0)
