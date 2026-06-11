@@ -49,6 +49,13 @@ Open browser and paste the session URL from backup laptop.
 ---
 
 ## SECTION 1 -- RECENT PROGRESS
+<!-- Updated automatically by ClaudeManager from GitHub Gist -->
+
+### Session Summary -- 2026-06-11
+LIVE TEST — full path fix verified.
+FamilyForecast working correctly June 2026.
+
+---
 
 ---
 
