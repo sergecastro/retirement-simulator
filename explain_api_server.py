@@ -201,9 +201,10 @@ def cc_summary():
 
         row = rows[0]
 
-        # Return ONLY real engine outputs. Fields the engine does not yet compute
-        # (tax bracket, IRMAA, RMD) are null so Lovable shows "not yet available" —
-        # never a fabricated value.
+        # Return ONLY real engine outputs (tax bracket, bracket room, IRMAA margin,
+        # RMD at 73 are derived from the user's projected income using the engine's
+        # own 2025 bracket tables). safe_monthly_spending is a labeled 4% guideline.
+        # Any field the engine could not compute stays null — never a fabricated value.
         data_out = {
             "intakeId": intake_id,
             "computedAt": row.get("created_at"),
@@ -211,6 +212,9 @@ def cc_summary():
                 "mcSuccess": row.get("monte_carlo_success_rate"),
                 "finalSavings": row.get("final_savings"),
                 "safeMonthlySpending": row.get("safe_monthly_spending"),
+                # Methodology caveat for safeMonthlySpending — Lovable should show it
+                # near the number (currently the 4%-rule guideline note).
+                "safeSpendingNote": (row.get("raw_results") or {}).get("safe_spending_method"),
             },
             "taxOpportunities": {
                 "currentBracket": row.get("tax_bracket"),
