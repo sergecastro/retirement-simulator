@@ -130,7 +130,20 @@ def show_cc_ai_chat(screen_name: str, screen_context: str, suggested_questions: 
     for i, q in enumerate(suggested_questions):
         with cols[i]:
             if st.button(q, key=f"cc_sq_{screen_name}_{i}", use_container_width=True):
-                st.session_state[f"cc_pending_q_{screen_name}"] = q
+                # Add question directly to history and process immediately
+                st.session_state[history_key].append({
+                    "role": "user",
+                    "content": q
+                })
+                with st.spinner("Thinking…"):
+                    reply = _call_claude(
+                        system_prompt=build_system_prompt(),
+                        messages=st.session_state[history_key]
+                    )
+                st.session_state[history_key].append({
+                    "role": "assistant",
+                    "content": reply
+                })
                 st.rerun()
 
     # Display chat history
@@ -143,11 +156,6 @@ def show_cc_ai_chat(screen_name: str, screen_context: str, suggested_questions: 
         f"Ask anything about {screen_context}…",
         key=f"cc_chat_input_{screen_name}"
     )
-
-    # Handle pending quick question
-    pending = st.session_state.pop(f"cc_pending_q_{screen_name}", None)
-    if pending:
-        user_input = pending
 
     if user_input:
         # Add user message to history
