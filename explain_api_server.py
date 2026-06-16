@@ -18,8 +18,8 @@ app = Flask(__name__)
 
 # IMPROVED: Explicit CORS for multiple Streamlit ports + production
 # In production, set ALLOWED_ORIGINS environment variable
-ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 
-    'http://localhost:8501,http://localhost:8502,http://localhost:8503,http://localhost:8504,http://localhost:8505'
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS',
+    'https://app.familyforecast.ai,https://familyforecast.ai,https://www.familyforecast.ai,https://intake.familyforecast.ai,https://familyforecast.lovable.app,https://forcash.onrender.com,http://localhost:8501,http://localhost:8502,http://localhost:8503,http://localhost:8504,http://localhost:8505'
 ).split(',')
 
 CORS(app, resources={
