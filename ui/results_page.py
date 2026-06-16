@@ -141,15 +141,20 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
     st.success("✅ Simulation complete!")
 
     # ── Persist REAL results so the Lovable Command Center can read them ──────────
-    # Keyed by the Lovable intake id (_intake_id). Only genuine engine outputs are
-    # saved — no proxies. A save failure must NEVER break the results page.
+    # Keyed by the frictionless session_id (_pending_session, e.g. "TEMP-XXX"),
+    # which Lovable also sends to /cc/summary. The Lovable intake payload carries no
+    # stable id, so session_id is the shared linking key. Falls back to _intake_id
+    # if a future Lovable payload ever does include an id. Only genuine engine
+    # outputs are saved — no proxies. A save failure must NEVER break the page.
     try:
-        intake_id = st.session_state.get('_intake_id')
-        if intake_id:
+        # Normalize to canonical uppercase so the write key always matches the
+        # session_id Lovable later sends to /cc/summary (the read does the same).
+        linking_id = (st.session_state.get('_pending_session') or st.session_state.get('_intake_id') or '').strip().upper()
+        if linking_id:
             from utils.supabase_sync import save_analysis_results
             mc = results.get('monte_carlo_results') or {}
             save_analysis_results(
-                intake_id=intake_id,
+                intake_id=linking_id,
                 monte_carlo_success_rate=mc.get('success_rate'),
                 final_savings=results.get('final_savings'),
                 safe_monthly_spending=None,  # engine has no real safe-spending output yet (Phase 2)

@@ -153,9 +153,15 @@ def cc_summary():
         data = request.get_json(force=True) or {}
         intake = data.get('intake', {}) or {}
 
-        # The Lovable snapshot id (e.g. "quick-1781587873011") is the linking key
-        # to the analysis_results table written by Streamlit after a real Analysis.
-        intake_id = intake.get('id') or data.get('intake_id') or data.get('id')
+        # The linking key to analysis_results is the frictionless session_id
+        # (e.g. "TEMP-XXX") that Streamlit stored after a real Analysis. The Lovable
+        # intake payload carries no stable id, so session_id is the shared key.
+        # Lovable sends it as session_id (preferred); accept all spellings/locations.
+        intake_id = (intake.get('session_id') or intake.get('id')
+                     or data.get('session_id') or data.get('intake_id') or data.get('id'))
+        # Normalize to canonical uppercase so the read key matches what Streamlit
+        # stored on the write side (which applies the same .strip().upper()).
+        intake_id = (intake_id or '').strip().upper()
 
         # No id -> we cannot locate real results. Refuse; NEVER compute proxies.
         if not intake_id:
