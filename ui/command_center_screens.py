@@ -6,7 +6,8 @@
 # =============================================================================
 
 import streamlit as st
-from ui.command_center import _screen_header, _callout, _ai_ask_button, _get
+from ui.command_center import _screen_header, _callout, _get
+from ui.command_center_ai import show_cc_ai_chat
 
 
 def screen_1_monthly_command():
@@ -39,7 +40,11 @@ def screen_1_monthly_command():
         ],
         "Status": ["🟢", "🟢", "—", "🟢", "🟢"],
     })
-    _ai_ask_button("screen1", "Your Monthly Snapshot")
+    show_cc_ai_chat("screen1", "your monthly spending plan", [
+        "How much can I safely spend this month?",
+        "What happens if markets drop 20%?",
+        "Am I saving enough?",
+    ])
 
 
 def screen_2_income_recipe():
@@ -60,7 +65,11 @@ def screen_2_income_recipe():
         "Tax Treatment": ["Partially taxable", "Fully taxable", "Long-term gains", "Fully taxable", "Tax-free"],
         "Recommended?": ["✅ Use first", "✅ Use first", "✅ Use second", "⏸ Hold for Roth", "🔒 Last resort"],
     })
-    _ai_ask_button("screen2", "Your Withdrawal Order")
+    show_cc_ai_chat("screen2", "your income sources and withdrawal order", [
+        "Why should I use Social Security before my IRA?",
+        "What is the best order to take my money?",
+        "Should I touch my Roth account this year?",
+    ])
 
 
 def screen_3_guardrail_zone():
@@ -82,7 +91,11 @@ def screen_3_guardrail_zone():
         "Roth Conversion": ["✅ Proceed", "⚠️ Reduce", "🚫 Stop"],
         "Your Status": ["← You are here", "", ""],
     })
-    _ai_ask_button("screen3", "Your Guardrail Status")
+    show_cc_ai_chat("screen3", "your guardrail zone status", [
+        "What puts me in the Red Zone?",
+        "Can I spend more since I am in Green?",
+        "How do guardrails protect my plan?",
+    ])
 
 
 def screen_4_tax_opportunities():
@@ -104,7 +117,11 @@ def screen_4_tax_opportunities():
         "Net Lifetime Benefit": ["$0", "Best balance", "Good", "IRMAA risk"],
         "Recommended?": ["❌", "✅", "⚠️", "🚫"],
     })
-    _ai_ask_button("screen4", "Your Tax Opportunities")
+    show_cc_ai_chat("screen4", "your tax opportunities this year", [
+        "Should I do a Roth conversion this year?",
+        "How much can I convert without paying more tax?",
+        "What is capital gains harvesting?",
+    ])
 
 
 def screen_5_social_security():
@@ -132,7 +149,11 @@ def screen_5_social_security():
         "✅ Claim at FRA": ["Medium", "Medium", "Moderate", "Best balance", "Medium"],
         "Claim at 70": ["Highest", "Low", "Risk", "Highest", "Highest"],
     })
-    _ai_ask_button("screen5", "Your Social Security Decision")
+    show_cc_ai_chat("screen5", "your Social Security claiming decision", [
+        "Should I claim Social Security at 62 or wait?",
+        "How does claiming age affect my taxes?",
+        "What happens to my spouse if I claim early?",
+    ])
 
 
 def screen_6_rmd_forecast():
@@ -154,7 +175,11 @@ def screen_6_rmd_forecast():
         "Lifetime Tax Saved": ["$0", "Good", "Best balance", "IRMAA risk"],
         "Recommended?": ["❌", "⚠️", "✅", "🚫"],
     })
-    _ai_ask_button("screen6", "Your RMD Strategy")
+    show_cc_ai_chat("screen6", "your RMD forecast and Roth conversion strategy", [
+        "What is an RMD and why does it matter?",
+        "Should I do Roth conversions before 73?",
+        "How much will my RMDs be?",
+    ])
 
 
 def screen_7_irmaa_watch():
@@ -177,7 +202,11 @@ def screen_7_irmaa_watch():
         "Annual Extra Cost": ["$0 (baseline)", "+$888", "+$2,220", "+$3,551"],
         "Your Status": ["← You are here", "", "", ""],
     })
-    _ai_ask_button("screen7", "Your Medicare Premium Risk")
+    show_cc_ai_chat("screen7", "your IRMAA and Medicare premium risk", [
+        "What is IRMAA and how does it affect me?",
+        "How do I avoid higher Medicare premiums?",
+        "Will my income trigger a surcharge?",
+    ])
 
 
 def screen_8_what_changed():
@@ -207,7 +236,11 @@ def screen_8_what_changed():
         "Change": ["+/-", "+/-", "+/-", "+/-", "+/-", "Stable"],
         "Status": ["🟢", "🟢", "🟢", "🟢", "🟢", "🟢"],
     })
-    _ai_ask_button("screen8", "Your Monthly Changes")
+    show_cc_ai_chat("screen8", "what changed in your plan this month", [
+        "Is my plan improving or getting worse?",
+        "What should I do differently next month?",
+        "How do market changes affect my plan?",
+    ])
 
 
 def screen_9_next_best_action():
@@ -236,11 +269,8 @@ def screen_9_next_best_action():
         "Impact": ["High", "High", "Medium", "Very High", "Low"],
         "Complexity": ["Low", "Low", "Monitor", "One meeting", "5 min"],
     })
-    st.markdown("---")
-    st.markdown("### 💬 Ask Your AI Retirement Advisor")
-    st.info(
-        "Full AI chat panel activates in Step 8. "
-        "Will use your existing ai_advisor.py, pre-loaded with all "
-        "Command Center data as context."
-    )
-    _ai_ask_button("screen9", "Your Entire Retirement Plan")
+    show_cc_ai_chat("screen9", "your complete retirement plan", [
+        "Give me my top 3 actions right now",
+        "Am I going to be okay in retirement?",
+        "What is the biggest risk in my plan?",
+    ])
