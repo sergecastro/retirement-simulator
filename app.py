@@ -1067,21 +1067,8 @@ def main():
             'is_trusted': is_trusted
         }
 
-        # Prominent top-of-page link into the Command Center action plan
-        col1, col2, col3 = st.columns([3, 2, 3])
-        with col2:
-            if st.button(
-                "🎯 Open Command Center",
-                type="primary",
-                use_container_width=True,
-                help="See your personalized monthly action plan"
-            ):
-                st.session_state["current_mode"] = "command_center"
-                st.rerun()
-
         # Real HTML link to the Lovable-hosted Command Center (opens new tab,
-        # works on laptop + mobile). Distinct from the Streamlit button above,
-        # which opens the internal Streamlit Command Center.
+        # works on laptop + mobile). Single CTA — one button, one destination.
         st.markdown(
             """
             <a href="https://familyforecast.ai/command-center"
