@@ -244,8 +244,21 @@ def _inject_cc_styles():
         .cc-header-subtitle { font-size: 0.95rem; color: #666; margin-top: 0.15rem; }
         .stTable thead th {
             background-color: #0B2447 !important;
-            color: white !important;
-            font-weight: 600;
+            color: #FFFFFF !important;
+            font-weight: 700 !important;
+            font-size: 0.95rem !important;
+            letter-spacing: 0.04em !important;
+            text-shadow: none !important;
+            opacity: 1 !important;
+        }
+
+        .stTable thead {
+            background-color: #0B2447 !important;
+        }
+
+        .stTable th {
+            color: #FFFFFF !important;
+            background-color: #0B2447 !important;
         }
         </style>
         """,
