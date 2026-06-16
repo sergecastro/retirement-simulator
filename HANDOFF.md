@@ -51,6 +51,31 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
+### Session Summary -- 2026-06-15
+
+**🎯 RETIREMENT COMMAND CENTER — built end-to-end + all AI brought back online**
+
+Major feature night. Built the **Command Center**, a premium, decision-first experience for subscribers, and fixed a silent production-wide AI outage discovered along the way.
+
+**What was built (new Streamlit module, isolated on `feature/command-center`):**
+- `ui/command_center.py` — entry point, INTAKE gate, sidebar nav, shared helpers, navy/gold CSS
+- `ui/command_center_screens.py` — the screen functions
+- `ui/command_center_ai.py` — per-screen AI advisor (builds context from the user's intake, calls Claude directly)
+- **10 screens:** Monthly Command, Income Recipe, Guardrail Zone, Tax Opportunities, Social Security, RMD Forecast, IRMAA Watch, What Changed, Next Best Action, and **🟢 My Action Plan** (Green Summary — hero status bar, master action table, income/asset snapshots, plain-English summary).
+- **AI on every tab:** each screen has a "Quick questions" + chat panel powered by the Anthropic SDK, pre-loaded with the user's full retirement data as context. Quick-question buttons now answer immediately (fixed a focus-steal bug).
+- Reachable via a new **🎯 Command Center** card on the welcome screen and the sidebar **Quick Mode Switch** (added to all 3 views).
+
+**Critical bug fixed (was breaking production silently):** every AI feature referenced a **dead model id** `claude-sonnet-4-20250514` (404 not-found). The "?" chart explanations *and* the Analysis AI Advisor were failing. Updated **all** references across `ai_advisor.py`, `explain_api_server.py`, and `explain_visual_handler.py` to **`claude-sonnet-4-6`**. Verified with a live API call.
+
+**New Flask API for the Lovable Command Center** (`explain_api_server.py`, deployed to production via `master`):
+- `POST /cc/summary` — receives intake JSON from Lovable, returns calculations for all screens in one call (safe spending, guardrail zone, tax/Roth room, IRMAA margin, RMD forecast, SS claiming comparison, withdrawal order, prioritized action plan).
+- `POST /cc/chat` — context-aware AI chat endpoint.
+- **CORS hardened:** baked all production + Lovable origins into the default (`app/root/www/intake familyforecast.ai`, `familyforecast.lovable.app`, `forcash.onrender.com`) so it works even if the env var is missing.
+
+**Deployment:** model fix + CORS + `/cc/*` endpoints cherry-picked to **`master`** (live for Render `forcash-api`). Command Center UI stays on `feature/command-center` (not yet exposed to production users — still placeholder data on several screens). Local dev validated on Streamlit `:8502` + Flask `:5000`.
+
+**Still open / next:** wire real Analysis-engine data into the Streamlit Command Center screens (several still show preview tables); confirm Render `forcash-api` auto-deployed `b3bf9720` and production `/cc/summary` returns live data; add the premium gate to the Command Center route before exposing it; decide whether the Streamlit Command Center or the Lovable+Flask version is the canonical product (currently both exist).
+
 ### Session Summary -- 2026-06-13
 📋 PRE-TRAVEL HANDOFF REPORT — Friday, June 12, 2026
 "4-Week Pause Anchor Document — Complete State of the Project"
@@ -320,6 +345,12 @@ Have a wonderful trip, Serge. The product is live. The code is stable. Everythin
 - `legal@familyforecast.ai` → `serge@emiramed.com`
 
 **IUL-FF.AI:** Down intentionally (Lovable set to private). Patent No. 64/031,074 filed April 6, 2026. Non-provisional due April 6, 2027.
+
+**Command Center (added June 15, 2026):**
+- Streamlit module on branch `feature/command-center`: `ui/command_center.py`, `ui/command_center_screens.py`, `ui/command_center_ai.py` (10 screens, per-screen AI via Anthropic SDK). Routed in `app.py` as `current_mode == "command_center"`; reachable from welcome card + sidebar Quick Mode Switch. Not yet merged to `master`.
+- Flask API (on `master`, live via Render `forcash-api`): `POST /cc/summary` and `POST /cc/chat` in `explain_api_server.py` — for a Lovable-hosted Command Center.
+- **All AI now uses model `claude-sonnet-4-6`** (was `claude-sonnet-4-20250514`, which 404'd). Applies to `ai_advisor.py`, `explain_api_server.py`, `explain_visual_handler.py`.
+- Local dev requires BOTH servers: Streamlit `:8502` (`start_familyforecast.bat`) and Flask `:5000` (`python explain_api_server.py`) for the "?" chart explanations.
 
 ---
 
