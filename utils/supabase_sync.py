@@ -369,8 +369,11 @@ def save_analysis_results(intake_id: str,
                           raw_results: Optional[dict] = None) -> bool:
     """
     Persist REAL Analysis results so the Lovable Command Center can read them
-    via the Flask /cc/summary endpoint. Keyed by intake_id (the Lovable snapshot
-    id, e.g. "quick-1781587873011").
+    via the Flask /cc/summary endpoint. Keyed by the linking id — now the
+    frictionless session_id (e.g. "TEMP-PSCGASTRK7EN49FD"), passed in via the
+    intake_id parameter. The Lovable intake payload carries no stable id, so the
+    session_id is the only shared key between the write and read sides. Lovable
+    sends the same session_id to /cc/summary.
 
     Stores ONLY genuine engine outputs — no proxies. Fields the Analysis engine
     does not produce (tax bracket, IRMAA, RMD) are left null until Phase 2.
