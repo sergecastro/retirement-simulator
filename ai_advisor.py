@@ -69,7 +69,7 @@ def test_claude_connection() -> Tuple[bool, str]:
         if ANTHROPIC_SDK_AVAILABLE:
             client = anthropic.Anthropic(api_key=api_key)
             response = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model="claude-sonnet-4-6",
                 max_tokens=100,
                 messages=[{"role": "user", "content": "Reply with: Connection successful!"}]
             )
@@ -82,7 +82,7 @@ def test_claude_connection() -> Tuple[bool, str]:
                 "content-type": "application/json"
             }
             data = {
-                "model": "claude-sonnet-4-20250514",
+                "model": "claude-sonnet-4-6",
                 "max_tokens": 100,
                 "messages": [{"role": "user", "content": "Reply with: Connection successful!"}]
             }
@@ -297,7 +297,7 @@ Provide a personalized, actionable answer based on the financial profile above. 
             client = anthropic.Anthropic(api_key=api_key)
             
             response = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model="claude-sonnet-4-6",
                 max_tokens=4000,
                 system=build_system_prompt(),
                 messages=messages
@@ -315,7 +315,7 @@ Provide a personalized, actionable answer based on the financial profile above. 
             }
             
             data = {
-                "model": "claude-sonnet-4-20250514",
+                "model": "claude-sonnet-4-6",
                 "max_tokens": 4000,
                 "system": build_system_prompt(),
                 "messages": messages
@@ -393,7 +393,7 @@ Their current metrics:
         if ANTHROPIC_SDK_AVAILABLE:
             client = anthropic.Anthropic(api_key=api_key)
             response = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model="claude-sonnet-4-6",
                 max_tokens=3000,
                 system=build_system_prompt(),
                 messages=[{"role": "user", "content": analysis_prompt}]
@@ -406,7 +406,7 @@ Their current metrics:
                 "content-type": "application/json"
             }
             data = {
-                "model": "claude-sonnet-4-20250514",
+                "model": "claude-sonnet-4-6",
                 "max_tokens": 3000,
                 "system": build_system_prompt(),
                 "messages": [{"role": "user", "content": analysis_prompt}]
