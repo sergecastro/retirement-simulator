@@ -362,6 +362,51 @@ def transform_lovable_to_streamlit(lovable_data: dict) -> dict:
 PENDING_INTAKE_HOURS = 24  # Auto-delete after 24 hours
 
 
+def save_analysis_results(intake_id: str,
+                          monte_carlo_success_rate=None,
+                          final_savings=None,
+                          safe_monthly_spending=None,
+                          raw_results: Optional[dict] = None) -> bool:
+    """
+    Persist REAL Analysis results so the Lovable Command Center can read them
+    via the Flask /cc/summary endpoint. Keyed by intake_id (the Lovable snapshot
+    id, e.g. "quick-1781587873011").
+
+    Stores ONLY genuine engine outputs — no proxies. Fields the Analysis engine
+    does not produce (tax bracket, IRMAA, RMD) are left null until Phase 2.
+
+    Emulates an UPSERT via delete-then-insert so re-running Analysis replaces the
+    prior row (one row per intake_id) without requiring a UNIQUE constraint on the
+    table. Never raises — returns True/False so callers can ignore failures safely.
+    """
+    if not intake_id:
+        return False
+    try:
+        import os
+        # analysis_results RLS is open to the SERVICE role only, so the write must
+        # use the service key (the anon get_supabase_client would be blocked).
+        service_key = os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+        if not service_key:
+            print("[ANALYSIS_RESULTS] SUPABASE_SERVICE_KEY missing — cannot save results")
+            return False
+        client = create_client(SUPABASE_URL, service_key)
+        payload = {
+            'intake_id': str(intake_id),
+            'monte_carlo_success_rate': monte_carlo_success_rate,
+            'final_savings': final_savings,
+            'safe_monthly_spending': safe_monthly_spending,
+            'raw_results': raw_results or {},
+        }
+        # Replace any existing row for this intake_id (idempotent re-runs)
+        client.table('analysis_results').delete().eq('intake_id', str(intake_id)).execute()
+        client.table('analysis_results').insert(payload).execute()
+        print(f"[ANALYSIS_RESULTS] Saved results for intake_id={intake_id}")
+        return True
+    except Exception as e:
+        print(f"[ANALYSIS_RESULTS] ERROR saving: {type(e).__name__}: {str(e)}")
+        return False
+
+
 def load_pending_intake(session_id: str) -> Tuple[Optional[dict], str]:
     """
     Load intake data from pending_intake table (FRICTIONLESS flow).
@@ -402,9 +447,17 @@ def load_pending_intake(session_id: str) -> Tuple[Optional[dict], str]:
         if isinstance(intake_data, str):
             intake_data = json.loads(intake_data)
 
+        # Preserve the Lovable snapshot id (e.g. "quick-1781587873011") BEFORE any
+        # transform — it is the linking key used to store/read analysis_results.
+        _intake_id = intake_data.get('id', '') if isinstance(intake_data, dict) else ''
+
         # Check if this is Lovable format and transform if needed
         if 'profile' in intake_data:
             intake_data = transform_lovable_to_streamlit(intake_data)
+
+        # Carry the linking id across the transform so Analysis can key results to it
+        if _intake_id:
+            intake_data['_intake_id'] = _intake_id
 
         # Mark as pending (not yet saved to vault)
         intake_data['_pending_session'] = session_id

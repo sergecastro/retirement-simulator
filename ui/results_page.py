@@ -140,6 +140,29 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
 
     st.success("✅ Simulation complete!")
 
+    # ── Persist REAL results so the Lovable Command Center can read them ──────────
+    # Keyed by the Lovable intake id (_intake_id). Only genuine engine outputs are
+    # saved — no proxies. A save failure must NEVER break the results page.
+    try:
+        intake_id = st.session_state.get('_intake_id')
+        if intake_id:
+            from utils.supabase_sync import save_analysis_results
+            mc = results.get('monte_carlo_results') or {}
+            save_analysis_results(
+                intake_id=intake_id,
+                monte_carlo_success_rate=mc.get('success_rate'),
+                final_savings=results.get('final_savings'),
+                safe_monthly_spending=None,  # engine has no real safe-spending output yet (Phase 2)
+                raw_results={
+                    'success_rate': mc.get('success_rate'),
+                    'final_savings': results.get('final_savings'),
+                    'final_net_worth': results.get('final_net_worth'),
+                    'years_solvent': results.get('years_solvent'),
+                },
+            )
+    except Exception as _save_err:
+        print(f"[ANALYSIS_RESULTS] non-fatal save error: {_save_err}")
+
     # =============================================================================
     # SUMMARY METRICS
     # =============================================================================
