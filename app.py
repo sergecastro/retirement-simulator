@@ -1004,6 +1004,10 @@ def main():
         from pages.roth_calculator import show_roth_calculator
         show_roth_calculator()
 
+    elif st.session_state.current_mode == "command_center":
+        from ui.command_center import show_command_center
+        show_command_center()
+
     elif st.session_state.current_mode == "Analysis":
         # ✅ FIXED: Load INTAKE data into session state if available
         load_intake_data_to_session()
@@ -1020,7 +1024,7 @@ def main():
             st.markdown("---")
             st.markdown("### 🎯 Quick Mode Switch")
 
-            mode_options = ["My Information", "Analysis", "Scenario Studio", "Social Security", "Healthcare"]
+            mode_options = ["My Information", "Analysis", "Scenario Studio", "Social Security", "Healthcare", "🎯 Command Center"]
             current_idx = 1  # Analysis is current
 
             # Mode selector radio buttons
@@ -1046,6 +1050,8 @@ def main():
                     st.session_state.current_mode = "scenario_studio"
                 elif mode == "Social Security":
                     st.session_state.current_mode = "social_security"
+                elif mode == "🎯 Command Center":
+                    st.session_state.current_mode = "command_center"
                 else:
                     st.session_state.current_mode = mode
                 st.session_state.mode_selected = True
@@ -1305,7 +1311,7 @@ def show_intake_mode():
         st.markdown("---")
         st.markdown("### 🎯 Quick Mode Switch")
 
-        mode_options = ["My Information", "Analysis", "Scenario Studio", "Social Security", "Healthcare"]
+        mode_options = ["My Information", "Analysis", "Scenario Studio", "Social Security", "Healthcare", "🎯 Command Center"]
         current_idx = 0  # My Information is current
 
         mode = st.radio(
@@ -1326,6 +1332,8 @@ def show_intake_mode():
                 st.session_state.current_mode = "scenario_studio"
             elif mode == "Social Security":
                 st.session_state.current_mode = "social_security"
+            elif mode == "🎯 Command Center":
+                st.session_state.current_mode = "command_center"
             else:
                 st.session_state.current_mode = mode
             st.session_state.mode_selected = True
@@ -1411,7 +1419,7 @@ def show_healthcare_mode():
 
         mode = st.radio(
             "Choose mode:",
-            options=["My Information", "Analysis", "Scenario Studio", "Social Security", "Healthcare"],
+            options=["My Information", "Analysis", "Scenario Studio", "Social Security", "Healthcare", "🎯 Command Center"],
             index=4,  # Healthcare is index 4
             key="mode_selector_healthcare",
             help="My Information: Guided questionnaire | Analysis: Advanced simulation | Scenario Studio: Compare scenarios | Social Security: Claiming optimizer | Healthcare: Cost planning"
@@ -1429,6 +1437,8 @@ def show_healthcare_mode():
                 st.session_state.current_mode = "scenario_studio"
             elif mode == "Social Security":
                 st.session_state.current_mode = "social_security"
+            elif mode == "🎯 Command Center":
+                st.session_state.current_mode = "command_center"
             else:
                 st.session_state.current_mode = mode
             st.session_state.mode_selected = True

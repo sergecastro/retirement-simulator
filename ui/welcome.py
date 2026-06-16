@@ -105,7 +105,7 @@ def show_new_user_mode_selection():
     # ============ SECTION 1: HOW TO ENTER INFORMATION ============
     st.markdown("### 📋 Choose How to Enter Information")
 
-    col_left, col_right = st.columns(2)
+    col_left, col_right, col3 = st.columns(3)
 
     with col_left:
         st.markdown("#### ⭐ Recommended")
@@ -125,6 +125,37 @@ def show_new_user_mode_selection():
             st.session_state["beta_agreement"] = True
             st.session_state.mode_selected = True
             st.session_state.current_mode = "INTAKE"
+            st.rerun()
+
+    with col3:
+        st.markdown(
+            """
+            <div style='border:2px solid #E8A020; border-radius:12px;
+                        padding:1.5rem; background:#fffbf0; text-align:center;
+                        min-height:220px;'>
+                <div style='font-size:2rem;'>🎯</div>
+                <h3 style='color:#0B2447; margin:0.5rem 0;'>Command Center</h3>
+                <div style='background:#E8A020; color:white; font-size:0.75rem;
+                            font-weight:700; padding:2px 10px; border-radius:20px;
+                            display:inline-block; margin-bottom:0.8rem;'>
+                    ★ PREMIUM
+                </div>
+                <p style='font-size:0.88rem; color:#555; margin:0 0 1rem 0;'>
+                    Monthly decisions.<br>
+                    Where to withdraw.<br>
+                    What to do next.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            "Open →",
+            key="mode_command_center",
+            use_container_width=True,
+        ):
+            st.session_state["mode_selected"] = True
+            st.session_state["current_mode"] = "command_center"
             st.rerun()
 
     # ============ SECTION 2: CLOUD BACKUP (OPTIONAL) ============
