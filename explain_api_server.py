@@ -151,257 +151,78 @@ def cc_summary():
 
     try:
         data = request.get_json(force=True) or {}
-        intake = data.get('intake', {})
+        intake = data.get('intake', {}) or {}
 
-        # ── Extract fields ───────────────────────────────────────────────────
-        age           = _safe_num(intake.get('age') or intake.get('profile', {}).get('age'))
-        ret_age       = _safe_num(intake.get('retirementAge') or intake.get('profile', {}).get('retirementAge'))
-        partner_age   = _safe_num(intake.get('partnerAge') or intake.get('profile', {}).get('partnerAge'))
-        name          = intake.get('name') or intake.get('profile', {}).get('name', 'You')
-        partner_name  = intake.get('partnerName') or intake.get('profile', {}).get('partnerName', '')
+        # The Lovable snapshot id (e.g. "quick-1781587873011") is the linking key
+        # to the analysis_results table written by Streamlit after a real Analysis.
+        intake_id = intake.get('id') or data.get('intake_id') or data.get('id')
 
-        ss_monthly    = _safe_num(intake.get('socialSecurityMonthly') or intake.get('income', {}).get('socialSecurity'))
-        ss_age        = _safe_num(intake.get('socialSecurityAge') or intake.get('income', {}).get('socialSecurityAge')) or 67
-        pension       = _safe_num(intake.get('pensionMonthly') or intake.get('income', {}).get('pension'))
-        salary        = _safe_num(intake.get('monthlySalary') or intake.get('income', {}).get('salary'))
-        rental        = _safe_num(intake.get('rentalIncome') or intake.get('income', {}).get('rental'))
+        # No id -> we cannot locate real results. Refuse; NEVER compute proxies.
+        if not intake_id:
+            return jsonify({
+                "success": True,
+                "requiresAnalysis": True,
+                "message": "Please run Analysis first for accurate numbers.",
+                "data": None
+            }), 200
 
-        ira           = _safe_num(intake.get('iraBalance') or intake.get('assets', {}).get('ira'))
-        roth          = _safe_num(intake.get('rothBalance') or intake.get('assets', {}).get('roth'))
-        taxable       = _safe_num(intake.get('taxableInvestments') or intake.get('assets', {}).get('taxable'))
-        k401          = _safe_num(intake.get('balance401k') or intake.get('assets', {}).get('balance401k'))
-        home          = _safe_num(intake.get('homeValue') or intake.get('assets', {}).get('homeValue'))
+        # Read the REAL, engine-computed results that Streamlit saved after Analysis.
+        client = _get_cc_supabase()
+        if client is None:
+            return jsonify({
+                "success": False,
+                "error": "Results store unavailable. Please try again shortly."
+            }), 503
 
-        expenses      = _safe_num(intake.get('monthlyExpenses') or intake.get('expenses', {}).get('total'))
+        res = (
+            client.table('analysis_results')
+            .select('*')
+            .eq('intake_id', str(intake_id))
+            .order('created_at', desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = res.data or []
 
-        # ── Core calculations ────────────────────────────────────────────────
-        total_assets       = ira + roth + taxable + k401
-        guaranteed_income  = ss_monthly + pension
-        monthly_gap        = max(0, expenses - guaranteed_income)
-        years_to_retire    = max(0, ret_age - age) if ret_age and age else 0
+        # No saved results yet -> send the user through Analysis. No fake numbers.
+        if not rows:
+            return jsonify({
+                "success": True,
+                "requiresAnalysis": True,
+                "message": "Please run Analysis first for accurate numbers.",
+                "data": None
+            }), 200
 
-        # Guardrail zone (simplified — real Monte Carlo runs in Streamlit)
-        # Use asset-to-gap ratio as proxy
-        if monthly_gap > 0 and total_assets > 0:
-            months_covered = total_assets / monthly_gap
-            if months_covered >= 300:    # 25 years
-                zone = "green"
-                zone_label = "🟢 Green Zone"
-                mc_proxy = 89
-            elif months_covered >= 200:  # ~17 years
-                zone = "yellow"
-                zone_label = "🟡 Yellow Zone"
-                mc_proxy = 72
-            else:
-                zone = "red"
-                zone_label = "🔴 Red Zone"
-                mc_proxy = 54
-        else:
-            zone = "green"
-            zone_label = "🟢 Green Zone"
-            mc_proxy = 92
+        row = rows[0]
 
-        # Safe spending (4% rule proxy)
-        safe_annual  = total_assets * 0.04
-        safe_monthly = (safe_annual / 12) + guaranteed_income
-
-        # Tax bracket estimate (single or MFJ rough)
-        taxable_income_est = (ss_monthly * 0.85 * 12) + (pension * 12)
-        if taxable_income_est < 23200:
-            bracket = 10; bracket_label = "10%"
-            next_bracket_threshold = 23200
-        elif taxable_income_est < 94300:
-            bracket = 12; bracket_label = "12%"
-            next_bracket_threshold = 94300
-        elif taxable_income_est < 201050:
-            bracket = 22; bracket_label = "22%"
-            next_bracket_threshold = 201050
-        else:
-            bracket = 24; bracket_label = "24%"
-            next_bracket_threshold = 383900
-
-        bracket_room = max(0, next_bracket_threshold - taxable_income_est)
-
-        # Roth conversion recommendation
-        roth_convert_safe   = min(bracket_room, 20000)
-        roth_convert_max    = min(bracket_room * 0.9, 25000)
-
-        # IRMAA
-        magi_estimate = taxable_income_est
-        irmaa_tier1   = 103000
-        irmaa_margin  = max(0, irmaa_tier1 - magi_estimate)
-        irmaa_safe    = magi_estimate < irmaa_tier1
-
-        # RMD estimate at 73
-        ira_at_73 = (ira + k401) * (1.07 ** max(0, 73 - age)) if age else ira + k401
-        rmd_at_73 = ira_at_73 / 26.5  # IRS uniform table divisor at 73
-
-        # SS claiming comparison
-        fra_benefit  = ss_monthly
-        age62_benefit = round(ss_monthly * 0.70, 0)
-        age70_benefit = round(ss_monthly * 1.24, 0)
-
-        # Withdrawal order this month
-        withdrawal_sources = []
-        remaining = monthly_gap
-        if taxable > 0 and remaining > 0:
-            from_taxable = min(remaining, taxable / 240)
-            withdrawal_sources.append({
-                "source": "Taxable Investments",
-                "amount": round(from_taxable, 0),
-                "taxTreatment": "Long-term gains rate",
-                "recommended": True,
-                "reason": "Use first — lowest tax impact"
-            })
-            remaining -= from_taxable
-        if ira > 0 and remaining > 0:
-            from_ira = min(remaining, ira / 240)
-            withdrawal_sources.append({
-                "source": "IRA / 401k",
-                "amount": round(from_ira, 0),
-                "taxTreatment": "Fully taxable as income",
-                "recommended": remaining > 0,
-                "reason": "Use second — preserve for Roth conversion"
-            })
-        if ss_monthly > 0:
-            withdrawal_sources.insert(0, {
-                "source": "Social Security",
-                "amount": ss_monthly,
-                "taxTreatment": "Up to 85% taxable",
-                "recommended": True,
-                "reason": "Use first — guaranteed income"
-            })
-        if pension > 0:
-            withdrawal_sources.insert(1, {
-                "source": "Pension",
-                "amount": pension,
-                "taxTreatment": "Fully taxable",
-                "recommended": True,
-                "reason": "Use first — guaranteed income"
-            })
-
-        # ── Build response ───────────────────────────────────────────────────
-        result = {
-            "user": {
-                "name": name,
-                "age": age,
-                "retirementAge": ret_age,
-                "partnerName": partner_name,
-                "partnerAge": partner_age,
-            },
+        # Return ONLY real engine outputs. Fields the engine does not yet compute
+        # (tax bracket, IRMAA, RMD) are null so Lovable shows "not yet available" —
+        # never a fabricated value.
+        data_out = {
+            "intakeId": intake_id,
+            "computedAt": row.get("created_at"),
             "monthlyCommand": {
-                "safeMonthlySpending": round(safe_monthly, 0),
-                "zone": zone,
-                "zoneLabel": zone_label,
-                "mcSuccess": mc_proxy,
-                "guaranteedIncome": guaranteed_income,
-                "monthlyGap": round(monthly_gap, 0),
-                "totalAssets": round(total_assets, 0),
-            },
-            "incomeRecipe": {
-                "sources": withdrawal_sources,
-                "totalMonthly": round(safe_monthly, 0),
-            },
-            "guardrailZone": {
-                "zone": zone,
-                "zoneLabel": zone_label,
-                "mcSuccess": mc_proxy,
-                "spendingAdvice": (
-                    "Maintain or increase spending up to 5%" if zone == "green"
-                    else "Hold spending flat" if zone == "yellow"
-                    else "Reduce discretionary spending 5-10%"
-                ),
-                "rothAdvice": (
-                    "Proceed with Roth conversion" if zone == "green"
-                    else "Reduce Roth conversion" if zone == "yellow"
-                    else "Pause Roth conversion"
-                ),
+                "mcSuccess": row.get("monte_carlo_success_rate"),
+                "finalSavings": row.get("final_savings"),
+                "safeMonthlySpending": row.get("safe_monthly_spending"),
             },
             "taxOpportunities": {
-                "estimatedTaxableIncome": round(taxable_income_est, 0),
-                "currentBracket": bracket_label,
-                "bracketRoom": round(bracket_room, 0),
-                "rothConvertSafe": round(roth_convert_safe, 0),
-                "rothConvertMax": round(roth_convert_max, 0),
-                "irmaaSafe": irmaa_safe,
-                "irmaaMargin": round(irmaa_margin, 0),
-                "capitalGainsRoom": round(min(bracket_room * 0.4, 15000), 0),
-            },
-            "socialSecurity": {
-                "fraMonthly": fra_benefit,
-                "age62Monthly": age62_benefit,
-                "age70Monthly": age70_benefit,
-                "plannedClaimAge": ss_age,
-                "breakEvenVs62": 77,
-                "breakEvenVs70": 80,
-            },
-            "rmdForecast": {
-                "currentIraBalance": round(ira + k401, 0),
-                "projectedIraAt73": round(ira_at_73, 0),
-                "rmdAt73": round(rmd_at_73, 0),
-                "yearsUntilRmd": max(0, 73 - age) if age else 0,
-                "rothConvertRecommended": round(roth_convert_safe, 0),
+                "currentBracket": row.get("tax_bracket"),
+                "bracketRoom": row.get("bracket_room"),
             },
             "irmaaWatch": {
-                "estimatedMagi": round(magi_estimate, 0),
-                "tier1Threshold": irmaa_tier1,
-                "safetyMargin": round(irmaa_margin, 0),
-                "currentTier": "Standard" if irmaa_safe else "Tier 1+",
-                "monthlyPremium": 185 if irmaa_safe else 259,
-                "safe": irmaa_safe,
+                "safetyMargin": row.get("irmaa_margin"),
             },
-            "actionPlan": {
-                "topActions": [
-                    {
-                        "priority": 1,
-                        "color": "red",
-                        "action": f"Convert ${round(roth_convert_safe,0):,.0f} to Roth before Dec 31",
-                        "deadline": "Dec 31 this year",
-                        "impact": "High",
-                        "screen": "Tax Opportunities",
-                        "why": f"You have ${round(bracket_room,0):,.0f} of room in your {bracket_label} bracket"
-                    },
-                    {
-                        "priority": 2,
-                        "color": "red",
-                        "action": f"Keep income below ${irmaa_tier1:,.0f} to avoid Medicare surcharge",
-                        "deadline": "Dec 31 this year",
-                        "impact": "High",
-                        "screen": "IRMAA Watch",
-                        "why": f"You have ${round(irmaa_margin,0):,.0f} of safety margin — protect it"
-                    },
-                    {
-                        "priority": 3,
-                        "color": "yellow",
-                        "action": "Withdraw from taxable accounts first this month",
-                        "deadline": "This month",
-                        "impact": "Medium",
-                        "screen": "Income Recipe",
-                        "why": "Lowest tax impact — preserve IRA for Roth conversion window"
-                    },
-                    {
-                        "priority": 4,
-                        "color": "yellow",
-                        "action": f"Review Social Security claiming age (planned: {ss_age})",
-                        "deadline": "Before retirement",
-                        "impact": "Very High",
-                        "screen": "Social Security",
-                        "why": f"Waiting from 62 to FRA increases benefit from ${age62_benefit:,.0f} to ${fra_benefit:,.0f}/month"
-                    },
-                    {
-                        "priority": 5,
-                        "color": "green",
-                        "action": "Update account balances monthly",
-                        "deadline": "Monthly",
-                        "impact": "Low",
-                        "screen": "What Changed",
-                        "why": "Keeps your guardrail calculations accurate"
-                    },
-                ]
-            }
+            "rmdForecast": {
+                "rmdAt73": row.get("rmd_at_73"),
+            },
         }
 
-        return jsonify({"success": True, "data": result}), 200
+        return jsonify({
+            "success": True,
+            "requiresAnalysis": False,
+            "data": data_out
+        }), 200
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -468,6 +289,25 @@ Always reference their specific numbers. Never invent figures not shown above.""
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+def _get_cc_supabase():
+    """
+    Supabase client for reading analysis_results. Uses the SERVICE key (bypasses
+    RLS) from environment. Returns None if unavailable so callers can degrade
+    gracefully instead of crashing.
+    """
+    try:
+        from supabase import create_client
+        url = SUPABASE_URL
+        key = SUPABASE_SERVICE_KEY
+        if not url or not key:
+            print("[CC] Supabase URL/SERVICE key missing — cannot read analysis_results")
+            return None
+        return create_client(url, key)
+    except Exception as e:
+        print(f"[CC] Supabase client init failed: {type(e).__name__}: {e}")
+        return None
 
 
 def _safe_num(val):
