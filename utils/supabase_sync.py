@@ -370,6 +370,9 @@ def save_analysis_results(intake_id: str,
                           bracket_room=None,
                           irmaa_margin=None,
                           rmd_at_73=None,
+                          monthly_expenses=None,
+                          guaranteed_income=None,
+                          total_assets=None,
                           raw_results: Optional[dict] = None) -> bool:
     """
     Persist REAL Analysis results so the Lovable Command Center can read them
@@ -406,6 +409,9 @@ def save_analysis_results(intake_id: str,
             'bracket_room': bracket_room,
             'irmaa_margin': irmaa_margin,
             'rmd_at_73': rmd_at_73,
+            'monthly_expenses': monthly_expenses,
+            'guaranteed_income': guaranteed_income,
+            'total_assets': total_assets,
             'raw_results': raw_results or {},
         }
         # Replace any existing row for this intake_id (idempotent re-runs)

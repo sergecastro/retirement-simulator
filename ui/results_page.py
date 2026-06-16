@@ -236,6 +236,25 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
             from utils.supabase_sync import save_analysis_results
             mc = results.get('monte_carlo_results') or {}
             cc = _derive_cc_metrics(results, user_data, financial_data)
+
+            # Raw intake values Lovable needs for the income picture + asset summary
+            # (monthly, matching the rest of the system — NOT calculations).
+            monthly_expenses = financial_data.get('total_expenses', 0)
+            guaranteed_income = (
+                st.session_state.get('input_social_security_income', 0)
+                + st.session_state.get('input_pension_income', 0)
+            )
+            _df = results.get('df')
+            if _df is not None and 'Total_Assets' in _df.columns and len(_df) > 0:
+                total_assets = float(_df['Total_Assets'].iloc[0])  # engine's starting total
+            else:
+                total_assets = (
+                    financial_data.get('liquid_assets', 0)
+                    + financial_data.get('primary_residence_value', 0)
+                    + financial_data.get('secondary_residence_value', 0)
+                    + financial_data.get('other_assets', 0)
+                )
+
             save_analysis_results(
                 intake_id=linking_id,
                 monte_carlo_success_rate=mc.get('success_rate'),
@@ -245,6 +264,9 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                 bracket_room=cc['bracket_room'],
                 irmaa_margin=cc['irmaa_margin'],
                 rmd_at_73=cc['rmd_at_73'],
+                monthly_expenses=monthly_expenses,
+                guaranteed_income=guaranteed_income,
+                total_assets=total_assets,
                 raw_results={
                     'success_rate': mc.get('success_rate'),
                     'final_savings': results.get('final_savings'),
