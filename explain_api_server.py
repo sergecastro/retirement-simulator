@@ -215,6 +215,10 @@ def cc_summary():
                 # Methodology caveat for safeMonthlySpending — Lovable should show it
                 # near the number (currently the 4%-rule guideline note).
                 "safeSpendingNote": (row.get("raw_results") or {}).get("safe_spending_method"),
+                # Intake values for the income picture + asset summary (monthly $).
+                "monthlyExpenses": row.get("monthly_expenses"),
+                "guaranteedIncome": row.get("guaranteed_income"),
+                "totalAssets": row.get("total_assets"),
             },
             "taxOpportunities": {
                 "currentBracket": row.get("tax_bracket"),
