@@ -51,6 +51,22 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
+### Session Summary -- 2026-06-16
+
+**🎯 COMMAND CENTER NOW SHOWS REAL NUMBERS — killed the fake-data proxies and found the root-cause wiring bug**
+
+Today we made the Lovable Command Center tell the truth. It was previously displaying **fabricated "proxy" numbers** computed on the fly from whatever JSON Lovable posted (e.g. "Convert $20,000 to Roth", "mcSuccess 92") — plausible but entirely made up. We removed all of that and wired it to **real Analysis-engine results**, then traced and fixed the reason the real data was never reaching it.
+
+**What we shipped to production (`master`, live on Render `forcash-api` + `forcash`):**
+- **No more proxies.** Deployed the rewrite (`3a044126`): `/cc/summary` now reads genuine engine outputs from the new Supabase `analysis_results` table and returns `requiresAnalysis: true` (never fake numbers) when no real Analysis exists yet. Phase-2 fields (tax bracket, IRMAA, RMD) return `null` rather than invented values.
+- **Root-cause fix for the empty Command Center (`89b7e779`):** discovered via a direct Supabase query that **Lovable's intake payload contains no `id` field** (keys are only `assets, createdAt, expenses, family, income, liabilities, mode, planName, profile, schemaVersion`). The Streamlit write was gated on that missing id, so `save_analysis_results` had **never fired** — the proxies had been masking this the whole time. Switched the linking key to the **frictionless `session_id` (`TEMP-XXX`)** that both Streamlit (write) and Lovable (read) already share. Added `.strip().upper()` normalization on both sides so case never breaks the match.
+
+**Verified on production:** insert a row keyed UPPERCASE → read it back via `/cc/summary` sending the id LOWERCASE → matched, real values returned (`mcSuccess`, `finalSavings`, `safeMonthlySpending`); empty id → `requiresAnalysis: true`. Test rows cleaned up after.
+
+**Also (feature branch only, `feature/command-center`):** added a prominent "🎯 Open Command Center" button at the top of the Analysis page (`740de68d`). Confirmed `SUPABASE_SERVICE_KEY` is set on both Render services; added it to local `.env` for testing.
+
+**The ONE remaining link (Lovable side):** the backend loop is complete and proven, but it only closes if **Lovable actually sends the `session_id` when it calls `/cc/summary`**. Next step: run one real **Lovable intake → Streamlit Analysis**, then open the Command Center for that user. If it shows real numbers, the end-to-end loop is closed. **Holding the `feature/command-center` → `master` merge (UI + button) until that end-to-end test passes.**
+
 ### Session Summary -- 2026-06-15
 
 **🎯 RETIREMENT COMMAND CENTER — built end-to-end + all AI brought back online**
@@ -346,9 +362,12 @@ Have a wonderful trip, Serge. The product is live. The code is stable. Everythin
 
 **IUL-FF.AI:** Down intentionally (Lovable set to private). Patent No. 64/031,074 filed April 6, 2026. Non-provisional due April 6, 2027.
 
-**Command Center (added June 15, 2026):**
-- Streamlit module on branch `feature/command-center`: `ui/command_center.py`, `ui/command_center_screens.py`, `ui/command_center_ai.py` (10 screens, per-screen AI via Anthropic SDK). Routed in `app.py` as `current_mode == "command_center"`; reachable from welcome card + sidebar Quick Mode Switch. Not yet merged to `master`.
-- Flask API (on `master`, live via Render `forcash-api`): `POST /cc/summary` and `POST /cc/chat` in `explain_api_server.py` — for a Lovable-hosted Command Center.
+**Command Center (added June 15, 2026; real-data wiring June 16, 2026):**
+- Streamlit module on branch `feature/command-center`: `ui/command_center.py`, `ui/command_center_screens.py`, `ui/command_center_ai.py` (10 screens, per-screen AI via Anthropic SDK). Routed in `app.py` as `current_mode == "command_center"`; reachable from welcome card, sidebar Quick Mode Switch, and a top-of-Analysis-page "🎯 Open Command Center" button. **Not yet merged to `master`** (held until end-to-end test passes).
+- Flask API (on `master`, live via Render `forcash-api`): `POST /cc/summary` and `POST /cc/chat` in `explain_api_server.py` — for the Lovable-hosted Command Center.
+- **Real-data flow (no proxies):** Streamlit writes genuine Analysis-engine outputs to the new Supabase **`analysis_results`** table via `save_analysis_results()` (`utils/supabase_sync.py`) after a real Analysis (`ui/results_page.py`). `/cc/summary` reads that table and returns `requiresAnalysis: true` when no row exists — it NEVER fabricates numbers.
+  - **`analysis_results` table:** RLS open to the **service role only**; both write (Streamlit) and read (Flask) use `SUPABASE_SERVICE_KEY` (set on both Render services). Columns: `intake_id` (the linking key), `monte_carlo_success_rate`, `final_savings`, `safe_monthly_spending`, `raw_results` (jsonb), Phase-2 nulls (`tax_bracket`, `bracket_room`, `irmaa_margin`, `rmd_at_73`), timestamps.
+  - **Linking key = frictionless `session_id` (`TEMP-XXX`)**, NOT a Lovable intake id (the Lovable payload has no `id` field). Both write and read normalize it with `.strip().upper()`. Loop closes only when Lovable sends the same `session_id` to `/cc/summary`.
 - **All AI now uses model `claude-sonnet-4-6`** (was `claude-sonnet-4-20250514`, which 404'd). Applies to `ai_advisor.py`, `explain_api_server.py`, `explain_visual_handler.py`.
 - Local dev requires BOTH servers: Streamlit `:8502` (`start_familyforecast.bat`) and Flask `:5000` (`python explain_api_server.py`) for the "?" chart explanations.
 
