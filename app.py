@@ -1079,6 +1079,25 @@ def main():
                 st.session_state["current_mode"] = "command_center"
                 st.rerun()
 
+        # Real HTML link to the Lovable-hosted Command Center (opens new tab,
+        # works on laptop + mobile). Distinct from the Streamlit button above,
+        # which opens the internal Streamlit Command Center.
+        st.markdown(
+            """
+            <a href="https://familyforecast.ai/command-center"
+               target="_blank"
+               style="display:block; text-align:center;
+                      background:#E8A020; color:white;
+                      font-weight:700; font-size:1.1rem;
+                      padding:12px 24px; border-radius:8px;
+                      text-decoration:none; margin:1rem auto;
+                      max-width:400px;">
+                🎯 Open My Command Center
+            </a>
+            """,
+            unsafe_allow_html=True,
+        )
+
         show_analysis_mode(nav_state)
 
     # Show footer
