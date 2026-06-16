@@ -290,7 +290,7 @@ def cc_summary():
                 "partnerAge": partner_age,
             },
             "monthlyCommand": {
-                "safeMontlySpending": round(safe_monthly, 0),
+                "safeMonthlySpending": round(safe_monthly, 0),
                 "zone": zone,
                 "zoneLabel": zone_label,
                 "mcSuccess": mc_proxy,
