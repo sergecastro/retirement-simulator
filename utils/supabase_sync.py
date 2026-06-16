@@ -366,6 +366,10 @@ def save_analysis_results(intake_id: str,
                           monte_carlo_success_rate=None,
                           final_savings=None,
                           safe_monthly_spending=None,
+                          tax_bracket=None,
+                          bracket_room=None,
+                          irmaa_margin=None,
+                          rmd_at_73=None,
                           raw_results: Optional[dict] = None) -> bool:
     """
     Persist REAL Analysis results so the Lovable Command Center can read them
@@ -398,6 +402,10 @@ def save_analysis_results(intake_id: str,
             'monte_carlo_success_rate': monte_carlo_success_rate,
             'final_savings': final_savings,
             'safe_monthly_spending': safe_monthly_spending,
+            'tax_bracket': tax_bracket,
+            'bracket_room': bracket_room,
+            'irmaa_margin': irmaa_margin,
+            'rmd_at_73': rmd_at_73,
             'raw_results': raw_results or {},
         }
         # Replace any existing row for this intake_id (idempotent re-runs)

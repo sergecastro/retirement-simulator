@@ -30,6 +30,88 @@ from utils.comparison_scenarios import save_comparison_scenario
 
 
 # =============================================================================
+# COMMAND CENTER METRIC DERIVATION
+# =============================================================================
+
+def _derive_cc_metrics(results, user_data, financial_data):
+    """
+    Derive the 5 Command Center metrics from REAL engine outputs.
+
+    tax_bracket / bracket_room / irmaa_margin use the SAME 2025 bracket tables the
+    simulation engine itself uses (TAX_BRACKETS_2025 / IRMAA_BRACKETS_2025), applied
+    to the user's actual first-year projected income — genuine derivations, not
+    fabricated proxies. rmd_at_73 is read straight from the per-year projection.
+    safe_monthly_spending uses the 4% rule on investable assets — a labeled
+    guideline (the Command Center must show the caveat), pending a Monte-Carlo-based
+    sustainable-withdrawal solver in Phase 2.
+
+    Any field that cannot be computed is left None (never faked).
+    """
+    from simulation_core import TAX_BRACKETS_2025, IRMAA_BRACKETS_2025
+
+    out = {
+        'safe_monthly_spending': None,
+        'tax_bracket': None,
+        'bracket_room': None,
+        'irmaa_margin': None,
+        'rmd_at_73': None,
+        'safe_spending_method': None,
+    }
+
+    df = results.get('df')
+    filing = 'joint' if user_data.get('partner_exists') else 'single'
+
+    # First-year projected income as the MAGI proxy (engine's calculate_magi == total_income)
+    income = None
+    if df is not None and len(df) > 0 and 'Total_Income' in df.columns:
+        try:
+            income = float(df['Total_Income'].iloc[0])
+        except (ValueError, TypeError):
+            income = None
+
+    # --- Tax bracket + headroom to the top of the current bracket ---
+    if income is not None:
+        for b in TAX_BRACKETS_2025[filing]:
+            if b['min'] <= income < b['max']:
+                out['tax_bracket'] = f"{int(round(b['rate'] * 100))}%"
+                if b['max'] != float('inf'):
+                    out['bracket_room'] = round(max(0.0, b['max'] - income), 2)
+                break
+
+    # --- IRMAA margin: distance to the next IRMAA tier ---
+    if income is not None:
+        for b in IRMAA_BRACKETS_2025[filing]:
+            if b['min'] <= income < b['max']:
+                if b['max'] != float('inf'):
+                    out['irmaa_margin'] = round(max(0.0, b['max'] - income), 2)
+                break
+
+    # --- RMD at age 73 (real per-year engine output) ---
+    if df is not None and 'User_Age' in df.columns and 'User_RMD' in df.columns:
+        row73 = df[df['User_Age'] == 73]
+        if not row73.empty:
+            try:
+                out['rmd_at_73'] = round(float(row73['User_RMD'].iloc[0]), 2)
+            except (ValueError, TypeError):
+                pass
+
+    # --- Safe monthly spending: 4% rule on investable assets (LABELED guideline) ---
+    portfolio = financial_data.get('liquid_assets')
+    try:
+        if portfolio and float(portfolio) > 0:
+            out['safe_monthly_spending'] = round(float(portfolio) * 0.04 / 12.0, 2)
+            out['safe_spending_method'] = (
+                "4% rule on investable assets — a rough guideline. Note: many "
+                "planners now favor dynamic/guardrail withdrawal strategies over a "
+                "fixed 4%."
+            )
+    except (ValueError, TypeError):
+        pass
+
+    return out
+
+
+# =============================================================================
 # MAIN RESULTS PAGE
 # =============================================================================
 
@@ -153,16 +235,22 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
         if linking_id:
             from utils.supabase_sync import save_analysis_results
             mc = results.get('monte_carlo_results') or {}
+            cc = _derive_cc_metrics(results, user_data, financial_data)
             save_analysis_results(
                 intake_id=linking_id,
                 monte_carlo_success_rate=mc.get('success_rate'),
                 final_savings=results.get('final_savings'),
-                safe_monthly_spending=None,  # engine has no real safe-spending output yet (Phase 2)
+                safe_monthly_spending=cc['safe_monthly_spending'],
+                tax_bracket=cc['tax_bracket'],
+                bracket_room=cc['bracket_room'],
+                irmaa_margin=cc['irmaa_margin'],
+                rmd_at_73=cc['rmd_at_73'],
                 raw_results={
                     'success_rate': mc.get('success_rate'),
                     'final_savings': results.get('final_savings'),
                     'final_net_worth': results.get('final_net_worth'),
                     'years_solvent': results.get('years_solvent'),
+                    'safe_spending_method': cc['safe_spending_method'],
                 },
             )
     except Exception as _save_err:
