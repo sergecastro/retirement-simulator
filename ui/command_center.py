@@ -82,6 +82,7 @@ def show_command_center():
         screen_7_irmaa_watch,
         screen_8_what_changed,
         screen_9_next_best_action,
+        screen_10_green_summary,
     )
 
     screen_map = {
@@ -94,6 +95,7 @@ def show_command_center():
         "irmaa_watch":       screen_7_irmaa_watch,
         "what_changed":      screen_8_what_changed,
         "next_best_action":  screen_9_next_best_action,
+        "green_summary":     screen_10_green_summary,
     }
 
     render_fn = screen_map.get(screen, screen_1_monthly_command)
@@ -115,6 +117,7 @@ def _render_cc_sidebar() -> str:
         ("irmaa_watch",       "🏥", "IRMAA Watch"),
         ("what_changed",      "🔄", "What Changed"),
         ("next_best_action",  "✅", "Next Best Action"),
+        ("green_summary",     "🟢", "My Action Plan"),
     ]
 
     if "cc_screen" not in st.session_state:

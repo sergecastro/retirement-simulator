@@ -274,3 +274,247 @@ def screen_9_next_best_action():
         "Am I going to be okay in retirement?",
         "What is the biggest risk in my plan?",
     ])
+
+
+def screen_10_green_summary():
+    from ui.command_center_ai import show_cc_ai_chat, _get, build_command_center_context
+    _screen_header(
+        "🟢",
+        "My Action Plan",
+        "Everything I should do — all in one place",
+    )
+
+    # ── Pull whatever data is available ──────────────────────────────────────
+    name        = _get("input_user_name", "You")
+    age         = _get("input_age", "?")
+    ret_age     = _get("input_retirement_age", "?")
+    ss_age      = _get("input_social_security_age", "your planned age")
+    ss_monthly  = _get("input_social_security_monthly", 0)
+    pension     = _get("input_pension_monthly", 0)
+    expenses    = _get("input_monthly_expenses", 0)
+    ira         = _get("input_ira_balance", 0)
+    roth        = _get("input_roth_balance", 0)
+    taxable     = _get("input_taxable_investments", 0)
+    mc_success  = st.session_state.get("monte_carlo_success_rate")
+    mc_label    = f"{mc_success:.0f}%" if mc_success else "Run Analysis first"
+
+    # ── Zone logic ────────────────────────────────────────────────────────────
+    if mc_success is None:
+        zone = "⚪ Unknown"
+        zone_color = "blue"
+        zone_advice = "Run your Analysis first to see your zone."
+    elif mc_success >= 80:
+        zone = "🟢 Green"
+        zone_color = "green"
+        zone_advice = "Your plan is comfortably on track. Maintain current spending."
+    elif mc_success >= 65:
+        zone = "🟡 Yellow"
+        zone_color = "yellow"
+        zone_advice = "Your plan is okay but needs attention. Hold spending flat."
+    else:
+        zone = "🔴 Red"
+        zone_color = "red"
+        zone_advice = "Your plan needs correction. Reduce discretionary spending."
+
+    # ── Hero status bar ───────────────────────────────────────────────────────
+    st.markdown(
+        f"""
+        <div style='background:#0B2447; color:white; border-radius:12px;
+                    padding:1.5rem 2rem; margin-bottom:1.5rem;
+                    display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem;'>
+            <div style='text-align:center;'>
+                <div style='font-size:0.8rem; opacity:0.7; margin-bottom:4px;'>PLAN OWNER</div>
+                <div style='font-size:1.3rem; font-weight:700;'>{name}</div>
+            </div>
+            <div style='text-align:center;'>
+                <div style='font-size:0.8rem; opacity:0.7; margin-bottom:4px;'>YOUR AGE</div>
+                <div style='font-size:1.3rem; font-weight:700;'>{age}</div>
+            </div>
+            <div style='text-align:center;'>
+                <div style='font-size:0.8rem; opacity:0.7; margin-bottom:4px;'>RETIRE AT</div>
+                <div style='font-size:1.3rem; font-weight:700;'>{ret_age}</div>
+            </div>
+            <div style='text-align:center;'>
+                <div style='font-size:0.8rem; opacity:0.7; margin-bottom:4px;'>SUCCESS RATE</div>
+                <div style='font-size:1.3rem; font-weight:700; color:#E8A020;'>{mc_label}</div>
+            </div>
+            <div style='text-align:center;'>
+                <div style='font-size:0.8rem; opacity:0.7; margin-bottom:4px;'>PLAN ZONE</div>
+                <div style='font-size:1.3rem; font-weight:700;'>{zone}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # ── Zone callout ──────────────────────────────────────────────────────────
+    _callout(zone_color, "📍", "Your Zone", zone_advice)
+
+    # ── Master action table ───────────────────────────────────────────────────
+    st.markdown("### ✅ Your Complete Action Plan")
+    st.caption("These are your recommended actions across all 9 screens — prioritized by impact.")
+
+    st.table({
+        "Priority": [
+            "🔴 1 — Do Now",
+            "🔴 2 — Do Now",
+            "🟡 3 — This Year",
+            "🟡 4 — This Year",
+            "🟡 5 — This Year",
+            "🟢 6 — Ongoing",
+            "🟢 7 — Ongoing",
+            "🟢 8 — Ongoing",
+            "🟢 9 — Ongoing",
+        ],
+        "Action": [
+            "Roth conversion — fill your current tax bracket",
+            "Harvest capital gains at 0% tax rate",
+            "Keep income below IRMAA Tier 1 threshold ($103K)",
+            "Review Social Security claiming age with advisor",
+            "Reduce IRA balance before RMDs begin at 73",
+            "Withdraw from taxable accounts first each month",
+            "Use Social Security + pension before touching IRA",
+            "Update your account balances monthly",
+            "Re-run Analysis after any major life change",
+        ],
+        "Which Screen": [
+            "🧾 Tax Opportunities",
+            "🧾 Tax Opportunities",
+            "🏥 IRMAA Watch",
+            "📅 Social Security",
+            "📈 RMD Forecast",
+            "💵 Income Recipe",
+            "💵 Income Recipe",
+            "🔄 What Changed",
+            "🏠 Monthly Command",
+        ],
+        "Deadline": [
+            "Dec 31 this year",
+            "Dec 31 this year",
+            "Dec 31 this year",
+            "Before retirement",
+            "Every year until 72",
+            "Every month",
+            "Every month",
+            "Every month",
+            "As needed",
+        ],
+    })
+
+    st.markdown("---")
+
+    # ── Income snapshot ───────────────────────────────────────────────────────
+    st.markdown("### 💵 Your Income at a Glance")
+
+    total_guaranteed = (
+        (ss_monthly if isinstance(ss_monthly, (int, float)) else 0) +
+        (pension if isinstance(pension, (int, float)) else 0)
+    )
+    monthly_exp = expenses if isinstance(expenses, (int, float)) else 0
+    gap = monthly_exp - total_guaranteed
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(
+            "Guaranteed Monthly Income",
+            f"${total_guaranteed:,.0f}",
+            help="Social Security + Pension — income that never stops"
+        )
+    with col2:
+        st.metric(
+            "Monthly Expenses",
+            f"${monthly_exp:,.0f}",
+            help="Your planned monthly spending"
+        )
+    with col3:
+        gap_label = f"${abs(gap):,.0f} {'gap' if gap > 0 else 'surplus'}"
+        st.metric(
+            "Portfolio Must Cover",
+            gap_label,
+            delta=f"{'⚠️ Need portfolio withdrawals' if gap > 0 else '✅ Fully covered'}",
+            delta_color="inverse" if gap > 0 else "normal",
+            help="How much your investments must provide each month"
+        )
+
+    st.markdown("---")
+
+    # ── Asset snapshot ────────────────────────────────────────────────────────
+    st.markdown("### 🏦 Your Assets at a Glance")
+
+    ira_val    = ira    if isinstance(ira,    (int, float)) else 0
+    roth_val   = roth   if isinstance(roth,   (int, float)) else 0
+    taxable_val= taxable if isinstance(taxable,(int, float)) else 0
+    total_inv  = ira_val + roth_val + taxable_val
+
+    st.table({
+        "Account Type": [
+            "IRA / Traditional 401k",
+            "Roth IRA / Roth 401k",
+            "Taxable Investments",
+            "TOTAL",
+        ],
+        "Balance": [
+            f"${ira_val:,.0f}",
+            f"${roth_val:,.0f}",
+            f"${taxable_val:,.0f}",
+            f"${total_inv:,.0f}",
+        ],
+        "Tax Treatment": [
+            "Taxable on withdrawal",
+            "Tax-FREE on withdrawal",
+            "Long-term gains rate",
+            "",
+        ],
+        "Withdraw When": [
+            "Second — after taxable",
+            "Last — preserve as long as possible",
+            "First — lowest tax impact",
+            "",
+        ],
+        "RMD Required?": [
+            "✅ Yes — starts at 73",
+            "🚫 No — no forced withdrawals",
+            "🚫 No",
+            "",
+        ],
+    })
+
+    st.markdown("---")
+
+    # ── Plain English summary ─────────────────────────────────────────────────
+    st.markdown("### 📋 Your Plan in Plain English")
+    st.markdown(
+        f"""
+        <div style='background:#f8f9fa; border-left:4px solid #E8A020;
+                    padding:1.2rem 1.5rem; border-radius:6px; font-size:1rem;
+                    line-height:1.7; color:#333;'>
+            <strong>{name}</strong>, here is your retirement picture in simple terms.<br><br>
+            You are planning to retire at age <strong>{ret_age}</strong>.
+            Your guaranteed income from Social Security and pension will be
+            <strong>${total_guaranteed:,.0f}/month</strong>.
+            Your monthly expenses are <strong>${monthly_exp:,.0f}/month</strong>.<br><br>
+            {"✅ <strong>Good news</strong> — your guaranteed income covers your expenses. Your investments are a bonus."
+             if gap <= 0 else
+             f"Your investments need to cover the <strong>${gap:,.0f}/month gap</strong> between your guaranteed income and your expenses."}
+            <br><br>
+            Your two most important actions right now are:
+            <strong>(1)</strong> Do a Roth conversion before December 31 to reduce future taxes, and
+            <strong>(2)</strong> Make sure your income stays below $103,000 this year to avoid higher
+            Medicare premiums in two years.
+            <br><br>
+            Every month, withdraw from your taxable accounts first.
+            Touch your IRA only when needed.
+            Never touch your Roth unless it is your last option.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("---")
+
+    # ── AI chat ───────────────────────────────────────────────────────────────
+    show_cc_ai_chat("screen10", "your complete action plan", [
+        "Summarize my entire retirement plan",
+        "What are my top 3 priorities right now?",
+        "Am I going to run out of money?",
+    ])
