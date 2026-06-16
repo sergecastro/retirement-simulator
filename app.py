@@ -1067,6 +1067,18 @@ def main():
             'is_trusted': is_trusted
         }
 
+        # Prominent top-of-page link into the Command Center action plan
+        col1, col2, col3 = st.columns([3, 2, 3])
+        with col2:
+            if st.button(
+                "🎯 Open Command Center",
+                type="primary",
+                use_container_width=True,
+                help="See your personalized monthly action plan"
+            ):
+                st.session_state["current_mode"] = "command_center"
+                st.rerun()
+
         show_analysis_mode(nav_state)
 
     # Show footer
