@@ -26,6 +26,36 @@ def has_intake_data() -> bool:
     return False
 
 
+def has_analysis_results() -> bool:
+    """
+    Returns True if the user has run Analysis and real Monte Carlo
+    results are available this session.
+
+    Primary signal: st.session_state['run_simulation'] — set True when the
+    user clicks "RUN FINANCIAL SIMULATION" (app.py:1565). This is the only
+    flag the live Analysis flow actually persists; results_page.py computes
+    Monte Carlo on the fly and does not store success_rate in session_state.
+
+    The remaining keys are forward-compatible fallbacks: if a future change
+    persists results under any of these names, the gate honors them too.
+    """
+    if st.session_state.get("run_simulation"):
+        return True
+
+    analysis_keys = [
+        "monte_carlo_success_rate",
+        "simulation_results",
+        "mc_success_rate",
+        "analysis_complete",
+        "net_worth_data",
+        "monthly_cashflow_data",
+    ]
+    for key in analysis_keys:
+        if st.session_state.get(key) is not None:
+            return True
+    return False
+
+
 def show_intake_required_gate():
     st.markdown("---")
     st.markdown(
@@ -59,6 +89,39 @@ def show_intake_required_gate():
             st.rerun()
 
 
+def show_analysis_required_gate():
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style='text-align:center; padding: 3rem 1rem;'>
+            <div style='font-size:3rem;'>📊</div>
+            <h2 style='color:#0B2447;'>Run Analysis First</h2>
+            <p style='font-size:1.1rem; color:#555;
+               max-width:500px; margin:0 auto;'>
+                The Command Center shows your personalized
+                monthly plan based on real retirement
+                simulations. Run Analysis first to see
+                accurate numbers — Monte Carlo success rate,
+                safe spending, tax projections, and RMD
+                forecasts.<br><br>
+                It takes about 10 seconds.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button(
+            "📊 Run Analysis Now → Then Open Command Center",
+            type="primary",
+            use_container_width=True,
+        ):
+            st.session_state["current_mode"] = "Analysis"
+            st.session_state["_after_analysis_go_to"] = "command_center"
+            st.rerun()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # SECTION 2 — MAIN ENTRY POINT
 # ─────────────────────────────────────────────────────────────────────────────
@@ -66,6 +129,10 @@ def show_intake_required_gate():
 def show_command_center():
     if not has_intake_data():
         show_intake_required_gate()
+        return
+
+    if not has_analysis_results():
+        show_analysis_required_gate()
         return
 
     _inject_cc_styles()
