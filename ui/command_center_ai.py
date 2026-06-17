@@ -26,20 +26,20 @@ def build_command_center_context() -> str:
     partner_age = _get("input_partner_age", None)
 
     # Income
-    ss_monthly = _get("input_social_security_monthly", 0)
-    pension = _get("input_pension_monthly", 0)
-    salary = _get("input_monthly_salary", 0)
+    ss_monthly = _get("input_social_security_income", 0)
+    pension = _get("input_pension_income", 0)
+    salary = _get("input_salary_wages", 0)
     rental = _get("input_rental_income", 0)
 
     # Assets
     ira = _get("input_ira_balance", 0)
     roth = _get("input_roth_balance", 0)
-    taxable = _get("input_taxable_investments", 0)
-    k401 = _get("input_401k_balance", 0)
-    home = _get("input_home_value", 0)
+    taxable = _get("input_taxable_investment_accounts", 0)
+    k401 = _get("input_four01k_403b_balance", 0)
+    home = _get("input_primary_residence_value", 0)
 
     # Expenses
-    expenses = _get("input_monthly_expenses", 0)
+    expenses = _get("input_total_expenses", 0)
 
     # SS timing
     ss_age = _get("input_social_security_age", "not set")
