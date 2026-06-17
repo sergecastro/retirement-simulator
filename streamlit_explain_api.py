@@ -20,6 +20,27 @@ def inject_explain_visual_system():
     if hasattr(st, 'secrets') and 'FLASK_API_URL' in st.secrets:
         api_url = st.secrets['FLASK_API_URL']
 
+    # Retirement-year context for the AI prompt — prevents the explanation from
+    # calling the current year "your first retirement year" when the user is still
+    # years away from retiring. Computed in Python (session_state is available here)
+    # and injected into the JS prompt below. Empty string if age data is missing.
+    age_context = ""
+    try:
+        _current_age = st.session_state.get("input_age")
+        _retirement_age = st.session_state.get("input_retirement_age")
+        if _current_age and _retirement_age:
+            from datetime import datetime
+            _ca = int(float(_current_age))
+            _ra = int(float(_retirement_age))
+            _retirement_year = datetime.now().year + (_ra - _ca)
+            age_context = (
+                f"The user is age {_ca} and plans to retire at age {_ra} in year "
+                f"{_retirement_year}. The simulation shows projections starting from "
+                f"today, not from retirement."
+            )
+    except Exception:
+        age_context = ""
+
     # Create the HTML/JavaScript - ALL BRACES ESCAPED FOR F-STRING
     html_code = f"""
     <script>
@@ -360,6 +381,8 @@ def inject_explain_visual_system():
             }}
 
             return `You are helping explain a retirement planning visualization to a user.
+
+{age_context}
 
 **Chart Title:** ${{chartData.title}}
 
