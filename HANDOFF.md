@@ -53,23 +53,31 @@ Open browser and paste the session URL from backup laptop.
 
 ### Session Summary -- 2026-06-17
 
-**🎯 SEVEN TRACKS (A–G): Command Center AI now reasons from real data, and the numbers are honest, age-aware, and accurate**
+**🎯 DATA-INTEGRITY DAY — first clean Command Center: assets correct for the first time ($1,400K IRA + $200K Roth + $1,500K Taxable = $3,100K), Oren tested live for hours**
 
-Full-day correctness pass on the Command Center after Oren (our first real user) surfaced wrong/misleading numbers. Every fix was investigate → diff → approve → commit, all on `master` + `feature/command-center`. Theme: *this is an educational tool for real families — numbers must mean what they say.*
+Massive correctness pass after Oren (first real user) surfaced wrong numbers. Backend Tracks A–G (`master` + `feature/command-center`), Lovable shipped the matching frontend fixes, and 15 Supabase records were patched. The product went from completely wrong (invisible Roth, doubled IRA, $0 income) to showing Oren's real picture: $3.1M total, 100% Monte Carlo, Green Zone.
 
-- **Track A** (`6eeab1d2`) — CC advisor context (`ui/command_center_ai.py`): added 4 missing income sources; stopped treating a legitimate **$0** as "missing"; a real **0% Monte Carlo** now shows "0%" instead of "not yet calculated."
-- **Track B** (`cf6835ba`) — `transform_lovable_to_streamlit`: map `input_partner_age` from the real Lovable key `partnerBirthYear`.
-- **Track C** (`4c13021b`) — transform: **map Roth** from `assets.rothIra` (it existed in Lovable all along — never read; recovered Oren's **$200k Roth** that was showing $0), **sum both IRA buckets** (`iraAccounts + traditionalIra`), and map `input_partner_retirement_age`.
-- **Track D** (`26b4b243`) — **session-aware `/cc/chat`**: `save_analysis_results` now snapshots the user's intake into `raw_results.intake`; `/cc/chat` accepts `session_id` and loads full context (intake + a rich "LATEST ANALYSIS RESULTS" block: MC %, safe spending, RMD, IRMAA, bracket…) so the AI advisor reasons from real numbers even when opened via a link.
-- **Track E** (`98629045`) — CC screens (`command_center_screens.py`, "My Action Plan"): fixed 4 wrong keys (SS/pension/expenses/taxable were $0); **IRA line now includes the 401k** (was dropping Oren's $1.4M); relabeled "IRA + 401k (pre-tax)"; **age-aware Roth action**.
-- **Track F** (`de6e53ae`) — **age-conditional Roth in `/cc/summary`**: for users still working, the misleading "Roth conversion room: $3,725" is suppressed (`bracketRoom: 0`) and replaced with `rothConversionStatus`/`rothConversionMessage` ("window opens at retirement…"). Retired users get the real number + "convert up to $X."
-- **Track G** (`7dbf01ac`) — **age-gate IRMAA**: under 63 → `irmaaWatch.status = "not_yet_relevant"` + message, `safetyMargin: null` (kills the misleading "Safe, $103,000 margin" for young users). 63+ keeps the real margin.
+**Decisions:** fix for ALL users (not just Oren); SS claiming age = mandatory/blank/hard-blocked (never pre-filled); Roth + IRMAA + income-gap all age-conditional; IRA fields fully separate; iraAccounts handled by priority logic, not summing.
 
-**Root causes found & explained:** the "$103,000 IRMAA margin" = year-1 `Total_Income ≈ $0` reached the calc (income didn't flow, or — deeper — retiree MAGI understates because discretionary traditional withdrawals aren't in `Total_Income`). "$3,725 Roth room" = correct math (room to top of current 32% bracket) but wrong concept for a working 49-yo not in a conversion window.
+**Backend (Code) — Tracks A–G on master:**
+- **A** (`6eeab1d2`) `command_center_ai.py`: +4 income sources; `_get` no longer treats $0 as missing; real 0% MC shows "0%".
+- **B** (`cf6835ba`) transform: `input_partner_age` from `partnerBirthYear`.
+- **C** (`4c13021b`) + **hotfix** (`ec58c36f`): **recovered Roth** (`assets.rothIra` was never mapped — Oren's $200K invisible); IRA uses **priority** logic (`traditionalIra` if >0 else `iraAccounts`) to avoid double-count; `input_partner_retirement_age` mapped.
+- **D** (`26b4b243`) session-aware `/cc/chat` + `_collect_intake_snapshot()` into `raw_results.intake`.
+- **E** (`98629045`) CC screens: 4 wrong keys fixed; IRA line sums IRA+401k; age-aware Roth.
+- **F** (`de6e53ae`) `/cc/summary` age-conditional Roth (`rothConversionStatus`/`Message`, `bracketRoom:0` for workers).
+- **G** (`7dbf01ac`) IRMAA age-gate (under 63 → `not_yet_relevant`).
 
-**Lovable queue (3 instructions written, ready to send):** (1) pass `session_id` into `/cc/chat`; (2) render `rothConversionStatus`/`rothConversionMessage` (don't show raw `bracketRoom`); (3) render the new `irmaaWatch` shape (show `message` when `not_yet_relevant`, never show a null `safetyMargin`).
+**Lovable — published today:** SS claiming age (mandatory, blank, 62–70, red border, hard-block on Continue); Roth 401k field added; Traditional vs Roth IRA fields **separated (binding fix — no longer copies Roth into iraAccounts)**; `retirementAgePartner` saved; **`session_id` passed in `/cc/chat`**; `rothConversionStatus/Message` rendered (Roth rec hidden when `window_not_open`). *(The 3 queued Lovable instructions are now LIVE.)*
 
-**Still open / next:** deeper **retiree-MAGI fix** (Option B — include taxable withdrawals for true IRMAA accuracy); `customSources` income mapping; `annuities` + `lifeInsuranceCashValue` asset mappings; **premium gate** on the CC route; verify `input_partner_retirement_age` consumer. Reminder: existing `analysis_results` rows get the full link-arrival chat context + age-gates after **one fresh Analysis run** (the snapshot/flags are written then).
+**Supabase — direct patch:** 15 records (Oren + OC-2026) had `iraAccounts.currentValue` set to **0**, removing the $200K duplicate. (Root cause was the Lovable form binding, now fixed — confirm with one fresh run.)
+
+**🔴 CRITICAL OPEN (first tomorrow):**
+- **Monthly Expenses / Gap show $0** in Command Center My Plan despite **$10,500** in Supabase. Assets are correct but the income section reads $0/$0/$0. → Investigate `monthly_expenses` / `guaranteed_income` flow from the freshest `analysis_results` row to the display.
+- **Tax bracket inconsistency:** Tax tab shows 24% but My Plan shows 32% — reconcile.
+- **Mobile (iPhone Safari) display issues** — batch fixes once Serge shares flight screenshots.
+
+**Open (lower priority):** add `input_social_security_age` to transform (confirm Lovable's saved key first); Track H (income-gap temporal framing for pre-retirees); Option B IRMAA (richer MAGI w/ taxable withdrawals — engine change); `customSources` income mapping; `annuities` + `lifeInsuranceCashValue` assets; verify `input_partner_retirement_age` consumer; **premium gate** on CC route; "Open Command Center" button missing after Full Mode save. **Not ready for new users until the Monthly Expenses $0 issue is fixed.**
 
 ### Session Summary -- 2026-06-16
 
@@ -403,7 +411,7 @@ Have a wonderful trip, Serge. The product is live. The code is stable. Everythin
   - **Share path:** Lovable seeds `ff_session_id` from `?session=` in the URL (`docs/LOVABLE_command_center_session_link.md`), so `familyforecast.ai/command-center?session=TEMP-XXXX` opens a saved Command Center on **any device**. `analysis_results` has no TTL, so links keep working after the 24h `pending_intake` record expires.
 - **Engine money convention:** intake values are **MONTHLY**; `simulation_core.py` and `monte_carlo.py` annualize (×12) internally (fixed June 16 — expenses were previously not annualized, inflating success rates). `base_total_*` stay monthly for `emergency_months`.
 - **`/cc/chat` is session-aware (Track D):** `save_analysis_results` snapshots the user's intake into `raw_results.intake`; `/cc/chat` accepts `session_id` and, when the posted intake is thin (link arrival), loads intake + computed results from `analysis_results`. Needs Lovable to pass `session_id` in the `/cc/chat` body.
-- **Age-aware guidance (Tracks F/G):** `/cc/summary` returns `taxOpportunities.rothConversionStatus`/`rothConversionMessage` (suppresses misleading "Roth room" for working users) and `irmaaWatch.{status,message,safetyMargin}` (gated `not_yet_relevant` under age 63). Lovable must render these new shapes (instructions in the Lovable queue).
+- **Age-aware guidance (Tracks F/G):** `/cc/summary` returns `taxOpportunities.rothConversionStatus`/`rothConversionMessage` (suppresses misleading "Roth room" for working users) and `irmaaWatch.{status,message,safetyMargin}` (gated `not_yet_relevant` under age 63). Lovable renders these shapes as of 2026-06-17 (session_id pass-through + Roth status/message live; SS claiming age now a mandatory intake field).
 - **All AI uses model `claude-sonnet-4-6`** (`ai_advisor.py`, `explain_api_server.py`, `explain_visual_handler.py`).
 - Local dev requires BOTH servers: Streamlit `:8502` (`start_familyforecast.bat`) and Flask `:5000` (`python explain_api_server.py`).
 
