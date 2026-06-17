@@ -56,6 +56,8 @@ def _derive_cc_metrics(results, user_data, financial_data):
         'irmaa_margin': None,
         'rmd_at_73': None,
         'safe_spending_method': None,
+        'irmaa_relevant': None,
+        'irmaa_message': None,
     }
 
     df = results.get('df')
@@ -78,13 +80,27 @@ def _derive_cc_metrics(results, user_data, financial_data):
                     out['bracket_room'] = round(max(0.0, b['max'] - income), 2)
                 break
 
-    # --- IRMAA margin: distance to the next IRMAA tier ---
-    if income is not None:
-        for b in IRMAA_BRACKETS_2025[filing]:
-            if b['min'] <= income < b['max']:
-                if b['max'] != float('inf'):
-                    out['irmaa_margin'] = round(max(0.0, b['max'] - income), 2)
-                break
+    # --- IRMAA margin: only relevant near Medicare age (65; 2-yr lookback at 63).
+    # For younger users the margin is misleading (income today != Medicare-age MAGI),
+    # so we gate it instead of showing a falsely reassuring dollar number.
+    try:
+        user_age = float(st.session_state.get('input_age'))
+    except (TypeError, ValueError):
+        user_age = None
+
+    if user_age is not None and user_age < 63:
+        out['irmaa_relevant'] = False
+        out['irmaa_message'] = ("IRMAA becomes relevant at 65 — we will calculate your "
+                                "Medicare exposure as you approach retirement age.")
+        out['irmaa_margin'] = None  # don't show a dollar number yet
+    else:
+        out['irmaa_relevant'] = True
+        if income is not None:
+            for b in IRMAA_BRACKETS_2025[filing]:
+                if b['min'] <= income < b['max']:
+                    if b['max'] != float('inf'):
+                        out['irmaa_margin'] = round(max(0.0, b['max'] - income), 2)
+                    break
 
     # --- RMD at age 73 (real per-year engine output) ---
     if df is not None and 'User_Age' in df.columns and 'User_RMD' in df.columns:
@@ -273,6 +289,8 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
                     'final_net_worth': results.get('final_net_worth'),
                     'years_solvent': results.get('years_solvent'),
                     'safe_spending_method': cc['safe_spending_method'],
+                    'irmaa_relevant': cc['irmaa_relevant'],
+                    'irmaa_message': cc['irmaa_message'],
                 },
             )
     except Exception as _save_err:
