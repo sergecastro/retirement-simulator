@@ -53,19 +53,31 @@ Open browser and paste the session URL from backup laptop.
 
 ### Session Summary -- 2026-06-16
 
-**🎯 COMMAND CENTER NOW SHOWS REAL NUMBERS — killed the fake-data proxies and found the root-cause wiring bug**
+**🎯 COMMAND CENTER IS LIVE ON REAL DATA, MERGED TO PRODUCTION, + a major engine bug fixed and a one-link-to-any-phone share path shipped**
 
-Today we made the Lovable Command Center tell the truth. It was previously displaying **fabricated "proxy" numbers** computed on the fly from whatever JSON Lovable posted (e.g. "Convert $20,000 to Roth", "mcSuccess 92") — plausible but entirely made up. We removed all of that and wired it to **real Analysis-engine results**, then traced and fixed the reason the real data was never reaching it.
+Big day. The Lovable Command Center went from showing **fabricated "proxy" numbers** to showing **real, engine-computed results** for a real user (Oren), end-to-end — then we fixed a serious math bug that had been silently inflating every plan, and made the whole thing shareable by a single link.
 
-**What we shipped to production (`master`, live on Render `forcash-api` + `forcash`):**
-- **No more proxies.** Deployed the rewrite (`3a044126`): `/cc/summary` now reads genuine engine outputs from the new Supabase `analysis_results` table and returns `requiresAnalysis: true` (never fake numbers) when no real Analysis exists yet. Phase-2 fields (tax bracket, IRMAA, RMD) return `null` rather than invented values.
-- **Root-cause fix for the empty Command Center (`89b7e779`):** discovered via a direct Supabase query that **Lovable's intake payload contains no `id` field** (keys are only `assets, createdAt, expenses, family, income, liabilities, mode, planName, profile, schemaVersion`). The Streamlit write was gated on that missing id, so `save_analysis_results` had **never fired** — the proxies had been masking this the whole time. Switched the linking key to the **frictionless `session_id` (`TEMP-XXX`)** that both Streamlit (write) and Lovable (read) already share. Added `.strip().upper()` normalization on both sides so case never breaks the match.
+**1. Killed the fake numbers; wired real data (`3a044126`).** `/cc/summary` now reads genuine engine outputs from the new Supabase `analysis_results` table and returns `requiresAnalysis: true` when no real Analysis exists — never invented figures.
 
-**Verified on production:** insert a row keyed UPPERCASE → read it back via `/cc/summary` sending the id LOWERCASE → matched, real values returned (`mcSuccess`, `finalSavings`, `safeMonthlySpending`); empty id → `requiresAnalysis: true`. Test rows cleaned up after.
+**2. Found & fixed the root-cause wiring bug (`89b7e779`).** A direct Supabase query proved **Lovable's intake payload has no `id` field**, so the Streamlit write (`save_analysis_results`) had **never fired** — proxies had masked it. Switched the linking key to the frictionless **`session_id` (`TEMP-XXX`)** shared by both sides, with `.strip().upper()` normalization so case can't break the match.
 
-**Also (feature branch only, `feature/command-center`):** added a prominent "🎯 Open Command Center" button at the top of the Analysis page (`740de68d`). Confirmed `SUPABASE_SERVICE_KEY` is set on both Render services; added it to local `.env` for testing.
+**3. Merged Command Center to production (`b57a3352`)** and made the Analysis page show **one** CTA → the Lovable Command Center (`familyforecast.ai/command-center`), removing the duplicate internal-Streamlit button (`0f0f311d`).
 
-**The ONE remaining link (Lovable side):** the backend loop is complete and proven, but it only closes if **Lovable actually sends the `session_id` when it calls `/cc/summary`**. Next step: run one real **Lovable intake → Streamlit Analysis**, then open the Command Center for that user. If it shows real numbers, the end-to-end loop is closed. **Holding the `feature/command-center` → `master` merge (UI + button) until that end-to-end test passes.**
+**4. Populated ALL Command Center fields from real outputs (`ea9b1da4`, `91e06d0b`).** Five computed — `safe_monthly_spending` (labeled 4% guideline + caveat note), `tax_bracket`, `bracket_room`, `irmaa_margin`, `rmd_at_73` (derived from the user's projected income using the engine's own 2025 bracket tables / per-year RMD). Three intake values for the report — `monthly_expenses`, `guaranteed_income`, `total_assets`.
+
+**5. MAJOR engine bug fixed (`bcb99c89`): monthly→annual mismatch.** Income was annualized (×12) but **expenses were not**, in BOTH `simulation_core.py` and `monte_carlo.py` — so plans counted only ~1 month of expenses against a full year of income, **inflating success rates dramatically**. Now both engines annualize consistently; `emergency_months` left intact. Expect success rates to drop to honest levels going forward.
+
+**6. AI explanation quality (`b055d487`, `d76f9245`).** Chart explanations now inject **retirement-year context** ("user is age X, retires in year Z; projections start today, not at retirement") so the AI stops calling the current year "your first retirement year." Fixed **7 wrong `session_state` key names** in `command_center_ai.py` (it was feeding the AI $0s). Added **Social Security claiming guidance** to `/cc/chat` (tie advice to the user's real numbers: need, break-even, Roth window, IRMAA).
+
+**7. One-link-to-any-phone (`dba4e90f` docs).** Lovable shipped `?session=` → `localStorage` on the Command Center, so opening `familyforecast.ai/command-center?session=TEMP-XXXX` loads that person's saved results on **any device**. Verified end-to-end for Oren. Instruction recorded in `docs/LOVABLE_command_center_session_link.md`.
+
+**8. First real user profile (Oren, "OC-2026", age 49).** Built on cell phone, ran real Analysis. Caught & patched a data bug where Birth Year defaulted to 1949 (showed age 77). Full profile + results backed up locally at `intake_templates/oren_OC-2026.json` (uncommitted by request); his session link extended through 2026-06-24.
+
+**Still open / next session:**
+- **Session-aware `/cc/chat`** — the "Ask the AI Advisor" chat still builds context from the posted intake, so a user arriving via link has no chat context ("coming online"). Make `/cc/chat` accept `session_id` and load context from `analysis_results` (same pattern as `/cc/summary`); Lovable passes the id.
+- **Profile editing over time** (load existing → edit → re-run) and **session recording + change advice** (keep run history, diff between runs, AI explains — the "What Changed" tab).
+- **Premium gate** on the Command Center route is still missing (currently open to all users).
+- Sanity-check Monte Carlo `mc_success` (shows 100 on a ~$5M plan); Roth not yet captured in Lovable intake; `retirementAgeUser` arrived null (defaults to 65).
 
 ### Session Summary -- 2026-06-15
 
@@ -362,14 +374,17 @@ Have a wonderful trip, Serge. The product is live. The code is stable. Everythin
 
 **IUL-FF.AI:** Down intentionally (Lovable set to private). Patent No. 64/031,074 filed April 6, 2026. Non-provisional due April 6, 2027.
 
-**Command Center (added June 15, 2026; real-data wiring June 16, 2026):**
-- Streamlit module on branch `feature/command-center`: `ui/command_center.py`, `ui/command_center_screens.py`, `ui/command_center_ai.py` (10 screens, per-screen AI via Anthropic SDK). Routed in `app.py` as `current_mode == "command_center"`; reachable from welcome card, sidebar Quick Mode Switch, and a top-of-Analysis-page "🎯 Open Command Center" button. **Not yet merged to `master`** (held until end-to-end test passes).
-- Flask API (on `master`, live via Render `forcash-api`): `POST /cc/summary` and `POST /cc/chat` in `explain_api_server.py` — for the Lovable-hosted Command Center.
-- **Real-data flow (no proxies):** Streamlit writes genuine Analysis-engine outputs to the new Supabase **`analysis_results`** table via `save_analysis_results()` (`utils/supabase_sync.py`) after a real Analysis (`ui/results_page.py`). `/cc/summary` reads that table and returns `requiresAnalysis: true` when no row exists — it NEVER fabricates numbers.
-  - **`analysis_results` table:** RLS open to the **service role only**; both write (Streamlit) and read (Flask) use `SUPABASE_SERVICE_KEY` (set on both Render services). Columns: `intake_id` (the linking key), `monte_carlo_success_rate`, `final_savings`, `safe_monthly_spending`, `raw_results` (jsonb), Phase-2 nulls (`tax_bracket`, `bracket_room`, `irmaa_margin`, `rmd_at_73`), timestamps.
-  - **Linking key = frictionless `session_id` (`TEMP-XXX`)**, NOT a Lovable intake id (the Lovable payload has no `id` field). Both write and read normalize it with `.strip().upper()`. Loop closes only when Lovable sends the same `session_id` to `/cc/summary`.
-- **All AI now uses model `claude-sonnet-4-6`** (was `claude-sonnet-4-20250514`, which 404'd). Applies to `ai_advisor.py`, `explain_api_server.py`, `explain_visual_handler.py`.
-- Local dev requires BOTH servers: Streamlit `:8502` (`start_familyforecast.bat`) and Flask `:5000` (`python explain_api_server.py`) for the "?" chart explanations.
+**Command Center (built June 15; real-data wiring + production merge June 16, 2026):**
+- Streamlit module **now on `master`** (merged `b57a3352`): `ui/command_center.py`, `ui/command_center_screens.py`, `ui/command_center_ai.py`. Routed in `app.py` as `current_mode == "command_center"`. The Analysis page links out to the **Lovable** Command Center via one gold HTML link (the duplicate internal-Streamlit button was removed — single CTA).
+- **Canonical UI = Lovable** at `familyforecast.ai/command-center`. Flask API (on `master`, live via Render `forcash-api`): `POST /cc/summary` and `POST /cc/chat` in `explain_api_server.py`.
+- **Real-data flow (no proxies):** Streamlit writes genuine Analysis-engine outputs to Supabase **`analysis_results`** via `save_analysis_results()` (`utils/supabase_sync.py`) after a real Analysis (`ui/results_page.py`). `/cc/summary` reads that table and returns `requiresAnalysis: true` when no row exists — NEVER fabricates numbers.
+  - **`analysis_results` columns (all live):** `intake_id` (linking key), `monte_carlo_success_rate`, `final_savings`, `safe_monthly_spending` (labeled 4% guideline; caveat in `raw_results.safe_spending_method`, surfaced as `safeSpendingNote`), `tax_bracket`, `bracket_room`, `irmaa_margin`, `rmd_at_73` (derived from projected income + engine 2025 bracket tables / per-year RMD), `monthly_expenses`, `guaranteed_income`, `total_assets` (intake values), `raw_results` (jsonb), timestamps. RLS = service role only; both sides use `SUPABASE_SERVICE_KEY` (set on both Render services).
+  - **Linking key = frictionless `session_id` (`TEMP-XXX`)** (Lovable payload has no `id`). Write & read both `.strip().upper()`.
+  - **Share path:** Lovable seeds `ff_session_id` from `?session=` in the URL (`docs/LOVABLE_command_center_session_link.md`), so `familyforecast.ai/command-center?session=TEMP-XXXX` opens a saved Command Center on **any device**. `analysis_results` has no TTL, so links keep working after the 24h `pending_intake` record expires.
+- **Engine money convention:** intake values are **MONTHLY**; `simulation_core.py` and `monte_carlo.py` annualize (×12) internally (fixed June 16 — expenses were previously not annualized, inflating success rates). `base_total_*` stay monthly for `emergency_months`.
+- **Known incomplete:** `/cc/chat` (AI advisor) builds context from the **posted intake**, so a user arriving via session link has no chat context yet — make `/cc/chat` session-aware next (load from `analysis_results` by `session_id`).
+- **All AI uses model `claude-sonnet-4-6`** (`ai_advisor.py`, `explain_api_server.py`, `explain_visual_handler.py`).
+- Local dev requires BOTH servers: Streamlit `:8502` (`start_familyforecast.bat`) and Flask `:5000` (`python explain_api_server.py`).
 
 ---
 
