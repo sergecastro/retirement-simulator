@@ -17,8 +17,10 @@ def run_simple_monte_carlo(financial_data, sim_params, family_cashflows):
             return_rate = np.random.normal(sim_params['investment_return_rate']/100, 0.02)
             inflation = np.random.normal(sim_params['inflation_rate']/100, 0.01)
             
-            income = financial_data['total_income'] * (1 + inflation)
-            expenses = financial_data['total_expenses'] * (1 + inflation)
+            # total_income / total_expenses are MONTHLY — ×12 to annualize so the
+            # per-year flow matches the annual portfolio growth applied below.
+            income = financial_data['total_income'] * 12 * (1 + inflation)
+            expenses = financial_data['total_expenses'] * 12 * (1 + inflation)
             
             flow = income - expenses + safe_float(family_cashflows.get(y, {}).get('inflow_delta', 0)) - safe_float(family_cashflows.get(y, {}).get('expense_delta', 0))
             

@@ -264,9 +264,13 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
             user_age = age + year_idx
             current_partner_age = partner_age + year_idx if partner_exists else 0
             
-            # Initialize annual values
-            annual_income = base_total_income * (1 + inflation_rate / 100) ** year_idx
-            annual_expenses = base_total_expenses * (1 + inflation_rate / 100) ** year_idx
+            # Initialize annual values. base_total_income / base_total_expenses are
+            # MONTHLY (from input_total_income / input_total_expenses), so multiply by
+            # 12 to annualize — this matches the itemized income path (which ×12's at
+            # lines 273-278) and the annual portfolio math. base_total_income /
+            # base_total_expenses themselves stay MONTHLY for emergency_months (line ~523).
+            annual_income = base_total_income * 12 * (1 + inflation_rate / 100) ** year_idx
+            annual_expenses = base_total_expenses * 12 * (1 + inflation_rate / 100) ** year_idx
             
             # Income components: use actual intake data if available, else estimate from total
             _ss = st.session_state
