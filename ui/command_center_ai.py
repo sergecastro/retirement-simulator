@@ -9,7 +9,7 @@ import os
 
 def _get(key, default="Not provided"):
     val = st.session_state.get(key)
-    if val is None or val == "" or val == 0:
+    if val is None or val == "":
         return default
     return val
 
@@ -30,6 +30,10 @@ def build_command_center_context() -> str:
     pension = _get("input_pension_income", 0)
     salary = _get("input_salary_wages", 0)
     rental = _get("input_rental_income", 0)
+    self_employment = _get("input_self_employment_income", 0)
+    investment = _get("input_investment_income", 0)
+    other_income = _get("input_other_income", 0)
+    total_income = _get("input_total_income", 0)
 
     # Assets
     ira = _get("input_ira_balance", 0)
@@ -46,7 +50,7 @@ def build_command_center_context() -> str:
 
     # Monte Carlo results (set by Analysis engine after running)
     mc_success = st.session_state.get("monte_carlo_success_rate")
-    mc_label = f"{mc_success:.0f}%" if mc_success else "not yet calculated"
+    mc_label = f"{mc_success:.0f}%" if mc_success is not None else "not yet calculated"
 
     partner_line = ""
     if partner and partner != "Not provided":
@@ -62,6 +66,10 @@ MONTHLY INCOME SOURCES:
 - Pension: ${pension:,}/month
 - Current salary/wages: ${salary:,}/month
 - Rental income: ${rental:,}/month
+- Self-employment income: ${self_employment:,}/month
+- Investment income: ${investment:,}/month
+- Other income: ${other_income:,}/month
+- Total monthly income: ${total_income:,}/month
 
 ASSETS:
 - IRA / Traditional 401k: ${ira:,}
