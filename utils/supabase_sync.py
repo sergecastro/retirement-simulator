@@ -206,6 +206,7 @@ def transform_lovable_to_streamlit(lovable_data: dict) -> dict:
         result['input_partner_age'] = 0
 
     result['input_retirement_age'] = profile.get('retirementAgeUser') or 65
+    result['input_partner_retirement_age'] = profile.get('retirementAgePartner') or 0
 
     # ==========================================================================
     # INCOME
@@ -275,7 +276,12 @@ def transform_lovable_to_streamlit(lovable_data: dict) -> dict:
     assets = lovable_data.get('assets', {})
     result['input_high_yield_savings_account'] = get_nested(assets, 'checkingSavings', 'currentValue', default=0)
     result['input_four01k_403b_balance'] = get_nested(assets, 'retirement401k', 'currentValue', default=0)
-    result['input_ira_balance'] = get_nested(assets, 'iraAccounts', 'currentValue', default=0)
+    # Sum both Lovable traditional-IRA buckets (a user may fill either field)
+    result['input_ira_balance'] = (
+        get_nested(assets, 'iraAccounts', 'currentValue', default=0) +
+        get_nested(assets, 'traditionalIra', 'currentValue', default=0)
+    )
+    result['input_roth_balance'] = get_nested(assets, 'rothIra', 'currentValue', default=0)
     result['input_taxable_investment_accounts'] = get_nested(assets, 'brokerageAccounts', 'currentValue', default=0)
     result['input_primary_residence_value'] = get_nested(assets, 'realEstatePrimary', 'currentValue', default=0)
     result['input_secondary_residence_value'] = get_nested(assets, 'realEstateInvestment', 'currentValue', default=0)
