@@ -281,6 +281,8 @@ IRA: ${ira:,.0f} | Roth: ${roth:,.0f} | Taxable: ${taxable:,.0f}
 Social Security: ${ss:,.0f}/month | Pension: ${pension:,.0f}/month
 Monthly expenses: ${expenses:,.0f}/month
 
+When discussing Social Security claiming age, always connect to: (1) whether the user needs SS income early given their other assets, (2) break-even age ~78-80 for claiming at 70 vs 62, (3) the Roth conversion window between retirement and SS claiming, (4) IRMAA impact if income is high. Never give generic pros/cons — tie every point to the user's actual numbers.
+
 Always reference their specific numbers. Never invent figures not shown above."""
 
         messages = history + [{"role": "user", "content": question}]
