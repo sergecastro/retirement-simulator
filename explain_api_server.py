@@ -234,6 +234,23 @@ def cc_summary():
             roth_message = f"You can convert up to {_amt} this year and stay in your current bracket."
             bracket_room_out = _bracket_room
 
+        # IRMAA is a Medicare-age concern (65; 2-yr lookback at 63). Gate it for
+        # younger users so we don't show a misleading "safe $X" margin. Uses the
+        # stored flag (Track G) and falls back to the resolved age.
+        _raw = row.get("raw_results") or {}
+        if (_raw.get("irmaa_relevant") is False) or (user_age is not None and user_age < 63):
+            _irmaa_watch = {
+                "status": "not_yet_relevant",
+                "message": _raw.get("irmaa_message") or ("IRMAA Medicare surcharges become "
+                           "relevant at 65. We will flag this when you approach Medicare age."),
+                "safetyMargin": None,
+            }
+        else:
+            _irmaa_watch = {
+                "status": "relevant",
+                "safetyMargin": row.get("irmaa_margin"),
+            }
+
         # Return ONLY real engine outputs (tax bracket, bracket room, IRMAA margin,
         # RMD at 73 are derived from the user's projected income using the engine's
         # own 2025 bracket tables). safe_monthly_spending is a labeled 4% guideline.
@@ -259,9 +276,7 @@ def cc_summary():
                 "rothConversionStatus": roth_status,
                 "rothConversionMessage": roth_message,
             },
-            "irmaaWatch": {
-                "safetyMargin": row.get("irmaa_margin"),
-            },
+            "irmaaWatch": _irmaa_watch,
             "rmdForecast": {
                 "rmdAt73": row.get("rmd_at_73"),
             },
