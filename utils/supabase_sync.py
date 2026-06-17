@@ -197,6 +197,14 @@ def transform_lovable_to_streamlit(lovable_data: dict) -> dict:
     relationship = profile.get('relationshipStatus')
     result['input_partner_exists'] = relationship not in [None, 'single', '']
     result['input_partner_name'] = profile.get('partnerName', '')
+
+    # Partner age from partner birth year (mirrors the user-age logic above)
+    partner_birth_year = profile.get('partnerBirthYear')
+    if partner_birth_year:
+        result['input_partner_age'] = datetime.now().year - partner_birth_year
+    else:
+        result['input_partner_age'] = 0
+
     result['input_retirement_age'] = profile.get('retirementAgeUser') or 65
 
     # ==========================================================================
