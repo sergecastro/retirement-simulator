@@ -201,6 +201,39 @@ def cc_summary():
 
         row = rows[0]
 
+        # Roth conversion guidance is age-conditional. Converting at a high working
+        # income adds tax cost; the real window opens when income drops at retirement.
+        # Ages come from the Track-D intake snapshot (raw_results.intake), falling
+        # back to the posted request body for older rows.
+        _snap = (row.get("raw_results") or {}).get("intake") or {}
+        def _age_num(*vals):
+            for v in vals:
+                try:
+                    if v not in (None, ""):
+                        return float(v)
+                except (ValueError, TypeError):
+                    pass
+            return None
+        user_age = _age_num(_snap.get("age"), intake.get("age"))
+        ret_age  = _age_num(_snap.get("retirement_age"), intake.get("retirementAge"))
+        _bracket_room = row.get("bracket_room")
+
+        if user_age is not None and ret_age is not None and user_age < ret_age:
+            # Still working — suppress the misleading "room" number.
+            roth_status  = "window_not_open"
+            roth_message = ("Your Roth conversion window opens at retirement — "
+                            "converting now at your income level adds tax cost, "
+                            "not savings.")
+            bracket_room_out = 0
+        else:
+            roth_status = "window_open"
+            try:
+                _amt = f"${float(_bracket_room):,.0f}" if _bracket_room is not None else "the available amount"
+            except (ValueError, TypeError):
+                _amt = "the available amount"
+            roth_message = f"You can convert up to {_amt} this year and stay in your current bracket."
+            bracket_room_out = _bracket_room
+
         # Return ONLY real engine outputs (tax bracket, bracket room, IRMAA margin,
         # RMD at 73 are derived from the user's projected income using the engine's
         # own 2025 bracket tables). safe_monthly_spending is a labeled 4% guideline.
@@ -222,7 +255,9 @@ def cc_summary():
             },
             "taxOpportunities": {
                 "currentBracket": row.get("tax_bracket"),
-                "bracketRoom": row.get("bracket_room"),
+                "bracketRoom": bracket_room_out,
+                "rothConversionStatus": roth_status,
+                "rothConversionMessage": roth_message,
             },
             "irmaaWatch": {
                 "safetyMargin": row.get("irmaa_margin"),
