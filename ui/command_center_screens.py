@@ -289,12 +289,12 @@ def screen_10_green_summary():
     age         = _get("input_age", "?")
     ret_age     = _get("input_retirement_age", "?")
     ss_age      = _get("input_social_security_age", "your planned age")
-    ss_monthly  = _get("input_social_security_monthly", 0)
-    pension     = _get("input_pension_monthly", 0)
-    expenses    = _get("input_monthly_expenses", 0)
+    ss_monthly  = _get("input_social_security_income", 0)
+    pension     = _get("input_pension_income", 0)
+    expenses    = _get("input_total_expenses", 0)
     ira         = _get("input_ira_balance", 0)
     roth        = _get("input_roth_balance", 0)
-    taxable     = _get("input_taxable_investments", 0)
+    taxable     = _get("input_taxable_investment_accounts", 0)
     mc_success  = st.session_state.get("monte_carlo_success_rate")
     mc_label    = f"{mc_success:.0f}%" if mc_success else "Run Analysis first"
 
@@ -354,6 +354,18 @@ def screen_10_green_summary():
     st.markdown("### ✅ Your Complete Action Plan")
     st.caption("These are your recommended actions across all 9 screens — prioritized by impact.")
 
+    # Roth conversion guidance depends on whether the user is still working.
+    # Converting at a high working income adds tax cost; the real conversion
+    # window opens when income drops at retirement.
+    _age = age if isinstance(age, (int, float)) else None
+    _ret = ret_age if isinstance(ret_age, (int, float)) else None
+    if _age is not None and _ret is not None and _age < _ret:
+        roth_action = "Roth conversion window opens at retirement — converting now at your income adds tax cost"
+        roth_deadline = "When income drops at retirement"
+    else:
+        roth_action = "Roth conversion — fill your current tax bracket"
+        roth_deadline = "Dec 31 this year"
+
     st.table({
         "Priority": [
             "🔴 1 — Do Now",
@@ -367,7 +379,7 @@ def screen_10_green_summary():
             "🟢 9 — Ongoing",
         ],
         "Action": [
-            "Roth conversion — fill your current tax bracket",
+            roth_action,
             "Harvest capital gains at 0% tax rate",
             "Keep income below IRMAA Tier 1 threshold ($103K)",
             "Review Social Security claiming age with advisor",
@@ -389,7 +401,7 @@ def screen_10_green_summary():
             "🏠 Monthly Command",
         ],
         "Deadline": [
-            "Dec 31 this year",
+            roth_deadline,
             "Dec 31 this year",
             "Dec 31 this year",
             "Before retirement",
@@ -441,14 +453,19 @@ def screen_10_green_summary():
     # ── Asset snapshot ────────────────────────────────────────────────────────
     st.markdown("### 🏦 Your Assets at a Glance")
 
-    ira_val    = ira    if isinstance(ira,    (int, float)) else 0
+    # IRA line includes BOTH pre-tax buckets (IRA + 401k/403b), so the $1.4M 401k
+    # is not silently dropped from the asset summary.
+    ira_val    = (
+        st.session_state.get("input_ira_balance", 0) +
+        st.session_state.get("input_four01k_403b_balance", 0)
+    )
     roth_val   = roth   if isinstance(roth,   (int, float)) else 0
     taxable_val= taxable if isinstance(taxable,(int, float)) else 0
     total_inv  = ira_val + roth_val + taxable_val
 
     st.table({
         "Account Type": [
-            "IRA / Traditional 401k",
+            "IRA + 401k (pre-tax)",
             "Roth IRA / Roth 401k",
             "Taxable Investments",
             "TOTAL",
