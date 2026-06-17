@@ -376,6 +376,51 @@ def transform_lovable_to_streamlit(lovable_data: dict) -> dict:
 PENDING_INTAKE_HOURS = 24  # Auto-delete after 24 hours
 
 
+def _collect_intake_snapshot() -> dict:
+    """
+    Capture the user's key intake fields from session_state so the Command Center
+    AI (/cc/chat) has full context when a user opens the Command Center via a
+    session link (no browser form state). Income/expenses are MONTHLY, matching
+    the rest of the system. Returns {} if session_state is unavailable.
+    """
+    try:
+        import streamlit as st
+        ss = st.session_state
+    except Exception:
+        return {}
+
+    def _num(key):
+        v = ss.get(key)
+        try:
+            return float(v) if v not in (None, "") else 0.0
+        except (ValueError, TypeError):
+            return 0.0
+
+    return {
+        'name': ss.get('input_user_name') or 'the user',
+        'age': ss.get('input_age'),
+        'retirement_age': ss.get('input_retirement_age'),
+        'partner_name': ss.get('input_partner_name') or '',
+        'partner_age': ss.get('input_partner_age'),
+        'partner_retirement_age': ss.get('input_partner_retirement_age'),
+        'ira_balance': _num('input_ira_balance'),
+        'roth_balance': _num('input_roth_balance'),
+        'four01k_403b_balance': _num('input_four01k_403b_balance'),
+        'taxable_investment_accounts': _num('input_taxable_investment_accounts'),
+        'hsa_balance': _num('input_hsa_balance'),
+        'primary_residence_value': _num('input_primary_residence_value'),
+        'social_security_income': _num('input_social_security_income'),
+        'pension_income': _num('input_pension_income'),
+        'salary_wages': _num('input_salary_wages'),
+        'self_employment_income': _num('input_self_employment_income'),
+        'rental_income': _num('input_rental_income'),
+        'investment_income': _num('input_investment_income'),
+        'other_income': _num('input_other_income'),
+        'total_income': _num('input_total_income'),
+        'total_expenses': _num('input_total_expenses'),
+    }
+
+
 def save_analysis_results(intake_id: str,
                           monte_carlo_success_rate=None,
                           final_savings=None,
@@ -414,6 +459,13 @@ def save_analysis_results(intake_id: str,
             print("[ANALYSIS_RESULTS] SUPABASE_SERVICE_KEY missing — cannot save results")
             return False
         client = create_client(SUPABASE_URL, service_key)
+        # Snapshot the user's intake fields into raw_results so /cc/chat has full
+        # context when a user opens the Command Center via a session link (no
+        # browser form state). Persisted with the results — no TTL.
+        merged_raw = dict(raw_results or {})
+        _snap = _collect_intake_snapshot()
+        if _snap:
+            merged_raw['intake'] = _snap
         payload = {
             'intake_id': str(intake_id),
             'monte_carlo_success_rate': monte_carlo_success_rate,
@@ -426,7 +478,7 @@ def save_analysis_results(intake_id: str,
             'monthly_expenses': monthly_expenses,
             'guaranteed_income': guaranteed_income,
             'total_assets': total_assets,
-            'raw_results': raw_results or {},
+            'raw_results': merged_raw,
         }
         # Replace any existing row for this intake_id (idempotent re-runs)
         client.table('analysis_results').delete().eq('intake_id', str(intake_id)).execute()

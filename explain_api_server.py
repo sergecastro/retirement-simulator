@@ -254,36 +254,96 @@ def cc_chat():
     try:
         body         = request.get_json(force=True) or {}
         question     = body.get('question', '')
-        intake       = body.get('intake', {})
+        intake       = body.get('intake', {}) or {}
         history      = body.get('history', [])
 
         if not question:
             return jsonify({"success": False, "error": "No question provided"}), 400
 
-        # Build context from intake
-        name     = intake.get('name', 'the user')
-        age      = intake.get('age', 'unknown')
-        ira      = _safe_num(intake.get('iraBalance'))
-        roth     = _safe_num(intake.get('rothBalance'))
-        taxable  = _safe_num(intake.get('taxableInvestments'))
-        ss       = _safe_num(intake.get('socialSecurityMonthly'))
-        pension  = _safe_num(intake.get('pensionMonthly'))
-        expenses = _safe_num(intake.get('monthlyExpenses'))
-        ret_age  = intake.get('retirementAge', 'unknown')
+        # Session-aware: when a user opens the Command Center via a link, Lovable
+        # has no form state, so `intake` is empty. Load the user's saved results +
+        # intake snapshot from analysis_results (keyed by session_id) so the AI has
+        # full context. Posted intake values take precedence; the DB fills the gaps.
+        session_id = (intake.get('session_id') or body.get('session_id')
+                      or intake.get('id') or body.get('intake_id') or '')
+        session_id = (session_id or '').strip().upper()
+
+        row = {}     # computed results from analysis_results
+        snap = {}    # intake snapshot stored in raw_results.intake
+        if session_id:
+            client = _get_cc_supabase()
+            if client is not None:
+                try:
+                    res = (client.table('analysis_results').select('*')
+                           .eq('intake_id', session_id)
+                           .order('created_at', desc=True).limit(1).execute())
+                    rows = res.data or []
+                    if rows:
+                        row = rows[0]
+                        snap = (row.get('raw_results') or {}).get('intake') or {}
+                except Exception as _e:
+                    print(f"[CC_CHAT] analysis_results lookup failed: {_e}")
+
+        # Resolve each field: posted intake (camelCase) first, then DB snapshot.
+        def _pick(posted_key, snap_key, default=None):
+            v = intake.get(posted_key)
+            if v not in (None, "", 0):
+                return v
+            v = snap.get(snap_key)
+            return v if v not in (None, "") else default
+
+        name     = _pick('name', 'name', 'the user')
+        age      = _pick('age', 'age', 'unknown')
+        ret_age  = _pick('retirementAge', 'retirement_age', 'unknown')
+        ira      = _safe_num(intake.get('iraBalance'))          or _safe_num(snap.get('ira_balance'))
+        roth     = _safe_num(intake.get('rothBalance'))         or _safe_num(snap.get('roth_balance'))
+        taxable  = _safe_num(intake.get('taxableInvestments'))  or _safe_num(snap.get('taxable_investment_accounts'))
+        k401     = _safe_num(intake.get('balance401k'))         or _safe_num(snap.get('four01k_403b_balance'))
+        ss       = _safe_num(intake.get('socialSecurityMonthly')) or _safe_num(snap.get('social_security_income'))
+        pension  = _safe_num(intake.get('pensionMonthly'))      or _safe_num(snap.get('pension_income'))
+        salary   = _safe_num(intake.get('monthlySalary'))       or _safe_num(snap.get('salary_wages'))
+        expenses = _safe_num(intake.get('monthlyExpenses'))     or _safe_num(snap.get('total_expenses'))
+        total_income = _safe_num(intake.get('totalMonthlyIncome')) or _safe_num(snap.get('total_income'))
+
+        # Their REAL computed results — let the AI reason from actual outputs.
+        def _money(v):
+            try:
+                return f"${float(v):,.0f}" if v is not None else "not yet available"
+            except (ValueError, TypeError):
+                return "not yet available"
+
+        results_block = ""
+        if row:
+            note = (row.get('raw_results') or {}).get('safe_spending_method') or ""
+            mc = row.get('monte_carlo_success_rate')
+            results_block = f"""
+
+THEIR LATEST ANALYSIS RESULTS (real, engine-computed — reason from these):
+- Monte Carlo success rate: {f'{mc:.0f}%' if mc is not None else 'not yet available'}
+- Safe monthly spending: {_money(row.get('safe_monthly_spending'))}{(' — ' + note) if note else ''}
+- Projected final savings: {_money(row.get('final_savings'))}
+- Total assets: {_money(row.get('total_assets'))}
+- Guaranteed monthly income (SS + pension): {_money(row.get('guaranteed_income'))}
+- Current tax bracket: {row.get('tax_bracket') or 'not yet available'} (room before next bracket: {_money(row.get('bracket_room'))})
+- IRMAA safety margin: {_money(row.get('irmaa_margin'))}
+- Projected RMD at age 73: {_money(row.get('rmd_at_73'))}"""
+
+        partner_name = _pick('partnerName', 'partner_name', '')
+        partner_line = f" Partner: {partner_name}." if partner_name and partner_name != 'the user' else ""
 
         system_prompt = f"""You are a friendly retirement planning advisor inside FamilyForecast.AI Command Center.
 You are NOT a licensed financial advisor. Always note that users should consult a professional for major decisions.
 Speak in plain English. No jargon without explanation. Be encouraging but honest.
 Keep answers to 3-4 paragraphs maximum. Always end with one clear "Next best action" sentence.
 
-User: {name}, Age {age}, retiring at {ret_age}.
-IRA: ${ira:,.0f} | Roth: ${roth:,.0f} | Taxable: ${taxable:,.0f}
-Social Security: ${ss:,.0f}/month | Pension: ${pension:,.0f}/month
-Monthly expenses: ${expenses:,.0f}/month
+User: {name}, Age {age}, retiring at {ret_age}.{partner_line}
+IRA: ${ira:,.0f} | Roth: ${roth:,.0f} | Taxable: ${taxable:,.0f} | 401k: ${k401:,.0f}
+Social Security: ${ss:,.0f}/month | Pension: ${pension:,.0f}/month | Salary: ${salary:,.0f}/month
+Monthly expenses: ${expenses:,.0f}/month | Total monthly income: ${total_income:,.0f}/month{results_block}
 
 When discussing Social Security claiming age, always connect to: (1) whether the user needs SS income early given their other assets, (2) break-even age ~78-80 for claiming at 70 vs 62, (3) the Roth conversion window between retirement and SS claiming, (4) IRMAA impact if income is high. Never give generic pros/cons — tie every point to the user's actual numbers.
 
-Always reference their specific numbers. Never invent figures not shown above."""
+Always reference their specific numbers. Never invent figures not shown above. If a number shows "not yet available," tell the user it will appear after they run their Analysis."""
 
         messages = history + [{"role": "user", "content": question}]
 
