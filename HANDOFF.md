@@ -51,6 +51,26 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
+### Session Summary -- 2026-06-17
+
+**🎯 SEVEN TRACKS (A–G): Command Center AI now reasons from real data, and the numbers are honest, age-aware, and accurate**
+
+Full-day correctness pass on the Command Center after Oren (our first real user) surfaced wrong/misleading numbers. Every fix was investigate → diff → approve → commit, all on `master` + `feature/command-center`. Theme: *this is an educational tool for real families — numbers must mean what they say.*
+
+- **Track A** (`6eeab1d2`) — CC advisor context (`ui/command_center_ai.py`): added 4 missing income sources; stopped treating a legitimate **$0** as "missing"; a real **0% Monte Carlo** now shows "0%" instead of "not yet calculated."
+- **Track B** (`cf6835ba`) — `transform_lovable_to_streamlit`: map `input_partner_age` from the real Lovable key `partnerBirthYear`.
+- **Track C** (`4c13021b`) — transform: **map Roth** from `assets.rothIra` (it existed in Lovable all along — never read; recovered Oren's **$200k Roth** that was showing $0), **sum both IRA buckets** (`iraAccounts + traditionalIra`), and map `input_partner_retirement_age`.
+- **Track D** (`26b4b243`) — **session-aware `/cc/chat`**: `save_analysis_results` now snapshots the user's intake into `raw_results.intake`; `/cc/chat` accepts `session_id` and loads full context (intake + a rich "LATEST ANALYSIS RESULTS" block: MC %, safe spending, RMD, IRMAA, bracket…) so the AI advisor reasons from real numbers even when opened via a link.
+- **Track E** (`98629045`) — CC screens (`command_center_screens.py`, "My Action Plan"): fixed 4 wrong keys (SS/pension/expenses/taxable were $0); **IRA line now includes the 401k** (was dropping Oren's $1.4M); relabeled "IRA + 401k (pre-tax)"; **age-aware Roth action**.
+- **Track F** (`de6e53ae`) — **age-conditional Roth in `/cc/summary`**: for users still working, the misleading "Roth conversion room: $3,725" is suppressed (`bracketRoom: 0`) and replaced with `rothConversionStatus`/`rothConversionMessage` ("window opens at retirement…"). Retired users get the real number + "convert up to $X."
+- **Track G** (`7dbf01ac`) — **age-gate IRMAA**: under 63 → `irmaaWatch.status = "not_yet_relevant"` + message, `safetyMargin: null` (kills the misleading "Safe, $103,000 margin" for young users). 63+ keeps the real margin.
+
+**Root causes found & explained:** the "$103,000 IRMAA margin" = year-1 `Total_Income ≈ $0` reached the calc (income didn't flow, or — deeper — retiree MAGI understates because discretionary traditional withdrawals aren't in `Total_Income`). "$3,725 Roth room" = correct math (room to top of current 32% bracket) but wrong concept for a working 49-yo not in a conversion window.
+
+**Lovable queue (3 instructions written, ready to send):** (1) pass `session_id` into `/cc/chat`; (2) render `rothConversionStatus`/`rothConversionMessage` (don't show raw `bracketRoom`); (3) render the new `irmaaWatch` shape (show `message` when `not_yet_relevant`, never show a null `safetyMargin`).
+
+**Still open / next:** deeper **retiree-MAGI fix** (Option B — include taxable withdrawals for true IRMAA accuracy); `customSources` income mapping; `annuities` + `lifeInsuranceCashValue` asset mappings; **premium gate** on the CC route; verify `input_partner_retirement_age` consumer. Reminder: existing `analysis_results` rows get the full link-arrival chat context + age-gates after **one fresh Analysis run** (the snapshot/flags are written then).
+
 ### Session Summary -- 2026-06-16
 
 **🎯 COMMAND CENTER IS LIVE ON REAL DATA, MERGED TO PRODUCTION, + a major engine bug fixed and a one-link-to-any-phone share path shipped**
@@ -382,7 +402,8 @@ Have a wonderful trip, Serge. The product is live. The code is stable. Everythin
   - **Linking key = frictionless `session_id` (`TEMP-XXX`)** (Lovable payload has no `id`). Write & read both `.strip().upper()`.
   - **Share path:** Lovable seeds `ff_session_id` from `?session=` in the URL (`docs/LOVABLE_command_center_session_link.md`), so `familyforecast.ai/command-center?session=TEMP-XXXX` opens a saved Command Center on **any device**. `analysis_results` has no TTL, so links keep working after the 24h `pending_intake` record expires.
 - **Engine money convention:** intake values are **MONTHLY**; `simulation_core.py` and `monte_carlo.py` annualize (×12) internally (fixed June 16 — expenses were previously not annualized, inflating success rates). `base_total_*` stay monthly for `emergency_months`.
-- **Known incomplete:** `/cc/chat` (AI advisor) builds context from the **posted intake**, so a user arriving via session link has no chat context yet — make `/cc/chat` session-aware next (load from `analysis_results` by `session_id`).
+- **`/cc/chat` is session-aware (Track D):** `save_analysis_results` snapshots the user's intake into `raw_results.intake`; `/cc/chat` accepts `session_id` and, when the posted intake is thin (link arrival), loads intake + computed results from `analysis_results`. Needs Lovable to pass `session_id` in the `/cc/chat` body.
+- **Age-aware guidance (Tracks F/G):** `/cc/summary` returns `taxOpportunities.rothConversionStatus`/`rothConversionMessage` (suppresses misleading "Roth room" for working users) and `irmaaWatch.{status,message,safetyMargin}` (gated `not_yet_relevant` under age 63). Lovable must render these new shapes (instructions in the Lovable queue).
 - **All AI uses model `claude-sonnet-4-6`** (`ai_advisor.py`, `explain_api_server.py`, `explain_visual_handler.py`).
 - Local dev requires BOTH servers: Streamlit `:8502` (`start_familyforecast.bat`) and Flask `:5000` (`python explain_api_server.py`).
 
