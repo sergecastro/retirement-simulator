@@ -276,11 +276,12 @@ def transform_lovable_to_streamlit(lovable_data: dict) -> dict:
     assets = lovable_data.get('assets', {})
     result['input_high_yield_savings_account'] = get_nested(assets, 'checkingSavings', 'currentValue', default=0)
     result['input_four01k_403b_balance'] = get_nested(assets, 'retirement401k', 'currentValue', default=0)
-    # Sum both Lovable traditional-IRA buckets (a user may fill either field)
-    result['input_ira_balance'] = (
-        get_nested(assets, 'iraAccounts', 'currentValue', default=0) +
-        get_nested(assets, 'traditionalIra', 'currentValue', default=0)
-    )
+    # Two Lovable fields can hold the traditional IRA (redundant). Prefer
+    # traditionalIra when populated; otherwise fall back to iraAccounts. This
+    # avoids double-counting if the same balance is entered in both fields.
+    trad_ira = get_nested(assets, 'traditionalIra', 'currentValue', default=0)
+    ira_accounts = get_nested(assets, 'iraAccounts', 'currentValue', default=0)
+    result['input_ira_balance'] = trad_ira if trad_ira > 0 else ira_accounts
     result['input_roth_balance'] = get_nested(assets, 'rothIra', 'currentValue', default=0)
     result['input_taxable_investment_accounts'] = get_nested(assets, 'brokerageAccounts', 'currentValue', default=0)
     result['input_primary_residence_value'] = get_nested(assets, 'realEstatePrimary', 'currentValue', default=0)
