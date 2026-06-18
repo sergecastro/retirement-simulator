@@ -1146,14 +1146,14 @@ def show_results_page(nav_state, user_data, financial_data, sim_params):
 
                 # Collect current user data
                 user_data = {
-                    "name": st.session_state.get("user_name", ""),
-                    "age": st.session_state.get("current_age", 0),
-                    "retirement_age": st.session_state.get("retirement_age", 67),
+                    "name": st.session_state.get("input_user_name", ""),
+                    "age": st.session_state.get("input_age", 0),
+                    "retirement_age": st.session_state.get("input_retirement_age", 67),
                     "life_expectancy": st.session_state.get("life_expectancy", 85),
-                    "income": st.session_state.get("annual_income", 0),
-                    "expenses": st.session_state.get("monthly_expenses", 0) * 12,
-                    "savings": st.session_state.get("current_savings", 0),
-                    "contributions": st.session_state.get("annual_contribution", 0),
+                    "income": st.session_state.get("input_total_income", 0) * 12,
+                    "expenses": st.session_state.get("input_total_expenses", 0) * 12,
+                    "savings": st.session_state.get("input_taxable_investment_accounts", 0),
+                    "contributions": st.session_state.get("input_annual_contribution", 0),
                 }
 
                 # Collect simulation results

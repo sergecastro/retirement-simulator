@@ -171,8 +171,8 @@ class ScenarioComparisonEngine:
                 comparison_data[name] = {
                     'Description': scenario.get('description', '-'),
                     'Age': data.get('age', '-'),
-                    'Annual Income': f"${data.get('total_income', 0):,.0f}",
-                    'Annual Expenses': f"${data.get('total_expenses', 0):,.0f}",
+                    'Annual Income': f"${data.get('total_income', 0) * 12:,.0f}",
+                    'Annual Expenses': f"${data.get('total_expenses', 0) * 12:,.0f}",
                     'Starting Liquid Assets': f"${data.get('liquid_assets', 0):,.0f}",
                     'Final Savings': f"${results.get('final_savings', 0):,.0f}",
                     'Final Net Worth': f"${results.get('final_net_worth', 0):,.0f}",
