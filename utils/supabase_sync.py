@@ -207,6 +207,7 @@ def transform_lovable_to_streamlit(lovable_data: dict) -> dict:
 
     result['input_retirement_age'] = profile.get('retirementAgeUser') or 65
     result['input_partner_retirement_age'] = profile.get('retirementAgePartner') or 0
+    result['input_social_security_age'] = profile.get('socialSecurityAge')
 
     # ==========================================================================
     # INCOME
