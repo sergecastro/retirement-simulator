@@ -251,6 +251,10 @@ def cc_summary():
                 "safetyMargin": row.get("irmaa_margin"),
             }
 
+        # Home equity from the intake snapshot (surfaced only when a home exists).
+        _home_value = _snap.get("primary_residence_value") or 0
+        _mortgage = _snap.get("mortgage_balance") or 0
+
         # Return ONLY real engine outputs (tax bracket, bracket room, IRMAA margin,
         # RMD at 73 are derived from the user's projected income using the engine's
         # own 2025 bracket tables). safe_monthly_spending is a labeled 4% guideline.
@@ -281,6 +285,14 @@ def cc_summary():
                 "rmdAt73": row.get("rmd_at_73"),
             },
         }
+
+        # Include home equity only when the user actually has a home.
+        if _home_value and _home_value > 0:
+            data_out["homeEquity"] = {
+                "homeValue": _home_value,
+                "mortgage": _mortgage,
+                "equity": _home_value - _mortgage,
+            }
 
         return jsonify({
             "success": True,

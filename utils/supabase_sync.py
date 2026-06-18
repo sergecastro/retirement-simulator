@@ -410,6 +410,7 @@ def _collect_intake_snapshot() -> dict:
         'taxable_investment_accounts': _num('input_taxable_investment_accounts'),
         'hsa_balance': _num('input_hsa_balance'),
         'primary_residence_value': _num('input_primary_residence_value'),
+        'mortgage_balance': _num('input_mortgage_balance'),
         'social_security_income': _num('input_social_security_income'),
         'pension_income': _num('input_pension_income'),
         'salary_wages': _num('input_salary_wages'),
