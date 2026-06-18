@@ -69,6 +69,8 @@ Massive correctness pass after Oren (first real user) surfaced wrong numbers. Ba
 - **G** (`7dbf01ac`) IRMAA age-gate (under 63 → `not_yet_relevant`).
 - **I** (`dc5cf15c`) Annual labels ×12 in `ai_advisor.py` + `scenario_comparison_enhanced.py` (were showing monthly under "Annual"); historical-snapshot save fixed (7 wrong session keys → real `input_*`, was saving all $0); **Roth added to `liquid_assets`** in `financial_inputs.py` (was excluded → raises safe-spending + net worth). *(Track H — income-gap temporal framing — deferred, not built.)*
 - **J** (`42eff427`) home equity: `mortgage_balance` added to the intake snapshot; `/cc/summary` returns a `homeEquity` block `{homeValue, mortgage, equity}` when `homeValue > 0`.
+- **K** (`eafa7184`) SS claiming age mapped: `profile.socialSecurityAge` → `input_social_security_age` (no default — Lovable hard-blocks until entered). *(Lovable confirmed the key is `profile.socialSecurityAge`.)*
+- **L** (`f443c585`) college planning: snapshot now carries `children_list` + `five29_plan_balance`; `/cc/summary` returns `collegePlanning[]` per child `{name, startYear, estimatedCost, current529, gap}` (cost map: Public In-State $120K / Out-of-State $180K / Private $280K). Note: 529 shown per-child (shared 529 not split — don't sum gaps naively).
 
 **Lovable — published today:** SS claiming age (mandatory, blank, 62–70, red border, hard-block on Continue); Roth 401k field added; Traditional vs Roth IRA fields **separated (binding fix — no longer copies Roth into iraAccounts)**; `retirementAgePartner` saved; **`session_id` passed in `/cc/chat`**; `rothConversionStatus/Message` rendered (Roth rec hidden when `window_not_open`). *(The 3 queued Lovable instructions are now LIVE.)*
 
