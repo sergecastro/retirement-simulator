@@ -81,7 +81,20 @@ Massive correctness pass after Oren (first real user) surfaced wrong numbers. Ba
 - **Tax bracket inconsistency:** Tax tab shows 24% but My Plan shows 32% — reconcile.
 - **Mobile (iPhone Safari) display issues** — batch fixes once Serge shares flight screenshots.
 
-**Open (lower priority):** add `input_social_security_age` to transform (confirm Lovable's saved key first); Track H (income-gap temporal framing for pre-retirees); Option B IRMAA (richer MAGI w/ taxable withdrawals — engine change); `customSources` income mapping; `annuities` + `lifeInsuranceCashValue` assets; verify `input_partner_retirement_age` consumer; **premium gate** on CC route; "Open Command Center" button missing after Full Mode save. **Not ready for new users until the Monthly Expenses $0 issue is fixed.**
+**Open / deferred (carry forward — see also memory `project_command_center_next_steps`):**
+- 🔧 **SS engine timing gap:** `input_social_security_age` captured (Track K) and displayed, but the engine pays SS from year 1 regardless of claiming age. Fix: gate `social_security` in `simulation_core.py` ~line 291 so benefits start when `user_age >= input_social_security_age`. **Deferred — dedicated session required.**
+- **Track H** — income-gap temporal framing for pre-retirees (label "Guaranteed *retirement* income"; frame gap as future, not current shortfall). Deferred.
+- **Option B IRMAA** — richer MAGI incl. taxable withdrawals (engine change). Deferred.
+- `customSources` income mapping (Lovable `income.customSources` never mapped — custom income lost).
+- `annuities` + `lifeInsuranceCashValue` assets — present in Lovable, never mapped.
+- Verify `input_partner_retirement_age` consumer (mapped, but does anything read it?).
+- **Premium gate** on the Command Center route (currently free to all).
+- "Open Command Center" button missing after Full Mode save (only after Quick Mode).
+- **`feature/merged-app` is 338 commits behind master** — decide: reconcile, retire, or canonical. (All session work synced to `feature/command-center`.)
+- **Lovable renders pending:** Monthly Expenses $0 (read `monthlyCommand.monthlyExpenses`); `homeEquity` block; `irmaaWatch` `not_yet_relevant` shape; `collegePlanning[]` cards (note shared-529 — don't sum gaps naively).
+- Confirm Lovable form fix with one fresh run (iraAccounts no longer duplicates Roth).
+
+**Not ready for new users until the Monthly Expenses $0 issue is fixed.**
 
 ### Session Summary -- 2026-06-16
 
