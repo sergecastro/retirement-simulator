@@ -318,8 +318,9 @@ def collect_financial_data():
         crypto = st.session_state.get('input_cryptocurrency_holdings', 0.0)
         _display_currency("Cryptocurrency", crypto)
 
+    roth_balance = st.session_state.get('input_roth_balance', 0.0)
     liquid_assets = (taxable_investments + savings_account + hsa_balance +
-                    ira_balance + four01k_balance + pension_value +
+                    ira_balance + four01k_balance + roth_balance + pension_value +
                     partner_ira_balance + partner_four01k_balance)
 
     # Liabilities section

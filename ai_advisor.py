@@ -147,8 +147,8 @@ def assemble_user_context(user_data: Dict, financial_data: Dict, sim_params: Dic
     
     context += f"""
 ## Current Financial Situation
-- **Annual Income**: ${total_income:,.0f}
-- **Annual Expenses**: ${total_expenses:,.0f}
+- **Annual Income**: ${total_income * 12:,.0f}
+- **Annual Expenses**: ${total_expenses * 12:,.0f}
 - **Monthly Surplus**: ${monthly_surplus:,.0f}
 - **Liquid Assets**: ${liquid_assets:,.0f}
 - **Total Assets**: ${total_assets:,.0f}
