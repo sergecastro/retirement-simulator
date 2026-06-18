@@ -288,7 +288,11 @@ def run_simulation(age, partner_exists, partner_age, total_income, total_expense
                 salary_wages = base_salary * inflate
                 rental_income = base_rental * inflate
                 investment_income = base_investment * inflate
-                social_security = base_ss * inflate
+                ss_claiming_age = safe_float(_ss.get('input_social_security_age')) or 999
+                if user_age >= ss_claiming_age:
+                    social_security = base_ss * inflate
+                else:
+                    social_security = 0
                 pension_income = base_pension * inflate
                 other_income = base_other * inflate
             else:
