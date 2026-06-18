@@ -294,6 +294,28 @@ def cc_summary():
                 "equity": _home_value - _mortgage,
             }
 
+        # College planning — built from the intake snapshot children list.
+        _cost_map = {
+            "Public In-State": 120000,
+            "Public Out-of-State": 180000,
+            "Private": 280000,
+        }
+        _five29 = _snap.get("five29_plan_balance", 0) or 0
+        college_plan = []
+        for child in _snap.get("children_list", []):
+            plan = child.get("College Plan", "None")
+            if plan == "None":
+                continue
+            estimated_cost = _cost_map.get(plan, 120000)
+            college_plan.append({
+                "name": child.get("Name", "Child"),
+                "startYear": child.get("Birth Year", 2000) + 18,
+                "estimatedCost": estimated_cost,
+                "current529": _five29,
+                "gap": max(0, estimated_cost - _five29),
+            })
+        data_out["collegePlanning"] = college_plan
+
         return jsonify({
             "success": True,
             "requiresAnalysis": False,

@@ -421,6 +421,8 @@ def _collect_intake_snapshot() -> dict:
         'other_income': _num('input_other_income'),
         'total_income': _num('input_total_income'),
         'total_expenses': _num('input_total_expenses'),
+        'five29_plan_balance': _num('input_five29_plan_balance'),
+        'children_list': ss.get('children_list', []),
     }
 
 
