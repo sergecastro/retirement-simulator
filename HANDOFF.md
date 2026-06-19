@@ -71,6 +71,7 @@ Massive correctness pass after Oren (first real user) surfaced wrong numbers. Ba
 - **J** (`42eff427`) home equity: `mortgage_balance` added to the intake snapshot; `/cc/summary` returns a `homeEquity` block `{homeValue, mortgage, equity}` when `homeValue > 0`.
 - **K** (`eafa7184`) SS claiming age mapped: `profile.socialSecurityAge` → `input_social_security_age` (no default — Lovable hard-blocks until entered). *(Lovable confirmed the key is `profile.socialSecurityAge`.)*
 - **L** (`f443c585`) college planning: snapshot now carries `children_list` + `five29_plan_balance`; `/cc/summary` returns `collegePlanning[]` per child `{name, startYear, estimatedCost, current529, gap}` (cost map: Public In-State $120K / Out-of-State $180K / Private $280K). Note: 529 shown per-child (shared 529 not split — don't sum gaps naively).
+- **M** (`2b45f4c7`) SS timing gate: `simulation_core.py` pays SS only from `user_age >= input_social_security_age` (was paying from year 1). Timing only — benefit-amount actuarial adjustment still deferred. Existing results need a re-run.
 
 **Lovable — published today:** SS claiming age (mandatory, blank, 62–70, red border, hard-block on Continue); Roth 401k field added; Traditional vs Roth IRA fields **separated (binding fix — no longer copies Roth into iraAccounts)**; `retirementAgePartner` saved; **`session_id` passed in `/cc/chat`**; `rothConversionStatus/Message` rendered (Roth rec hidden when `window_not_open`). *(The 3 queued Lovable instructions are now LIVE.)*
 
@@ -82,7 +83,7 @@ Massive correctness pass after Oren (first real user) surfaced wrong numbers. Ba
 - **Mobile (iPhone Safari) display issues** — batch fixes once Serge shares flight screenshots.
 
 **Open / deferred (carry forward — see also memory `project_command_center_next_steps`):**
-- 🔧 **SS engine timing gap:** `input_social_security_age` captured (Track K) and displayed, but the engine pays SS from year 1 regardless of claiming age. Fix: gate `social_security` in `simulation_core.py` ~line 291 so benefits start when `user_age >= input_social_security_age`. **Deferred — dedicated session required.**
+- ✅ **SS engine timing gap — FIXED (Track M, `2b45f4c7`):** engine now pays SS only from `user_age >= input_social_security_age`. *Still deferred:* adjusting the benefit **amount** for early/late claiming (actuarial) — timing only so far.
 - **Track H** — income-gap temporal framing for pre-retirees (label "Guaranteed *retirement* income"; frame gap as future, not current shortfall). Deferred.
 - **Option B IRMAA** — richer MAGI incl. taxable withdrawals (engine change). Deferred.
 - `customSources` income mapping (Lovable `income.customSources` never mapped — custom income lost).
