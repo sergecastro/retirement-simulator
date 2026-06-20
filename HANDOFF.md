@@ -51,13 +51,20 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
-## June 18–20 2026 — Tracks N–Q + Lovable fixes
-- **Track N** (`db708d09`): CC banner gated — only shows after simulation runs, moved to bottom of results.
-- **Track O** (`c40db0f2`): Plausible top-window injection in `app.py` — Streamlit pageviews now track `app.familyforecast.ai` (were lost inside `st.components.v1.html`'s iframe).
-- **Track P** (`1a71e983`): `/cc/summary` `taxOpportunities` adds real fields — `iraBalance`, `rothBalance`, `four01kBalance`, `taxableInvestments`, `grossAnnualIncome`, `rothConvertMax` (no proxies; balances populate after a fresh Analysis run; `capitalGainsRoom`/`estimatedTaxableIncome` intentionally omitted as un-computable).
-- **Track Q** (`3caf8672`): premium gate added to the internal Streamlit Command Center (matches the other gated modes; dormant until `FEATURE_GATING_ENABLED=true`).
-- **Lovable shipped:** My Plan tab now first; Return-to-Analysis 404 fixed (carries `session_id`); AI chat confirmed conversational (backend `/cc/chat` round-trips history).
-- **Still Lovable-side:** Tax tab must consume Track P fields + show `rothConversionMessage` (not $0); Full-Mode "Open Command Center" button (no Streamlit button exists in the intake flow — Lovable-only); premium gate on `familyforecast.ai/command-center`; Plausible `<head>` tag on the Lovable site; renders for `homeEquity` / `irmaaWatch` / `collegePlanning` / Monthly Expenses $0.
+## June 20 2026 — Session Summary
+**Backend (Code) — all on `master` + `feature/command-center`:**
+- **Track O** (`c40db0f2`): Plausible top-window fix — Streamlit pageviews now track `app.familyforecast.ai` (were lost inside `st.components.v1.html`'s iframe).
+- **Track P** (`1a71e983`): Tax tab real fields added to `/cc/summary` — `iraBalance`, `rothBalance`, `four01kBalance`, `taxableInvestments`, `grossAnnualIncome`, `rothConvertMax` (no proxies; balances populate after a fresh Analysis run; `capitalGainsRoom`/`estimatedTaxableIncome` omitted as un-computable).
+- **Track Q** (`3caf8672`): Command Center premium gate (internal Streamlit CC; matches other gated modes; dormant until `FEATURE_GATING_ENABLED=true`).
+- *(Earlier in this push series: Track N `db708d09` — CC banner gated to show only after a simulation runs, moved to bottom of results.)*
+
+**Lovable shipped today:**
+- Tax tab UI rewrite — handles **both** user states (working: "window opens at retirement"; retired: real conversion room).
+- Full Mode "Open Command Center" button added (was Quick-Mode only).
+- Landing-page Plausible script added (`familyforecast.ai`).
+
+**Still Lovable-side (open):** premium gate on `familyforecast.ai/command-center`; renders for `homeEquity` / `irmaaWatch` (`not_yet_relevant`) / `collegePlanning` (per-child 529 — don't sum gaps); Monthly Expenses $0 fix; confirm AI chat sends `history` each turn.
+**Open (Code, deferred):** SS benefit-amount actuarial adjustment (timing done in Track M); `feature/merged-app` 338+ behind (reconcile/retire decision); `customSources` income + `annuities`/`lifeInsuranceCashValue` mappings; Option B IRMAA (taxable-withdrawal MAGI). Full deferred ledger in memory `project_command_center_next_steps`.
 
 ### Session Summary -- 2026-06-17
 
