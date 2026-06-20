@@ -1067,25 +1067,28 @@ def main():
             'is_trusted': is_trusted
         }
 
-        # Real HTML link to the Lovable-hosted Command Center (opens new tab,
-        # works on laptop + mobile). Single CTA — one button, one destination.
-        st.markdown(
-            """
-            <a href="https://familyforecast.ai/command-center"
-               target="_blank"
-               style="display:block; text-align:center;
-                      background:#E8A020; color:white;
-                      font-weight:700; font-size:1.1rem;
-                      padding:12px 24px; border-radius:8px;
-                      text-decoration:none; margin:1rem auto;
-                      max-width:400px;">
-                🎯 Open My Command Center
-            </a>
-            """,
-            unsafe_allow_html=True,
-        )
-
         show_analysis_mode(nav_state)
+
+        # Real HTML link to the Lovable-hosted Command Center (opens new tab,
+        # works on laptop + mobile). Shown ONLY after a simulation has run, so it
+        # appears at the BOTTOM of the results — not before the user has analyzed
+        # (the Command Center requires a completed Analysis).
+        if st.session_state.get('run_simulation', False):
+            st.markdown(
+                """
+                <a href="https://familyforecast.ai/command-center"
+                   target="_blank"
+                   style="display:block; text-align:center;
+                          background:#E8A020; color:white;
+                          font-weight:700; font-size:1.1rem;
+                          padding:12px 24px; border-radius:8px;
+                          text-decoration:none; margin:1rem auto;
+                          max-width:400px;">
+                    🎯 Open My Command Center
+                </a>
+                """,
+                unsafe_allow_html=True,
+            )
 
     # Show footer
     show_footer()
