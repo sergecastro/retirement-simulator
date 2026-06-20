@@ -104,6 +104,7 @@ def show_upgrade_wall(feature_name: str):
         "social_security": ("📊", "Social Security Optimizer", "Find your optimal claiming age — worth $100K+ lifetime"),
         "roth_calculator": ("📈", "Roth Converter", "Optimize your Roth conversion strategy for tax savings"),
         "historical_tracking": ("📅", "Historical Tracking", "Track your retirement plan year over year"),
+        "command_center": ("🎯", "Command Center", "Your personalized monthly retirement action plan"),
     }
 
     icon, display_name, feature_desc = FEATURE_DESCRIPTIONS.get(
