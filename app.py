@@ -182,7 +182,20 @@ SCROLL_TO_TOP_JS = """
 #   <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-XXXXXXX');</script>
 
 ANALYTICS_TRACKING_CODE = """
-<script defer data-domain="familyforecast.ai" src="https://plausible.io/js/script.js"></script>
+<script>
+(function () {
+  try {
+    var d = window.parent.document;
+    if (!d.querySelector('script[data-domain="familyforecast.ai"]')) {
+      var s = d.createElement('script');
+      s.defer = true;
+      s.setAttribute('data-domain', 'familyforecast.ai');
+      s.src = 'https://plausible.io/js/script.js';
+      d.head.appendChild(s);
+    }
+  } catch (e) {}
+})();
+</script>
 """
 
 # =============================================================================
