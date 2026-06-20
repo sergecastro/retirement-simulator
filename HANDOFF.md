@@ -51,9 +51,13 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
-## June 18 2026 — Track N + Lovable fixes
-Track N (`db708d09`): CC banner gated — only shows after simulation runs, moved to bottom of results.
-Lovable: My Plan tab now first. Return to Analysis 404 fixed — carries session_id to app.familyforecast.ai. AI chat confirmed conversational.
+## June 18–20 2026 — Tracks N–Q + Lovable fixes
+- **Track N** (`db708d09`): CC banner gated — only shows after simulation runs, moved to bottom of results.
+- **Track O** (`c40db0f2`): Plausible top-window injection in `app.py` — Streamlit pageviews now track `app.familyforecast.ai` (were lost inside `st.components.v1.html`'s iframe).
+- **Track P** (`1a71e983`): `/cc/summary` `taxOpportunities` adds real fields — `iraBalance`, `rothBalance`, `four01kBalance`, `taxableInvestments`, `grossAnnualIncome`, `rothConvertMax` (no proxies; balances populate after a fresh Analysis run; `capitalGainsRoom`/`estimatedTaxableIncome` intentionally omitted as un-computable).
+- **Track Q** (`3caf8672`): premium gate added to the internal Streamlit Command Center (matches the other gated modes; dormant until `FEATURE_GATING_ENABLED=true`).
+- **Lovable shipped:** My Plan tab now first; Return-to-Analysis 404 fixed (carries `session_id`); AI chat confirmed conversational (backend `/cc/chat` round-trips history).
+- **Still Lovable-side:** Tax tab must consume Track P fields + show `rothConversionMessage` (not $0); Full-Mode "Open Command Center" button (no Streamlit button exists in the intake flow — Lovable-only); premium gate on `familyforecast.ai/command-center`; Plausible `<head>` tag on the Lovable site; renders for `homeEquity` / `irmaaWatch` / `collegePlanning` / Monthly Expenses $0.
 
 ### Session Summary -- 2026-06-17
 
