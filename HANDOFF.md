@@ -51,6 +51,10 @@ Open browser and paste the session URL from backup laptop.
 ## SECTION 1 -- RECENT PROGRESS
 <!-- Updated automatically by ClaudeManager from GitHub Gist -->
 
+## June 18 2026 — Track N + Lovable fixes
+Track N (`db708d09`): CC banner gated — only shows after simulation runs, moved to bottom of results.
+Lovable: My Plan tab now first. Return to Analysis 404 fixed — carries session_id to app.familyforecast.ai. AI chat confirmed conversational.
+
 ### Session Summary -- 2026-06-17
 
 **🎯 DATA-INTEGRITY DAY — first clean Command Center: assets correct for the first time ($1,400K IRA + $200K Roth + $1,500K Taxable = $3,100K), Oren tested live for hours**
