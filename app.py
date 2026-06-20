@@ -1018,6 +1018,9 @@ def main():
         show_roth_calculator()
 
     elif st.session_state.current_mode == "command_center":
+        if gating_enabled and not is_premium_user():
+            show_upgrade_wall("command_center")
+            st.stop()
         from ui.command_center import show_command_center
         show_command_center()
 
