@@ -279,6 +279,12 @@ def cc_summary():
                 "bracketRoom": bracket_room_out,
                 "rothConversionStatus": roth_status,
                 "rothConversionMessage": roth_message,
+                "rothConvertMax": bracket_room_out,
+                "iraBalance": _snap.get("ira_balance", 0),
+                "rothBalance": _snap.get("roth_balance", 0),
+                "taxableInvestments": _snap.get("taxable_investment_accounts", 0),
+                "four01kBalance": _snap.get("four01k_403b_balance", 0),
+                "grossAnnualIncome": (_snap.get("total_income", 0) or 0) * 12,
             },
             "irmaaWatch": _irmaa_watch,
             "rmdForecast": {
